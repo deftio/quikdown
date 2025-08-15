@@ -9,8 +9,8 @@ const __dirname = path.dirname(__filename);
 // Path to the package.json file
 const packageJsonPath = path.join(__dirname, '../package.json');
 
-// Path to the quikchat_version.js file
-const versionFilePath = path.join(__dirname, '../src/quikchat_version.js');
+// Path to the quikdown_version.js file
+const versionFilePath = path.join(__dirname, '../src/quikdown_version.js');
 
 // Update the version file from package.json
 async function updateVersion() {
@@ -23,19 +23,14 @@ async function updateVersion() {
     const versionFileContent = `// Auto-generated version file - DO NOT EDIT MANUALLY
 // This file is automatically updated by tools/updateVersion.js
 
-export const quikchatVersion = {
-    version: "${version}",
-    license: "BSD-2",
-    url: "https://github/deftio/quikchat",
-    fun: true
-};
+export const quikdownVersion = "${version}";
 
-export default quikchatVersion;`;
+export default quikdownVersion;`;
 
     // Write the version file
     await fs.writeFile(versionFilePath, versionFileContent, 'utf8');
 
-    console.log(`Updated quikchat_version.js to version ${version}`);
+    console.log(`Updated quikdown_version.js to version ${version}`);
   } catch (error) {
     console.error('Error updating version:', error);
     process.exit(1);

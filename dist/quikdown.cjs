@@ -6,6 +6,11 @@
  */
 'use strict';
 
+// Auto-generated version file - DO NOT EDIT MANUALLY
+// This file is automatically updated by tools/updateVersion.js
+
+const quikdownVersion = "2.0";
+
 /**
  * quikdown - A minimal markdown parser optimized for chat/LLM output
  * Supports tables, code blocks, lists, and common formatting
@@ -16,6 +21,7 @@
  * @param {boolean} options.inline_styles - If true, uses inline styles instead of classes
  * @returns {string} - The rendered HTML
  */
+
 
 function quikdown(markdown, options = {}) {
     if (!markdown || typeof markdown !== 'string') {
@@ -247,7 +253,6 @@ function processInlineMarkdown(text, inline_styles, styles) {
  * Process markdown tables
  */
 function processTable(text, inline_styles, styles) {
-    
     const lines = text.split('\n');
     const result = [];
     let inTable = false;
@@ -495,6 +500,11 @@ quikdown.configure = function(options) {
         return quikdown(markdown, options);
     };
 };
+
+/**
+ * Version information
+ */
+quikdown.version = quikdownVersion;
 
 // Export for both CommonJS and ES6
 if (typeof module !== 'undefined' && module.exports) {

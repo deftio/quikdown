@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuikDown Examples</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #667eea;
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+        }
+        
+        .examples-grid {
+            display: grid;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .example-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .example-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+        
+        .example-card:hover::before {
+            opacity: 0.1;
+        }
+        
+        .example-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+        
+        .example-card .content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .example-card h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .example-card .icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .example-card p {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+        
+        .feature {
+            background: #f5f7fa;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #999;
+            font-size: 0.9em;
+        }
+        
+        footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .subtitle {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QuikDown</h1>
+        <p class="subtitle">Lightweight Markdown Parser Examples</p>
+        
+        <div class="examples-grid">
+            <a href="quikdown-test.html" class="example-card">
+                <div class="content">
+                    <h2>
+                        <span class="icon">1</span>
+                        Basic Test
+                    </h2>
+                    <p>
+                        Interactive demo showcasing basic markdown parsing capabilities. 
+                        Test various markdown elements including headings, lists, links, 
+                        and formatting in real-time.
+                    </p>
+                    <span class="badge">Interactive Demo</span>
+                </div>
+            </a>
+            
+            <a href="quikdown-fence.html" class="example-card">
+                <div class="content">
+                    <h2>
+                        <span class="icon">2</span>
+                        Fence Blocks
+                    </h2>
+                    <p>
+                        Demonstrates custom fence block handling with syntax highlighting 
+                        and custom renderers. Perfect for code blocks, diagrams, and 
+                        specialized content rendering.
+                    </p>
+                    <span class="badge">Plugin System</span>
+                </div>
+            </a>
+            
+            <a href="quikdown-styles-test.html" class="example-card">
+                <div class="content">
+                    <h2>
+                        <span class="icon">3</span>
+                        Styles Test
+                    </h2>
+                    <p>
+                        Explore the difference between inline styles and CSS classes. 
+                        See how QuikDown handles styling options for maximum flexibility 
+                        in your applications.
+                    </p>
+                    <span class="badge">Styling Options</span>
+                </div>
+            </a>
+        </div>
+        
+        <div class="features">
+            <span class="feature">🚀 ~3KB minified</span>
+            <span class="feature">🔒 XSS Protected</span>
+            <span class="feature">📦 Zero Dependencies</span>
+            <span class="feature">🎨 Flexible Styling</span>
+            <span class="feature">🔌 Plugin System</span>
+            <span class="feature">⚡ Fast Parsing</span>
+        </div>
+        
+        <footer>
+            <p>
+                Built with ❤️ by <a href="https://github.com/deftio" target="_blank">DeftIO</a> | 
+                <a href="https://github.com/deftio/quikdown" target="_blank">GitHub</a> | 
+                <a href="https://www.npmjs.com/package/quikdown" target="_blank">npm</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

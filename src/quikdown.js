@@ -9,6 +9,8 @@
  * @returns {string} - The rendered HTML
  */
 
+import quikdownVersion from './quikdown_version.js';
+
 function quikdown(markdown, options = {}) {
     if (!markdown || typeof markdown !== 'string') {
         return '';
@@ -239,17 +241,6 @@ function processInlineMarkdown(text, inline_styles, styles) {
  * Process markdown tables
  */
 function processTable(text, inline_styles, styles) {
-    // Helper to get attributes
-    function getAttr(tag, additionalStyle = '') {
-        if (inline_styles) {
-            const style = styles[tag] || '';
-            const fullStyle = additionalStyle ? `${style}; ${additionalStyle}` : style;
-            return fullStyle ? ` style="${fullStyle}"` : '';
-        } else {
-            return ` class="quikdown-${tag}"`;
-        }
-    }
-    
     const lines = text.split('\n');
     const result = [];
     let inTable = false;
@@ -497,6 +488,11 @@ quikdown.configure = function(options) {
         return quikdown(markdown, options);
     };
 };
+
+/**
+ * Version information
+ */
+quikdown.version = quikdownVersion;
 
 // Export for both CommonJS and ES6
 if (typeof module !== 'undefined' && module.exports) {
