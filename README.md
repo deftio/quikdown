@@ -1,6 +1,8 @@
-# QuikDown
+# quikdown
 
-A lightweight, fast markdown parser with built-in XSS protection and plugin support. QuikDown provides a secure, extensible markdown-to-HTML converter that works in both browser and Node.js environments.
+A lightweight, fast markdown parser with built-in XSS protection and plugin support. quikdown is an extensible markdown-to-HTML converter that works in both browser and Node.js environments.
+
+📚 **[View Live Examples](examples/)** - Interactive demos of quikdown's features
 
 ## Features
 
@@ -48,7 +50,7 @@ const html = quikdown(markdown, {
 
 ## Supported Markdown
 
-QuikDown supports a practical subset of CommonMark:
+quikdown supports a practical subset of CommonMark:
 
 ### Text Formatting
 - **Bold**: `**text**` or `__text__`
@@ -185,7 +187,7 @@ const html = quikdown(markdownWithMermaid, {
 
 ## Security
 
-QuikDown includes built-in XSS protection:
+quikdown includes built-in XSS protection:
 
 - All HTML tags in markdown are escaped by default
 - Attributes are sanitized
@@ -228,7 +230,7 @@ const html = myParser(markdown);
 
 ### `quikdown.emitStyles()`
 
-Returns CSS styles for QuikDown HTML output when not using inline styles.
+Returns CSS styles for quikdown HTML output when not using inline styles.
 
 ```javascript
 const styles = quikdown.emitStyles();
@@ -248,7 +250,7 @@ const styles = quikdown.emitStyles();
 <body>
     <div id="output"></div>
     <script>
-        const markdown = '# Hello QuikDown!';
+        const markdown = '# Hello quikdown!';
         const html = quikdown(markdown, { inline_styles: true });
         document.getElementById('output').innerHTML = html;
     </script>
@@ -279,18 +281,18 @@ res.send(html);
 
 ## Performance
 
-QuikDown is optimized for speed:
+quikdown is optimized for speed:
 
 - Single-pass regex parsing
 - Minimal memory allocation
 - No AST generation
 - Efficient string operations
 
-Benchmarks show QuikDown performs comparably to larger markdown parsers while maintaining a much smaller footprint.
+Benchmarks show quikdown performs comparably to larger markdown parsers while maintaining a much smaller footprint.
 
 ## Limitations
 
-QuikDown intentionally doesn't support:
+quikdown intentionally doesn't support:
 
 - HTML blocks (for security)
 - Reference-style links
@@ -336,7 +338,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Comparison with Other Parsers
 
-| Feature | QuikDown | Marked | Showdown | Markdown-it |
+| Feature | quikdown | Marked | Showdown | Markdown-it |
 |---------|----------|---------|----------|-------------|
 | Size | ~3KB | ~30KB | ~40KB | ~100KB |
 | Dependencies | 0 | 0 | 0 | 3+ |
@@ -345,7 +347,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 | Speed | Fast | Very Fast | Fast | Very Fast |
 | CommonMark | Subset | Full | Full | Full |
 
-Choose QuikDown when you need:
+Choose quikdown when you need:
 - A lightweight solution
 - Built-in security
 - Simple plugin system

@@ -1,5 +1,5 @@
 /**
- * QuikDown - Lightweight Markdown Parser
+ * quikdown - Lightweight Markdown Parser
  * @version 2.0
  * @license BSD-2-Clause
  * @copyright DeftIO 2025

@@ -6,7 +6,7 @@ import { readFileSync } from 'fs';
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
 const banner = `/**
- * QuikDown - Lightweight Markdown Parser
+ * quikdown - Lightweight Markdown Parser
  * @version ${pkg.version}
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
