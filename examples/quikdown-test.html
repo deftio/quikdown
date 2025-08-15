@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown Parser Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            overflow: hidden;
+        }
+        
+        .panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            padding: 1rem;
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+        
+        #markdown-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 1rem;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            line-height: 1.6;
+        }
+        
+        #rendered-output {
+            padding: 1rem;
+            line-height: 1.6;
+        }
+        
+        /* Rendered content styles */
+        /* GitHub-like heading styles */
+        #rendered-output h1 { 
+            font-size: 2em; 
+            margin: 0.5em 0 0.15em 0; 
+            font-weight: 600;
+        }
+        #rendered-output h2 { 
+            font-size: 1.5em; 
+            margin: 0.67em 0 0.25em 0;
+            font-weight: 600;
+        }
+        #rendered-output h3 { 
+            font-size: 1.25em; 
+            margin: 0.67em 0 0.25em 0; 
+            font-weight: 600; 
+        }
+        #rendered-output h4 { 
+            font-size: 1em; 
+            margin: 0.67em 0 0.25em 0; 
+            font-weight: 600; 
+        }
+        #rendered-output h5 { 
+            font-size: 0.875em; 
+            margin: 0.67em 0 0.25em 0; 
+            font-weight: 600; 
+        }
+        #rendered-output h6 { 
+            font-size: 0.85em; 
+            margin: 0.67em 0 0.25em 0; 
+            font-weight: 600;
+            color: #656d76;
+        }
+        
+        #rendered-output p { margin: 1em 0; }
+        #rendered-output strong { font-weight: bold; }
+        #rendered-output em { font-style: italic; }
+        #rendered-output del { text-decoration: line-through; opacity: 0.7; }
+        
+        #rendered-output code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        #rendered-output pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1em 0;
+        }
+        
+        #rendered-output pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+            font-size: 0.9em;
+        }
+        
+        #rendered-output blockquote {
+            border-left: 4px solid #ddd;
+            padding-left: 1rem;
+            margin: 1em 0;
+            color: #666;
+        }
+        
+        #rendered-output ul, #rendered-output ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+        
+        #rendered-output li {
+            margin: 0.25em 0;
+        }
+        
+        #rendered-output table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1em 0;
+        }
+        
+        #rendered-output th, #rendered-output td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        #rendered-output th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        #rendered-output tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        #rendered-output a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        #rendered-output a:hover {
+            text-decoration: underline;
+        }
+        
+        #rendered-output img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 1em 0;
+        }
+        
+        #rendered-output hr {
+            border: none;
+            border-top: 2px solid #eee;
+            margin: 2em 0;
+        }
+        
+        .stats {
+            padding: 0.5rem 1rem;
+            background: #ecf0f1;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        button {
+            padding: 0.5rem 1rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .error {
+            color: #e74c3c;
+            padding: 1rem;
+            background: #ffe6e6;
+            border-left: 4px solid #e74c3c;
+            margin: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Quikdown Parser Test</h1>
+        <div class="subtitle">A minimal markdown parser optimized for chat/LLM output</div>
+    </header>
+    
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <span>Markdown Input</span>
+                <div class="test-buttons">
+                    <button onclick="loadExample('basic')">Basic</button>
+                    <button onclick="loadExample('table')">Table</button>
+                    <button onclick="loadExample('complex')">Complex</button>
+                    <button onclick="loadExample('llm')">LLM Output</button>
+                </div>
+            </div>
+            <div class="panel-content">
+                <textarea id="markdown-input" placeholder="Enter markdown here..."></textarea>
+            </div>
+            <div class="stats">
+                <span>Characters: <span id="char-count">0</span></span>
+                <span>Lines: <span id="line-count">0</span></span>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">
+                <span>Rendered Output</span>
+                <button onclick="copyHtml()">Copy HTML</button>
+            </div>
+            <div class="panel-content">
+                <div id="rendered-output"></div>
+            </div>
+            <div class="stats">
+                <span>Parse time: <span id="parse-time">0</span>ms</span>
+                <span>HTML size: <span id="html-size">0</span> bytes</span>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../dist/quikdown.umd.min.js"></script>
+    <script>
+        // Wait for quikdown to be available
+        window.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('markdown-input');
+            const output = document.getElementById('rendered-output');
+            const charCount = document.getElementById('char-count');
+            const lineCount = document.getElementById('line-count');
+            const parseTime = document.getElementById('parse-time');
+            const htmlSize = document.getElementById('html-size');
+            
+            // Update on input
+            let renderTimeout;
+            input.addEventListener('input', () => {
+                clearTimeout(renderTimeout);
+                renderTimeout = setTimeout(render, 150);
+                updateStats();
+            });
+            
+            function render() {
+                const markdown = input.value;
+                const startTime = performance.now();
+                
+                try {
+                    const html = quikdown(markdown);
+                    const endTime = performance.now();
+                    
+                    output.innerHTML = html;
+                    parseTime.textContent = (endTime - startTime).toFixed(2);
+                    htmlSize.textContent = new Blob([html]).size;
+                } catch (error) {
+                    output.innerHTML = `<div class="error">Parse Error: ${error.message}</div>`;
+                }
+            }
+            
+            function updateStats() {
+                charCount.textContent = input.value.length;
+                lineCount.textContent = input.value.split('\n').length;
+            }
+            
+            // Examples
+        const examples = {
+            basic: `# Heading 1
+## Heading 2
+### Heading 3
+
+This is a paragraph with **bold text**, *italic text*, and ~~strikethrough~~.
+
+Here's some \`inline code\` and a [link](https://example.com).
+
+- Unordered list item 1
+- Unordered list item 2
+  - Nested item
+  - Another nested item
+- Back to top level
+
+1. Ordered list item 1
+2. Ordered list item 2
+3. Ordered list item 3
+
+> This is a blockquote
+> It can span multiple lines
+
+---
+
+![Alt text](https://via.placeholder.com/150)`,
+
+            table: `# Table Example
+
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+| Cell 7   | Cell 8   | Cell 9   |
+
+## Table with Alignment
+
+| Left | Center | Right |
+|:-----|:------:|------:|
+| L1   | C1     | R1    |
+| L2   | C2     | R2    |
+| L3   | C3     | R3    |
+
+## Mixed Content Table
+
+| Feature | Supported | Notes |
+|---------|-----------|-------|
+| **Bold** | ✅ | Works in tables |
+| *Italic* | ✅ | Also works |
+| \`Code\` | ✅ | Inline code too |`,
+
+            complex: `# Complex Markdown Example
+
+## Code Blocks
+
+\`\`\`javascript
+function quikdown(markdown) {
+    // Parse markdown to HTML
+    return html;
+}
+\`\`\`
+
+\`\`\`python
+def process_data(data):
+    """Process the data"""
+    return [x * 2 for x in data]
+\`\`\`
+
+## Nested Lists
+
+1. First level
+   1. Second level
+      - Mixed bullet
+      - Another bullet
+   2. Back to numbered
+2. First level again
+   - Can mix styles
+   - At any level
+
+## Combined Formatting
+
+This paragraph has ***bold and italic***, along with ~~**bold strikethrough**~~.
+
+You can have \`code\` inside **bold text with \`more code\` inside**.
+
+## Multiple Paragraphs
+
+First paragraph with some text.
+
+Second paragraph with more text.
+This line has two spaces at the end.  
+So it creates a line break.
+
+Third paragraph continues normally.`,
+
+            llm: `# Analysis Results
+
+Based on your request, I've analyzed the data and here are my findings:
+
+## Summary Statistics
+
+| Metric | Value | Change |
+|--------|-------|--------|
+| Total Users | 1,234 | +15% |
+| Active Sessions | 567 | +8% |
+| Conversion Rate | 3.2% | -0.5% |
+| Average Duration | 4:32 | +1:15 |
+
+## Key Findings
+
+1. **User Engagement** has increased significantly
+   - Page views up by 25%
+   - Session duration increased
+   - Bounce rate decreased to 35%
+
+2. **Performance Metrics**
+   - Load time: \`1.2s\` (improved from \`2.1s\`)
+   - API response: \`<100ms\` for 95% of requests
+   - Error rate: \`0.01%\`
+
+## Code Implementation
+
+Here's the suggested implementation:
+
+\`\`\`python
+import pandas as pd
+import numpy as np
+
+def analyze_metrics(data):
+    """
+    Analyze user metrics from the dataset
+    """
+    summary = {
+        'mean': data.mean(),
+        'median': data.median(),
+        'std': data.std()
+    }
+    return summary
+\`\`\`
+
+## Recommendations
+
+> **Important**: These changes should be implemented gradually to monitor impact.
+
+- Implement A/B testing for the new feature
+- Monitor performance metrics closely
+- Consider scaling infrastructure if growth continues
+
+---
+
+*Generated analysis - Last updated: 2024-01-15*`
+        };
+        
+        window.loadExample = function(type) {
+            input.value = examples[type] || '';
+            render();
+            updateStats();
+        };
+        
+        window.copyHtml = function() {
+            const html = output.innerHTML;
+            navigator.clipboard.writeText(html).then(() => {
+                alert('HTML copied to clipboard!');
+            });
+        };
+        
+        // Load basic example on start
+        loadExample('basic');
+        });
+    </script>
+</body>
+</html>

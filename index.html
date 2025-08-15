@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuikChat - Zero-dependency JavaScript Chat Widget - QuikChat Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1>QuikDown</h1>
+<p>A lightweight, fast markdown parser with built-in XSS protection and plugin support. QuikDown provides a secure, extensible markdown-to-HTML converter that works in both browser and Node.js environments.</p>
+<h2>Features</h2>
+<ul>
+<li>🚀 <strong>Lightweight</strong> - ~200 lines of focused code</li>
+<li>🔒 <strong>Secure by default</strong> - Built-in XSS protection</li>
+<li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes</li>
+<li>🔌 <strong>Plugin system</strong> - Extensible fence block handlers</li>
+<li>📦 <strong>Zero dependencies</strong> - No external libraries required</li>
+<li>🌐 <strong>Universal</strong> - Works in browsers and Node.js</li>
+<li>⚡ <strong>Fast</strong> - Optimized regex-based parsing</li>
+<li>📝 <strong>CommonMark subset</strong> - Supports essential markdown features</li>
+</ul>
+<h2>Installation</h2>
+<pre><code class="language-bash">npm install quikdown
+</code></pre>
+<p>Or via CDN:</p>
+<pre><code class="language-html">&lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown.umd.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h2>Quick Start</h2>
+<h3>Basic Usage</h3>
+<pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
+
+const markdown = &#39;# Hello World\n\nThis is **bold** text.&#39;;
+const html = quikdown(markdown);
+console.log(html);
+// Output: &lt;h1&gt;Hello World&lt;/h1&gt;&lt;p&gt;This is &lt;strong&gt;bold&lt;/strong&gt; text.&lt;/p&gt;
+</code></pre>
+<h3>With Options</h3>
+<pre><code class="language-javascript">const html = quikdown(markdown, {
+    inline_styles: true,  // Use inline styles instead of classes
+    fence_plugin: myFenceHandler  // Custom code fence handler
+});
+</code></pre>
+<h2>Supported Markdown</h2>
+<p>QuikDown supports a practical subset of CommonMark:</p>
+<h3>Text Formatting</h3>
+<ul>
+<li><strong>Bold</strong>: <code>**text**</code> or <code>__text__</code></li>
+<li><em>Italic</em>: <code>*text*</code> or <code>_text_</code></li>
+<li><del>Strikethrough</del>: <code>~~text~~</code></li>
+<li><code>Code</code>: <code>`code`</code></li>
+</ul>
+<h3>Headings</h3>
+<pre><code class="language-markdown"># H1 Heading
+## H2 Heading
+### H3 Heading
+#### H4 Heading
+##### H5 Heading
+###### H6 Heading
+</code></pre>
+<h3>Lists</h3>
+<p>Unordered:</p>
+<pre><code class="language-markdown">- Item 1
+- Item 2
+  - Nested item
+* Also works with asterisks
+</code></pre>
+<p>Ordered:</p>
+<pre><code class="language-markdown">1. First item
+2. Second item
+   1. Nested item
+</code></pre>
+<h3>Links and Images</h3>
+<pre><code class="language-markdown">[Link text](https://example.com)
+![Alt text](image.jpg)
+</code></pre>
+<h3>Code Blocks</h3>
+<pre><code class="language-markdown">```javascript
+console.log(&#39;Hello, world!&#39;);
+```
+</code></pre>
+<h3>Tables</h3>
+<pre><code class="language-markdown">| Header 1 | Header 2 |
+|----------|----------|
+| Cell 1   | Cell 2   |
+| Cell 3   | Cell 4   |
+</code></pre>
+<h3>Other Elements</h3>
+<ul>
+<li><strong>Blockquotes</strong>: <code>&gt; Quote text</code></li>
+<li><strong>Horizontal rules</strong>: <code>---</code> or <code>***</code> or <code>___</code></li>
+<li><strong>Line breaks</strong>: Two spaces at end of line or <code>&lt;br&gt;</code></li>
+</ul>
+<h2>Configuration Options</h2>
+<h3><code>inline_styles</code> (boolean)</h3>
+<p>When <code>true</code>, uses inline styles for formatting. When <code>false</code>, uses CSS classes.</p>
+<pre><code class="language-javascript">// With inline_styles: true
+quikdown(&#39;**bold**&#39;, { inline_styles: true });
+// Output: &lt;strong style=&quot;font-weight: bold;&quot;&gt;bold&lt;/strong&gt;
+
+// With inline_styles: false (default)
+quikdown(&#39;**bold**&#39;, { inline_styles: false });
+// Output: &lt;strong&gt;bold&lt;/strong&gt;
+</code></pre>
+<h3><code>fence_plugin</code> (function)</h3>
+<p>Custom handler for fenced code blocks. Useful for syntax highlighting or diagrams.</p>
+<pre><code class="language-javascript">function fencePlugin(code, language) {
+    if (language === &#39;mermaid&#39;) {
+        return `&lt;div class=&quot;mermaid&quot;&gt;${code}&lt;/div&gt;`;
+    }
+    // Return undefined to use default handling
+}
+
+const html = quikdown(markdown, { fence_plugin: fencePlugin });
+</code></pre>
+<h2>Plugin System</h2>
+<h3>Creating a Fence Plugin</h3>
+<p>Fence plugins allow you to customize how code blocks are rendered:</p>
+<pre><code class="language-javascript">function myFencePlugin(code, language) {
+    // Handle specific languages
+    if (language === &#39;graph&#39;) {
+        return renderGraph(code);
+    }
+    
+    // Add syntax highlighting
+    if (language &amp;&amp; hljs.getLanguage(language)) {
+        const highlighted = hljs.highlight(code, { language }).value;
+        return `&lt;pre&gt;&lt;code class=&quot;language-${language}&quot;&gt;${highlighted}&lt;/code&gt;&lt;/pre&gt;`;
+    }
+    
+    // Return undefined for default handling
+    return undefined;
+}
+</code></pre>
+<h3>Example: Mermaid Diagrams</h3>
+<pre><code class="language-javascript">function mermaidPlugin(code, language) {
+    if (language === &#39;mermaid&#39;) {
+        const id = &#39;mermaid-&#39; + Math.random().toString(36).substr(2, 9);
+        // Render with mermaid.js after DOM update
+        setTimeout(() =&gt; {
+            mermaid.render(id + &#39;-svg&#39;, code).then(result =&gt; {
+                document.getElementById(id).innerHTML = result.svg;
+            });
+        }, 0);
+        return `&lt;div id=&quot;${id}&quot; class=&quot;mermaid&quot;&gt;Loading diagram...&lt;/div&gt;`;
+    }
+}
+
+const html = quikdown(markdownWithMermaid, { 
+    fence_plugin: mermaidPlugin 
+});
+</code></pre>
+<h2>Security</h2>
+<p>QuikDown includes built-in XSS protection:</p>
+<ul>
+<li>All HTML tags in markdown are escaped by default</li>
+<li>Attributes are sanitized</li>
+<li>JavaScript URLs are blocked</li>
+<li>Only safe markdown constructs are converted to HTML</li>
+</ul>
+<pre><code class="language-javascript">const unsafe = &#39;&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; **bold**&#39;;
+const safe = quikdown(unsafe);
+// Output: &amp;lt;script&amp;gt;alert(&quot;XSS&quot;)&amp;lt;/script&amp;gt; &lt;strong&gt;bold&lt;/strong&gt;
+</code></pre>
+<h2>API Reference</h2>
+<h3><code>quikdown(markdown, options?)</code></h3>
+<p>Main function to convert markdown to HTML.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>markdown</code> (string): The markdown text to convert</li>
+<li><code>options</code> (object, optional):<ul>
+<li><code>inline_styles</code> (boolean): Use inline styles instead of classes</li>
+<li><code>fence_plugin</code> (function): Custom fence block handler</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> HTML string</p>
+<h3><code>quikdown.configure(options)</code></h3>
+<p>Creates a configured instance of the parser.</p>
+<pre><code class="language-javascript">const myParser = quikdown.configure({
+    inline_styles: true,
+    fence_plugin: myPlugin
+});
+
+// Use the configured parser
+const html = myParser(markdown);
+</code></pre>
+<h3><code>quikdown.emitStyles()</code></h3>
+<p>Returns CSS styles for QuikDown HTML output when not using inline styles.</p>
+<pre><code class="language-javascript">const styles = quikdown.emitStyles();
+// Add to your stylesheet or &lt;style&gt; tag
+</code></pre>
+<h2>Browser Usage</h2>
+<h3>Via Script Tag</h3>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown.umd.js&quot;&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id=&quot;output&quot;&gt;&lt;/div&gt;
+    &lt;script&gt;
+        const markdown = &#39;# Hello QuikDown!&#39;;
+        const html = quikdown(markdown, { inline_styles: true });
+        document.getElementById(&#39;output&#39;).innerHTML = html;
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h3>ES Modules</h3>
+<pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
+
+const html = quikdown(&#39;**Hello** world!&#39;);
+document.body.innerHTML = html;
+</code></pre>
+<h2>Node.js Usage</h2>
+<pre><code class="language-javascript">const quikdown = require(&#39;quikdown&#39;);
+
+const markdown = &#39;# Server-side Markdown&#39;;
+const html = quikdown(markdown);
+
+// Use in Express, etc.
+res.send(html);
+</code></pre>
+<h2>Performance</h2>
+<p>QuikDown is optimized for speed:</p>
+<ul>
+<li>Single-pass regex parsing</li>
+<li>Minimal memory allocation</li>
+<li>No AST generation</li>
+<li>Efficient string operations</li>
+</ul>
+<p>Benchmarks show QuikDown performs comparably to larger markdown parsers while maintaining a much smaller footprint.</p>
+<h2>Limitations</h2>
+<p>QuikDown intentionally doesn&#39;t support:</p>
+<ul>
+<li>HTML blocks (for security)</li>
+<li>Reference-style links</li>
+<li>Footnotes</li>
+<li>Definition lists</li>
+<li>Complex table alignment</li>
+<li>Nested blockquotes with different markers</li>
+</ul>
+<p>These omissions keep the parser small, fast, and secure.</p>
+<h2>Contributing</h2>
+<p>Contributions are welcome! Please feel free to submit a Pull Request.</p>
+<ol>
+<li>Fork the repository</li>
+<li>Create your feature branch (<code>git checkout -b feature/AmazingFeature</code>)</li>
+<li>Commit your changes (<code>git commit -m &#39;Add some AmazingFeature&#39;</code>)</li>
+<li>Push to the branch (<code>git push origin feature/AmazingFeature</code>)</li>
+<li>Open a Pull Request</li>
+</ol>
+<h2>Testing</h2>
+<pre><code class="language-bash"># Run tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+</code></pre>
+<h2>License</h2>
+<p>MIT License - see <a href="LICENSE">LICENSE</a> file for details.</p>
+<h2>Acknowledgments</h2>
+<ul>
+<li>Inspired by the simplicity of early markdown parsers</li>
+<li>Built for the <a href="https://github.com/deftio/quikchat">QuikChat</a> project</li>
+<li>CommonMark spec for markdown standardization</li>
+</ul>
+<h2>Comparison with Other Parsers</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>QuikDown</th>
+<th>Marked</th>
+<th>Showdown</th>
+<th>Markdown-it</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Size</td>
+<td>~3KB</td>
+<td>~30KB</td>
+<td>~40KB</td>
+<td>~100KB</td>
+</tr>
+<tr>
+<td>Dependencies</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>3+</td>
+</tr>
+<tr>
+<td>XSS Protection</td>
+<td>✅ Built-in</td>
+<td>⚠️ Optional</td>
+<td>⚠️ Optional</td>
+<td>⚠️ Optional</td>
+</tr>
+<tr>
+<td>Plugin System</td>
+<td>✅ Simple</td>
+<td>✅ Complex</td>
+<td>✅ Complex</td>
+<td>✅ Complex</td>
+</tr>
+<tr>
+<td>Speed</td>
+<td>Fast</td>
+<td>Very Fast</td>
+<td>Fast</td>
+<td>Very Fast</td>
+</tr>
+<tr>
+<td>CommonMark</td>
+<td>Subset</td>
+<td>Full</td>
+<td>Full</td>
+<td>Full</td>
+</tr>
+</tbody></table>
+<p>Choose QuikDown when you need:</p>
+<ul>
+<li>A lightweight solution</li>
+<li>Built-in security</li>
+<li>Simple plugin system</li>
+<li>Zero dependencies</li>
+<li>Browser-first design</li>
+</ul>
+<h2>Roadmap</h2>
+<ul>
+<li><input disabled="" type="checkbox"> TypeScript definitions</li>
+<li><input disabled="" type="checkbox"> More plugin examples</li>
+<li><input disabled="" type="checkbox"> Performance benchmarks</li>
+<li><input disabled="" type="checkbox"> Extended CommonMark support (optional)</li>
+<li><input disabled="" type="checkbox"> Streaming parser mode</li>
+</ul>
+<h2>Support</h2>
+<ul>
+<li>📧 Email: <a href="mailto:support@deftio.com">support@deftio.com</a></li>
+<li>🐛 Issues: <a href="https://github.com/deftio/quikdown/issues">GitHub Issues</a></li>
+<li>💬 Discussions: <a href="https://github.com/deftio/quikdown/discussions">GitHub Discussions</a></li>
+</ul>
+
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuikDown Styles Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem 20px;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+        
+        .main-container {
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            width: 100%;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .test-section h2 {
+            color: #007acc;
+            margin-top: 0;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        
+        .control-panel {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #005a99;
+        }
+        
+        button.active {
+            background: #28a745;
+        }
+        
+        .output {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+        
+        .dark-theme {
+            background: #1e1e1e;
+            color: #d0d0d0;
+        }
+        
+        .code-display {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+        }
+        
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #007acc;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+    
+    <!-- QuikDown CSS files -->
+    <link id="external-css" rel="stylesheet" href="../dist/quikdown.lite.css" disabled>
+    
+    <!-- QuikDown script -->
+    <script src="../dist/quikdown.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>QuikDown Styles Test</h1>
+            <div class="subtitle">Interactive test page for QuikDown's three CSS styling approaches</div>
+        </div>
+    </header>
+    
+    <div class="main-container">
+        <div class="test-section">
+            <h2>How QuikDown Styles Work</h2>
+            <p style="line-height: 1.6; color: #444;">
+                QuikDown is a markdown parser that converts markdown text into HTML. To make the HTML look good, QuikDown offers three different ways to apply styles:
+            </p>
+            <ul style="line-height: 1.8; color: #555; margin: 15px 0;">
+                <li><strong>External CSS Classes (Default):</strong> QuikDown adds class names like <code>quikdown-h1</code> to HTML elements. You include a CSS file (quikdown.lite.css or quikdown.dark.css) to style these classes. This is the most flexible approach and keeps your HTML clean.</li>
+                <li><strong>Inline Styles:</strong> QuikDown adds style attributes directly to each HTML element. This creates self-contained HTML that looks good without any external CSS files. Perfect for emails or isolated content.</li>
+                <li><strong>Programmatic CSS:</strong> QuikDown can generate the CSS rules as a string that you can inject into your page dynamically. Useful when you want to control when and how styles are loaded.</li>
+            </ul>
+            <p style="line-height: 1.6; color: #444;">
+                Use the buttons below to see each approach in action. The same markdown content will be styled differently based on which method you choose.
+            </p>
+        </div>
+        
+        <div class="test-section">
+        <h2>Test Markdown Content</h2>
+        <textarea id="markdown-input" style="width: 100%; height: 200px; font-family: monospace;">
+# Heading 1
+## Heading 2
+### Heading 3
+
+This is a paragraph with **bold text**, *italic text*, and ~~strikethrough~~.
+
+> This is a blockquote with some text inside it.
+
+Here's a [link to Google](https://www.google.com) and some `inline code`.
+
+```javascript
+// Code block example
+function hello() {
+    console.log("Hello World!");
+}
+```
+
+- Unordered list item 1
+- Unordered list item 2
+  - Nested item
+
+1. Ordered list item 1
+2. Ordered list item 2
+
+| Header 1 | Header 2 | Header 3 |
+|----------|:--------:|---------:|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+
+---
+
+![Example Image](https://via.placeholder.com/150)
+        </textarea>
+    </div>
+    
+    <div class="test-section">
+        <h2>1. Classes with External CSS</h2>
+        <div class="control-panel">
+            <button onclick="testExternalCSS()">Test with quikdown.lite.css</button>
+            <button onclick="testDarkCSS()">Test with quikdown.dark.css</button>
+            <button onclick="disableExternalCSS()">Disable External CSS</button>
+        </div>
+        <div class="info-box">
+            <strong>Usage:</strong> <code>quikdown(markdown)</code> + external CSS file
+        </div>
+        <div class="code-display" id="external-code">
+// HTML
+&lt;link rel="stylesheet" href="quikdown.lite.css"&gt;
+
+// JavaScript
+const html = quikdown(markdown);
+        </div>
+        <div id="external-output" class="output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Inline Styles</h2>
+        <div class="control-panel">
+            <button onclick="testInlineStyles()">Test Inline Styles</button>
+        </div>
+        <div class="info-box">
+            <strong>Usage:</strong> <code>quikdown(markdown, { inline_styles: true })</code>
+        </div>
+        <div class="code-display">
+const html = quikdown(markdown, { inline_styles: true });
+        </div>
+        <div id="inline-output" class="output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Programmatic CSS Generation</h2>
+        <div class="control-panel">
+            <button onclick="testEmitStyles()">Generate & Apply CSS</button>
+            <button onclick="removeEmittedStyles()">Remove Generated CSS</button>
+        </div>
+        <div class="info-box">
+            <strong>Usage:</strong> <code>quikdown.emitStyles()</code> to generate CSS
+        </div>
+        <div class="code-display">
+// Generate CSS and inject into page
+const css = quikdown.emitStyles();
+const styleTag = document.createElement('style');
+styleTag.textContent = css;
+document.head.appendChild(styleTag);
+
+// Then use normally
+const html = quikdown(markdown);
+        </div>
+        <div id="emit-output" class="output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Configure Helper</h2>
+        <div class="control-panel">
+            <button onclick="testConfigure()">Test Configure with Inline Styles</button>
+            <button onclick="testConfigureClasses()">Test Configure with Classes</button>
+        </div>
+        <div class="info-box">
+            <strong>Usage:</strong> <code>quikdown.configure(options)</code> for reusable parser
+        </div>
+        <div class="code-display">
+// Create configured parser
+const mdParser = quikdown.configure({ inline_styles: true });
+
+// Use multiple times
+const html1 = mdParser(markdown1);
+const html2 = mdParser(markdown2);
+        </div>
+        <div id="configure-output" class="output"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Raw Output (No Styles)</h2>
+        <div class="control-panel">
+            <button onclick="testRawOutput()">Test Raw Output</button>
+        </div>
+        <div class="info-box">
+            <strong>Usage:</strong> <code>quikdown(markdown)</code> without any CSS
+        </div>
+        <div id="raw-output" class="output"></div>
+    </div>
+    
+    <script>
+        function getMarkdown() {
+            return document.getElementById('markdown-input').value;
+        }
+        
+        function testExternalCSS() {
+            const link = document.getElementById('external-css');
+            link.href = '../dist/quikdown.lite.css';
+            link.disabled = false;
+            
+            const html = quikdown(getMarkdown());
+            document.getElementById('external-output').innerHTML = html;
+            document.getElementById('external-code').innerHTML = `// Using: quikdown.lite.css
+&lt;link rel="stylesheet" href="quikdown.lite.css"&gt;
+
+const html = quikdown(markdown);`;
+        }
+        
+        function testDarkCSS() {
+            const link = document.getElementById('external-css');
+            link.href = '../dist/quikdown.dark.css';
+            link.disabled = false;
+            
+            const outputDiv = document.getElementById('external-output');
+            outputDiv.className = 'output dark-theme';
+            outputDiv.innerHTML = quikdown(getMarkdown());
+            document.getElementById('external-code').innerHTML = `// Using: quikdown.dark.css
+&lt;link rel="stylesheet" href="quikdown.dark.css"&gt;
+
+const html = quikdown(markdown);`;
+        }
+        
+        function disableExternalCSS() {
+            document.getElementById('external-css').disabled = true;
+            document.getElementById('external-output').className = 'output';
+            document.getElementById('external-output').innerHTML = quikdown(getMarkdown());
+        }
+        
+        function testInlineStyles() {
+            const html = quikdown(getMarkdown(), { inline_styles: true });
+            document.getElementById('inline-output').innerHTML = html;
+        }
+        
+        let emittedStyleTag = null;
+        
+        function testEmitStyles() {
+            if (!emittedStyleTag) {
+                const css = quikdown.emitStyles();
+                emittedStyleTag = document.createElement('style');
+                emittedStyleTag.id = 'emitted-styles';
+                emittedStyleTag.textContent = css;
+                document.head.appendChild(emittedStyleTag);
+            }
+            
+            const html = quikdown(getMarkdown());
+            document.getElementById('emit-output').innerHTML = html;
+        }
+        
+        function removeEmittedStyles() {
+            if (emittedStyleTag) {
+                emittedStyleTag.remove();
+                emittedStyleTag = null;
+            }
+            document.getElementById('emit-output').innerHTML = quikdown(getMarkdown());
+        }
+        
+        function testConfigure() {
+            const mdParser = quikdown.configure({ inline_styles: true });
+            const html = mdParser(getMarkdown());
+            document.getElementById('configure-output').innerHTML = html;
+        }
+        
+        function testConfigureClasses() {
+            // Make sure we have CSS loaded for classes to work
+            testEmitStyles();
+            
+            const mdParser = quikdown.configure({ inline_styles: false });
+            const html = mdParser(getMarkdown());
+            document.getElementById('configure-output').innerHTML = html;
+        }
+        
+        function testRawOutput() {
+            // Disable external CSS and don't use inline styles
+            document.getElementById('external-css').disabled = true;
+            if (emittedStyleTag) {
+                emittedStyleTag.disabled = true;
+            }
+            
+            const html = quikdown(getMarkdown());
+            document.getElementById('raw-output').innerHTML = html;
+            
+            // Re-enable emitted styles if they exist
+            setTimeout(() => {
+                if (emittedStyleTag) {
+                    emittedStyleTag.disabled = false;
+                }
+            }, 100);
+        }
+        
+        // Test on load
+        window.addEventListener('load', () => {
+            // Show initial inline styles example
+            testInlineStyles();
+        });
+    </script>
+    </div> <!-- end main-container -->
+</body>
+</html>

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown Fence Plugin Test - Highlight.js & Mermaid</title>
+    
+    <!-- Highlight.js CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <!-- Mermaid CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-top: 0.25rem;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            overflow: hidden;
+        }
+        
+        .panel {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            padding: 1rem;
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+        
+        #markdown-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            padding: 1rem;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            line-height: 1.6;
+        }
+        
+        #rendered-output {
+            padding: 1rem;
+            line-height: 1.6;
+        }
+        
+        /* Rendered content styles */
+        #rendered-output h1 { 
+            font-size: 2em; 
+            margin: 0.5em 0 0.15em 0; 
+            font-weight: 600;
+        }
+        #rendered-output h2 { 
+            font-size: 1.5em; 
+            margin: 0.67em 0 0.25em 0;
+            font-weight: 600;
+        }
+        #rendered-output h3 { 
+            font-size: 1.25em; 
+            margin: 0.67em 0 0.25em 0; 
+            font-weight: 600; 
+        }
+        
+        #rendered-output p { margin: 1em 0; }
+        #rendered-output strong { font-weight: bold; }
+        #rendered-output em { font-style: italic; }
+        #rendered-output del { text-decoration: line-through; opacity: 0.7; }
+        
+        #rendered-output code:not(.hljs) {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        #rendered-output pre {
+            margin: 1em 0;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        
+        #rendered-output pre code {
+            background: none;
+            padding: 1rem;
+            display: block;
+        }
+        
+        /* Highlight.js overrides */
+        .hljs {
+            background: #f6f8fa;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+        
+        /* Mermaid diagram styles */
+        .mermaid {
+            text-align: center;
+            margin: 1em 0;
+            background: #f9f9f9;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+        
+        #rendered-output blockquote {
+            border-left: 4px solid #ddd;
+            padding-left: 1rem;
+            margin: 1em 0;
+            color: #666;
+        }
+        
+        #rendered-output ul, #rendered-output ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+        
+        #rendered-output li {
+            margin: 0.25em 0;
+        }
+        
+        #rendered-output table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1em 0;
+        }
+        
+        #rendered-output th, #rendered-output td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        
+        #rendered-output th {
+            background: #f4f4f4;
+            font-weight: bold;
+        }
+        
+        #rendered-output hr {
+            border: none;
+            border-top: 2px solid #eee;
+            margin: 2em 0;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        button {
+            padding: 0.5rem 1rem;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .stats {
+            padding: 0.5rem 1rem;
+            background: #ecf0f1;
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            border-top: 1px solid #ddd;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .error {
+            color: #e74c3c;
+            padding: 1rem;
+            background: #ffe6e6;
+            border-left: 4px solid #e74c3c;
+            margin: 1rem;
+        }
+        
+        .notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 0.75rem;
+            margin: 1rem;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Quikdown Fence Plugin Test</h1>
+        <div class="subtitle">Testing custom fence handlers with Highlight.js and Mermaid</div>
+    </header>
+    
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <span>Markdown Input</span>
+                <div class="test-buttons">
+                    <button onclick="loadExample('code')">Code Highlighting</button>
+                    <button onclick="loadExample('mermaid')">Mermaid Diagrams</button>
+                    <button onclick="loadExample('mixed')">Mixed Content</button>
+                </div>
+            </div>
+            <div class="panel-content">
+                <textarea id="markdown-input" placeholder="Enter markdown here..."></textarea>
+            </div>
+            <div class="stats">
+                <span>Characters: <span id="char-count">0</span></span>
+                <span>Lines: <span id="line-count">0</span></span>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">
+                <span>Rendered Output</span>
+                <button onclick="copyHtml()">Copy HTML</button>
+            </div>
+            <div class="panel-content">
+                <div id="rendered-output"></div>
+            </div>
+            <div class="stats">
+                <span>Parse time: <span id="parse-time">0</span>ms</span>
+                <span>Plugins used: <span id="plugins-used">none</span></span>
+            </div>
+        </div>
+    </div>
+    
+    <script src="../dist/quikdown.umd.min.js"></script>
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+            }
+        });
+        
+        // Track which plugins were used
+        let pluginsUsed = new Set();
+        
+        // Custom fence plugin with multiple handlers
+        const fencePlugin = (content, lang) => {
+            // Escape HTML for security
+            const escapeHtml = (text) => {
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                };
+                return text.replace(/[&<>"']/g, m => map[m]);
+            };
+            
+            // Dispatch to different handlers based on language
+            switch(lang) {
+                case 'mermaid':
+                    pluginsUsed.add('mermaid');
+                    // Generate unique ID for this diagram
+                    const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                    // Store the content to render after DOM update
+                    setTimeout(() => {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            mermaid.render(id + '-svg', content).then(result => {
+                                element.innerHTML = result.svg;
+                            }).catch(err => {
+                                element.innerHTML = `<div class="error">Mermaid error: ${err.message}</div>`;
+                            });
+                        }
+                    }, 0);
+                    return `<div class="mermaid" id="${id}">Loading diagram...</div>`;
+                
+                case 'javascript':
+                case 'python':
+                case 'java':
+                case 'cpp':
+                case 'c':
+                case 'html':
+                case 'css':
+                case 'json':
+                case 'yaml':
+                case 'xml':
+                case 'sql':
+                case 'bash':
+                case 'sh':
+                case 'typescript':
+                case 'rust':
+                case 'go':
+                case 'ruby':
+                case 'php':
+                    pluginsUsed.add('highlight.js');
+                    const escaped = escapeHtml(content);
+                    // Highlight.js will auto-detect and highlight after render
+                    setTimeout(() => {
+                        document.querySelectorAll('pre code.language-' + lang).forEach((block) => {
+                            if (!block.classList.contains('hljs')) {
+                                hljs.highlightElement(block);
+                            }
+                        });
+                    }, 0);
+                    return `<pre><code class="language-${lang}">${escaped}</code></pre>`;
+                
+                default:
+                    // Unknown language, use default code block
+                    if (lang) {
+                        pluginsUsed.add('default');
+                        return `<pre><code class="language-${lang}">${escapeHtml(content)}</code></pre>`;
+                    } else {
+                        pluginsUsed.add('default');
+                        return `<pre><code>${escapeHtml(content)}</code></pre>`;
+                    }
+            }
+        };
+        
+        // DOM elements
+        const input = document.getElementById('markdown-input');
+        const output = document.getElementById('rendered-output');
+        const charCount = document.getElementById('char-count');
+        const lineCount = document.getElementById('line-count');
+        const parseTime = document.getElementById('parse-time');
+        const pluginsUsedEl = document.getElementById('plugins-used');
+        
+        // Update on input
+        let renderTimeout;
+        input.addEventListener('input', () => {
+            clearTimeout(renderTimeout);
+            renderTimeout = setTimeout(render, 150);
+            updateStats();
+        });
+        
+        function render() {
+            const markdown = input.value;
+            pluginsUsed.clear();
+            const startTime = performance.now();
+            
+            try {
+                // Use quikdown with our custom fence plugin
+                const html = quikdown(markdown, { fence_plugin: fencePlugin });
+                const endTime = performance.now();
+                
+                output.innerHTML = html;
+                parseTime.textContent = (endTime - startTime).toFixed(2);
+                
+                // Update plugins used
+                if (pluginsUsed.size > 0) {
+                    pluginsUsedEl.textContent = Array.from(pluginsUsed).join(', ');
+                } else {
+                    pluginsUsedEl.textContent = 'none';
+                }
+                
+            } catch (error) {
+                output.innerHTML = `<div class="error">Parse Error: ${error.message}</div>`;
+            }
+        }
+        
+        function updateStats() {
+            charCount.textContent = input.value.length;
+            lineCount.textContent = input.value.split('\n').length;
+        }
+        
+        // Examples
+        const examples = {
+            code: `# Code Highlighting Example
+
+## JavaScript
+\`\`\`javascript
+// Fibonacci function with memoization
+const fibonacci = (function() {
+    const cache = {};
+    return function fib(n) {
+        if (n in cache) return cache[n];
+        if (n <= 1) return n;
+        return cache[n] = fib(n - 1) + fib(n - 2);
+    };
+})();
+
+console.log(fibonacci(40)); // Fast even for large numbers
+\`\`\`
+
+## Python
+\`\`\`python
+import asyncio
+from typing import List, Optional
+
+async def fetch_data(url: str) -> Optional[dict]:
+    """Fetch data from URL asynchronously"""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                return await response.json()
+    return None
+
+# Run async function
+data = asyncio.run(fetch_data("https://api.example.com"))
+\`\`\`
+
+## SQL
+\`\`\`sql
+SELECT 
+    u.name,
+    COUNT(o.id) as order_count,
+    SUM(o.total) as total_spent
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+WHERE o.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+GROUP BY u.id
+HAVING order_count > 5
+ORDER BY total_spent DESC;
+\`\`\``,
+
+            mermaid: `# Mermaid Diagrams
+
+## Flowchart
+\`\`\`mermaid
+flowchart TD
+    A[Start] --> B{Is it working?}
+    B -->|Yes| C[Great!]
+    B -->|No| D[Debug]
+    D --> E[Fix issues]
+    E --> B
+    C --> F[Deploy]
+    F --> G[End]
+\`\`\`
+
+## Sequence Diagram
+\`\`\`mermaid
+sequenceDiagram
+    participant U as User
+    participant C as Client
+    participant S as Server
+    participant D as Database
+    
+    U->>C: Click button
+    C->>S: HTTP Request
+    S->>D: Query data
+    D-->>S: Return results
+    S-->>C: JSON Response
+    C-->>U: Update UI
+\`\`\`
+
+## Git Graph
+\`\`\`mermaid
+gitGraph
+    commit
+    commit
+    branch develop
+    checkout develop
+    commit
+    commit
+    checkout main
+    merge develop
+    commit
+    branch feature
+    checkout feature
+    commit
+    commit
+    checkout main
+    merge feature
+\`\`\``,
+
+            mixed: `# Mixed Content Demo
+
+This example shows **various fence types** working together.
+
+## Code with Syntax Highlighting
+
+Here's a React component:
+
+\`\`\`javascript
+import React, { useState, useEffect } from 'react';
+
+function Timer() {
+    const [seconds, setSeconds] = useState(0);
+    
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setSeconds(s => s + 1);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+    
+    return <div>Elapsed: {seconds}s</div>;
+}
+\`\`\`
+
+## Process Flow
+
+\`\`\`mermaid
+graph LR
+    A[Write Code] --> B[Test]
+    B --> C{Tests Pass?}
+    C -->|Yes| D[Deploy]
+    C -->|No| E[Fix Bugs]
+    E --> B
+\`\`\`
+
+## Data Structure
+
+| Operation | Time Complexity | Space |
+|-----------|----------------|-------|
+| Insert    | O(log n)       | O(1)  |
+| Delete    | O(log n)       | O(1)  |
+| Search    | O(log n)       | O(1)  |
+| Traverse  | O(n)           | O(h)  |
+
+## Python Implementation
+
+\`\`\`python
+class BinaryTree:
+    def __init__(self, value):
+        self.value = value
+        self.left = None
+        self.right = None
+    
+    def insert(self, value):
+        if value < self.value:
+            if self.left:
+                self.left.insert(value)
+            else:
+                self.left = BinaryTree(value)
+        else:
+            if self.right:
+                self.right.insert(value)
+            else:
+                self.right = BinaryTree(value)
+\`\`\`
+
+## State Machine
+
+\`\`\`mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Loading : fetch()
+    Loading --> Success : 200 OK
+    Loading --> Error : Failed
+    Success --> Idle : reset()
+    Error --> Idle : retry()
+\`\`\`
+
+---
+
+*All examples rendered with custom fence plugins!*`
+        };
+        
+        window.loadExample = function(type) {
+            input.value = examples[type] || '';
+            render();
+            updateStats();
+        };
+        
+        window.copyHtml = function() {
+            const html = output.innerHTML;
+            navigator.clipboard.writeText(html).then(() => {
+                alert('HTML copied to clipboard!');
+            });
+        };
+        
+        // Load mixed example on start
+        loadExample('mixed');
+    </script>
+</body>
+</html>
