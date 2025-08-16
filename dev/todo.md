@@ -27,6 +27,26 @@ A small markdown to html parser with fence plugin support
 
 ## ✅ Recent Additions (Just Completed!)
 
+### New Features
+* ✅ **Task Lists Support** - GitHub-style checkboxes
+  - `- [ ]` for unchecked, `- [x]` for checked
+  - Disabled checkboxes for display only
+  - Works with nested lists
+  - ~300 bytes added
+
+### CI/CD & Release Automation
+* ✅ **GitHub Actions CI** - Automated testing pipeline
+  - Tests on Node 16.x, 18.x, 20.x
+  - Coverage reporting to Codecov
+  - Build verification
+* ✅ **NPM Publish Workflow** - Automated package publishing
+  - Triggered on release or manual dispatch
+  - Version management
+* ✅ **GitHub Release Workflow** - Automated releases
+  - Changelog generation
+  - Asset uploads (UMD, ESM, CJS bundles)
+  - Tag-based triggers
+
 ### Security Enhancements
 * ✅ Added URL sanitization to prevent XSS attacks
   - Blocks javascript:, data: (except data:image/*), vbscript: URLs
@@ -48,21 +68,21 @@ A small markdown to html parser with fence plugin support
 
 ## 📋 Todo
 
-### High Priority - Release & CI/CD:
-* [ ] Add GitHub Actions CI support
-  - Run tests on push/PR
-  - Check coverage thresholds
-  - Build all targets
-  - Run linting
-* [ ] Add GitHub release script
-  - Automate version tagging
-  - Generate release notes from commits
-  - Upload built artifacts
-* [ ] Add NPM release/publish support
-  - Update package.json metadata
-  - Add .npmignore file
-  - Create publish workflow
-  - Add README badges
+### High Priority - Documentation & Release:
+* [ ] Update README with new features
+  - Task list examples
+  - CI/CD badges
+  - NPM installation instructions
+* [ ] Update package.json metadata for NPM
+  - Repository URL
+  - Keywords
+  - Author information
+* [ ] Create CHANGELOG.md
+* [ ] Add README badges
+  - CI status
+  - NPM version
+  - Coverage percentage
+  - Bundle size
 
 ### List Improvements:
 * [ ] Treat tabs as 4 spaces
@@ -130,8 +150,16 @@ These items go against the design philosophy:
 5. Browser-first - but Node.js compatible
 
 ### Current Stats:
-- Size: ~8.2KB minified (includes new features)
-- Test Coverage: 99.57% statements, 100% functions, 100% lines, 88.73% branches
+- Size: **8.7KB minified** (still under 10KB target!)
+- Test Coverage: 99.58% statements, 100% functions, 100% lines, 88.73% branches
+- Tests: 107 passing
 - Dependencies: 0
 - Browser Support: Modern browsers (2017+)
-- New Features: URL sanitization, autolinks, ~~~ fences, flexible tables
+- New Features: 
+  - ✅ Task lists
+  - ✅ URL sanitization
+  - ✅ Autolinks
+  - ✅ ~~~ fences
+  - ✅ Flexible tables
+  - ✅ Trailing # support
+- CI/CD: GitHub Actions ready

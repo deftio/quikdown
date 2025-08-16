@@ -464,6 +464,20 @@
                 const isOrdered = /^\d+\./.test(marker);
                 const listType = isOrdered ? 'ol' : 'ul';
                 
+                // Check for task list items
+                let listItemContent = content;
+                let taskListClass = '';
+                const taskMatch = content.match(/^\[([x ])\]\s+(.*)$/i);
+                if (taskMatch && !isOrdered) {
+                    const [, checked, taskContent] = taskMatch;
+                    const isChecked = checked.toLowerCase() === 'x';
+                    const checkboxAttr = inline_styles 
+                        ? ' style="margin-right: 0.5em"' 
+                        : ' class="quikdown-task-checkbox"';
+                    listItemContent = `<input type="checkbox"${checkboxAttr}${isChecked ? ' checked' : ''} disabled> ${taskContent}`;
+                    taskListClass = inline_styles ? ' style="list-style: none"' : ' class="quikdown-task-item"';
+                }
+                
                 // Close deeper levels
                 while (listStack.length > level + 1) {
                     const list = listStack.pop();
@@ -486,7 +500,8 @@
                     }
                 }
                 
-                result.push(`<li${getAttr('li')}>${content}</li>`);
+                const liAttr = taskListClass || getAttr('li');
+                result.push(`<li${liAttr}>${listItemContent}</li>`);
             } else {
                 // Not a list item, close all lists
                 while (listStack.length > 0) {
@@ -532,7 +547,9 @@
             del: 'text-decoration: line-through',
             ul: 'margin: 0.5em 0; padding-left: 2em',
             ol: 'margin: 0.5em 0; padding-left: 2em',
-            li: 'margin: 0.25em 0'
+            li: 'margin: 0.25em 0',
+            'task-item': 'list-style: none',
+            'task-checkbox': 'margin-right: 0.5em'
         };
         
         let css = '';

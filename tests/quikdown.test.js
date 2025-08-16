@@ -915,6 +915,69 @@ code3
         });
     });
     
+    describe('Task Lists', () => {
+        test('should support task list checkboxes', () => {
+            const unchecked = '- [ ] Unchecked task';
+            const checked = '- [x] Checked task';
+            const checkedUpper = '- [X] Also checked';
+            
+            const uncheckedResult = quikdown(unchecked);
+            expect(uncheckedResult).toContain('<input type="checkbox"');
+            expect(uncheckedResult).not.toContain(' checked');  // Note the space before checked
+            expect(uncheckedResult).toContain('disabled');
+            expect(uncheckedResult).toContain('Unchecked task');
+            
+            const checkedResult = quikdown(checked);
+            expect(checkedResult).toContain('<input type="checkbox"');
+            expect(checkedResult).toContain('checked');
+            expect(checkedResult).toContain('disabled');
+            expect(checkedResult).toContain('Checked task');
+            
+            const checkedUpperResult = quikdown(checkedUpper);
+            expect(checkedUpperResult).toContain('checked');
+        });
+        
+        test('should support mixed task and regular list items', () => {
+            const mixed = `- Regular item
+- [x] Completed task
+- [ ] Pending task
+- Another regular item`;
+            
+            const result = quikdown(mixed);
+            expect(result).toContain('Regular item');
+            expect(result).toContain('<input type="checkbox"');
+            expect(result).toContain('Completed task');
+            expect(result).toContain('Pending task');
+            expect(result).toContain('Another regular item');
+        });
+        
+        test('should not create task lists in ordered lists', () => {
+            const ordered = '1. [ ] This should not be a checkbox';
+            const result = quikdown(ordered);
+            expect(result).not.toContain('<input type="checkbox"');
+            expect(result).toContain('[ ] This should not be a checkbox');
+        });
+        
+        test('should handle task lists with inline styles', () => {
+            const task = '- [x] Task with styles';
+            const result = quikdown(task, { inline_styles: true });
+            expect(result).toContain('style="margin-right: 0.5em"');
+            expect(result).toContain('style="list-style: none"');
+        });
+        
+        test('should handle nested task lists', () => {
+            const nested = `- [x] Parent task
+  - [ ] Child task 1
+  - [x] Child task 2`;
+            
+            const result = quikdown(nested);
+            expect(result).toContain('Parent task');
+            expect(result).toContain('Child task 1');
+            expect(result).toContain('Child task 2');
+            expect((result.match(/<input type="checkbox"/g) || []).length).toBe(3);
+        });
+    });
+    
     describe('100% Coverage Tests', () => {
         test('should handle empty URL in sanitizeUrl', () => {
             // Empty URLs don't get parsed as links (correct behavior)

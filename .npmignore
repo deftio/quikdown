@@ -1,0 +1,33 @@
+# Source and development files
+src/quikdown_version.js
+dev/
+examples/
+tests/
+coverage/
+.github/
+.claude/
+
+# Configuration files
+.babelrc
+.gitignore
+rollup.config.js
+jest.config.js
+*.yml
+*.yaml
+
+# Build tools
+tools/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Keep only dist/ and essential files
+# package.json, README.md, LICENSE.txt are included by default
