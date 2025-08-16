@@ -1,13 +1,13 @@
 /**
  * quikdown - Lightweight Markdown Parser
- * @version 2.0
+ * @version 1.0.1
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
 // Auto-generated version file - DO NOT EDIT MANUALLY
 // This file is automatically updated by tools/updateVersion.js
 
-const quikdownVersion = "2.0";
+const quikdownVersion = "1.0.1";
 
 /**
  * quikdown - A minimal markdown parser optimized for chat/LLM output
