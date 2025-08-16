@@ -69,7 +69,7 @@ A small markdown to html parser with fence plugin support
 ## 📋 Todo
 
 ### High Priority - Documentation & Release:
-* [ ] Update README with new features
+* [x] Update README with new features
   - Task list examples
   - CI/CD badges
   - NPM installation instructions
@@ -83,6 +83,10 @@ A small markdown to html parser with fence plugin support
   - NPM version
   - Coverage percentage
   - Bundle size
+
+### Reduce Code Size (no feature chages)
+* [ ] look in code to remove redundant constructs like html.replace = html.replace ... etc
+* [ ] single global built-in styles dictionary
 
 ### List Improvements:
 * [ ] Treat tabs as 4 spaces
