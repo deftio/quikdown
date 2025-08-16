@@ -28,14 +28,18 @@ function quikdown(markdown, options = {}) {
     
     const { fence_plugin, inline_styles = false } = options;
 
-    // Style definitions for elements
+    // Style definitions - deduplicated to save space
+    const headingStyle = 'margin-top: 0.5em; margin-bottom: 0.3em';
+    const listStyle = 'margin: 0.5em 0; padding-left: 2em';
+    const cellBorder = 'border: 1px solid #ddd; padding: 8px';
+    
     const styles = {
-        h1: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        h2: 'margin-top: 0.5em; margin-bottom: 0.3em', 
-        h3: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        h4: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        h5: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        h6: 'margin-top: 0.5em; margin-bottom: 0.3em',
+        h1: headingStyle,
+        h2: headingStyle,
+        h3: headingStyle,
+        h4: headingStyle,
+        h5: headingStyle,
+        h6: headingStyle,
         pre: 'background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto',
         code: 'background: #f0f0f0; padding: 2px 4px; border-radius: 3px',
         blockquote: 'border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em; color: #666',
@@ -43,16 +47,16 @@ function quikdown(markdown, options = {}) {
         thead: '',
         tbody: '',
         tr: '',
-        th: 'border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold',
-        td: 'border: 1px solid #ddd; padding: 8px; text-align: left',
+        th: cellBorder + '; background-color: #f2f2f2; font-weight: bold',
+        td: cellBorder + '; text-align: left',
         hr: 'border: none; border-top: 1px solid #ddd; margin: 1em 0',
         img: 'max-width: 100%; height: auto',
         a: 'color: #0066cc; text-decoration: underline',
         strong: 'font-weight: bold',
         em: 'font-style: italic',
         del: 'text-decoration: line-through',
-        ul: 'margin: 0.5em 0; padding-left: 2em',
-        ol: 'margin: 0.5em 0; padding-left: 2em',
+        ul: listStyle,
+        ol: listStyle,
         li: 'margin: 0.25em 0',
         br: ''
     };
@@ -79,6 +83,34 @@ function quikdown(markdown, options = {}) {
         };
         return text.replace(/[&<>"']/g, m => map[m]);
     }
+    
+    // Sanitize URLs to prevent XSS attacks
+    function sanitizeUrl(url, allowUnsafe = false) {
+        if (!url) return '';
+        
+        // If unsafe URLs are explicitly allowed, return as-is
+        if (allowUnsafe) return url;
+        
+        // Trim and lowercase for checking
+        const trimmedUrl = url.trim();
+        const lowerUrl = trimmedUrl.toLowerCase();
+        
+        // Block dangerous protocols
+        const dangerousProtocols = ['javascript:', 'vbscript:', 'data:'];
+        
+        for (const protocol of dangerousProtocols) {
+            if (lowerUrl.startsWith(protocol)) {
+                // Exception: Allow data:image/* for images
+                if (protocol === 'data:' && lowerUrl.startsWith('data:image/')) {
+                    return trimmedUrl;
+                }
+                // Return safe empty link for dangerous protocols
+                return '#';
+            }
+        }
+        
+        return trimmedUrl;
+    }
 
     // Process the markdown in phases
     let html = markdown;
@@ -87,8 +119,8 @@ function quikdown(markdown, options = {}) {
     const codeBlocks = [];
     const inlineCodes = [];
     
-    // Extract fenced code blocks first
-    html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    // Extract fenced code blocks first (supports both ``` and ~~~)
+    html = html.replace(/(?:```|~~~)([^\n]*)\n([\s\S]*?)(?:```|~~~)/g, (match, lang, code) => {
         const placeholder = `%%%CODEBLOCK${codeBlocks.length}%%%`;
         
         // If custom fence plugin is provided, use it
@@ -123,8 +155,8 @@ function quikdown(markdown, options = {}) {
     // Process tables
     html = processTable(html, inline_styles, styles);
     
-    // Process headings
-    html = html.replace(/^(#{1,6})\s+(.+)$/gm, (match, hashes, content) => {
+    // Process headings (supports optional trailing #'s)
+    html = html.replace(/^(#{1,6})\s+(.+?)\s*#*$/gm, (match, hashes, content) => {
         const level = hashes.length;
         return `<h${level}${getAttr('h' + level)}>${content}</h${level}>`;
     });
@@ -142,14 +174,25 @@ function quikdown(markdown, options = {}) {
     
     // Phase 3: Process inline elements
     
-    // Images (must come before links)
+    // Images (must come before links, with URL sanitization)
     html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-        return `<img${getAttr('img')} src="${src}" alt="${alt}">`;
+        const sanitizedSrc = sanitizeUrl(src, options.allow_unsafe_urls);
+        return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${alt}">`;
     });
     
-    // Links
+    // Links (with URL sanitization)
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, href) => {
-        return `<a${getAttr('a')} href="${href}">${text}</a>`;
+        // Sanitize URL to prevent XSS
+        const sanitizedHref = sanitizeUrl(href, options.allow_unsafe_urls);
+        const isExternal = /^https?:\/\//i.test(sanitizedHref);
+        const rel = isExternal ? ' rel="noopener noreferrer"' : '';
+        return `<a${getAttr('a')} href="${sanitizedHref}"${rel}>${text}</a>`;
+    });
+    
+    // Autolinks - convert bare URLs to clickable links
+    html = html.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (match, prefix, url) => {
+        const sanitizedUrl = sanitizeUrl(url, options.allow_unsafe_urls);
+        return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>`;
     });
     
     // Bold (must use non-greedy matching)
@@ -195,6 +238,12 @@ function quikdown(markdown, options = {}) {
         if (block.custom && fence_plugin) {
             // Use custom fence plugin
             replacement = fence_plugin(block.code, block.lang);
+            // If plugin returns undefined, fall back to default rendering
+            if (replacement === undefined) {
+                const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+                const codeAttr = inline_styles ? getAttr('code') : langClass;
+                replacement = `<pre${getAttr('pre')}><code${codeAttr}>${escapeHtml(block.code)}</code></pre>`;
+            }
         } else {
             // Default rendering
             const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
@@ -259,8 +308,8 @@ function processTable(text, inline_styles, styles) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
-        // Check if this line looks like a table row
-        if (line.startsWith('|') && line.endsWith('|')) {
+        // Check if this line looks like a table row (with or without trailing |)
+        if (line.includes('|') && (line.startsWith('|') || /[^\\|]/.test(line))) {
             if (!inTable) {
                 inTable = true;
                 tableLines = [];
@@ -317,7 +366,8 @@ function buildTable(lines, inline_styles, styles) {
     // Check for separator line (second line should be the separator)
     let separatorIndex = -1;
     for (let i = 1; i < lines.length; i++) {
-        if (/^\|[\s\-:|]+\|$/.test(lines[i])) {
+        // Support separator with or without leading/trailing pipes
+        if (/^\|?[\s\-:|]+\|?$/.test(lines[i]) && lines[i].includes('-')) {
             separatorIndex = i;
             break;
         }
@@ -330,15 +380,14 @@ function buildTable(lines, inline_styles, styles) {
     
     // Parse alignment from separator
     const separator = lines[separatorIndex];
-    const alignments = separator
-        .split('|')
-        .slice(1, -1)
-        .map(cell => {
-            const trimmed = cell.trim();
-            if (trimmed.startsWith(':') && trimmed.endsWith(':')) return 'center';
-            if (trimmed.endsWith(':')) return 'right';
-            return 'left';
-        });
+    // Handle pipes at start/end or not
+    const separatorCells = separator.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+    const alignments = separatorCells.map(cell => {
+        const trimmed = cell.trim();
+        if (trimmed.startsWith(':') && trimmed.endsWith(':')) return 'center';
+        if (trimmed.endsWith(':')) return 'right';
+        return 'left';
+    });
     
     let html = `<table${getAttr('table')}>\n`;
     
@@ -347,7 +396,8 @@ function buildTable(lines, inline_styles, styles) {
         html += `<thead${getAttr('thead')}>\n`;
         headerLines.forEach(line => {
             html += `<tr${getAttr('tr')}>\n`;
-            const cells = line.split('|').slice(1, -1);
+            // Handle pipes at start/end or not
+            const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
             cells.forEach((cell, i) => {
                 const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align: ${alignments[i]}` : '';
                 const processedCell = processInlineMarkdown(cell.trim(), inline_styles, styles);
@@ -363,7 +413,8 @@ function buildTable(lines, inline_styles, styles) {
         html += `<tbody${getAttr('tbody')}>\n`;
         bodyLines.forEach(line => {
             html += `<tr${getAttr('tr')}>\n`;
-            const cells = line.split('|').slice(1, -1);
+            // Handle pipes at start/end or not
+            const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
             cells.forEach((cell, i) => {
                 const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align: ${alignments[i]}` : '';
                 const processedCell = processInlineMarkdown(cell.trim(), inline_styles, styles);

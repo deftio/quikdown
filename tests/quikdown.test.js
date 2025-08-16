@@ -59,7 +59,7 @@ describe('quikdown markdown parser', () => {
     describe('Links and Images', () => {
         test('should parse links', () => {
             expect(quikdown('[text](url)')).toBe('<p><a class="quikdown-a" href="url">text</a></p>');
-            expect(quikdown('[Google](https://google.com)')).toBe('<p><a class="quikdown-a" href="https://google.com">Google</a></p>');
+            expect(quikdown('[Google](https://google.com)')).toBe('<p><a class="quikdown-a" href="https://google.com" rel="noopener noreferrer">Google</a></p>');
         });
         
         test('should parse images', () => {
@@ -476,11 +476,31 @@ def analyze():
             expect(result).toContain('onclick'); // It's escaped so onclick text remains
         });
         
-        test('should not sanitize URLs in links', () => {
-            const input = '[click](https://example.com?test=1)';
-            const result = quikdown(input);
-            expect(result).toContain('<a class="quikdown-a" href="https://example.com?test=1">click</a>');
-            // Note: We don't sanitize URLs, that's up to the implementer
+        test('should sanitize dangerous URLs in links', () => {
+            // Safe URLs should work
+            const safe = '[click](https://example.com?test=1)';
+            expect(quikdown(safe)).toContain('href="https://example.com?test=1"');
+            
+            // javascript: URLs should be blocked
+            const jsUrl = '[click](javascript:alert(1))';
+            expect(quikdown(jsUrl)).toContain('href="#"');
+            expect(quikdown(jsUrl)).not.toContain('javascript:');
+            
+            // vbscript: URLs should be blocked
+            const vbUrl = '[click](vbscript:alert(1))';
+            expect(quikdown(vbUrl)).toContain('href="#"');
+            
+            // data: URLs should be blocked (except images)
+            const dataUrl = '[click](data:text/html,<script>alert(1)</script>)';
+            expect(quikdown(dataUrl)).toContain('href="#"');
+            
+            // data:image should be allowed for images
+            const dataImg = '![img](data:image/png;base64,abc)';
+            expect(quikdown(dataImg)).toContain('src="data:image/png;base64,abc"');
+            
+            // allow_unsafe_urls option should bypass sanitization
+            const result = quikdown('[click](javascript:void)', { allow_unsafe_urls: true });
+            expect(result).toContain('href="javascript:void"');
         });
         
         test('should handle null bytes', () => {
@@ -720,6 +740,257 @@ def analyze():
             } else {
                 expect(result).toContain('class="quikdown-');
             }
+        });
+    });
+    
+    describe('New Features - ~~~ Fences, Autolinks, URL Sanitization', () => {
+        test('should support ~~~ fences alongside ```', () => {
+            const tildeInput = '~~~\ncode block\n~~~';
+            const backtickInput = '```\ncode block\n```';
+            
+            const tildeResult = quikdown(tildeInput);
+            const backtickResult = quikdown(backtickInput);
+            
+            // Both should produce the same output
+            expect(tildeResult).toBe('<pre class="quikdown-pre"><code>code block</code></pre>');
+            expect(tildeResult).toBe(backtickResult);
+            
+            // Test with language identifier
+            const tildeLang = '~~~javascript\nconst a = 1;\n~~~';
+            const backtickLang = '```javascript\nconst a = 1;\n```';
+            
+            expect(quikdown(tildeLang)).toBe(quikdown(backtickLang));
+            expect(quikdown(tildeLang)).toContain('class="language-javascript"');
+        });
+        
+        test('should support non-word language identifiers in fences', () => {
+            // Test c++ (contains +)
+            const cppCode = '```c++\nint main() {}\n```';
+            expect(quikdown(cppCode)).toContain('class="language-c++"');
+            
+            // Test jsx/tsx extensions
+            const tsxCode = '```tsx\nconst Component = () => <div />;\n```';
+            expect(quikdown(tsxCode)).toContain('class="language-tsx"');
+            
+            // Test with dots
+            const dotNet = '```asp.net\n<%@ Page %>\n```';
+            expect(quikdown(dotNet)).toContain('class="language-asp.net"');
+            
+            // Test with hyphens
+            const shellSession = '```shell-session\n$ ls -la\n```';
+            expect(quikdown(shellSession)).toContain('class="language-shell-session"');
+        });
+        
+        test('should support autolinks for bare URLs', () => {
+            // Basic HTTP URL
+            const httpUrl = 'Check out https://example.com for more info';
+            const httpResult = quikdown(httpUrl);
+            expect(httpResult).toContain('<a class="quikdown-a" href="https://example.com" rel="noopener noreferrer">https://example.com</a>');
+            
+            // HTTPS URL with path and params
+            const complexUrl = 'Visit https://github.com/user/repo?tab=readme today!';
+            const complexResult = quikdown(complexUrl);
+            expect(complexResult).toContain('href="https://github.com/user/repo?tab=readme"');
+            expect(complexResult).toContain('>https://github.com/user/repo?tab=readme</a>');
+            
+            // Multiple URLs in same paragraph
+            const multiUrl = 'First: https://first.com and second: http://second.org';
+            const multiResult = quikdown(multiUrl);
+            expect(multiResult).toContain('href="https://first.com"');
+            expect(multiResult).toContain('href="http://second.org"');
+            
+            // URL at start of line
+            const startUrl = 'https://start.com is a great site';
+            expect(quikdown(startUrl)).toContain('<a class="quikdown-a" href="https://start.com"');
+            
+            // Should not match inside code blocks
+            const codeUrl = '`https://example.com` should not be linked';
+            const codeResult = quikdown(codeUrl);
+            expect(codeResult).toContain('<code');
+            expect(codeResult.match(/<a/g)?.length || 0).toBe(0);
+        });
+        
+        test('should tolerate heading trailing hashes', () => {
+            // Single trailing hash
+            expect(quikdown('# Heading #')).toBe('<h1 class="quikdown-h1">Heading</h1>');
+            
+            // Multiple trailing hashes
+            expect(quikdown('## Heading ##')).toBe('<h2 class="quikdown-h2">Heading</h2>');
+            expect(quikdown('### Heading ####')).toBe('<h3 class="quikdown-h3">Heading</h3>');
+            
+            // With spaces before trailing hashes
+            expect(quikdown('# Heading   ###')).toBe('<h1 class="quikdown-h1">Heading</h1>');
+            
+            // Should preserve hashes in middle of text
+            expect(quikdown('# Heading #1 is here ##')).toBe('<h1 class="quikdown-h1">Heading #1 is here</h1>');
+        });
+        
+        test('should allow table rows without trailing pipes', () => {
+            // Table without trailing pipes
+            const noTrailing = `Header 1 | Header 2
+--- | ---
+Cell 1 | Cell 2
+Cell 3 | Cell 4`;
+            
+            const result = quikdown(noTrailing);
+            expect(result).toContain('<table');
+            expect(result).toContain('<th');
+            expect(result).toContain('Header 1');
+            expect(result).toContain('Header 2');
+            expect(result).toContain('Cell 1');
+            expect(result).toContain('Cell 4');
+            
+            // Table without leading pipes either
+            const noLeadingOrTrailing = `Header 1 | Header 2
+--- | ---
+Cell 1 | Cell 2`;
+            
+            const result2 = quikdown(noLeadingOrTrailing);
+            expect(result2).toContain('<table');
+            expect(result2).toContain('Header 1');
+            
+            // Mixed format (some with pipes, some without)
+            const mixed = `| Header 1 | Header 2
+|----------|----------
+Cell 1 | Cell 2 |
+| Cell 3 | Cell 4`;
+            
+            const result3 = quikdown(mixed);
+            expect(result3).toContain('<table');
+            expect(result3).toContain('Cell 3');
+        });
+        
+        test('should add rel="noopener noreferrer" to external links', () => {
+            const externalLink = '[External](https://external.com)';
+            const result = quikdown(externalLink);
+            expect(result).toContain('rel="noopener noreferrer"');
+            
+            // Should not add rel to internal/relative links
+            const internalLink = '[Internal](/path/to/page)';
+            const internalResult = quikdown(internalLink);
+            expect(internalResult).not.toContain('rel=');
+        });
+        
+        test('should handle mixed fence types in same document', () => {
+            const mixed = `First block:
+\`\`\`js
+code1
+\`\`\`
+
+Second block:
+~~~python
+code2
+~~~
+
+Third block:
+\`\`\`
+code3
+\`\`\``;
+            
+            const result = quikdown(mixed);
+            expect((result.match(/<pre/g) || []).length).toBe(3);
+            expect(result).toContain('class="language-js"');
+            expect(result).toContain('class="language-python"');
+            expect(result).toContain('code1');
+            expect(result).toContain('code2');
+            expect(result).toContain('code3');
+        });
+        
+        test('fence plugin should work with ~~~ fences', () => {
+            const customPlugin = (content, lang) => {
+                if (lang === 'custom') {
+                    return `<div class="custom">${content}</div>`;
+                }
+                return undefined;
+            };
+            
+            const tilde = '~~~custom\nTest content\n~~~';
+            const backtick = '```custom\nTest content\n```';
+            
+            const tildeResult = quikdown(tilde, { fence_plugin: customPlugin });
+            const backtickResult = quikdown(backtick, { fence_plugin: customPlugin });
+            
+            expect(tildeResult).toBe('<div class="custom">Test content</div>');
+            expect(tildeResult).toBe(backtickResult);
+        });
+    });
+    
+    describe('100% Coverage Tests', () => {
+        test('should handle empty URL in sanitizeUrl', () => {
+            // Empty URLs don't get parsed as links (correct behavior)
+            const emptyUrl = '[text]()';
+            const result = quikdown(emptyUrl);
+            expect(result).toBe('<p>[text]()</p>');
+            
+            // Empty image URLs also don't get parsed
+            const emptyImg = '![]()';
+            const imgResult = quikdown(emptyImg);
+            expect(imgResult).toBe('<p>![]()</p>');
+            
+            // Test URL sanitization with spaces (will become empty after trim)
+            // This tests the early return in sanitizeUrl function
+            const spacesUrl = '[text](   )';  // Spaces will be trimmed to empty
+            const spacesResult = quikdown(spacesUrl);
+            expect(spacesResult).toContain('href=""');  // Empty href
+        });
+        
+        test('should handle all inline style branches', () => {
+            // Test table cells with alignment styles
+            const alignedTable = `| Left | Center | Right |
+|:-----|:------:|------:|
+| L | C | R |`;
+            
+            const result = quikdown(alignedTable, { inline_styles: true });
+            expect(result).toContain('text-align: center');
+            expect(result).toContain('text-align: right');
+            
+            // Test processInlineMarkdown with inline styles
+            const processInlineMarkdown = require('../src/quikdown.js').processInlineMarkdown;
+            if (typeof processInlineMarkdown === 'function') {
+                const inlineResult = processInlineMarkdown('**bold** and *italic*', true, {
+                    strong: 'font-weight: bold',
+                    em: 'font-style: italic'
+                });
+                expect(inlineResult).toContain('style=');
+            }
+        });
+        
+        test('should cover all branches of getAttr with additionalStyle', () => {
+            // Table with center-aligned cells to test additionalStyle parameter
+            const centerTable = `| Header |
+|:------:|
+| Center |`;
+            
+            const result = quikdown(centerTable, { inline_styles: true });
+            expect(result).toContain('text-align: center');
+        });
+        
+        test('should handle fence plugin returning undefined properly', () => {
+            const plugin = (content, lang) => {
+                // Only handle 'special' language
+                if (lang === 'special') {
+                    return '<div>special</div>';
+                }
+                // Return undefined for everything else
+                return undefined;
+            };
+            
+            // Should fall back to default rendering when plugin returns undefined
+            const result = quikdown('```javascript\ncode\n```', { fence_plugin: plugin });
+            expect(result).toContain('<pre');
+            expect(result).toContain('<code');
+            expect(result).toContain('code');
+            
+            // And should use the plugin when it returns a value
+            const specialResult = quikdown('```special\ntest\n```', { fence_plugin: plugin });
+            expect(specialResult).toBe('<div>special</div>');
+        });
+        
+        test('should handle inline code in processInlineMarkdown', () => {
+            // This tests the processInlineMarkdown function's inline code handling
+            const input = 'Text with `inline code` here';
+            const result = quikdown(input, { inline_styles: true });
+            expect(result).toContain('background: #f0f0f0');
         });
     });
 });

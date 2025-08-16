@@ -1,8 +1,9 @@
 # quikdown
 
-A lightweight, fast markdown parser with built-in XSS protection and plugin support. quikdown is an extensible markdown-to-HTML converter that works in both browser and Node.js environments.
+A lightweight, fast markdown parser with built-in XSS protection. Quikdown works in both browser and Node.js environments.  Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.
 
-📚 **[View Live Examples](examples/)** - Interactive demos of quikdown's features
+📚 **[View Live Examples](examples/)** - Interactive demos of quikdown's features  
+📖 **[Read Documentation](docs/)** - Architecture, security, API reference, and plugin guide
 
 ## Features
 
@@ -142,6 +143,8 @@ const html = quikdown(markdown, { fence_plugin: fencePlugin });
 
 ## Plugin System
 
+For a complete plugin development guide, see [docs/plugin-guide.md](docs/plugin-guide.md)
+
 ### Creating a Fence Plugin
 
 Fence plugins allow you to customize how code blocks are rendered:
@@ -187,6 +190,8 @@ const html = quikdown(markdownWithMermaid, {
 
 ## Security
 
+For detailed security information, see [docs/security.md](docs/security.md)
+
 quikdown includes built-in XSS protection:
 
 - All HTML tags in markdown are escaped by default
@@ -201,6 +206,8 @@ const safe = quikdown(unsafe);
 ```
 
 ## API Reference
+
+For complete API documentation, see [docs/api-reference.md](docs/api-reference.md)
 
 ### `quikdown(markdown, options?)`
 
@@ -336,34 +343,15 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - Built for the [QuikChat](https://github.com/deftio/quikchat) project
 - CommonMark spec for markdown standardization
 
-## Comparison with Other Parsers
-
-| Feature | quikdown | Marked | Showdown | Markdown-it |
-|---------|----------|---------|----------|-------------|
-| Size | ~3KB | ~30KB | ~40KB | ~100KB |
-| Dependencies | 0 | 0 | 0 | 3+ |
-| XSS Protection | ✅ Built-in | ⚠️ Optional | ⚠️ Optional | ⚠️ Optional |
-| Plugin System | ✅ Simple | ✅ Complex | ✅ Complex | ✅ Complex |
-| Speed | Fast | Very Fast | Fast | Very Fast |
-| CommonMark | Subset | Full | Full | Full |
 
 Choose quikdown when you need:
 - A lightweight solution
 - Built-in security
 - Simple plugin system
 - Zero dependencies
-- Browser-first design
 
-## Roadmap
-
-- [ ] TypeScript definitions
-- [ ] More plugin examples
-- [ ] Performance benchmarks
-- [ ] Extended CommonMark support (optional)
-- [ ] Streaming parser mode
 
 ## Support
 
-- 📧 Email: support@deftio.com
 - 🐛 Issues: [GitHub Issues](https://github.com/deftio/quikdown/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/deftio/quikdown/discussions)
+
