@@ -1,20 +1,29 @@
 # quikdown
 
+[![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
+[![npm version](https://badge.fury.io/js/quikdown.svg)](https://www.npmjs.com/package/quikdown)
+[![Coverage Status](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](https://github.com/deftio/quikdown)
+[![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
+[![Bundle Size](https://img.shields.io/badge/minified-8.7KB-green.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+
 A lightweight, fast markdown parser with built-in XSS protection. Quikdown works in both browser and Node.js environments.  Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.
 
-📚 **[View Live Examples](examples/)** - Interactive demos of quikdown's features  
+📚 **[View Live Examples](deftio.github.io/examples/)** - Interactive examples on giithub of quikdown's features  
+📚 **[View Local Examples](examples/)** - Interactive demos of quikdown's features  
 📖 **[Read Documentation](docs/)** - Architecture, security, API reference, and plugin guide
 
 ## Features
 
-- 🚀 **Lightweight** - ~200 lines of focused code
-- 🔒 **Secure by default** - Built-in XSS protection
+- 🚀 **Lightweight** - Under 10KB minified (currently 8.7KB)
+- 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
 - 🎨 **Flexible styling** - Inline styles or CSS classes
 - 🔌 **Plugin system** - Extensible fence block handlers
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js
 - ⚡ **Fast** - Optimized regex-based parsing
 - 📝 **CommonMark subset** - Supports essential markdown features
+- ✅ **Task Lists** - GitHub-style checkboxes
+- 🔗 **Autolinks** - Automatic URL detection
 
 ## Installation
 
@@ -86,10 +95,20 @@ Ordered:
    1. Nested item
 ```
 
+Task Lists:
+```markdown
+- [x] Completed task
+- [ ] Pending task
+- [ ] Another todo
+```
+
 ### Links and Images
 ```markdown
 [Link text](https://example.com)
 ![Alt text](image.jpg)
+
+// Autolinks - URLs are automatically linked
+Visit https://github.com for more info
 ```
 
 ### Code Blocks
@@ -97,6 +116,11 @@ Ordered:
 ```javascript
 console.log('Hello, world!');
 ```
+
+// Also supports ~~~ fences
+~~~python
+print("Hello, world!")
+~~~
 ````
 
 ### Tables
@@ -335,7 +359,7 @@ npm run test:coverage
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+BSD 2-Clause License - see [LICENSE.txt](LICENSE.txt) file for details.
 
 ## Acknowledgments
 
