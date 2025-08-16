@@ -69,6 +69,9 @@ A small markdown to html parser with fence plugin support
 ## 📋 Todo
 
 ### High Priority - Documentation & Release:
+* [ ] Light and Darkmode css examples (quikdown.light.css quikdown.dark.css)
+  - quikdown theming css should be scoped so 2 different quikdown containers can use different themes
+* [ ] quikdown should have a render options to support lazy linefeeds (some content emitters don't have 2 spaces before previos carraige return)
 * [x] Update README with new features
   - Task list examples
   - CI/CD badges

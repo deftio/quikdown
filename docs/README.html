@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>README - quikdown Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1>quikdown Documentation</h1>
+<p>Complete documentation for the quikdown markdown parser.</p>
+<h2>📚 Documentation</h2>
+<ul>
+<li><strong><a href="architecture.md">Architecture</a></strong> - Parser design, phases, and implementation details</li>
+<li><strong><a href="security.md">Security Guide</a></strong> - Security model, XSS prevention, and safe usage</li>
+<li><strong><a href="api-reference.md">API Reference</a></strong> - Complete API documentation with examples</li>
+<li><strong><a href="plugin-guide.md">Plugin Development</a></strong> - How to create custom fence plugins</li>
+</ul>
+<h2>🚀 Quick Links</h2>
+<ul>
+<li><a href="https://github.com/deftio/quikdown">GitHub Repository</a></li>
+<li><a href="https://www.npmjs.com/package/quikdown">NPM Package</a></li>
+<li><a href="../examples/">Live Examples</a></li>
+</ul>
+<h2>📖 Overview</h2>
+<p>quikdown is a lightweight, secure markdown parser designed for chat and LLM outputs. It prioritizes:</p>
+<ul>
+<li><strong>Security</strong> - All HTML is escaped by default</li>
+<li><strong>Size</strong> - ~3KB minified with zero dependencies</li>
+<li><strong>Extensibility</strong> - Plugin system for custom rendering</li>
+<li><strong>Simplicity</strong> - Easy to understand and audit</li>
+</ul>
+<h2>🎯 Use Cases</h2>
+<ul>
+<li>Chat applications</li>
+<li>LLM output rendering</li>
+<li>Comment systems</li>
+<li>Documentation</li>
+<li>Email templates</li>
+<li>Static site generation</li>
+</ul>
+<h2>💡 Design Philosophy</h2>
+<ol>
+<li><strong>Secure by Default</strong> - No XSS vulnerabilities without explicit opt-in</li>
+<li><strong>Small &amp; Fast</strong> - Optimized for size and performance</li>
+<li><strong>Practical</strong> - Focuses on commonly used markdown features</li>
+<li><strong>Extensible</strong> - Plugin system for customization</li>
+<li><strong>Zero Dependencies</strong> - No supply chain risks</li>
+</ol>
+<h2>🔒 Security First</h2>
+<p>quikdown escapes all HTML by default. Trusted HTML can only be rendered through explicit fence plugins, making trust granular and intentional.</p>
+<pre><code class="language-javascript">// Safe for untrusted input
+const html = quikdown(userInput);
+
+// Trusted HTML requires explicit plugin
+const html = quikdown(markdown, {
+  fence_plugin: (content, lang) =&gt; {
+    if (lang === &#39;trusted-html&#39; &amp;&amp; isAdmin()) {
+      return content; // Only for trusted sources
+    }
+  }
+});
+</code></pre>
+<h2>📦 Installation</h2>
+<pre><code class="language-bash">npm install quikdown
+</code></pre>
+<p>Or via CDN:</p>
+<pre><code class="language-html">&lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown.umd.min.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h2>🌟 Features</h2>
+<h3>Supported Markdown</h3>
+<ul>
+<li><strong>Headings</strong> (<code>#</code> through <code>######</code>)</li>
+<li><strong>Bold</strong> (<code>**text**</code> or <code>__text__</code>)</li>
+<li><strong>Italic</strong> (<code>*text*</code> or <code>_text_</code>)</li>
+<li><strong>Strikethrough</strong> (<code>~~text~~</code>)</li>
+<li><strong>Code</strong> (<code>`inline`</code> and <code>```blocks```</code>)</li>
+<li><strong>Links</strong> (<code>[text](url)</code>)</li>
+<li><strong>Images</strong> (<code>![alt](url)</code>)</li>
+<li><strong>Lists</strong> (ordered and unordered with nesting)</li>
+<li><strong>Tables</strong> (with alignment)</li>
+<li><strong>Blockquotes</strong> (<code>&gt; quote</code>)</li>
+<li><strong>Horizontal rules</strong> (<code>---</code>)</li>
+<li><strong>Line breaks</strong> (two spaces + newline)</li>
+</ul>
+<h3>Not Supported (Intentionally)</h3>
+<ul>
+<li>Raw HTML passthrough (security)</li>
+<li>Reference-style links (complexity)</li>
+<li>Footnotes (uncommon in chat)</li>
+<li>Definition lists (uncommon)</li>
+</ul>
+<h2>🔧 Configuration</h2>
+<h3>Options</h3>
+<ul>
+<li><code>inline_styles</code> - Use inline CSS instead of classes</li>
+<li><code>fence_plugin</code> - Custom code block renderer</li>
+</ul>
+<h3>Methods</h3>
+<ul>
+<li><code>quikdown(markdown, options)</code> - Parse markdown to HTML</li>
+<li><code>quikdown.configure(options)</code> - Create configured parser</li>
+<li><code>quikdown.emitStyles()</code> - Get CSS stylesheet</li>
+<li><code>quikdown.version</code> - Version string</li>
+</ul>
+<h2>🤝 Contributing</h2>
+<p>See <a href="../CONTRIBUTING.md">Contributing Guide</a></p>
+<h2>📄 License</h2>
+<p>BSD-2-Clause - See <a href="../LICENSE.txt">LICENSE</a></p>
+<h2>🙏 Acknowledgments</h2>
+<ul>
+<li>Inspired by the simplicity of early markdown parsers</li>
+<li>Designed for the modern web with security in mind</li>
+<li>Built for real-world chat and LLM use cases</li>
+</ul>
+
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>

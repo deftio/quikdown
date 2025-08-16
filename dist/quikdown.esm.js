@@ -1,13 +1,13 @@
 /**
  * quikdown - Lightweight Markdown Parser
- * @version 1.0.1
+ * @version 1.0.2
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
 // Auto-generated version file - DO NOT EDIT MANUALLY
 // This file is automatically updated by tools/updateVersion.js
 
-const quikdownVersion = "1.0.1";
+const quikdownVersion = "1.0.2";
 
 /**
  * quikdown - A minimal markdown parser optimized for chat/LLM output
@@ -28,35 +28,31 @@ function quikdown(markdown, options = {}) {
     
     const { fence_plugin, inline_styles = false } = options;
 
-    // Style definitions - deduplicated to save space
-    const headingStyle = 'margin-top: 0.5em; margin-bottom: 0.3em';
-    const listStyle = 'margin: 0.5em 0; padding-left: 2em';
-    const cellBorder = 'border: 1px solid #ddd; padding: 8px';
-    
+    // Style definitions - minimal, matching emitStyles
     const styles = {
-        h1: headingStyle,
-        h2: headingStyle,
-        h3: headingStyle,
-        h4: headingStyle,
-        h5: headingStyle,
-        h6: headingStyle,
-        pre: 'background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto',
-        code: 'background: #f0f0f0; padding: 2px 4px; border-radius: 3px',
-        blockquote: 'border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em; color: #666',
+        h1: 'font-size: 2em; font-weight: 600; margin: 0.67em 0; text-align: left',
+        h2: 'font-size: 1.5em; font-weight: 600; margin: 0.83em 0',
+        h3: 'font-size: 1.25em; font-weight: 600; margin: 1em 0',
+        h4: 'font-size: 1em; font-weight: 600; margin: 1.33em 0',
+        h5: 'font-size: 0.875em; font-weight: 600; margin: 1.67em 0',
+        h6: 'font-size: 0.85em; font-weight: 600; margin: 2em 0',
+        pre: 'background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 1em 0',
+        code: 'background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace',
+        blockquote: 'border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em',
         table: 'border-collapse: collapse; width: 100%; margin: 1em 0',
         thead: '',
         tbody: '',
         tr: '',
-        th: cellBorder + '; background-color: #f2f2f2; font-weight: bold',
-        td: cellBorder + '; text-align: left',
+        th: 'border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold; text-align: left',
+        td: 'border: 1px solid #ddd; padding: 8px; text-align: left',
         hr: 'border: none; border-top: 1px solid #ddd; margin: 1em 0',
         img: 'max-width: 100%; height: auto',
         a: 'color: #0066cc; text-decoration: underline',
         strong: 'font-weight: bold',
         em: 'font-style: italic',
         del: 'text-decoration: line-through',
-        ul: listStyle,
-        ol: listStyle,
+        ul: 'margin: 0.5em 0; padding-left: 2em',
+        ol: 'margin: 0.5em 0; padding-left: 2em',
         li: 'margin: 0.25em 0',
         br: ''
     };
@@ -120,19 +116,23 @@ function quikdown(markdown, options = {}) {
     const inlineCodes = [];
     
     // Extract fenced code blocks first (supports both ``` and ~~~)
-    html = html.replace(/(?:```|~~~)([^\n]*)\n([\s\S]*?)(?:```|~~~)/g, (match, lang, code) => {
+    // Match paired fences - ``` with ``` and ~~~ with ~~~
+    html = html.replace(/(```|~~~)([^\n]*)\n([\s\S]*?)\1/g, (match, fence, lang, code) => {
         const placeholder = `%%%CODEBLOCK${codeBlocks.length}%%%`;
+        
+        // Trim the language specification
+        const langTrimmed = lang ? lang.trim() : '';
         
         // If custom fence plugin is provided, use it
         if (fence_plugin && typeof fence_plugin === 'function') {
             codeBlocks.push({
-                lang: lang || '',
+                lang: langTrimmed,
                 code: code.trimEnd(),
                 custom: true
             });
         } else {
             codeBlocks.push({
-                lang: lang || '',
+                lang: langTrimmed,
                 code: escapeHtml(code.trimEnd()),
                 custom: false
             });
@@ -521,17 +521,17 @@ function processLists(text, inline_styles, styles) {
  */
 quikdown.emitStyles = function() {
     const styles = {
-        h1: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        h2: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        h3: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        h4: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        h5: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        h6: 'margin-top: 0.5em; margin-bottom: 0.3em',
-        pre: 'background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto',
-        code: 'background: #f0f0f0; padding: 2px 4px; border-radius: 3px',
-        blockquote: 'border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em; color: #666',
+        h1: 'font-size: 2em; font-weight: 600; margin: 0.67em 0; text-align: left',
+        h2: 'font-size: 1.5em; font-weight: 600; margin: 0.83em 0',
+        h3: 'font-size: 1.25em; font-weight: 600; margin: 1em 0',
+        h4: 'font-size: 1em; font-weight: 600; margin: 1.33em 0',
+        h5: 'font-size: 0.875em; font-weight: 600; margin: 1.67em 0',
+        h6: 'font-size: 0.85em; font-weight: 600; margin: 2em 0',
+        pre: 'background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 1em 0',
+        code: 'background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace',
+        blockquote: 'border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em',
         table: 'border-collapse: collapse; width: 100%; margin: 1em 0',
-        th: 'border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold',
+        th: 'border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold; text-align: left',
         td: 'border: 1px solid #ddd; padding: 8px; text-align: left',
         hr: 'border: none; border-top: 1px solid #ddd; margin: 1em 0',
         img: 'max-width: 100%; height: auto',

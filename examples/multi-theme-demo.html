@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>quikdown - Multiple Themes Demo</title>
+    
+    <!-- Load the theme CSS files -->
+    <link rel="stylesheet" href="../dist/quikdown.light.css">
+    <link rel="stylesheet" href="../dist/quikdown.dark.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 2rem;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.5rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+        }
+        
+        .demo-header {
+            padding: 1rem;
+            font-weight: 600;
+            border-bottom: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
+        
+        .light-theme .demo-header {
+            background: #f7fafc;
+            color: #2d3748;
+        }
+        
+        .dark-theme .demo-header {
+            background: #1a1b26;
+            color: #c0caf5;
+            border-bottom-color: #414868;
+        }
+        
+        .demo-content {
+            padding: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        /* Scope light theme to .light-theme container */
+        .light-theme {
+            background: #ffffff;
+            color: #333;
+        }
+        
+        /* Fix light theme code blocks */
+        .light-theme .quikdown-pre {
+            background-color: #f6f6f6 !important;
+            color: #333 !important;
+        }
+        
+        .light-theme .quikdown-code {
+            background-color: #f0f0f0 !important;
+            color: #333 !important;
+        }
+        
+        /* Fix light theme table headers */
+        .light-theme .quikdown-th {
+            background-color: #f0f0f0 !important;
+            color: #333 !important;
+        }
+        
+        .light-theme .quikdown-td {
+            color: #333 !important;
+        }
+        
+        /* Scope dark theme to .dark-theme container */
+        .dark-theme {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        /* Dark theme needs lighter text for readability */
+        .dark-theme .quikdown-h1,
+        .dark-theme .quikdown-h2,
+        .dark-theme .quikdown-h3,
+        .dark-theme .quikdown-h4,
+        .dark-theme .quikdown-h5,
+        .dark-theme .quikdown-h6 {
+            color: #ffffff !important;
+        }
+        
+        .dark-theme .quikdown-strong {
+            color: #ffffff !important;
+        }
+        
+        .dark-theme .quikdown-em,
+        .dark-theme .quikdown-del,
+        .dark-theme .quikdown-li,
+        .dark-theme .quikdown-td,
+        .dark-theme p {
+            color: #e0e0e0 !important;
+        }
+        
+        .dark-theme .quikdown-th {
+            background-color: #2a2a2a !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-theme .quikdown-blockquote {
+            color: #b0b0b0 !important;
+        }
+        
+        .dark-theme .quikdown-code {
+            background-color: #333333 !important;
+            color: #e0e0e0 !important;
+        }
+        
+        .dark-theme .quikdown-pre {
+            background-color: #262626 !important;
+            color: #e0e0e0 !important;
+        }
+        
+        .input-area {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 14px;
+            resize: none;
+        }
+        
+        .info {
+            text-align: center;
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #e3f2fd;
+            border-radius: 8px;
+            color: #1976d2;
+        }
+        
+        @media (max-width: 768px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>quikdown - Multiple Themes Demo</h1>
+    <p class="subtitle">Same markdown, different themes, on the same page!</p>
+    
+    <div class="demo-grid">
+        <div class="demo-section">
+            <div class="demo-header">
+                Markdown Input
+            </div>
+            <div class="demo-content">
+                <div class="input-area">
+                    <textarea id="markdown-input" placeholder="Type markdown here..."></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <div class="demo-header">
+                Light Theme Output
+            </div>
+            <div class="demo-content light-theme">
+                <div id="light-output"></div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <div class="demo-header">
+                Dark Theme Output
+            </div>
+            <div class="demo-content dark-theme">
+                <div id="dark-output"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info">
+        💡 Both outputs use the same quikdown parser with CSS classes. The themes are applied via CSS scoping!
+    </div>
+    
+    <script src="../dist/quikdown.umd.min.js"></script>
+    <script>
+        const sampleMarkdown = `# Welcome to quikdown!
+
+This demo shows how you can have **multiple quikdown instances** with different themes on the same page.
+
+## Features Demonstrated
+
+- **Bold text** and *italic text*
+- ~~Strikethrough~~ and \`inline code\`
+- [Links work too](https://github.com/deftio/quikdown)
+
+### Code Block Example
+
+\`\`\`javascript
+function greet(name) {
+    return \`Hello, \${name}!\`;
+}
+console.log(greet('World'));
+\`\`\`
+
+### Table Example
+
+| Feature | Light Theme | Dark Theme |
+|---------|-------------|------------|
+| Background | White | Dark |
+| Text Color | Dark | Light |
+| Code Blocks | Gray | Dark Gray |
+
+### Task List
+
+- [x] Create quikdown parser
+- [x] Add theme support
+- [ ] Add more themes
+
+> **Note:** Both sides show the exact same HTML output, just with different CSS applied!
+
+---
+
+*Try editing the text above to see both themes update in real-time!*`;
+
+        const input = document.getElementById('markdown-input');
+        const lightOutput = document.getElementById('light-output');
+        const darkOutput = document.getElementById('dark-output');
+        
+        function render() {
+            const markdown = input.value;
+            // Use the same quikdown function with CSS classes (not inline styles)
+            const html = quikdown(markdown, { inline_styles: false });
+            
+            // Same HTML, rendered in both containers
+            lightOutput.innerHTML = html;
+            darkOutput.innerHTML = html;
+        }
+        
+        // Initialize with sample content
+        input.value = sampleMarkdown;
+        render();
+        
+        // Update on input
+        input.addEventListener('input', render);
+    </script>
+</body>
+</html>

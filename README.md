@@ -8,15 +8,15 @@
 
 A lightweight, fast markdown parser with built-in XSS protection. Quikdown works in both browser and Node.js environments.  Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.
 
-📚 **[View Live Examples](https://deftio.github.io/quikdown/)** - Interactive examples on giithub of quikdown's features  
-📚 **[View Local Examples](examples/)** - Interactive demos of quikdown's features  
+🚀 **[Try Live Demo](https://deftio.github.io/quikdown/examples/live-demo.html)** - Interactive markdown editor with real-time preview  
+📚 **[View Examples](examples/)** - Additional demos and test pages  
 📖 **[Read Documentation](docs/)** - Architecture, security, API reference, and plugin guide
 
 ## Features
 
 - 🚀 **Lightweight** - Under 10KB minified (currently 8.7KB)
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
-- 🎨 **Flexible styling** - Inline styles or CSS classes
+- 🎨 **Flexible styling** - Inline styles or CSS classes including examples for light and dark mode generation
 - 🔌 **Plugin system** - Extensible fence block handlers
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js

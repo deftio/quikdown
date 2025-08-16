@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>quikdown - Live Demo</title>
+    <meta name="description" content="Try quikdown - A lightweight markdown parser with plugin support">
+    
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <!-- Mermaid for diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+        
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #2c3e50;
+            font-weight: 700;
+        }
+        
+        .version {
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .header-links {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .header-links a {
+            color: #4a5568;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .header-links a:hover {
+            background: #f7fafc;
+            color: #667eea;
+        }
+        
+        .controls {
+            background: white;
+            padding: 0.75rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .example-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .example-btn {
+            padding: 0.5rem 1rem;
+            background: #f7fafc;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .example-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .options {
+            display: flex;
+            gap: 1.5rem;
+            margin-left: auto;
+        }
+        
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+        
+        .option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            overflow: hidden;
+        }
+        
+        .panel {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            background: #f7fafc;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #2d3748;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-content {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+        
+        #markdown-input {
+            width: 100%;
+            height: 100%;
+            padding: 1.5rem;
+            border: none;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            background: #fafafa;
+        }
+        
+        #markdown-input:focus {
+            outline: none;
+            background: white;
+        }
+        
+        #html-output {
+            padding: 1.5rem;
+            overflow: auto;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        #raw-html {
+            padding: 1.5rem;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #2d3748;
+            background: #f7fafc;
+            display: none;
+        }
+        
+        .stats {
+            font-size: 0.75rem;
+            color: #718096;
+        }
+        
+        /* Rendered output styles */
+        #html-output h1 { 
+            color: #1a202c;
+            margin: 1.5rem 0 1rem;
+            padding-bottom: 0.5rem;
+        }
+        
+        #html-output h2 {
+            color: #2d3748;
+            margin: 1.25rem 0 0.75rem;
+        }
+        
+        #html-output h3 {
+            color: #4a5568;
+            margin: 1rem 0 0.5rem;
+        }
+        
+        #html-output pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        #html-output code {
+            background: #edf2f7;
+            padding: 0.125rem 0.25rem;
+            border-radius: 3px;
+            font-size: 0.875em;
+        }
+        
+        #html-output pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        #html-output blockquote {
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: #4a5568;
+            font-style: italic;
+        }
+        
+        #html-output table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+        
+        #html-output th,
+        #html-output td {
+            border: 1px solid #cbd5e0;
+            padding: 0.5rem;
+            text-align: left;
+        }
+        
+        #html-output th {
+            background: #f7fafc;
+            font-weight: 600;
+        }
+        
+        #html-output a {
+            color: #667eea;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+        }
+        
+        #html-output a:hover {
+            border-bottom-color: #667eea;
+        }
+        
+        #html-output ul, #html-output ol {
+            margin: 0.5rem 0;
+            padding-left: 2rem;
+        }
+        
+        #html-output li {
+            margin: 0.25rem 0;
+        }
+        
+        #html-output hr {
+            border: none;
+            border-top: 2px solid #e2e8f0;
+            margin: 1.5rem 0;
+        }
+        
+        .mermaid {
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        /* Task list styles */
+        input[type="checkbox"][disabled] {
+            margin-right: 0.5rem;
+        }
+        
+        .error-badge {
+            background: #fc8181;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        /* Dark mode styles - only for rendered output */
+        .output-dark {
+            background: #1a1b26;
+            color: #c0caf5;
+        }
+        
+        .output-dark h1,
+        .output-dark h2,
+        .output-dark h3,
+        .output-dark h4,
+        .output-dark h5,
+        .output-dark h6 {
+            color: #c0caf5;
+        }
+        
+        .output-dark pre {
+            background: #16161e;
+            border: 1px solid #24283b;
+        }
+        
+        .output-dark code {
+            background: #24283b;
+            color: #9ece6a;
+        }
+        
+        .output-dark pre code {
+            background: none;
+        }
+        
+        .output-dark blockquote {
+            border-left-color: #7aa2f7;
+            color: #9aa5ce;
+        }
+        
+        .output-dark table {
+            color: #c0caf5;
+        }
+        
+        .output-dark th {
+            background: #24283b;
+            border-color: #414868;
+        }
+        
+        .output-dark td {
+            border-color: #414868;
+        }
+        
+        .output-dark tr:nth-child(even) {
+            background: #1f2335;
+        }
+        
+        .output-dark a {
+            color: #7aa2f7;
+        }
+        
+        .output-dark hr {
+            border-top-color: #414868;
+        }
+        
+        /* Removed - controls stay light */
+            background: #1a1b26;
+            border-bottom-color: #414868;
+        }
+        
+        /* Removed - buttons stay light */
+            background: #24283b;
+            border-color: #414868;
+            color: #c0caf5;
+        }
+        
+        /* Removed - buttons stay light */
+            background: #7aa2f7;
+            color: #1a1b26;
+            border-color: #7aa2f7;
+        }
+        
+        /* Removed - stats stay light */
+            background: #16161e;
+            color: #9aa5ce;
+            border-top-color: #414868;
+        }
+        
+        .output-dark #raw-html {
+            background: #16161e;
+            color: #9ece6a;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .header-links {
+                display: none;
+            }
+            
+            .controls {
+                padding: 0.5rem 1rem;
+            }
+            
+            .example-buttons {
+                overflow-x: auto;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-left">
+            <h1>quikdown</h1>
+            <span class="version">v1.0.2</span>
+        </div>
+        <div class="header-links">
+            <a href="https://github.com/deftio/quikdown" target="_blank">GitHub</a>
+            <a href="https://www.npmjs.com/package/quikdown" target="_blank">NPM</a>
+            <a href="./">More Examples</a>
+            <a href="../docs/">Documentation</a>
+        </div>
+    </header>
+    
+    <div class="controls">
+        <div class="example-buttons">
+            <button class="example-btn active" onclick="loadExample('comprehensive')">Full Demo</button>
+            <button class="example-btn" onclick="loadExample('basic')">Basic Markdown</button>
+            <button class="example-btn" onclick="loadExample('fence')">Code & Plugins</button>
+            <button class="example-btn" onclick="loadExample('tables')">Tables</button>
+            <button class="example-btn" onclick="loadExample('tasks')">Task Lists</button>
+            <button class="example-btn" onclick="loadExample('security')">XSS Protection</button>
+        </div>
+        
+        <div class="options">
+            <label class="option">
+                <input type="checkbox" id="show-raw" onchange="toggleRawHtml()">
+                <span>Show HTML</span>
+            </label>
+            <label class="option">
+                <input type="checkbox" id="inline-styles" onchange="render()">
+                <span>Inline Styles</span>
+            </label>
+            <label class="option">
+                <input type="checkbox" id="enable-plugins" checked onchange="render()">
+                <span>Enable Plugins</span>
+            </label>
+            <label class="option">
+                <input type="checkbox" id="dark-mode" onchange="toggleTheme()">
+                <span>Dark Mode</span>
+            </label>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <span>Markdown Input</span>
+                <span class="stats" id="input-stats"></span>
+            </div>
+            <div class="panel-content">
+                <textarea id="markdown-input" placeholder="Type your markdown here..." spellcheck="false"></textarea>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-header">
+                <span id="output-label">Rendered Output</span>
+                <span class="stats" id="render-time"></span>
+            </div>
+            <div class="panel-content" id="output-container">
+                <div id="html-output"></div>
+                <pre id="raw-html"></pre>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load quikdown from dist -->
+    <script src="../dist/quikdown.umd.min.js"></script>
+    
+    <script>
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+            }
+        });
+        
+        // Example content
+        const examples = {
+            comprehensive: `# Welcome to quikdown! 🚀
+
+A **lightweight**, *fast* markdown parser with plugin support and built-in XSS protection.
+
+## ✨ Key Features
+
+- [x] **8.7KB minified** - Ultra lightweight
+- [x] **Zero dependencies** - No bloat
+- [x] **Plugin system** - Extensible fence blocks
+- [x] **XSS protection** - Secure by default
+- [ ] Your feature request here!
+
+## 📝 Markdown Support
+
+### Text Formatting
+You can use **bold**, *italic*, ~~strikethrough~~, and \`inline code\`.
+Combine them for ***bold italic*** text!
+
+### Links and Autolinks
+- Regular link: [GitHub Repository](https://github.com/deftio/quikdown)
+- Autolink: https://npmjs.com/package/quikdown
+- Images: ![Badge](https://img.shields.io/badge/quikdown-awesome-green)
+
+## 📊 Tables Without Trailing Pipes
+
+Feature | Description | Status
+--------|-------------|-------
+Tables | Work without pipes | ✅
+Alignment | Left, center, right | ✅
+Markdown | **Bold** in cells | ✅
+
+## 🎨 Code with Syntax Highlighting
+
+\`\`\`javascript
+// quikdown with plugin support
+import quikdown from 'quikdown';
+
+const html = quikdown(markdown, {
+    fence_plugin: (code, language) => {
+        // Custom rendering for fence blocks
+        if (language === 'mermaid') {
+            return renderMermaid(code);
+        }
+        return hljs.highlight(code, {language}).value;
+    }
+});
+\`\`\`
+
+## 🔧 Alternative Fence Syntax
+
+~~~python
+# Python code with ~~~ fences
+def parse_markdown(text):
+    """Parse markdown with quikdown"""
+    return quikdown(text)
+~~~
+
+## 📊 Mermaid Diagram Support
+
+\`\`\`mermaid
+flowchart TD
+    A[Markdown] --> B[quikdown Parser]
+    B --> C{Plugins?}
+    C -->|Yes| D[Enhanced Output]
+    C -->|No| E[Standard Output]
+    D --> F[Beautiful HTML]
+    E --> F
+\`\`\`
+
+## 🛡️ Security Features
+
+quikdown automatically escapes HTML to prevent XSS attacks:
+&lt;script&gt;alert('This will be escaped!')&lt;/script&gt;
+
+### Quote of the Day
+> "The best markdown parser is one that gets out of your way."
+> — Happy Developer
+
+---
+
+Try editing this content to see real-time conversion! 
+*Render time is shown in the top-right corner.*`,
+
+            basic: `# Basic Markdown Examples
+
+## Headings
+
+# H1 Heading
+## H2 Heading
+### H3 Heading
+#### H4 Heading
+##### H5 Heading
+###### H6 Heading
+
+## Text Formatting
+
+This is **bold text** using asterisks.
+This is __bold text__ using underscores.
+
+This is *italic text* using asterisks.
+This is _italic text_ using underscores.
+
+This is ~~strikethrough text~~.
+
+This is \`inline code\`.
+
+## Lists
+
+### Unordered List
+- First item
+- Second item
+  - Nested item
+  - Another nested item
+- Third item
+
+### Ordered List
+1. First step
+2. Second step
+   1. Sub-step A
+   2. Sub-step B
+3. Third step
+
+## Links and Images
+
+[Visit GitHub](https://github.com)
+![Placeholder Image](https://via.placeholder.com/150)
+
+## Blockquotes
+
+> This is a blockquote.
+> It can span multiple lines.
+
+## Horizontal Rule
+
+---
+
+## Line Breaks
+
+First line with two spaces at the end  
+Second line appears on a new line.`,
+
+            fence: `# Code Blocks and Fence Plugins
+
+## Standard Code Blocks
+
+### JavaScript with Syntax Highlighting
+
+\`\`\`javascript
+// Function to calculate factorial
+function factorial(n) {
+    if (n <= 1) return 1;
+    return n * factorial(n - 1);
+}
+
+console.log(factorial(5)); // Output: 120
+\`\`\`
+
+### Python with ~~~ Fences
+
+~~~python
+# Fibonacci sequence generator
+def fibonacci(n):
+    a, b = 0, 1
+    for _ in range(n):
+        yield a
+        a, b = b, a + b
+
+# Generate first 10 numbers
+for num in fibonacci(10):
+    print(num, end=' ')
+~~~
+
+### HTML Example
+
+\`\`\`html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>quikdown Demo</title>
+</head>
+<body>
+    <h1>Hello World</h1>
+</body>
+</html>
+\`\`\`
+
+## Mermaid Diagrams
+
+### Flowchart
+
+\`\`\`mermaid
+flowchart TD
+    A[Start] --> B{Is it working?}
+    B -->|Yes| C[Great!]
+    B -->|No| D[Debug]
+    D --> E[Fix issues]
+    E --> B
+    C --> F[Deploy]
+    F --> G[End]
+\`\`\`
+
+### Sequence Diagram
+
+\`\`\`mermaid
+sequenceDiagram
+    participant U as User
+    participant C as Client
+    participant S as Server
+    participant D as Database
+    
+    U->>C: Click button
+    C->>S: HTTP Request
+    S->>D: Query data
+    D-->>S: Return results
+    S-->>C: JSON Response
+    C-->>U: Update UI
+\`\`\`
+
+### Git Graph
+
+\`\`\`mermaid
+gitGraph
+    commit
+    commit
+    branch develop
+    checkout develop
+    commit
+    commit
+    checkout main
+    merge develop
+    commit
+    branch feature
+    checkout feature
+    commit
+    commit
+    checkout main
+    merge feature
+\`\`\`
+
+## CSS Example
+
+\`\`\`css
+/* quikdown styles */
+.quikdown-pre {
+    background: #f4f4f4;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.quikdown-code {
+    background: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+\`\`\``,
+
+            tables: `# Table Examples
+
+## Basic Table
+
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+
+## Table with Alignment
+
+| Left Aligned | Center Aligned | Right Aligned |
+|:-------------|:--------------:|--------------:|
+| Left         | Center         | Right         |
+| 123          | 456            | 789           |
+| abc          | def            | ghi           |
+
+## Table Without Leading/Trailing Pipes (GFM Style)
+
+Name | Age | City
+-----|-----|-----
+Alice | 30 | New York
+Bob | 25 | Los Angeles
+Carol | 35 | Chicago
+
+## Table with Markdown Content
+
+| Feature | Description | Example |
+|---------|-------------|---------|
+| **Bold** | Make text bold | **Important** |
+| *Italic* | Emphasize text | *emphasis* |
+| \`Code\` | Inline code | \`var x = 1\` |
+| [Links](https://example.com) | Clickable links | [Click me](https://example.com) |
+| ~~Strike~~ | Strikethrough | ~~deleted~~ |
+
+## Complex Table
+
+| Language | Typing | Paradigm | Year | Popular Frameworks |
+|----------|--------|----------|------|-------------------|
+| **JavaScript** | Dynamic | Multi-paradigm | 1995 | React, Vue, Angular |
+| **Python** | Dynamic | Multi-paradigm | 1991 | Django, Flask |
+| **TypeScript** | Static | OOP/Functional | 2012 | Same as JS |
+| **Rust** | Static | Systems | 2010 | Actix, Rocket |
+| **Go** | Static | Concurrent | 2009 | Gin, Echo |`,
+
+            tasks: `# Task Lists and Checklists
+
+## Project Tasks
+
+### Development
+- [x] Set up repository
+- [x] Initialize npm project
+- [x] Configure build tools
+- [ ] Write documentation
+- [ ] Add more tests
+
+### Features to Implement
+- [x] Basic markdown parsing
+- [x] Table support
+- [x] Code fence plugins
+- [x] Task list support
+- [ ] Footnotes
+- [ ] Table of contents
+
+## Shopping List
+
+- [x] Milk
+- [x] Bread
+- [ ] Eggs
+- [ ] Butter
+- [ ] Coffee
+
+## Nested Task Lists
+
+- [x] Main task 1
+  - [x] Subtask 1.1
+  - [x] Subtask 1.2
+  - [ ] Subtask 1.3
+- [ ] Main task 2
+  - [ ] Subtask 2.1
+  - [ ] Subtask 2.2
+- [x] Main task 3
+
+## Mixed List Types
+
+1. First ordered item
+2. Second ordered item
+   - [ ] Nested task
+   - [x] Completed nested task
+3. Third ordered item
+
+- Unordered item
+  1. Nested ordered
+  2. Another ordered
+     - [x] Deep nested task
+
+## Bug Tracker
+
+### High Priority
+- [ ] Fix memory leak in parser
+- [ ] Resolve XSS vulnerability
+- [x] Update dependencies
+
+### Low Priority
+- [ ] Improve performance
+- [ ] Add more themes
+- [ ] Optimize bundle size`,
+
+            security: `# Security Features Demo
+
+## XSS Protection
+
+quikdown automatically escapes HTML tags to prevent XSS attacks:
+
+### Script Tags (Escaped)
+&lt;script&gt;alert('This script will not execute!');&lt;/script&gt;
+
+### HTML Injection (Escaped)
+&lt;div onclick="alert('XSS')"&gt;This div is escaped&lt;/div&gt;
+&lt;img src="#" onerror="alert('XSS')"&gt;
+
+### Safe URL Handling
+
+JavaScript URLs are sanitized:
+[Click me](javascript:alert('XSS'))
+
+Data URLs are blocked (except images):
+[Download](data:text/html,&lt;script&gt;alert('XSS')&lt;/script&gt;)
+
+But image data URLs work:
+![Safe Image](data:image/png;base64,iVBORw0KGgo)
+
+## Safe Markdown Rendering
+
+All these potentially dangerous inputs are handled safely:
+
+1. **HTML entities**: &lt;script&gt; tags are escaped
+2. **Event handlers**: onclick, onerror, etc. are removed
+3. **Dangerous protocols**: javascript:, vbscript: are blocked
+
+## Trusted Content via Plugins
+
+If you need to render trusted HTML, use the fence plugin system:
+
+\`\`\`html-safe
+<!-- This would need a custom plugin to render as HTML -->
+<div class="custom-widget">
+    <p>Trusted content only!</p>
+</div>
+\`\`\`
+
+## Testing XSS Vectors
+
+Common XSS attack vectors that are safely handled:
+
+- &lt;iframe src="javascript:alert('XSS')"&gt;
+- &lt;object data="javascript:alert('XSS')"&gt;
+- &lt;embed src="javascript:alert('XSS')"&gt;
+- &lt;img src=# onerror=alert('XSS')&gt;
+- &lt;input onfocus=alert('XSS') autofocus&gt;
+- &lt;select onfocus=alert('XSS') autofocus&gt;
+- &lt;textarea onfocus=alert('XSS') autofocus&gt;
+- &lt;button onclick=alert('XSS')&gt;Click&lt;/button&gt;
+
+All the above are rendered as escaped text, not executable HTML.
+
+## Summary
+
+✅ **All HTML is escaped by default**
+✅ **JavaScript URLs are sanitized**
+✅ **Event handlers are removed**
+✅ **Safe for untrusted user input**
+
+> Remember: Security by default, opt-in for trusted content!`
+        };
+        
+        // Fence plugin for syntax highlighting and mermaid
+        function fencePlugin(code, language) {
+            if (!document.getElementById('enable-plugins').checked) {
+                return undefined; // Use default rendering
+            }
+            
+            if (language === 'mermaid') {
+                const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                // Store the content to render after DOM update
+                setTimeout(() => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        mermaid.render(id + '-svg', code).then(result => {
+                            element.innerHTML = result.svg;
+                        }).catch(err => {
+                            console.error('Mermaid render error:', err);
+                            element.innerHTML = `<div class="error-badge">Mermaid error: ${err.message}</div>`;
+                        });
+                    }
+                }, 0);
+                return `<div class="mermaid" id="${id}">Loading diagram...</div>`;
+            }
+            
+            if (language && hljs.getLanguage(language)) {
+                try {
+                    const highlighted = hljs.highlight(code, { language }).value;
+                    return `<pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>`;
+                } catch (err) {
+                    // Fall back to default
+                }
+            }
+            
+            return undefined; // Use default rendering
+        }
+        
+        // Render function
+        function render() {
+            const startTime = performance.now();
+            const input = document.getElementById('markdown-input').value;
+            const inlineStyles = document.getElementById('inline-styles').checked;
+            const showRaw = document.getElementById('show-raw').checked;
+            
+            try {
+                const html = quikdown(input, {
+                    inline_styles: inlineStyles,
+                    fence_plugin: fencePlugin
+                });
+                
+                document.getElementById('html-output').innerHTML = html;
+                document.getElementById('raw-html').textContent = html;
+                
+                // Update stats
+                const endTime = performance.now();
+                const renderTime = (endTime - startTime).toFixed(2);
+                document.getElementById('render-time').textContent = `${renderTime}ms`;
+                
+                const charCount = input.length;
+                const lineCount = input.split('\n').length;
+                document.getElementById('input-stats').textContent = `${charCount} chars, ${lineCount} lines`;
+                
+            } catch (err) {
+                document.getElementById('html-output').innerHTML = 
+                    '<div class="error-badge">Render Error</div><pre>' + err + '</pre>';
+            }
+        }
+        
+        // Load example
+        function loadExample(name) {
+            document.getElementById('markdown-input').value = examples[name] || examples.comprehensive;
+            
+            // Update active button
+            document.querySelectorAll('.example-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            render();
+        }
+        
+        // Toggle raw HTML view
+        function toggleRawHtml() {
+            const showRaw = document.getElementById('show-raw').checked;
+            document.getElementById('html-output').style.display = showRaw ? 'none' : 'block';
+            document.getElementById('raw-html').style.display = showRaw ? 'block' : 'none';
+            document.getElementById('output-label').textContent = showRaw ? 'HTML Output' : 'Rendered Output';
+        }
+        
+        // Toggle dark mode
+        function toggleTheme() {
+            const darkMode = document.getElementById('dark-mode').checked;
+            document.getElementById('output-container').classList.toggle('output-dark', darkMode);
+            localStorage.setItem('quikdown-theme', darkMode ? 'dark' : 'light');
+        }
+        
+        // Auto-render on input
+        document.getElementById('markdown-input').addEventListener('input', render);
+        
+        // Initialize with comprehensive example
+        document.getElementById('markdown-input').value = examples.comprehensive;
+        render();
+        
+        // Show version
+        if (typeof quikdown !== 'undefined' && quikdown.version) {
+            document.querySelector('.version').textContent = 'v' + quikdown.version;
+        }
+        
+        // Restore theme preference
+        const savedTheme = localStorage.getItem('quikdown-theme');
+        if (savedTheme === 'dark') {
+            document.getElementById('dark-mode').checked = true;
+            document.getElementById('output-container').classList.add('output-dark');
+        }
+    </script>
+</body>
+</html>

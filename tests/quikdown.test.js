@@ -660,7 +660,7 @@ def analyze():
             // If inline styles are supported, expect style attributes, otherwise expect classes
             if (result.includes('style="')) {
                 expect(result).toContain('style="');
-            expect(result).toContain('margin-top: 0.5em');
+                expect(result).toContain('margin: 0.67em 0');
                 expect(result).not.toContain('class="');
             } else {
                 expect(result).toContain('class="quikdown-');
@@ -673,7 +673,7 @@ def analyze():
             expect(css).toContain('.quikdown-h1');
             expect(css).toContain('.quikdown-strong');
             expect(css).toContain('.quikdown-table');
-            expect(css).toContain('margin-top: 0.5em');
+            expect(css).toContain('margin: 0.5em 0');
         });
         
         test('configure should return a function', () => {

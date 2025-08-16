@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Documentation Hub - QuikChat Documentation</title>
+    <title>Documentation Hub - quikdown Documentation</title>
     <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
     <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
     <style>
@@ -64,30 +64,30 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1>QuikChat Documentation</h1>
-<p>Welcome to the QuikChat documentation hub.</p>
+        <h1>quikdown Documentation</h1>
+<p>Welcome to the quikdown documentation hub.</p>
 <h2>📚 Documentation</h2>
 <ul>
-<li><a href="./API-REFERENCE.html">API Reference</a> - Complete technical reference for all methods and options</li>
-<li><a href="./DEVELOPER-GUIDE.html">Developer Guide</a> - Practical recipes and advanced patterns  </li>
-<li><a href="./release-notes.html">Release Notes</a> - Version history and changelog</li>
+<li><a href="./api-reference.html">API Reference</a> - Complete technical reference for all methods and options</li>
+<li><a href="./security.html">Security Guide</a> - XSS protection and safety features</li>
+<li><a href="./plugin-guide.html">Plugin Guide</a> - Creating custom fence plugins</li>
+<li><a href="./architecture.html">Architecture</a> - Design and implementation details</li>
 </ul>
 <h2>🔗 Quick Links</h2>
 <ul>
-<li><a href="../">Main Project Page</a> - Return to QuikChat homepage</li>
-<li><a href="https://github.com/deftio/quikchat">GitHub Repository</a> - Source code and issues</li>
-<li><a href="https://www.npmjs.com/package/quikchat">NPM Package</a> - Package information</li>
-<li><a href="https://deftio.github.io/quikchat/examples/">Live Examples</a> - Interactive demos</li>
+<li><a href="../">Main Project Page</a> - Return to quikdown homepage</li>
+<li><a href="https://github.com/deftio/quikdown">GitHub Repository</a> - Source code and issues</li>
+<li><a href="https://www.npmjs.com/package/quikdown">NPM Package</a> - Package information</li>
+<li><a href="../examples/live-demo.html">Live Demo</a> - Interactive markdown editor</li>
 </ul>
 <h2>🚀 Getting Started</h2>
-<pre><code class="language-bash">npm install quikchat
+<pre><code class="language-bash">npm install quikdown
 </code></pre>
-<pre><code class="language-javascript">import quikchat from &#39;quikchat&#39;;
-import &#39;quikchat/dist/quikchat.css&#39;;
+<pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
 
-const chat = new quikchat(&#39;#chat&#39;, (instance, message) =&gt; {
-    console.log(&#39;User said:&#39;, message);
-});
+const markdown = &#39;# Hello World\n\nThis is **bold** text.&#39;;
+const html = quikdown(markdown);
+console.log(html);
 </code></pre>
 
     </article>

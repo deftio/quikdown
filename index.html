@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuikChat - Zero-dependency JavaScript Chat Widget - QuikChat Documentation</title>
+    <title>quikdown - Lightweight Markdown Parser - quikdown Documentation</title>
     <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
     <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
     <style>
@@ -64,18 +64,22 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1>QuikDown</h1>
-<p>A lightweight, fast markdown parser with built-in XSS protection and plugin support. QuikDown provides a secure, extensible markdown-to-HTML converter that works in both browser and Node.js environments.</p>
+        <h1>quikdown</h1>
+<p><a href="https://github.com/deftio/quikdown/actions/workflows/ci.yml"><img src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" alt="CI"></a><br><a href="https://www.npmjs.com/package/quikdown"><img src="https://badge.fury.io/js/quikdown.svg" alt="npm version"></a><br><a href="https://github.com/deftio/quikdown"><img src="https://img.shields.io/badge/coverage-99%25-brightgreen.svg" alt="Coverage Status"></a><br><a href="https://opensource.org/licenses/BSD-2-Clause"><img src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" alt="License: BSD-2-Clause"></a><br><a href="https://github.com/deftio/quikdown/tree/main/dist"><img src="https://img.shields.io/badge/minified-8.7KB-green.svg" alt="Bundle Size"></a></p>
+<p>A lightweight, fast markdown parser with built-in XSS protection. Quikdown works in both browser and Node.js environments.  Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.</p>
+<p>🚀 <strong><a href="https://deftio.github.io/quikdown/examples/live-demo.html">Try Live Demo</a></strong> - Interactive markdown editor with real-time preview<br>📚 <strong><a href="examples/">View Examples</a></strong> - Additional demos and test pages<br>📖 <strong><a href="docs/">Read Documentation</a></strong> - Architecture, security, API reference, and plugin guide</p>
 <h2>Features</h2>
 <ul>
-<li>🚀 <strong>Lightweight</strong> - ~200 lines of focused code</li>
-<li>🔒 <strong>Secure by default</strong> - Built-in XSS protection</li>
+<li>🚀 <strong>Lightweight</strong> - Under 10KB minified (currently 8.7KB)</li>
+<li>🔒 <strong>Secure by default</strong> - Built-in XSS protection with URL sanitization</li>
 <li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes</li>
 <li>🔌 <strong>Plugin system</strong> - Extensible fence block handlers</li>
 <li>📦 <strong>Zero dependencies</strong> - No external libraries required</li>
 <li>🌐 <strong>Universal</strong> - Works in browsers and Node.js</li>
 <li>⚡ <strong>Fast</strong> - Optimized regex-based parsing</li>
 <li>📝 <strong>CommonMark subset</strong> - Supports essential markdown features</li>
+<li>✅ <strong>Task Lists</strong> - GitHub-style checkboxes</li>
+<li>🔗 <strong>Autolinks</strong> - Automatic URL detection</li>
 </ul>
 <h2>Installation</h2>
 <pre><code class="language-bash">npm install quikdown
@@ -99,7 +103,7 @@ console.log(html);
 });
 </code></pre>
 <h2>Supported Markdown</h2>
-<p>QuikDown supports a practical subset of CommonMark:</p>
+<p>quikdown supports a practical subset of CommonMark:</p>
 <h3>Text Formatting</h3>
 <ul>
 <li><strong>Bold</strong>: <code>**text**</code> or <code>__text__</code></li>
@@ -127,14 +131,27 @@ console.log(html);
 2. Second item
    1. Nested item
 </code></pre>
+<p>Task Lists:</p>
+<pre><code class="language-markdown">- [x] Completed task
+- [ ] Pending task
+- [ ] Another todo
+</code></pre>
 <h3>Links and Images</h3>
 <pre><code class="language-markdown">[Link text](https://example.com)
 ![Alt text](image.jpg)
+
+// Autolinks - URLs are automatically linked
+Visit https://github.com for more info
 </code></pre>
 <h3>Code Blocks</h3>
 <pre><code class="language-markdown">```javascript
 console.log(&#39;Hello, world!&#39;);
 ```
+
+// Also supports ~~~ fences
+~~~python
+print(&quot;Hello, world!&quot;)
+~~~
 </code></pre>
 <h3>Tables</h3>
 <pre><code class="language-markdown">| Header 1 | Header 2 |
@@ -171,6 +188,7 @@ quikdown(&#39;**bold**&#39;, { inline_styles: false });
 const html = quikdown(markdown, { fence_plugin: fencePlugin });
 </code></pre>
 <h2>Plugin System</h2>
+<p>For a complete plugin development guide, see <a href="docs/plugin-guide.md">docs/plugin-guide.md</a></p>
 <h3>Creating a Fence Plugin</h3>
 <p>Fence plugins allow you to customize how code blocks are rendered:</p>
 <pre><code class="language-javascript">function myFencePlugin(code, language) {
@@ -208,7 +226,8 @@ const html = quikdown(markdownWithMermaid, {
 });
 </code></pre>
 <h2>Security</h2>
-<p>QuikDown includes built-in XSS protection:</p>
+<p>For detailed security information, see <a href="docs/security.md">docs/security.md</a></p>
+<p>quikdown includes built-in XSS protection:</p>
 <ul>
 <li>All HTML tags in markdown are escaped by default</li>
 <li>Attributes are sanitized</li>
@@ -220,6 +239,7 @@ const safe = quikdown(unsafe);
 // Output: &amp;lt;script&amp;gt;alert(&quot;XSS&quot;)&amp;lt;/script&amp;gt; &lt;strong&gt;bold&lt;/strong&gt;
 </code></pre>
 <h2>API Reference</h2>
+<p>For complete API documentation, see <a href="docs/api-reference.md">docs/api-reference.md</a></p>
 <h3><code>quikdown(markdown, options?)</code></h3>
 <p>Main function to convert markdown to HTML.</p>
 <p><strong>Parameters:</strong></p>
@@ -243,7 +263,7 @@ const safe = quikdown(unsafe);
 const html = myParser(markdown);
 </code></pre>
 <h3><code>quikdown.emitStyles()</code></h3>
-<p>Returns CSS styles for QuikDown HTML output when not using inline styles.</p>
+<p>Returns CSS styles for quikdown HTML output when not using inline styles.</p>
 <pre><code class="language-javascript">const styles = quikdown.emitStyles();
 // Add to your stylesheet or &lt;style&gt; tag
 </code></pre>
@@ -257,7 +277,7 @@ const html = myParser(markdown);
 &lt;body&gt;
     &lt;div id=&quot;output&quot;&gt;&lt;/div&gt;
     &lt;script&gt;
-        const markdown = &#39;# Hello QuikDown!&#39;;
+        const markdown = &#39;# Hello quikdown!&#39;;
         const html = quikdown(markdown, { inline_styles: true });
         document.getElementById(&#39;output&#39;).innerHTML = html;
     &lt;/script&gt;
@@ -280,16 +300,16 @@ const html = quikdown(markdown);
 res.send(html);
 </code></pre>
 <h2>Performance</h2>
-<p>QuikDown is optimized for speed:</p>
+<p>quikdown is optimized for speed:</p>
 <ul>
 <li>Single-pass regex parsing</li>
 <li>Minimal memory allocation</li>
 <li>No AST generation</li>
 <li>Efficient string operations</li>
 </ul>
-<p>Benchmarks show QuikDown performs comparably to larger markdown parsers while maintaining a much smaller footprint.</p>
+<p>Benchmarks show quikdown performs comparably to larger markdown parsers while maintaining a much smaller footprint.</p>
 <h2>Limitations</h2>
-<p>QuikDown intentionally doesn&#39;t support:</p>
+<p>quikdown intentionally doesn&#39;t support:</p>
 <ul>
 <li>HTML blocks (for security)</li>
 <li>Reference-style links</li>
@@ -319,88 +339,23 @@ npm run test:watch
 npm run test:coverage
 </code></pre>
 <h2>License</h2>
-<p>MIT License - see <a href="LICENSE">LICENSE</a> file for details.</p>
+<p>BSD 2-Clause License - see <a href="LICENSE.txt">LICENSE.txt</a> file for details.</p>
 <h2>Acknowledgments</h2>
 <ul>
 <li>Inspired by the simplicity of early markdown parsers</li>
 <li>Built for the <a href="https://github.com/deftio/quikchat">QuikChat</a> project</li>
 <li>CommonMark spec for markdown standardization</li>
 </ul>
-<h2>Comparison with Other Parsers</h2>
-<table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>QuikDown</th>
-<th>Marked</th>
-<th>Showdown</th>
-<th>Markdown-it</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Size</td>
-<td>~3KB</td>
-<td>~30KB</td>
-<td>~40KB</td>
-<td>~100KB</td>
-</tr>
-<tr>
-<td>Dependencies</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>3+</td>
-</tr>
-<tr>
-<td>XSS Protection</td>
-<td>✅ Built-in</td>
-<td>⚠️ Optional</td>
-<td>⚠️ Optional</td>
-<td>⚠️ Optional</td>
-</tr>
-<tr>
-<td>Plugin System</td>
-<td>✅ Simple</td>
-<td>✅ Complex</td>
-<td>✅ Complex</td>
-<td>✅ Complex</td>
-</tr>
-<tr>
-<td>Speed</td>
-<td>Fast</td>
-<td>Very Fast</td>
-<td>Fast</td>
-<td>Very Fast</td>
-</tr>
-<tr>
-<td>CommonMark</td>
-<td>Subset</td>
-<td>Full</td>
-<td>Full</td>
-<td>Full</td>
-</tr>
-</tbody></table>
-<p>Choose QuikDown when you need:</p>
+<p>Choose quikdown when you need:</p>
 <ul>
 <li>A lightweight solution</li>
 <li>Built-in security</li>
 <li>Simple plugin system</li>
 <li>Zero dependencies</li>
-<li>Browser-first design</li>
-</ul>
-<h2>Roadmap</h2>
-<ul>
-<li><input disabled="" type="checkbox"> TypeScript definitions</li>
-<li><input disabled="" type="checkbox"> More plugin examples</li>
-<li><input disabled="" type="checkbox"> Performance benchmarks</li>
-<li><input disabled="" type="checkbox"> Extended CommonMark support (optional)</li>
-<li><input disabled="" type="checkbox"> Streaming parser mode</li>
 </ul>
 <h2>Support</h2>
 <ul>
-<li>📧 Email: <a href="mailto:support@deftio.com">support@deftio.com</a></li>
 <li>🐛 Issues: <a href="https://github.com/deftio/quikdown/issues">GitHub Issues</a></li>
-<li>💬 Discussions: <a href="https://github.com/deftio/quikdown/discussions">GitHub Discussions</a></li>
 </ul>
 
     </article>

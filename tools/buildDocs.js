@@ -22,7 +22,7 @@ const htmlTemplate = (title, content, cssPath = 'https://unpkg.com/github-markdo
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title} - QuikChat Documentation</title>
+    <title>${title} - quikdown Documentation</title>
     <link rel="stylesheet" href="${cssPath}">
     <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
     <style>
@@ -139,7 +139,7 @@ async function buildDocs() {
     await convertMarkdownToHtml(
         path.join(projectRoot, 'README.md'),
         path.join(projectRoot, 'index.html'),
-        'QuikChat - Zero-dependency JavaScript Chat Widget'
+        'quikdown - Lightweight Markdown Parser'
     );
     
     // Convert all markdown files in docs/ folder
@@ -165,36 +165,36 @@ async function buildDocs() {
     
     // Create docs/index.html as a documentation hub
     const docsIndexContent = `
-# QuikChat Documentation
+# quikdown Documentation
 
-Welcome to the QuikChat documentation hub.
+Welcome to the quikdown documentation hub.
 
 ## 📚 Documentation
 
-- [API Reference](./API-REFERENCE.html) - Complete technical reference for all methods and options
-- [Developer Guide](./DEVELOPER-GUIDE.html) - Practical recipes and advanced patterns  
-- [Release Notes](./release-notes.html) - Version history and changelog
+- [API Reference](./api-reference.html) - Complete technical reference for all methods and options
+- [Security Guide](./security.html) - XSS protection and safety features
+- [Plugin Guide](./plugin-guide.html) - Creating custom fence plugins
+- [Architecture](./architecture.html) - Design and implementation details
 
 ## 🔗 Quick Links
 
-- [Main Project Page](../) - Return to QuikChat homepage
-- [GitHub Repository](https://github.com/deftio/quikchat) - Source code and issues
-- [NPM Package](https://www.npmjs.com/package/quikchat) - Package information
-- [Live Examples](https://deftio.github.io/quikchat/examples/) - Interactive demos
+- [Main Project Page](../) - Return to quikdown homepage
+- [GitHub Repository](https://github.com/deftio/quikdown) - Source code and issues
+- [NPM Package](https://www.npmjs.com/package/quikdown) - Package information
+- [Live Demo](../examples/live-demo.html) - Interactive markdown editor
 
 ## 🚀 Getting Started
 
 \`\`\`bash
-npm install quikchat
+npm install quikdown
 \`\`\`
 
 \`\`\`javascript
-import quikchat from 'quikchat';
-import 'quikchat/dist/quikchat.css';
+import quikdown from 'quikdown';
 
-const chat = new quikchat('#chat', (instance, message) => {
-    console.log('User said:', message);
-});
+const markdown = '# Hello World\\n\\nThis is **bold** text.';
+const html = quikdown(markdown);
+console.log(html);
 \`\`\`
 `;
     

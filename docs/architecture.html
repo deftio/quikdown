@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture - quikdown Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1>quikdown Architecture</h1>
+<h2>Design Philosophy</h2>
+<p>quikdown is designed with these core principles:</p>
+<ol>
+<li><strong>Small &amp; Fast</strong> - Optimized for size (~3KB minified) and performance</li>
+<li><strong>Secure by Default</strong> - All HTML is escaped unless explicitly trusted</li>
+<li><strong>Zero Dependencies</strong> - No external libraries required</li>
+<li><strong>Extensible</strong> - Plugin system for custom rendering</li>
+<li><strong>Practical</strong> - Focused on the markdown subset actually used in chat/LLM outputs</li>
+</ol>
+<h2>Parser Architecture</h2>
+<h3>Overview</h3>
+<p>quikdown uses a multi-phase regex-based parser that prioritizes safety and simplicity:</p>
+<pre><code>Input Markdown
+    ↓
+Phase 1: Extract &amp; Protect (Code blocks, inline code)
+    ↓
+Phase 2: Escape HTML (XSS protection)
+    ↓
+Phase 3: Process Block Elements (Tables, headings, lists)
+    ↓
+Phase 4: Process Inline Elements (Bold, italic, links)
+    ↓
+Phase 5: Create Paragraphs
+    ↓
+Phase 6: Restore Protected Content
+    ↓
+Output HTML
+</code></pre>
+<h3>Phase 1: Extract &amp; Protect</h3>
+<p>Before any processing, we extract code blocks and inline code, replacing them with placeholders:</p>
+<ul>
+<li><strong>Fenced code blocks</strong> → <code>%%%CODEBLOCK0%%%</code>, <code>%%%CODEBLOCK1%%%</code>, etc.</li>
+<li><strong>Inline code</strong> → <code>%%%INLINECODE0%%%</code>, <code>%%%INLINECODE1%%%</code>, etc.</li>
+</ul>
+<p>This prevents code content from being processed as markdown and ensures special characters remain intact.</p>
+<h3>Phase 2: HTML Escaping</h3>
+<p>All remaining content is HTML-escaped to prevent XSS attacks:</p>
+<ul>
+<li><code>&lt;</code> → <code>&amp;lt;</code></li>
+<li><code>&gt;</code> → <code>&amp;gt;</code></li>
+<li><code>&amp;</code> → <code>&amp;amp;</code></li>
+<li><code>&quot;</code> → <code>&amp;quot;</code></li>
+<li><code>&#39;</code> → <code>&amp;#39;</code></li>
+</ul>
+<p>This is done BEFORE markdown processing, ensuring no user input can inject HTML tags.</p>
+<h3>Phase 3: Block Elements</h3>
+<p>Process larger structural elements:</p>
+<ol>
+<li><strong>Tables</strong> - Multi-line processing with alignment support</li>
+<li><strong>Headings</strong> - ATX-style headers (<code>#</code> through <code>######</code>)</li>
+<li><strong>Blockquotes</strong> - Line-by-line <code>&gt;</code> prefixes</li>
+<li><strong>Horizontal rules</strong> - Three or more hyphens</li>
+<li><strong>Lists</strong> - Both ordered and unordered with nesting</li>
+</ol>
+<h3>Phase 4: Inline Elements</h3>
+<p>Process text formatting within blocks:</p>
+<ol>
+<li><strong>Images</strong> - Processed before links to avoid conflicts</li>
+<li><strong>Links</strong> - Standard markdown link syntax</li>
+<li><strong>Bold</strong> - <code>**text**</code> or <code>__text__</code></li>
+<li><strong>Italic</strong> - <code>*text*</code> or <code>_text_</code></li>
+<li><strong>Strikethrough</strong> - <code>~~text~~</code></li>
+<li><strong>Line breaks</strong> - Two trailing spaces</li>
+</ol>
+<h3>Phase 5: Paragraphs</h3>
+<p>Double newlines are converted to paragraph breaks, then we unwrap block elements that shouldn&#39;t be inside <code>&lt;p&gt;</code> tags.</p>
+<h3>Phase 6: Restore Protected Content</h3>
+<p>Finally, we replace the placeholders with the actual code content, properly formatted.</p>
+<h2>Key Design Decisions</h2>
+<h3>Why Regex Instead of AST?</h3>
+<ol>
+<li><strong>Size</strong> - No parser/lexer overhead</li>
+<li><strong>Speed</strong> - Single pass for most operations</li>
+<li><strong>Simplicity</strong> - Easier to audit and understand</li>
+<li><strong>Good enough</strong> - Handles 95% of real-world markdown</li>
+</ol>
+<h3>Why Extract-Escape-Process-Restore?</h3>
+<p>This pattern ensures:</p>
+<ol>
+<li>Code blocks are never modified</li>
+<li>HTML is always escaped (security)</li>
+<li>Markdown syntax inside code is preserved</li>
+<li>Processing order is predictable</li>
+</ol>
+<h3>Why No HTML Passthrough?</h3>
+<p>By default, all HTML is escaped for security. However, trusted HTML can be rendered using the fence plugin system:</p>
+<pre><code class="language-javascript">// Controlled HTML rendering via fence blocks
+const plugin = (content, lang) =&gt; {
+  if (lang === &#39;html-render&#39;) {
+    return content; // Trust this specific block
+  }
+  return undefined; // Use default escaping
+};
+</code></pre>
+<p>This makes trust explicit and granular.</p>
+<h2>Performance Considerations</h2>
+<h3>Optimizations</h3>
+<ol>
+<li><strong>Single-pass regex</strong> where possible</li>
+<li><strong>Pre-compiled patterns</strong> (via JavaScript&#39;s regex literals)</li>
+<li><strong>Minimal string concatenation</strong></li>
+<li><strong>Early returns</strong> for empty/invalid input</li>
+</ol>
+<h3>Trade-offs</h3>
+<ul>
+<li><strong>No streaming</strong> - Entire document processed at once</li>
+<li><strong>Regex limitations</strong> - Some edge cases in deeply nested structures</li>
+<li><strong>No incremental updates</strong> - Full re-parse on change</li>
+</ul>
+<p>These trade-offs are acceptable for the target use case (chat messages, LLM outputs) where documents are typically small.</p>
+<h2>Memory Usage</h2>
+<ul>
+<li><strong>Linear with input size</strong> - No exponential growth</li>
+<li><strong>Temporary arrays</strong> for code blocks and placeholders</li>
+<li><strong>No AST</strong> - No intermediate tree structure</li>
+</ul>
+<h2>Browser Compatibility</h2>
+<ul>
+<li><strong>ES6 features used</strong>: Template literals, arrow functions, const/let</li>
+<li><strong>No polyfills needed</strong> for modern browsers (2017+)</li>
+<li><strong>Regex compatibility</strong>: Avoided lookbehind for older Safari</li>
+</ul>
+<h2>Extensibility Points</h2>
+<h3>1. Fence Plugin System</h3>
+<p>Custom renderers for fenced code blocks:</p>
+<pre><code class="language-javascript">function myPlugin(content, language) {
+  // content: Raw, unescaped content
+  // language: The language identifier (if any)
+  // Return: HTML string or undefined (fall back to default)
+}
+</code></pre>
+<h3>2. Style Options</h3>
+<ul>
+<li><strong>Inline styles</strong>: Embed CSS directly in elements</li>
+<li><strong>CSS classes</strong>: Use external stylesheets</li>
+<li><strong>Custom prefix</strong>: Avoid class name collisions</li>
+</ul>
+<h3>3. Configuration</h3>
+<p>The <code>configure()</code> method creates reusable configured instances:</p>
+<pre><code class="language-javascript">const myParser = quikdown.configure({
+  inline_styles: true,
+  fence_plugin: myPlugin
+});
+</code></pre>
+<h2>Security Model</h2>
+<h3>Default Protections</h3>
+<ol>
+<li><strong>HTML Escaping</strong> - All user input is escaped</li>
+<li><strong>No Script Execution</strong> - No <code>eval()</code> or dynamic code</li>
+<li><strong>No HTML Parsing</strong> - No innerHTML on untrusted content</li>
+<li><strong>Protected Code Blocks</strong> - Code content is preserved exactly</li>
+</ol>
+<h3>Trust Boundaries</h3>
+<ul>
+<li><strong>Input</strong>: Untrusted markdown text</li>
+<li><strong>Output</strong>: Safe HTML (escaped)</li>
+<li><strong>Plugins</strong>: Trusted code (developer-provided)</li>
+<li><strong>Plugin Content</strong>: Potentially unsafe (plugin&#39;s responsibility)</li>
+</ul>
+<h3>Recommended Practices</h3>
+<ol>
+<li>Only use fence plugins from trusted sources</li>
+<li>Validate plugin output if accepting third-party plugins</li>
+<li>Use Content Security Policy (CSP) headers</li>
+<li>Sanitize URLs in production applications</li>
+</ol>
+<h2>Limitations by Design</h2>
+<h3>Not Supported</h3>
+<ul>
+<li>Full CommonMark specification</li>
+<li>HTML blocks (security)</li>
+<li>Reference-style links (complexity)</li>
+<li>Footnotes (uncommon in chat)</li>
+<li>Definition lists (uncommon)</li>
+<li>Nested blockquotes with different markers</li>
+</ul>
+<h3>Edge Cases</h3>
+<ul>
+<li>Mixed emphasis markers can mis-parse</li>
+<li>Deeply nested lists beyond 10 levels</li>
+<li>Tables without proper separator rows</li>
+<li>Unclosed fenced code blocks</li>
+</ul>
+<p>These limitations keep the parser small, fast, and secure.</p>
+
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>

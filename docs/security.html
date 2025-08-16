@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security - quikdown Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1>Security Guide</h1>
+<h2>Overview</h2>
+<p>quikdown is designed with security as a primary concern. This document explains our security model, design choices, and best practices for safe usage.</p>
+<h2>Core Security Principles</h2>
+<h3>1. Escape by Default</h3>
+<p><strong>All HTML in markdown input is escaped</strong>, preventing XSS attacks:</p>
+<pre><code class="language-javascript">const markdown = &#39;&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; Hello **world**&#39;;
+const html = quikdown(markdown);
+// Output: &amp;lt;script&amp;gt;alert(&quot;XSS&quot;)&amp;lt;/script&amp;gt; Hello &lt;strong&gt;world&lt;/strong&gt;
+</code></pre>
+<h3>2. No HTML Passthrough</h3>
+<p>Unlike some markdown parsers, quikdown does <strong>not</strong> allow raw HTML to pass through by default. This is an intentional security decision.</p>
+<p><strong>Why?</strong></p>
+<ul>
+<li>Prevents XSS attacks</li>
+<li>Eliminates stored XSS vulnerabilities</li>
+<li>Reduces security audit complexity</li>
+<li>Makes the parser safe for untrusted input</li>
+</ul>
+<h3>3. Trusted HTML via Fence Plugins</h3>
+<p>When you need to render trusted HTML, use the fence plugin system:</p>
+<pre><code class="language-javascript">const trustedHtmlPlugin = (content, lang) =&gt; {
+  // Only allow HTML from explicitly marked blocks
+  if (lang === &#39;html-render&#39; &amp;&amp; isSourceTrusted()) {
+    return content; // Return raw HTML
+  }
+  return undefined; // Fall back to escaping
+};
+
+const html = quikdown(markdown, { 
+  fence_plugin: trustedHtmlPlugin 
+});
+</code></pre>
+<p>This approach makes trust <strong>explicit and granular</strong>.</p>
+<h2>HTML Handling Strategies</h2>
+<h3>Strategy 1: Never Trust (Recommended)</h3>
+<p>The safest approach - all HTML is always escaped:</p>
+<pre><code class="language-javascript">// Safe for any user input
+const html = quikdown(untrustedMarkdown);
+</code></pre>
+<h3>Strategy 2: Trusted Fence Blocks</h3>
+<p>Allow HTML only in specially marked fence blocks:</p>
+<pre><code class="language-markdown">Regular text with &lt;script&gt;escaped HTML&lt;/script&gt;
+
+```html-render
+&lt;div class=&quot;custom-widget&quot;&gt;
+  &lt;!-- This HTML will be rendered if the plugin allows it --&gt;
+  &lt;button onclick=&quot;doSomething()&quot;&gt;Click me&lt;/button&gt;
+&lt;/div&gt;
+```
+</code></pre>
+<h3>Strategy 3: Server-Side Sanitization</h3>
+<p>If you need inline HTML, sanitize server-side before parsing:</p>
+<pre><code class="language-javascript">// Server-side
+const sanitized = DOMPurify.sanitize(userInput);
+const markdown = preprocessToMarkdown(sanitized);
+const html = quikdown(markdown);
+</code></pre>
+<h2>XSS Prevention</h2>
+<h3>Attack Vectors Prevented</h3>
+<ol>
+<li><p><strong>Script Tag Injection</strong></p>
+<pre><code class="language-markdown">&lt;script&gt;alert(&#39;XSS&#39;)&lt;/script&gt;
+&lt;!-- Rendered as: &amp;lt;script&amp;gt;alert(&#39;XSS&#39;)&amp;lt;/script&amp;gt; --&gt;
+</code></pre>
+</li>
+<li><p><strong>Event Handler Injection</strong></p>
+<pre><code class="language-markdown">&lt;img onerror=&quot;alert(&#39;XSS&#39;)&quot; src=&quot;x&quot;&gt;
+&lt;!-- Rendered as: &amp;lt;img onerror=&quot;alert(&#39;XSS&#39;)&quot; src=&quot;x&quot;&amp;gt; --&gt;
+</code></pre>
+</li>
+<li><p><strong>JavaScript URLs</strong> (Future feature)</p>
+<pre><code class="language-markdown">[Click me](javascript:alert(&#39;XSS&#39;))
+&lt;!-- Will be sanitized when URL validation is added --&gt;
+</code></pre>
+</li>
+<li><p><strong>Data URI Attacks</strong> (Future feature)</p>
+<pre><code class="language-markdown">![](data:text/html,&lt;script&gt;alert(&#39;XSS&#39;)&lt;/script&gt;)
+&lt;!-- Will be blocked when URL validation is added --&gt;
+</code></pre>
+</li>
+</ol>
+<h3>Current Limitations</h3>
+<p><strong>Note</strong>: URL sanitization is not yet implemented. Currently, javascript: and data: URLs in links and images are NOT sanitized. This is on the roadmap.</p>
+<h2>Fence Plugin Security</h2>
+<h3>Plugin Responsibilities</h3>
+<p>When you write a fence plugin, YOU are responsible for security:</p>
+<pre><code class="language-javascript">// UNSAFE - Don&#39;t do this with untrusted input!
+const unsafePlugin = (content, lang) =&gt; {
+  return content; // Returns raw, unescaped HTML
+};
+
+// SAFER - Validate and sanitize
+const saferPlugin = (content, lang) =&gt; {
+  if (lang === &#39;mermaid&#39;) {
+    // Mermaid handles its own escaping
+    return `&lt;div class=&quot;mermaid&quot;&gt;${escapeHtml(content)}&lt;/div&gt;`;
+  }
+  return undefined;
+};
+
+// SAFEST - Use established libraries
+const safestPlugin = (content, lang) =&gt; {
+  if (lang === &#39;html-preview&#39;) {
+    // Use DOMPurify or similar
+    return DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: [&#39;div&#39;, &#39;span&#39;, &#39;p&#39;, &#39;a&#39;],
+      ALLOWED_ATTR: [&#39;class&#39;, &#39;href&#39;]
+    });
+  }
+  return undefined;
+};
+</code></pre>
+<h3>Plugin Best Practices</h3>
+<ol>
+<li><strong>Validate language identifiers</strong> - Only handle expected languages</li>
+<li><strong>Escape by default</strong> - When in doubt, escape HTML</li>
+<li><strong>Use allowlists</strong> - Only allow known-safe constructs</li>
+<li><strong>Sanitize output</strong> - Use libraries like DOMPurify</li>
+<li><strong>Document trust requirements</strong> - Make it clear what input is expected</li>
+</ol>
+<h2>Content Security Policy (CSP)</h2>
+<p>Use CSP headers to add defense-in-depth:</p>
+<pre><code class="language-html">&lt;meta http-equiv=&quot;Content-Security-Policy&quot; 
+      content=&quot;default-src &#39;self&#39;; 
+               script-src &#39;self&#39;; 
+               style-src &#39;self&#39; &#39;unsafe-inline&#39;;&quot;&gt;
+</code></pre>
+<p>Note: <code>unsafe-inline</code> for styles is needed if using <code>inline_styles: true</code>.</p>
+<h2>Safe Usage Patterns</h2>
+<h3>Pattern 1: User Comments</h3>
+<pre><code class="language-javascript">// Safe for user-generated content
+function renderComment(userMarkdown) {
+  return quikdown(userMarkdown, {
+    inline_styles: false  // Use CSS classes
+  });
+}
+</code></pre>
+<h3>Pattern 2: Admin Content with Widgets</h3>
+<pre><code class="language-javascript">// Admin users can embed widgets
+function renderAdminContent(markdown, isAdmin) {
+  const options = {};
+  
+  if (isAdmin) {
+    options.fence_plugin = (content, lang) =&gt; {
+      if (lang === &#39;widget&#39;) {
+        return renderWidget(JSON.parse(content));
+      }
+    };
+  }
+  
+  return quikdown(markdown, options);
+}
+</code></pre>
+<h3>Pattern 3: Mixed Trust Levels</h3>
+<pre><code class="language-javascript">// Different trust for different parts
+function renderMixedContent(markdown, trustMap) {
+  return quikdown(markdown, {
+    fence_plugin: (content, lang) =&gt; {
+      const trust = trustMap[lang];
+      if (trust === &#39;full&#39;) {
+        return content; // Full trust
+      } else if (trust === &#39;sanitized&#39;) {
+        return DOMPurify.sanitize(content);
+      }
+      return undefined; // Default escaping
+    }
+  });
+}
+</code></pre>
+<h2>Security Checklist</h2>
+<p>Before deploying quikdown:</p>
+<ul>
+<li><input disabled="" type="checkbox"> <strong>Never pass untrusted HTML</strong> to fence plugins without sanitization</li>
+<li><input disabled="" type="checkbox"> <strong>Use CSP headers</strong> for defense-in-depth</li>
+<li><input disabled="" type="checkbox"> <strong>Validate plugin output</strong> if accepting third-party plugins</li>
+<li><input disabled="" type="checkbox"> <strong>Escape plugin errors</strong> - Don&#39;t display raw error messages</li>
+<li><input disabled="" type="checkbox"> <strong>Update regularly</strong> - Keep quikdown updated for security fixes</li>
+<li><input disabled="" type="checkbox"> <strong>Audit fence plugins</strong> - Review all custom plugin code</li>
+<li><input disabled="" type="checkbox"> <strong>Test with malicious input</strong> - Try XSS payloads in testing</li>
+<li><input disabled="" type="checkbox"> <strong>Use HTTPS</strong> - Prevent MITM attacks on delivered content</li>
+<li><input disabled="" type="checkbox"> <strong>Sanitize URLs</strong> (until built-in support is added)</li>
+</ul>
+<h2>Reporting Security Issues</h2>
+<p>If you discover a security vulnerability:</p>
+<ol>
+<li><strong>DO NOT</strong> open a public issue</li>
+<li>Email security details to [security contact]</li>
+<li>Include:<ul>
+<li>Description of the vulnerability</li>
+<li>Steps to reproduce</li>
+<li>Potential impact</li>
+<li>Suggested fix (if any)</li>
+</ul>
+</li>
+</ol>
+<h2>Future Security Enhancements</h2>
+<p>Planned security improvements:</p>
+<ol>
+<li><strong>URL Sanitization</strong> - Block javascript:, data:, and other dangerous URLs</li>
+<li><strong>Configurable URL Allowlist</strong> - Only allow specific URL schemes</li>
+<li><strong>Plugin Sandboxing</strong> - Optional plugin output validation</li>
+<li><strong>Security Headers Helper</strong> - Generate recommended CSP headers</li>
+<li><strong>Built-in DOMPurify Integration</strong> - Optional HTML sanitization</li>
+</ol>
+<h2>Summary</h2>
+<p>quikdown&#39;s security model:</p>
+<ol>
+<li><strong>Safe by default</strong> - No XSS without explicit opt-in</li>
+<li><strong>Explicit trust</strong> - Trusted HTML requires fence plugins</li>
+<li><strong>Granular control</strong> - Trust specific blocks, not everything</li>
+<li><strong>Developer responsibility</strong> - Plugins must handle security</li>
+<li><strong>Defense in depth</strong> - Use with CSP and sanitization</li>
+</ol>
+<p>When in doubt, <strong>don&#39;t trust the input</strong>. The safest quikdown is one that never uses fence plugins with untrusted content.</p>
+
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>

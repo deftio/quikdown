@@ -1,0 +1,138 @@
+/**
+ * quikdown Light Theme CSS
+ * Minimal light theme - just basic styling, no fancy colors
+ */
+
+/* Headings - just size differences */
+.quikdown-h1 {
+    font-size: 2em;
+    font-weight: 600;
+    margin: 0.67em 0;
+    text-align: left;
+}
+
+.quikdown-h2 {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin: 0.83em 0;
+}
+
+.quikdown-h3 {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin: 1em 0;
+}
+
+.quikdown-h4 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 1.33em 0;
+}
+
+.quikdown-h5 {
+    font-size: 0.875em;
+    font-weight: 600;
+    margin: 1.67em 0;
+}
+
+.quikdown-h6 {
+    font-size: 0.85em;
+    font-weight: 600;
+    margin: 2em 0;
+}
+
+/* Code blocks */
+.quikdown-pre {
+    background: #f4f4f4;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 1em 0;
+}
+
+.quikdown-code {
+    background: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+/* Blockquotes */
+.quikdown-blockquote {
+    border-left: 4px solid #ddd;
+    margin-left: 0;
+    padding-left: 1em;
+}
+
+/* Tables */
+.quikdown-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+}
+
+.quikdown-th {
+    border: 1px solid #ddd;
+    padding: 8px;
+    background-color: #f2f2f2;
+    font-weight: bold;
+    text-align: left;
+}
+
+.quikdown-td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+/* Lists */
+.quikdown-ul,
+.quikdown-ol {
+    margin: 0.5em 0;
+    padding-left: 2em;
+}
+
+.quikdown-li {
+    margin: 0.25em 0;
+}
+
+/* Task lists */
+.quikdown-task-item {
+    list-style: none;
+}
+
+.quikdown-task-checkbox {
+    margin-right: 0.5em;
+}
+
+/* Links */
+.quikdown-a {
+    color: #0066cc;
+    text-decoration: underline;
+}
+
+/* Images */
+.quikdown-img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Horizontal rule */
+.quikdown-hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 1em 0;
+}
+
+/* Text formatting */
+.quikdown-strong {
+    font-weight: bold;
+}
+
+.quikdown-em {
+    font-style: italic;
+}
+
+.quikdown-del {
+    text-decoration: line-through;
+}
