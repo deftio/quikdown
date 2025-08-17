@@ -8,13 +8,6 @@
     
     <!-- Load Mermaid for diagram rendering -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-    <script>
-        mermaid.initialize({ 
-            startOnLoad: false,
-            theme: 'default',
-            securityLevel: 'loose'
-        });
-    </script>
     
     <!-- Load theme CSS -->
     <link rel="stylesheet" href="../dist/quikdown.light.css">
@@ -250,6 +243,25 @@
         #rendered-output.quikdown-dark th {
             background: #2d2d2d;
         }
+        
+        /* Mermaid diagram styles */
+        .mermaid-container {
+            margin: 1rem 0;
+            min-height: 100px;
+        }
+        
+        .mermaid {
+            text-align: center;
+        }
+        
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .mermaid-source {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -312,102 +324,29 @@
         let isUpdating = false; // Prevent infinite loops
         let lastEditSource = null; // Track which side was last edited
         
-        // Example with fenced code blocks
-        const exampleMarkdown = `# Live Bidirectional Editor
-
-Welcome to the **live bidirectional editor**! Edit either side and watch it sync.
-
-## Features
-
-- ✨ **Real-time sync** between Markdown and HTML
-- 🎨 Edit the *rendered output* directly
-- 🔄 Instant bidirectional conversion
-- 🌙 Dark mode support
-
-### Code Examples
-
-Here's some inline \`code\` and a fenced block:
-
-\`\`\`javascript
-// JavaScript example
-function greet(name) {
-    return \`Hello, \${name}!\`;
-}
-
-console.log(greet('World'));
-\`\`\`
-
-### Python Example
-
-\`\`\`python
-# Python example with syntax
-def fibonacci(n):
-    if n <= 1:
-        return n
-    return fibonacci(n-1) + fibonacci(n-2)
-
-print([fibonacci(i) for i in range(10)])
-\`\`\`
-
-### Bash Commands
-
-\`\`\`bash
-# Install quikdown
-npm install quikdown
-
-# Use in Node.js
-node -e "const qd = require('quikdown'); console.log(qd('# Hello'))"
-\`\`\`
-
-## Tables
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Markdown → HTML | ✅ | Fast |
-| HTML → Markdown | ✅ | DOM walking |
-| Live sync | ✅ | Bidirectional |
-
-## Lists
-
-1. Edit markdown on the left
-2. See it render on the right
-3. Edit the rendered HTML directly
-4. Watch markdown update automatically
-
-### Task List
-
-- [x] Create bidirectional converter
-- [x] Add live sync
-- [x] Support code blocks
-- [ ] Add more features
-
-> **Pro tip**: Try editing this blockquote directly in the rendered view!
-
-## Mermaid Diagram Test
-
-\`\`\`mermaid
-graph TD
-    A[Markdown] -->|quikdown| B[HTML]
-    B -->|DOM Walker| A
-    B -.->|Edit| C[User]
-    C -.->|Type| A
-    C -.->|Type| B
-\`\`\`
-
----
-
-*Happy editing!* 🚀`;
+        // Default example content (will be loaded from file if available)
+        let exampleMarkdown = `# Loading example...`;
         
         // Initialize
-        function init() {
+        async function init() {
+            // Wait for mermaid to load
+            let retries = 0;
+            while (typeof mermaid === 'undefined' && retries < 10) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
+            
+            if (typeof mermaid !== 'undefined') {
+                console.log('Mermaid loaded successfully');
+            } else {
+                console.warn('Mermaid failed to load');
+            }
+            
             // Load example
-            loadExample();
+            await loadExample();
             
             // Set up event listeners
             setupEventListeners();
-            
-            // Initial conversion
-            convertMdToHtml();
         }
         
         // Set up event listeners
@@ -471,8 +410,11 @@ graph TD
                         if (lang === 'mermaid') {
                             // Create a unique ID for this diagram
                             const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-                            // Store the mermaid code in a data attribute for round-trip
-                            return `<div class="mermaid" id="${id}" data-qd="mermaid" data-qd-fence="\`\`\`" data-qd-lang="mermaid" data-mermaid-source="${escapeHtml(code)}">${code}</div>`;
+                            // Store source and create pre element as fallback
+                            return `<div class="mermaid-container" data-qd="mermaid" data-qd-fence="\`\`\`" data-qd-lang="mermaid">
+                                <div class="mermaid-source" style="display:none">${escapeHtml(code)}</div>
+                                <pre class="mermaid" id="${id}">${code}</pre>
+                            </div>`;
                         }
                         return undefined; // Let default handle other languages
                     }
@@ -481,10 +423,34 @@ graph TD
                 document.getElementById('rendered-output').innerHTML = html;
                 
                 // Render any mermaid diagrams
-                const mermaidElements = document.querySelectorAll('.mermaid');
-                if (mermaidElements.length > 0) {
-                    mermaid.run({ nodes: Array.from(mermaidElements) });
-                }
+                setTimeout(() => {
+                    try {
+                        if (typeof mermaid !== 'undefined') {
+                            // Re-initialize mermaid with current theme
+                            mermaid.initialize({ 
+                                startOnLoad: false,
+                                theme: isDarkTheme ? 'dark' : 'default',
+                                securityLevel: 'loose',
+                                flowchart: {
+                                    useMaxWidth: true,
+                                    htmlLabels: true
+                                }
+                            });
+                            
+                            // Use mermaid.init to process all .mermaid elements
+                            const mermaidElements = document.querySelectorAll('pre.mermaid');
+                            console.log('Found mermaid elements:', mermaidElements.length);
+                            
+                            if (mermaidElements.length > 0) {
+                                // Mermaid.init will automatically convert <pre class="mermaid"> to diagrams
+                                mermaid.init(undefined, mermaidElements);
+                                console.log('Mermaid init called');
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Mermaid processing error:', e);
+                    }
+                }, 100);
                 
                 const endTime = performance.now();
                 updateStatus(`Converted in ${(endTime - startTime).toFixed(1)}ms`, 'Markdown → HTML');
@@ -564,14 +530,57 @@ graph TD
                 output.classList.add('quikdown-light');
             }
             
+            // Reset mermaid initialization for theme change
+            window.mermaidInitialized = false;
+            
+            // Re-render to apply new theme to mermaid diagrams
+            convertMdToHtml();
+            
             updateStatus(`Switched to ${isDarkTheme ? 'dark' : 'light'} theme`, 'Theme changed');
         }
         
         // Load example
-        function loadExample() {
+        async function loadExample() {
+            try {
+                // Try to load from file
+                const response = await fetch('example_bidirectional_sample.md');
+                if (response.ok) {
+                    exampleMarkdown = await response.text();
+                    updateStatus('Example loaded from file', 'Ready to edit');
+                } else {
+                    // Fallback to simple example
+                    exampleMarkdown = `# Quikdown Bidirectional Editor
+
+Welcome! Edit **either side** and watch them sync.
+
+## Try These Features
+
+- Edit this *markdown* on the left
+- Click and edit the rendered output on the right
+- Check/uncheck task items below
+
+### Task List
+
+- [ ] Try editing markdown
+- [ ] Try editing rendered HTML
+- [ ] Toggle dark theme
+
+\`\`\`javascript
+// Code blocks work too!
+console.log("Hello, Quikdown!");
+\`\`\`
+
+> Edit this quote directly in the rendered view!`;
+                    updateStatus('Using default example', 'Ready to edit');
+                }
+            } catch (e) {
+                console.warn('Could not load example file:', e);
+                // Use fallback
+                exampleMarkdown = `# Quikdown Bidirectional Editor\n\nEdit either side!`;
+            }
+            
             document.getElementById('markdown-input').value = exampleMarkdown;
             convertMdToHtml();
-            updateStatus('Example loaded', 'Ready to edit');
         }
         
         // Update status bar

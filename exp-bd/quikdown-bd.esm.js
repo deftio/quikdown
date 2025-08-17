@@ -1073,20 +1073,29 @@ quikdownBD.toMarkdown = function(htmlOrElement) {
                 return '';
                 
             case 'div':
-                // Check if it's a mermaid diagram
-                if (node.classList && node.classList.contains('mermaid')) {
+                // Check if it's a mermaid container
+                if (node.classList && node.classList.contains('mermaid-container')) {
                     const fence = node.getAttribute('data-qd-fence') || '```';
                     const lang = node.getAttribute('data-qd-lang') || 'mermaid';
-                    // Try to get original source from data attribute
-                    const source = node.getAttribute('data-mermaid-source');
-                    if (source) {
+                    // Look for the source element
+                    const sourceElement = node.querySelector('.mermaid-source');
+                    if (sourceElement) {
                         // Decode HTML entities
                         const temp = document.createElement('div');
-                        temp.innerHTML = source;
+                        temp.innerHTML = sourceElement.innerHTML;
                         const code = temp.textContent;
                         return `${fence}${lang}\n${code}\n${fence}\n\n`;
                     }
-                    // Fallback: try to extract from the text content
+                    // Fallback: try to extract from the mermaid element
+                    const mermaidElement = node.querySelector('.mermaid');
+                    if (mermaidElement && mermaidElement.textContent.includes('graph')) {
+                        return `${fence}${lang}\n${mermaidElement.textContent.trim()}\n${fence}\n\n`;
+                    }
+                }
+                // Check if it's a standalone mermaid diagram (legacy)
+                if (node.classList && node.classList.contains('mermaid')) {
+                    const fence = node.getAttribute('data-qd-fence') || '```';
+                    const lang = node.getAttribute('data-qd-lang') || 'mermaid';
                     const code = node.textContent.trim();
                     return `${fence}${lang}\n${code}\n${fence}\n\n`;
                 }
