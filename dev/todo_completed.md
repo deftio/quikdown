@@ -88,3 +88,38 @@ This file contains all completed tasks moved from todo.md to reduce clutter.
 * ✅ Made examples/quikdown-live.html mobile-responsive
 * ✅ Added documentation link to examples page
 * ✅ Fixed all broken links to renamed demo file
+
+## ✅ v1.0.3 Release - Size Optimizations & Features
+* ✅ **Achieved 24% size reduction** (9.2KB → 7.0KB minified)
+  - ✅ Implemented minifier-aware optimizations (dev2-dev4)
+  - ✅ Module-level constant hoisting (QUIKDOWN_STYLES, CLASS_PREFIX, etc.)
+  - ✅ Optimized placeholder strings (§CB§ vs %%%CODEBLOCK%%%)
+  - ✅ CSS string optimization (removed spaces after colons)
+  - ✅ Build-time version injection
+  - ✅ Look in code to remove redundant constructs
+  - ✅ Single global built-in styles dictionary (QUIKDOWN_STYLES constant)
+* ✅ **TypeScript definitions** (added dist/quikdown.d.ts)
+  - Full type safety for options and return values
+  - Comprehensive JSDoc comments
+* ✅ **Performance benchmarks** (tests/performance-benchmark.js)
+  - `npm run test:perf` to run benchmarks
+  - Compares regex vs lexer implementations
+* ✅ **Experimental lexer implementation** (available as quikdown-lex)
+  - State machine-based parser as alternative to regex
+  - 100% test compatibility
+  - ~7.9KB minified (0.9KB larger than regex version)
+  - 4-8% slower but better maintainability
+  - See docs/lexer-implementation.md for details
+* ✅ **CSS Theme System Improvements**
+  - ✅ Container-based theme scoping with parent-child selectors
+  - ✅ Generate theme CSS files from emitStyles() function
+  - ✅ Created quikdown.light.css and quikdown.dark.css in dist/
+  - ✅ Added generation script: `npm run build:css` (tools/generateThemeCSS.js)
+  - ✅ Both themes now have explicit colors for robustness
+  - ✅ Auto dark mode support with `.quikdown-auto` class
+  - ✅ Fixed dark theme issues on live demo page
+* ✅ **Documentation Updates**
+  - ✅ Added ESM CDN examples (now shown before UMD)
+  - ✅ Updated API reference with emitStyles() theme parameter
+  - ✅ Comprehensive lexer implementation guide
+  - ✅ Updated release notes for v1.0.3
