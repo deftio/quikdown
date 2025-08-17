@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown Bidirectional - quikdown Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1>quikdown_bd - Bidirectional Markdown/HTML Conversion</h1>
+<h2>Overview</h2>
+<p><code>quikdown_bd</code> is an extension of quikdown that provides bidirectional conversion between Markdown and HTML. It allows you to convert Markdown to HTML (like regular quikdown) and also convert the HTML back to Markdown, preserving the original structure and formatting.</p>
+<h2>Installation</h2>
+<pre><code class="language-bash">npm install quikdown
+</code></pre>
+<p>Then import the bidirectional module:</p>
+<pre><code class="language-javascript">// ES6 modules
+import quikdown_bd from &#39;quikdown/bd&#39;;
+
+// CommonJS
+const quikdown_bd = require(&#39;quikdown/dist/quikdown_bd.cjs&#39;);
+
+// Browser (UMD)
+&lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown_bd.umd.min.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h2>Basic Usage</h2>
+<h3>Forward Conversion (Markdown → HTML)</h3>
+<pre><code class="language-javascript">const markdown = &#39;**Hello** *world*!&#39;;
+const html = quikdown_bd(markdown);
+// Output: &lt;p&gt;&lt;strong data-qd=&quot;**&quot; class=&quot;quikdown-strong&quot;&gt;Hello&lt;/strong&gt; &lt;em data-qd=&quot;*&quot; class=&quot;quikdown-em&quot;&gt;world&lt;/em&gt;!&lt;/p&gt;
+</code></pre>
+<h3>Reverse Conversion (HTML → Markdown)</h3>
+<pre><code class="language-javascript">const html = &#39;&lt;p&gt;&lt;strong&gt;Hello&lt;/strong&gt; &lt;em&gt;world&lt;/em&gt;!&lt;/p&gt;&#39;;
+const markdown = quikdown_bd.toMarkdown(html);
+// Output: **Hello** *world*!
+</code></pre>
+<h3>Round-trip Conversion</h3>
+<pre><code class="language-javascript">const originalMarkdown = &#39;# Heading\n\n**Bold** and *italic* text.&#39;;
+const html = quikdown_bd(originalMarkdown);
+const recoveredMarkdown = quikdown_bd.toMarkdown(html);
+// recoveredMarkdown ≈ originalMarkdown
+</code></pre>
+<h2>Key Features</h2>
+<h3>Data Attributes for Source Tracking</h3>
+<p>quikdown_bd adds <code>data-qd</code> attributes to HTML elements to track the original Markdown syntax:</p>
+<pre><code class="language-javascript">quikdown_bd(&#39;**bold**&#39;)
+// &lt;strong data-qd=&quot;**&quot; class=&quot;quikdown-strong&quot;&gt;bold&lt;/strong&gt;
+
+quikdown_bd(&#39;~~strike~~&#39;)
+// &lt;del data-qd=&quot;~~&quot; class=&quot;quikdown-del&quot;&gt;strike&lt;/del&gt;
+</code></pre>
+<h3>Supported Elements</h3>
+<p>All standard Markdown elements are supported for bidirectional conversion:</p>
+<ul>
+<li><strong>Text Formatting</strong>: bold, italic, strikethrough, inline code</li>
+<li><strong>Headings</strong>: H1-H6 with optional trailing #&#39;s</li>
+<li><strong>Lists</strong>: Ordered, unordered, nested lists, task lists</li>
+<li><strong>Links &amp; Images</strong>: With title attributes</li>
+<li><strong>Code Blocks</strong>: Fenced with ``` or ~~~, with language specification</li>
+<li><strong>Tables</strong>: With alignment support</li>
+<li><strong>Blockquotes</strong>: Single and nested</li>
+<li><strong>Horizontal Rules</strong>: ---</li>
+</ul>
+<h3>Special Features</h3>
+<h4>Task Lists</h4>
+<pre><code class="language-javascript">const md = &#39;- [ ] Unchecked\n- [x] Checked&#39;;
+const html = quikdown_bd(md);
+// Preserves checkbox state in round-trip conversion
+</code></pre>
+<h4>Mermaid Diagrams</h4>
+<pre><code class="language-javascript">const md = &#39;```mermaid\ngraph TD\nA--&gt;B\n```&#39;;
+const html = quikdown_bd(md);
+// Mermaid source is preserved for reverse conversion
+</code></pre>
+<h2>API Reference</h2>
+<h3>quikdown_bd(markdown, options)</h3>
+<p>Convert Markdown to HTML with bidirectional support.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>markdown</code> (string): The Markdown source text</li>
+<li><code>options</code> (object): Optional configuration<ul>
+<li><code>fence_plugin</code> (function): Custom renderer for fenced code blocks</li>
+<li><code>inline_styles</code> (boolean): Use inline styles instead of CSS classes</li>
+<li><code>allow_unsafe_urls</code> (boolean): Allow potentially unsafe URLs</li>
+</ul>
+</li>
+</ul>
+<p><strong>Returns:</strong> HTML string with data-qd attributes</p>
+<h3>quikdown_bd.toMarkdown(htmlOrElement)</h3>
+<p>Convert HTML back to Markdown.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>htmlOrElement</code> (string | HTMLElement): HTML string or DOM element</li>
+</ul>
+<p><strong>Returns:</strong> Markdown string</p>
+<h3>quikdown_bd.emitStyles(prefix, theme)</h3>
+<p>Generate CSS styles for quikdown elements.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prefix</code> (string): CSS class prefix (default: &#39;quikdown-&#39;)</li>
+<li><code>theme</code> (string): &#39;light&#39; or &#39;dark&#39; (default: &#39;light&#39;)</li>
+</ul>
+<p><strong>Returns:</strong> CSS string</p>
+<h3>quikdown_bd.configure(options)</h3>
+<p>Create a configured parser with preset options.</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>options</code> (object): Configuration to apply to all parsing</li>
+</ul>
+<p><strong>Returns:</strong> Configured parser function</p>
+<h2>Browser vs Node.js Usage</h2>
+<h3>Browser</h3>
+<pre><code class="language-javascript">// Works natively in browsers with DOM support
+const html = quikdown_bd(&#39;# Hello&#39;);
+const markdown = quikdown_bd.toMarkdown(html);
+</code></pre>
+<h3>Node.js</h3>
+<pre><code class="language-javascript">// Requires a DOM implementation for toMarkdown
+const { JSDOM } = require(&#39;jsdom&#39;);
+global.document = new JSDOM().window.document;
+
+const html = quikdown_bd(&#39;# Hello&#39;);
+const markdown = quikdown_bd.toMarkdown(html);
+</code></pre>
+<h2>Limitations</h2>
+<h3>What Works Well</h3>
+<ul>
+<li>quikdown-generated HTML converts back perfectly</li>
+<li>Standard Markdown elements have high fidelity</li>
+<li>Nested structures are preserved</li>
+<li>Formatting preferences are maintained</li>
+</ul>
+<h3>Known Limitations</h3>
+<ol>
+<li><strong>Custom HTML</strong>: Non-quikdown HTML may not convert accurately</li>
+<li><strong>Whitespace</strong>: Some whitespace normalization occurs</li>
+<li><strong>Mermaid</strong>: Diagrams render but can&#39;t be edited as diagrams</li>
+<li><strong>Complex Tables</strong>: Very complex nested tables may lose formatting</li>
+<li><strong>Inline HTML</strong>: Raw HTML in Markdown is escaped for safety</li>
+</ol>
+<h3>Not Suitable For</h3>
+<ul>
+<li>General HTML to Markdown conversion</li>
+<li>Preserving custom CSS or JavaScript</li>
+<li>Converting from other Markdown parsers</li>
+<li>Maintaining exact byte-for-byte equality</li>
+</ul>
+<h2>Performance</h2>
+<ul>
+<li><strong>Bundle Size</strong>: &lt;11KB minified</li>
+<li><strong>Speed</strong>: ~1000 documents/second on modern hardware</li>
+<li><strong>Memory</strong>: Minimal overhead with DOM walking approach</li>
+<li><strong>Round-trip</strong>: &lt;5ms for typical documents</li>
+</ul>
+<h2>Examples</h2>
+<h3>Live Editor</h3>
+<pre><code class="language-javascript">// Create a live bidirectional editor
+const editor = {
+  markdown: document.getElementById(&#39;markdown-input&#39;),
+  html: document.getElementById(&#39;html-output&#39;),
+  
+  updateHTML() {
+    this.html.innerHTML = quikdown_bd(this.markdown.value);
+  },
+  
+  updateMarkdown() {
+    this.markdown.value = quikdown_bd.toMarkdown(this.html.innerHTML);
+  }
+};
+
+// Two-way binding
+editor.markdown.addEventListener(&#39;input&#39;, () =&gt; editor.updateHTML());
+editor.html.addEventListener(&#39;input&#39;, () =&gt; editor.updateMarkdown());
+</code></pre>
+<h3>With Syntax Highlighting</h3>
+<pre><code class="language-javascript">const options = {
+  fence_plugin: (code, lang) =&gt; {
+    if (lang &amp;&amp; window.hljs) {
+      const highlighted = hljs.highlight(code, { language: lang }).value;
+      return `&lt;pre&gt;&lt;code class=&quot;language-${lang}&quot;&gt;${highlighted}&lt;/code&gt;&lt;/pre&gt;`;
+    }
+  }
+};
+
+const html = quikdown_bd(markdown, options);
+</code></pre>
+<h2>Migration from Regular quikdown</h2>
+<pre><code class="language-javascript">// Before (one-way)
+import quikdown from &#39;quikdown&#39;;
+const html = quikdown(markdown);
+
+// After (bidirectional)
+import quikdown_bd from &#39;quikdown/bd&#39;;
+const html = quikdown_bd(markdown);
+const recoveredMarkdown = quikdown_bd.toMarkdown(html);
+</code></pre>
+<h2>Best Practices</h2>
+<ol>
+<li><strong>Use for quikdown content</strong>: Best results with quikdown-generated HTML</li>
+<li><strong>Preserve data attributes</strong>: Don&#39;t remove data-qd attributes if you need reverse conversion</li>
+<li><strong>Test round-trips</strong>: Verify your content survives round-trip conversion</li>
+<li><strong>Handle edge cases</strong>: Plan for imperfect conversions with user-generated content</li>
+<li><strong>Performance</strong>: Use debouncing for live editors with large documents</li>
+</ol>
+<h2>TypeScript Support</h2>
+<pre><code class="language-typescript">import quikdown_bd from &#39;quikdown/bd&#39;;
+import type { QuikdownBDOptions } from &#39;quikdown/bd&#39;;
+
+const options: QuikdownBDOptions = {
+  inline_styles: true,
+  fence_plugin: (code: string, lang: string) =&gt; {
+    return `&lt;pre class=&quot;${lang}&quot;&gt;${code}&lt;/pre&gt;`;
+  }
+};
+
+const html: string = quikdown_bd(markdown, options);
+const md: string = quikdown_bd.toMarkdown(html);
+</code></pre>
+<h2>Version</h2>
+<p>quikdown_bd uses the same version as core quikdown: <strong>1.0.4</strong></p>
+<h2>License</h2>
+<p>BSD-2-Clause - Same as quikdown core</p>
+
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>

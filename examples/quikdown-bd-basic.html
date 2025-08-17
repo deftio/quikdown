@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>quikdown Bidirectional Test</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    
+    <!-- Load theme CSS -->
+    <link rel="stylesheet" href="../dist/quikdown.light.css">
+    <link rel="stylesheet" href="../dist/quikdown.dark.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            padding: 1rem 1.5rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            background: #667eea;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+        }
+        
+        button.secondary {
+            background: #6c757d;
+        }
+        
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        
+        .status {
+            margin-left: auto;
+            padding: 0.5rem 1rem;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .editors {
+            position: relative;
+            width: 100%;
+            height: 80vh; /* Fixed height at 80% viewport */
+            display: block;
+            white-space: nowrap; /* Prevent wrapping */
+            font-size: 0; /* Remove spacing between inline-block elements */
+        }
+        
+        .editor-panel {
+            position: relative;
+            display: inline-block;
+            width: 33.333%;
+            height: 100%;
+            vertical-align: top;
+            border-right: 1px solid #dee2e6;
+            box-sizing: border-box;
+            font-size: 14px; /* Reset font size */
+        }
+        
+        .editor-panel:last-child {
+            border-right: none;
+        }
+        
+        .editor-header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: #f8f9fa;
+            padding: 0 1rem;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        
+        .editor-content {
+            position: absolute;
+            top: 50px; /* Below header */
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow-y: auto; /* Vertical scroll */
+            overflow-x: hidden;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 100%;
+            padding: 1rem;
+            border: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            box-sizing: border-box;
+        }
+        
+        #html-input {
+            background: #f8f9fa;
+        }
+        
+        #rendered-output {
+            padding: 1rem;
+            width: 100%;
+            height: 100%;
+            overflow-y: auto; /* Let this element handle its own scrolling */
+            outline: none;
+            border: 2px solid transparent;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        
+        #rendered-output:focus {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        #rendered-output.quikdown-dark {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        #rendered-output.quikdown-dark:focus {
+            background: #222;
+        }
+        
+        .info-box {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 300px;
+        }
+        
+        .info-box h3 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        
+        .info-box pre {
+            font-size: 0.75rem;
+            background: #f8f9fa;
+            padding: 0.5rem;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        
+        .test-suite {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .test-result {
+            font-size: 0.8rem;
+            margin: 0.25rem 0;
+        }
+        
+        .test-result.pass {
+            color: #28a745;
+        }
+        
+        .test-result.fail {
+            color: #dc3545;
+        }
+        
+        @media (max-width: 1024px) {
+            .editors {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .editor-panel {
+                min-height: 300px;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 quikdown Bidirectional Converter</h1>
+            <p>Test round-trip conversion between Markdown and HTML with data-qd attributes</p>
+        </header>
+        
+        <div class="controls">
+            <button onclick="convertMdToHtml()">Markdown → HTML</button>
+            <button onclick="convertHtmlToMd()">HTML → Markdown</button>
+            <button onclick="runRoundTrip()">🔄 Round Trip Test</button>
+            <button class="secondary" onclick="loadExample('basic')">Basic Example</button>
+            <button class="secondary" onclick="loadExample('complex')">Complex Example</button>
+            <button class="secondary" onclick="loadExample('full')">Full Features</button>
+            <button class="secondary" onclick="toggleTheme()">Toggle Theme</button>
+            <button class="secondary" onclick="runTests()">Run Tests</button>
+            <div id="status" class="status">Ready</div>
+        </div>
+        
+        <div class="editors">
+            <div class="editor-panel">
+                <div class="editor-header">
+                    <span>Markdown Input</span>
+                    <span id="md-stats"></span>
+                </div>
+                <div class="editor-content">
+                    <textarea id="markdown-input" placeholder="Enter markdown here..."></textarea>
+                </div>
+            </div>
+            
+            <div class="editor-panel">
+                <div class="editor-header">
+                    <span>HTML with data-qd</span>
+                    <span id="html-stats"></span>
+                </div>
+                <div class="editor-content">
+                    <textarea id="html-input" placeholder="HTML will appear here..."></textarea>
+                </div>
+            </div>
+            
+            <div class="editor-panel">
+                <div class="editor-header">
+                    <span>Rendered Output (Editable)</span>
+                    <span id="render-stats"></span>
+                </div>
+                <div class="editor-content">
+                    <div id="rendered-output" class="quikdown-light" contenteditable="true"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="test-results" class="test-suite" style="display:none;">
+        <h3>Test Results</h3>
+        <div id="test-list"></div>
+    </div>
+    
+    <!-- Load the bidirectional quikdown -->
+    <script type="module">
+        // Import bidirectional quikdown
+        import quikdown_bd from '../dist/quikdown_bd.esm.js';
+        import quikdownCore from '../dist/quikdown.esm.js';
+        
+        // Inline the bidirectional functions here for testing
+        const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+        function escapeHtml(text) {
+            return text.replace(/[&<>"']/g, m => ESC_MAP[m]);
+        }
+        
+        // Simplified bidirectional implementation for testing
+        // Use the imported quikdown_bd instead of inline code
+        window.quikdown_bd = quikdown_bd;
+        window.quikdownBD = quikdown_bd; // Backward compatibility
+        
+        // Override with inline version for testing (remove this once confirmed working)
+        window.quikdownBD_inline = function(markdown, options = {}) {
+            // For now, use regular quikdown with custom processing
+            let html = quikdownCore(markdown, options);
+            
+            // Add data-qd attributes to track source
+            // This is a simplified version - full implementation would be more complex
+            
+            // Track headers
+            html = html.replace(/<h(\d)([^>]*)>([^<]+)<\/h\1>/g, (match, level, attrs, content) => {
+                const marker = '#'.repeat(parseInt(level));
+                return `<h${level} data-qd="${marker}"${attrs}>${content}</h${level}>`;
+            });
+            
+            // Track bold
+            html = html.replace(/<strong([^>]*)>([^<]+)<\/strong>/g, (match, attrs, content) => {
+                return `<strong data-qd="**"${attrs}>${content}</strong>`;
+            });
+            
+            // Track italic
+            html = html.replace(/<em([^>]*)>([^<]+)<\/em>/g, (match, attrs, content) => {
+                return `<em data-qd="*"${attrs}>${content}</em>`;
+            });
+            
+            // Track code
+            html = html.replace(/<code([^>]*)>([^<]+)<\/code>/g, (match, attrs, content) => {
+                return `<code data-qd="\`"${attrs}>${content}</code>`;
+            });
+            
+            // Track links
+            html = html.replace(/<a([^>]*href="([^"]*)"[^>]*)>([^<]+)<\/a>/g, (match, attrs, href, text) => {
+                return `<a data-qd="[" data-qd-text="${escapeHtml(text)}"${attrs}>${text}</a>`;
+            });
+            
+            return html;
+        };
+        
+        // HTML to Markdown converter
+        window.quikdownBD.toMarkdown = function(html) {
+            const container = document.createElement('div');
+            container.innerHTML = html;
+            
+            function processNode(node) {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    return node.textContent;
+                }
+                
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return '';
+                }
+                
+                const tag = node.tagName.toLowerCase();
+                const dataQd = node.getAttribute('data-qd');
+                
+                let childContent = '';
+                for (let child of node.childNodes) {
+                    childContent += processNode(child);
+                }
+                
+                switch (tag) {
+                    case 'h1':
+                    case 'h2':
+                    case 'h3':
+                    case 'h4':
+                    case 'h5':
+                    case 'h6':
+                        const level = parseInt(tag[1]);
+                        const prefix = dataQd || '#'.repeat(level);
+                        return `${prefix} ${childContent}\n\n`;
+                        
+                    case 'strong':
+                    case 'b':
+                        const boldMarker = dataQd || '**';
+                        return `${boldMarker}${childContent}${boldMarker}`;
+                        
+                    case 'em':
+                    case 'i':
+                        const emMarker = dataQd || '*';
+                        return `${emMarker}${childContent}${emMarker}`;
+                        
+                    case 'del':
+                    case 's':
+                        return `~~${childContent}~~`;
+                        
+                    case 'code':
+                        if (node.parentElement && node.parentElement.tagName === 'PRE') {
+                            return childContent;
+                        }
+                        return `\`${childContent}\``;
+                        
+                    case 'pre':
+                        const codeElement = node.querySelector('code');
+                        const code = codeElement ? codeElement.textContent : childContent;
+                        return `\`\`\`\n${code}\n\`\`\`\n\n`;
+                        
+                    case 'blockquote':
+                        const lines = childContent.trim().split('\n');
+                        return lines.map(line => `> ${line}`).join('\n') + '\n\n';
+                        
+                    case 'hr':
+                        return '---\n\n';
+                        
+                    case 'br':
+                        return '  \n';
+                        
+                    case 'a':
+                        const text = node.getAttribute('data-qd-text') || childContent;
+                        const href = node.getAttribute('href');
+                        return `[${text}](${href})`;
+                        
+                    case 'img':
+                        const alt = node.getAttribute('alt') || '';
+                        const src = node.getAttribute('src') || '';
+                        return `![${alt}](${src})`;
+                        
+                    case 'ul':
+                    case 'ol':
+                        let listMd = '';
+                        let index = 1;
+                        for (let li of node.children) {
+                            if (li.tagName !== 'LI') continue;
+                            const marker = tag === 'ol' ? `${index}.` : '-';
+                            const content = processNode(li).trim();
+                            listMd += `${marker} ${content}\n`;
+                            index++;
+                        }
+                        return listMd + '\n';
+                        
+                    case 'li':
+                        return childContent;
+                        
+                    case 'p':
+                        return childContent.trim() + '\n\n';
+                        
+                    case 'table':
+                        // Simple table conversion
+                        let tableMd = '';
+                        const thead = node.querySelector('thead');
+                        const tbody = node.querySelector('tbody');
+                        
+                        if (thead) {
+                            const headers = Array.from(thead.querySelectorAll('th')).map(th => th.textContent.trim());
+                            tableMd += '| ' + headers.join(' | ') + ' |\n';
+                            tableMd += '| ' + headers.map(() => '---').join(' | ') + ' |\n';
+                        }
+                        
+                        if (tbody) {
+                            const rows = tbody.querySelectorAll('tr');
+                            for (let row of rows) {
+                                const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
+                                tableMd += '| ' + cells.join(' | ') + ' |\n';
+                            }
+                        }
+                        
+                        return tableMd + '\n';
+                        
+                    default:
+                        return childContent;
+                }
+            }
+            
+            let markdown = processNode(container);
+            markdown = markdown.replace(/\n{3,}/g, '\n\n').trim();
+            return markdown;
+        };
+        
+        // Make available globally
+        window.quikdownCore = quikdownCore;
+    </script>
+    
+    <script>
+        // Test examples
+        const examples = {
+            basic: `# Hello World
+
+This is a **bold** text and this is *italic*.
+
+Here's a [link](https://example.com) and some \`inline code\`.`,
+            
+            complex: `## Complex Example
+
+### Lists
+
+- First item
+- Second item
+  - Nested item
+  - Another nested
+- Third item
+
+### Ordered List
+
+1. First step
+2. Second step
+3. Third step
+
+### Code Block
+
+\`\`\`javascript
+function hello() {
+    console.log("Hello, World!");
+}
+\`\`\`
+
+### Blockquote
+
+> This is a blockquote
+> with multiple lines
+
+### Table
+
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |`,
+            
+            full: `# Full Feature Test
+
+## Text Formatting
+
+**Bold with asterisks** and __bold with underscores__
+*Italic with asterisks* and _italic with underscores_
+~~Strikethrough text~~
+\`inline code\`
+
+## Links and Images
+
+[Regular link](https://github.com)
+![Image alt text](https://via.placeholder.com/150)
+https://auto-link.com
+
+## Lists
+
+### Unordered
+- Item 1
+- Item 2
+  - Nested 2.1
+  - Nested 2.2
+- Item 3
+
+### Ordered
+1. First
+2. Second
+3. Third
+
+### Task List
+- [ ] Unchecked task
+- [x] Checked task
+- [ ] Another task
+
+## Code Blocks
+
+\`\`\`javascript
+// JavaScript code
+const greeting = "Hello";
+console.log(greeting);
+\`\`\`
+
+~~~python
+# Python code with tildes
+def hello():
+    print("Hello")
+~~~
+
+## Blockquotes
+
+> Single line quote
+
+> Multi-line quote
+> continues here
+> and here
+
+## Table
+
+| Left | Center | Right |
+|:-----|:------:|------:|
+| L1   | C1     | R1    |
+| L2   | C2     | R2    |
+
+## Horizontal Rule
+
+---
+
+## Line Breaks
+
+Line with two spaces at the end  
+Next line appears here.
+
+Regular paragraph break.
+
+Another paragraph.`
+        };
+        
+        let isDarkTheme = false;
+        
+        // Load example
+        function loadExample(name) {
+            const markdown = examples[name] || examples.basic;
+            document.getElementById('markdown-input').value = markdown;
+            convertMdToHtml();
+        }
+        
+        // Convert Markdown to HTML
+        function convertMdToHtml() {
+            const markdown = document.getElementById('markdown-input').value;
+            const startTime = performance.now();
+            
+            try {
+                const html = quikdownBD(markdown, { 
+                    bidirectional: true,
+                    inline_styles: false 
+                });
+                
+                document.getElementById('html-input').value = html;
+                document.getElementById('rendered-output').innerHTML = html;
+                
+                const endTime = performance.now();
+                updateStatus(`Converted in ${(endTime - startTime).toFixed(2)}ms`, false);
+                updateStats();
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, true);
+            }
+        }
+        
+        // Convert HTML to Markdown
+        function convertHtmlToMd() {
+            const html = document.getElementById('html-input').value;
+            const startTime = performance.now();
+            
+            try {
+                const markdown = quikdownBD.toMarkdown(html);
+                document.getElementById('markdown-input').value = markdown;
+                
+                const endTime = performance.now();
+                updateStatus(`Reverse converted in ${(endTime - startTime).toFixed(2)}ms`, false);
+                updateStats();
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, true);
+            }
+        }
+        
+        // Note: Removed convertRenderedToMd() function as editing rendered HTML directly
+        // is an advanced use case that can be confusing in a basic demo
+        
+        // Run round-trip test
+        function runRoundTrip() {
+            const originalMd = document.getElementById('markdown-input').value;
+            
+            // MD → HTML
+            const html = quikdownBD(originalMd, { bidirectional: true });
+            document.getElementById('html-input').value = html;
+            document.getElementById('rendered-output').innerHTML = html;
+            
+            // HTML → MD
+            const recoveredMd = quikdownBD.toMarkdown(html);
+            
+            // Check if they match
+            const match = originalMd.trim() === recoveredMd.trim();
+            
+            if (match) {
+                updateStatus('✅ Round-trip successful! Markdown preserved perfectly.', false);
+            } else {
+                updateStatus('⚠️ Round-trip completed with differences. Check for normalization.', true);
+                console.log('Original:', originalMd);
+                console.log('Recovered:', recoveredMd);
+            }
+        }
+        
+        // Toggle theme
+        function toggleTheme() {
+            const output = document.getElementById('rendered-output');
+            isDarkTheme = !isDarkTheme;
+            
+            if (isDarkTheme) {
+                output.classList.remove('quikdown-light');
+                output.classList.add('quikdown-dark');
+            } else {
+                output.classList.remove('quikdown-dark');
+                output.classList.add('quikdown-light');
+            }
+        }
+        
+        // Update status
+        function updateStatus(message, isError) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = isError ? 'status error' : 'status';
+        }
+        
+        // Update statistics
+        function updateStats() {
+            const md = document.getElementById('markdown-input').value;
+            const html = document.getElementById('html-input').value;
+            
+            document.getElementById('md-stats').textContent = `${md.length} chars`;
+            document.getElementById('html-stats').textContent = `${html.length} chars`;
+            
+            // Count data-qd attributes
+            const dataQdCount = (html.match(/data-qd=/g) || []).length;
+            document.getElementById('render-stats').textContent = `${dataQdCount} tracked elements`;
+        }
+        
+        // Run tests
+        function runTests() {
+            const tests = [
+                { name: 'Bold', md: '**bold**', expected: '**bold**' },
+                { name: 'Italic', md: '*italic*', expected: '*italic*' },
+                { name: 'Code', md: '`code`', expected: '`code`' },
+                { name: 'H1', md: '# Title', expected: '# Title' },
+                { name: 'H2', md: '## Subtitle', expected: '## Subtitle' },
+                { name: 'Link', md: '[text](url)', expected: '[text](url)' },
+                { name: 'Image', md: '![alt](src)', expected: '![alt](src)' },
+                { name: 'HR', md: '---', expected: '---' },
+                { name: 'Blockquote', md: '> quote', expected: '> quote' },
+                { name: 'List', md: '- item', expected: '- item' },
+            ];
+            
+            const results = document.getElementById('test-list');
+            results.innerHTML = '';
+            
+            let passed = 0;
+            let failed = 0;
+            
+            tests.forEach(test => {
+                const html = quikdownBD(test.md);
+                const recovered = quikdownBD.toMarkdown(html).trim();
+                const success = recovered === test.expected;
+                
+                if (success) {
+                    passed++;
+                    results.innerHTML += `<div class="test-result pass">✓ ${test.name}</div>`;
+                } else {
+                    failed++;
+                    results.innerHTML += `<div class="test-result fail">✗ ${test.name}: got "${recovered}"</div>`;
+                }
+            });
+            
+            document.getElementById('test-results').style.display = 'block';
+            updateStatus(`Tests: ${passed} passed, ${failed} failed`, failed > 0);
+        }
+        
+        // Auto-update rendered output when HTML changes
+        document.getElementById('html-input').addEventListener('input', () => {
+            const html = document.getElementById('html-input').value;
+            document.getElementById('rendered-output').innerHTML = html;
+            updateStats();
+        });
+        
+        // Detect when rendered output is manually edited
+        document.getElementById('rendered-output').addEventListener('input', () => {
+            // Update HTML textarea to reflect changes made in rendered view
+            const html = document.getElementById('rendered-output').innerHTML;
+            document.getElementById('html-input').value = html;
+            updateStats();
+            updateStatus('Rendered output edited - HTML updated', false);
+        });
+        
+        // Initialize with basic example
+        window.addEventListener('load', () => {
+            // Add a small delay to ensure modules are loaded
+            setTimeout(() => {
+                loadExample('basic');
+            }, 100);
+        });
+    </script>
+</body>
+</html>

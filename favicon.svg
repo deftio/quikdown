@@ -1,13 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- (c) deftio 2025 -->
   <!-- Background -->
-  <rect width="32" height="32" rx="4" fill="#2563eb"/>
+  <rect width="32" height="32" rx="4" fill="#9550bb"/>
   
   <!-- Scale q + arrow around the center to avoid clipping -->
-  <g transform="translate(16,16) scale(1.4) translate(-18.5,-17)">
+  <g transform="translate(16,16) scale(1.45) translate(-18.5,-17)">
     <!-- Letter 'q' -->
     <text x="8" y="20" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">q</text>
     
     <!-- Down arrow -->
-    <path d="M 20 14 L 20 20 L 17 20 L 23 26 L 29 20 L 26 20 L 26 14 Z" fill="white"/>
+    <path d="M 22 11 L 22 20 L 19 20 L 23.5 26 L 28 20 L 25 20 L 25 11 Z" fill="white"/>
   </g>
 </svg>

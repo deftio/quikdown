@@ -1,6 +1,6 @@
 /**
  * quikdown - Lightweight Markdown Parser
- * @version 1.0.3
+ * @version 1.0.4
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -18,7 +18,7 @@
  */
 
 // Version will be injected at build time  
-const quikdownVersion = '1.0.3';
+const quikdownVersion = '1.0.4';
 
 // Constants for reuse
 const CLASS_PREFIX = 'quikdown-';

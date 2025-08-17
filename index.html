@@ -72,7 +72,7 @@
 <ul>
 <li>🚀 <strong>Lightweight</strong> - Under 10KB minified</li>
 <li>🔒 <strong>Secure by default</strong> - Built-in XSS protection with URL sanitization</li>
-<li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes including examples for light and dark mode generation</li>
+<li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes including light and dark mode generation, custom themes</li>
 <li>🔌 <strong>Plugin system</strong> - Extensible fence block handlers</li>
 <li>📦 <strong>Zero dependencies</strong> - No external libraries required</li>
 <li>🌐 <strong>Universal</strong> - Works in browsers and Node.js</li>
@@ -85,8 +85,24 @@
 <pre><code class="language-bash">npm install quikdown
 </code></pre>
 <p>Or via CDN:</p>
-<pre><code class="language-html">&lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown.umd.js&quot;&gt;&lt;/script&gt;
+<p><strong>ES Modules (recommended for modern applications):</strong></p>
+<pre><code class="language-html">&lt;script type=&quot;module&quot;&gt;
+  import quikdown from &#39;https://unpkg.com/quikdown/dist/quikdown.esm.min.js&#39;;
+  
+  const html = quikdown(&#39;# Hello World&#39;);
+  document.body.innerHTML = html;
+&lt;/script&gt;
 </code></pre>
+<p><strong>UMD (for legacy browser support):</strong></p>
+<pre><code class="language-html">&lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+  // Available as window.quikdown
+  const html = quikdown(&#39;# Hello World&#39;);
+&lt;/script&gt;
+</code></pre>
+<blockquote>
+<p><strong>Production tip:</strong> Pin to a specific version for stability (e.g., <code>https://unpkg.com/quikdown@1.0.3/dist/quikdown.esm.min.js</code>)</p>
+</blockquote>
 <h2>Quick Start</h2>
 <h3>Basic Usage</h3>
 <pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
@@ -251,6 +267,8 @@ const html = quikdown(markdownWithMermaid, {
 const safe = quikdown(unsafe);
 // Output: &amp;lt;script&amp;gt;alert(&quot;XSS&quot;)&amp;lt;/script&amp;gt; &lt;strong&gt;bold&lt;/strong&gt;
 </code></pre>
+<h2>Quikdown Lexer Version</h2>
+<p>An experimental lexer-based implementation is available for testing. See <a href="docs/lexer-implementation.md">docs/lexer-implementation.md</a> for details.</p>
 <h2>API Reference</h2>
 <p>For complete API documentation, see <a href="docs/api-reference.md">docs/api-reference.md</a></p>
 <h3><code>quikdown(markdown, options?)</code></h3>
@@ -275,17 +293,73 @@ const safe = quikdown(unsafe);
 // Use the configured parser
 const html = myParser(markdown);
 </code></pre>
-<h3><code>quikdown.emitStyles()</code></h3>
+<h3><code>quikdown.emitStyles(prefix?, theme?)</code></h3>
 <p>Returns CSS styles for quikdown HTML output when not using inline styles.</p>
-<pre><code class="language-javascript">const styles = quikdown.emitStyles();
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>prefix</code> (string, optional): CSS class prefix (default: &#39;quikdown-&#39;)</li>
+<li><code>theme</code> (string, optional): Theme name - &#39;light&#39; or &#39;dark&#39; (default: &#39;light&#39;)</li>
+</ul>
+<pre><code class="language-javascript">// Get light theme CSS
+const lightStyles = quikdown.emitStyles();
+
+// Get dark theme CSS  
+const darkStyles = quikdown.emitStyles(&#39;quikdown-&#39;, &#39;dark&#39;);
+
 // Add to your stylesheet or &lt;style&gt; tag
 </code></pre>
+<h2>Theming</h2>
+<p>QuikDown supports flexible theming through container-based CSS scoping:</p>
+<h3>Using Pre-built Themes</h3>
+<pre><code class="language-html">&lt;!-- Load theme CSS files --&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;quikdown.light.css&quot;&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;quikdown.dark.css&quot;&gt;
+
+&lt;!-- Apply themes via container classes --&gt;
+&lt;div class=&quot;quikdown-light&quot;&gt;
+  &lt;!-- Light themed content --&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;quikdown-dark&quot;&gt;
+  &lt;!-- Dark themed content --&gt;
+&lt;/div&gt;
+</code></pre>
+<h3>Theme Architecture</h3>
+<ul>
+<li><strong>Structural styles</strong>: Shared across all themes (margins, padding, font-sizes)</li>
+<li><strong>Theme colors</strong>: Scoped to container classes (<code>.quikdown-light</code>, <code>.quikdown-dark</code>)</li>
+<li><strong>No conflicts</strong>: Multiple themes can coexist on the same page</li>
+<li><strong>No default theme</strong>: Without a container class, only structural styles apply</li>
+</ul>
+<h3>Inline Styles</h3>
+<p>For a batteries-included approach without CSS files:</p>
+<pre><code class="language-javascript">// Use inline styles (always light theme currently)
+const html = quikdown(markdown, { inline_styles: true });
+</code></pre>
 <h2>Browser Usage</h2>
-<h3>Via Script Tag</h3>
+<h3>ES Modules (Recommended)</h3>
 <pre><code class="language-html">&lt;!DOCTYPE html&gt;
 &lt;html&gt;
 &lt;head&gt;
-    &lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown.umd.js&quot;&gt;&lt;/script&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id=&quot;output&quot;&gt;&lt;/div&gt;
+    &lt;script type=&quot;module&quot;&gt;
+        import quikdown from &#39;https://unpkg.com/quikdown/dist/quikdown.esm.min.js&#39;;
+        
+        const markdown = &#39;# Hello quikdown!\n\nSupports **bold** and *italic* text.&#39;;
+        const html = quikdown(markdown, { inline_styles: true });
+        document.getElementById(&#39;output&#39;).innerHTML = html;
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h3>UMD Script Tag (Legacy)</h3>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown.umd.min.js&quot;&gt;&lt;/script&gt;
 &lt;/head&gt;
 &lt;body&gt;
     &lt;div id=&quot;output&quot;&gt;&lt;/div&gt;
@@ -296,12 +370,6 @@ const html = myParser(markdown);
     &lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;
-</code></pre>
-<h3>ES Modules</h3>
-<pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
-
-const html = quikdown(&#39;**Hello** world!&#39;);
-document.body.innerHTML = html;
 </code></pre>
 <h2>Node.js Usage</h2>
 <pre><code class="language-javascript">const quikdown = require(&#39;quikdown&#39;);

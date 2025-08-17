@@ -65,31 +65,101 @@
 <body>
     <article class="markdown-body">
         <h1>Release Notes</h1>
-<h2>v1.0.3 (Unreleased)</h2>
-<h3>Size Optimizations</h3>
+<h2>v1.0.3 (2025-08-17)</h2>
+<h3>Major Size Optimizations</h3>
 <ul>
-<li><strong>Major size reduction</strong>: Reduced bundle from ~9.2KB to 7.4KB (20% reduction)<ul>
-<li>Moved style definitions to module-level <code>QUIKDOWN_STYLES</code> constant (single source of truth)</li>
-<li>Created <code>createGetAttr</code> factory function to eliminate 4 duplicate definitions</li>
-<li>Implemented replace chain arrays for cleanup patterns and inline formatting</li>
-<li>Consolidated inline markdown processing patterns into arrays</li>
+<li><strong>Achieved 24% size reduction</strong>: Bundle now ~7.0KB (down from 9.2KB)<ul>
+<li>Implemented minifier-aware optimizations across dev2-dev4 phases</li>
+<li>Module-level constant hoisting (QUIKDOWN_STYLES, CLASS_PREFIX, PLACEHOLDER_CB, ESC_MAP)</li>
+<li>Optimized placeholder strings (§CB§ vs %%%CODEBLOCK%%%)</li>
+<li>CSS string optimization (removed spaces after colons)</li>
+<li>Build-time version injection instead of runtime imports</li>
+<li>Shorter variable names in critical paths</li>
+<li>Eliminated duplicate getAttr functions</li>
 </ul>
 </li>
-<li>Target: Working towards &lt;6.5KB while maintaining readability and maintainability</li>
+</ul>
+<h3>Experimental Lexer Implementation</h3>
+<ul>
+<li>Developed alternative state-machine based parser (<code>quikdown-lex</code>)<ul>
+<li>Available as separate build: <code>npm run build:lex</code></li>
+<li>100% test compatibility with regex implementation</li>
+<li>~7.9KB minified (0.9KB larger than regex version)</li>
+<li>4-8% slower but more maintainable architecture</li>
+<li>Better suited for future features like streaming or AST generation</li>
+<li>Comprehensive documentation in <code>docs/lexer-implementation.md</code></li>
+</ul>
+</li>
+</ul>
+<h3>Build System Improvements</h3>
+<ul>
+<li>Fixed sourcemap warnings in Rollup configuration</li>
+<li>Separated lexer build from main distribution</li>
+<li>Added performance benchmarking: <code>npm run test:perf</code></li>
+<li>Test coverage now properly tracks dist files (99.56% coverage)</li>
+</ul>
+<h3>Developer Experience</h3>
+<ul>
+<li>Added TypeScript definitions (<code>dist/quikdown.d.ts</code>)<ul>
+<li>Full type safety for options and return values</li>
+<li>Comprehensive JSDoc comments</li>
+<li>Compatible with all modern IDEs</li>
+</ul>
+</li>
+<li>Created performance benchmark suite<ul>
+<li>Compares regex vs lexer implementations</li>
+<li>Tests both small (400 char) and large (22KB) documents</li>
+<li>Memory usage tracking capabilities</li>
+</ul>
+</li>
 </ul>
 <h3>Code Quality</h3>
 <ul>
 <li>Eliminated style duplication between main function and <code>emitStyles()</code></li>
 <li>Improved code organization with pattern arrays</li>
-<li>Maintained 100% test coverage during refactoring</li>
+<li>Fixed test configuration to measure dist files instead of src</li>
+<li>Maintained high test coverage (99.56% statements, 92.12% branches)</li>
 </ul>
-<h3>Developer Experience</h3>
+<h3>CSS Theme System Improvements</h3>
 <ul>
-<li>Added TypeScript definitions (<code>quikdown.d.ts</code>) for better IDE support</li>
-<li>Full type safety for options and return values</li>
-<li>Improved documentation with TypeScript examples</li>
+<li><strong>Container-based theme scoping</strong>: Themes now use parent-child selectors<ul>
+<li>Light theme: <code>.quikdown-light .quikdown-h1 { ... }</code></li>
+<li>Dark theme: <code>.quikdown-dark .quikdown-h1 { ... }</code></li>
+<li>Allows multiple themes on the same page without conflicts</li>
 </ul>
-<h2>v1.0.2 (Unreleased)</h2>
+</li>
+<li><strong>Explicit color properties for robustness</strong>: Both themes now specify text colors<ul>
+<li>Light theme explicitly sets <code>color: #333</code> for all text elements</li>
+<li>Dark theme sets <code>color: #e0e0e0</code> for light text on dark backgrounds</li>
+<li>Prevents inheritance issues when deployed on pages with custom styles</li>
+</ul>
+</li>
+<li><strong>CSS generation from emitStyles()</strong>: All theme CSS generated directly from JS<ul>
+<li><code>npm run build:css</code> generates theme files from <code>emitStyles(&#39;quikdown-&#39;, &#39;light/dark&#39;)</code></li>
+<li><code>npm run minify:css</code> creates production-ready minified versions</li>
+<li>Single source of truth for styles in JavaScript</li>
+</ul>
+</li>
+<li><strong>Auto dark mode support</strong>: Dark CSS includes media query for system preferences<ul>
+<li><code>.quikdown-auto</code> class automatically applies dark theme when <code>prefers-color-scheme: dark</code></li>
+</ul>
+</li>
+<li><strong>Theme file organization</strong>:<ul>
+<li><code>dist/quikdown.light.css</code> - Light theme (3.2KB)</li>
+<li><code>dist/quikdown.dark.css</code> - Dark theme with auto mode (4.3KB)</li>
+<li>Minified versions: 1.9KB and 2.6KB respectively</li>
+</ul>
+</li>
+</ul>
+<h3>Documentation</h3>
+<ul>
+<li>Added comprehensive lexer implementation guide</li>
+<li>Updated todo.md with current progress</li>
+<li>Added experimental feature note to README</li>
+<li>Created detailed architecture documentation</li>
+<li>CSS theme generation tools in <code>tools/generateThemeCSS.js</code></li>
+</ul>
+<h2>v1.0.2</h2>
 <h3>Bug Fixes</h3>
 <ul>
 <li>Fixed critical ~~~ fence regex bug that was matching fence markers in the middle of text<ul>
@@ -115,7 +185,7 @@
 <li>Added quikdown icon/favicon to all example pages</li>
 <li>Updated todo.md with current feature set</li>
 </ul>
-<h2>v1.0.1 (2025-01-01)</h2>
+<h2>v1.0.1 (2025-08-09)</h2>
 <h3>Bug Fixes</h3>
 <ul>
 <li>Fixed README demo URL</li>
@@ -131,7 +201,7 @@
 <ul>
 <li>Prepared CI/CD for automated releases</li>
 </ul>
-<h2>v1.0.0 (2024-12-31)</h2>
+<h2>v1.0.0</h2>
 <h3>Initial Release</h3>
 <ul>
 <li>Core markdown parser with CommonMark subset support</li>

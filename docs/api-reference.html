@@ -157,23 +157,38 @@ const html = myParser(&#39;# Heading&#39;);
 // No need to pass options each time
 </code></pre>
 <h2>Style Methods</h2>
-<h3><code>quikdown.emitStyles()</code></h3>
+<h3><code>quikdown.emitStyles(prefix?, theme?)</code></h3>
 <p>Returns CSS styles for quikdown HTML output when not using inline styles.</p>
 <h4>Parameters</h4>
-<p>None</p>
+<ul>
+<li><code>prefix</code> (string, optional) - CSS class prefix. Default: <code>&#39;quikdown-&#39;</code></li>
+<li><code>theme</code> (string, optional) - Theme name: <code>&#39;light&#39;</code> (default) or <code>&#39;dark&#39;</code></li>
+</ul>
 <h4>Returns</h4>
-<p><code>string</code> - CSS stylesheet content</p>
+<p><code>string</code> - CSS stylesheet content with theme-appropriate colors</p>
 <h4>Example</h4>
-<pre><code class="language-javascript">const styles = quikdown.emitStyles();
+<pre><code class="language-javascript">// Generate light theme CSS
+const lightStyles = quikdown.emitStyles(&#39;quikdown-&#39;, &#39;light&#39;);
+
+// Generate dark theme CSS  
+const darkStyles = quikdown.emitStyles(&#39;quikdown-&#39;, &#39;dark&#39;);
 
 // Add to your page
 const styleElement = document.createElement(&#39;style&#39;);
-styleElement.textContent = styles;
+styleElement.textContent = lightStyles;
 document.head.appendChild(styleElement);
 
-// Or include in your CSS build
-fs.writeFileSync(&#39;quikdown.css&#39;, styles);
+// Or use pre-generated theme files
+// dist/quikdown.light.css - Light theme with explicit colors
+// dist/quikdown.dark.css - Dark theme with auto dark mode support
 </code></pre>
+<h4>Theme Features</h4>
+<ul>
+<li><strong>Container-based scoping</strong>: Use <code>.quikdown-light</code> or <code>.quikdown-dark</code> containers</li>
+<li><strong>Explicit colors</strong>: Both themes specify text colors for robustness</li>
+<li><strong>Auto dark mode</strong>: Dark CSS includes <code>.quikdown-auto</code> for system preferences</li>
+<li><strong>No conflicts</strong>: Multiple themes can coexist on the same page</li>
+</ul>
 <h4>Generated CSS Classes</h4>
 <pre><code class="language-css">.quikdown-h1 { margin-top: 0.5em; margin-bottom: 0.3em }
 .quikdown-h2 { margin-top: 0.5em; margin-bottom: 0.3em }
@@ -595,7 +610,7 @@ container.innerHTML = quikdown(combined);
   interface QuikdownFunction {
     (markdown: string, options?: QuikdownOptions): string;
     configure(options: QuikdownOptions): (markdown: string) =&gt; string;
-    emitStyles(): string;
+    emitStyles(prefix?: string, theme?: &#39;light&#39; | &#39;dark&#39;): string;
     version: string;
   }
   
