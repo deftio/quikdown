@@ -799,7 +799,7 @@ function processListsBD(text, getAttr, inline_styles) {
             if (taskMatch && !isOrdered) {
                 const [, checked, taskContent] = taskMatch;
                 const isChecked = checked.toLowerCase() === 'x';
-                listItemContent = `<input type="checkbox"${getAttr('task-checkbox', '', '[')}${isChecked ? ' checked' : ''} disabled> ${taskContent}`;
+                listItemContent = `<input type="checkbox"${getAttr('task-checkbox', '', '[')}${isChecked ? ' checked' : ''}> ${taskContent}`;
                 taskAttrs = getAttr('task-item', '', '- [ ]');
             }
             
@@ -1073,6 +1073,26 @@ quikdownBD.toMarkdown = function(htmlOrElement) {
                 return '';
                 
             case 'div':
+                // Check if it's a mermaid diagram
+                if (node.classList && node.classList.contains('mermaid')) {
+                    const fence = node.getAttribute('data-qd-fence') || '```';
+                    const lang = node.getAttribute('data-qd-lang') || 'mermaid';
+                    // Try to get original source from data attribute
+                    const source = node.getAttribute('data-mermaid-source');
+                    if (source) {
+                        // Decode HTML entities
+                        const temp = document.createElement('div');
+                        temp.innerHTML = source;
+                        const code = temp.textContent;
+                        return `${fence}${lang}\n${code}\n${fence}\n\n`;
+                    }
+                    // Fallback: try to extract from the text content
+                    const code = node.textContent.trim();
+                    return `${fence}${lang}\n${code}\n${fence}\n\n`;
+                }
+                // Pass through other divs
+                return childContent;
+            
             case 'span':
                 // Pass through container elements
                 return childContent;
