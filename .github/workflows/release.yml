@@ -45,43 +45,18 @@ jobs:
         ls -lh dist/*.min.js | awk '{print "- " $9 ": " $5}' >> changelog.md
     
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-        release_name: Release ${{ github.event.inputs.tag || github.ref_name }}
+        name: Release ${{ github.event.inputs.tag || github.ref_name }}
         body_path: changelog.md
         draft: false
         prerelease: false
-    
-    - name: Upload UMD bundle
-      uses: actions/upload-release-asset@v1
+        files: |
+          dist/quikdown.umd.min.js
+          dist/quikdown.esm.min.js
+          dist/quikdown.cjs
+          dist/quikdown.light.min.css
+          dist/quikdown.dark.min.css
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/quikdown.umd.min.js
-        asset_name: quikdown.umd.min.js
-        asset_content_type: application/javascript
-    
-    - name: Upload ESM bundle
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/quikdown.esm.min.js
-        asset_name: quikdown.esm.min.js
-        asset_content_type: application/javascript
-    
-    - name: Upload CommonJS bundle
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./dist/quikdown.cjs
-        asset_name: quikdown.cjs
-        asset_content_type: application/javascript
