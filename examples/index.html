@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>quikdown Examples</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     <style>
         * {
             margin: 0;
@@ -28,7 +29,7 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             padding: 50px;
-            max-width: 800px;
+            max-width: 900px;
             width: 100%;
         }
         
@@ -166,9 +167,15 @@
             text-decoration: underline;
         }
         
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
             .container {
-                padding: 30px;
+                padding: 20px;
+                border-radius: 15px;
+                max-width: 100%;
             }
             
             h1 {
@@ -177,6 +184,43 @@
             
             .subtitle {
                 font-size: 1em;
+                margin-bottom: 20px;
+            }
+            
+            .example-card {
+                padding: 20px;
+            }
+            
+            .example-card h2 {
+                font-size: 1.2em;
+            }
+            
+            .example-card p {
+                font-size: 0.9em;
+            }
+            
+            .features {
+                margin-top: 20px;
+            }
+            
+            .feature {
+                font-size: 0.8em;
+                padding: 6px 12px;
+            }
+            
+            footer {
+                margin-top: 20px;
+                font-size: 0.8em;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .example-card:hover {
+                transform: none;
             }
         }
     </style>
@@ -185,9 +229,12 @@
     <div class="container">
         <h1>quikdown</h1>
         <p class="subtitle">Lightweight Markdown Parser Examples</p>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="../docs/" style="color: #667eea; text-decoration: none; font-weight: 500;">📖 Documentation</a>
+        </div>
         
         <div class="examples-grid">
-            <a href="live-demo.html" class="example-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <a href="quikdown-live.html" class="example-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                 <div class="content">
                     <h2>
                         <span class="icon">⭐</span>
@@ -263,7 +310,7 @@
         </div>
         
         <div class="features">
-            <span class="feature">🚀 ~3KB minified</span>
+            <span class="feature">🚀 <10KB minified</span>
             <span class="feature">🔒 XSS Protected</span>
             <span class="feature">📦 Zero Dependencies</span>
             <span class="feature">🎨 Flexible Styling</span>
@@ -273,7 +320,7 @@
         
         <footer>
             <p>
-                Built with ❤️ by <a href="https://github.com/deftio" target="_blank">DeftIO</a> | 
+                Built with ❤️ by <a href="https://github.com/deftio" target="_blank">deftio</a> | 
                 <a href="https://github.com/deftio/quikdown" target="_blank">GitHub</a> | 
                 <a href="https://www.npmjs.com/package/quikdown" target="_blank">npm</a>
             </p>

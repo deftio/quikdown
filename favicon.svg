@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="4" fill="#2563eb"/>
+  
+  <!-- Letter 'q' -->
+  <text x="8" y="20" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">q</text>
+  
+  <!-- Down arrow -->
+  <path d="M 20 14 L 20 20 L 17 20 L 23 26 L 29 20 L 26 20 L 26 14 Z" fill="white"/>
+</svg>

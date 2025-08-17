@@ -2,101 +2,25 @@
 
 A small markdown to html parser with fence plugin support
 
+> **Note**: Completed tasks have been moved to [todo_completed.md](./todo_completed.md)
 
-## ✅ Completed
+## 📋 Active Todo Items
 
-### Documentation & Architecture
-* ✅ Created comprehensive documentation in docs/ folder
-* ✅ Documented security model and HTML handling via fence plugins
-* ✅ Created API reference with all methods and options
-* ✅ Created plugin development guide with examples
-* ✅ Linked all documentation from README
+### High Priority - Missing Features:
+* [ ] quikdown should have a render option to support lazy linefeeds (some content emitters don't have 2 spaces before previous carriage return)
+* [ ] Add keywords to package.json for better NPM discoverability
 
-### Build & Testing
-* ✅ Fixed npm run build process
-* ✅ Added version property to quikdown
-* ✅ Achieved 100% test coverage (statements, functions, lines)
-* ✅ Created Babel configuration for ES modules
-* ✅ Fixed Jest configuration
-
-### Code Quality
-* ✅ Removed dead code in processTable function
-* ✅ Fixed capitalization (QuikDown → quikdown)
-* ✅ Created examples index.html page
-
-
-## ✅ Recent Additions (Just Completed!)
-
-### New Features
-* ✅ **Task Lists Support** - GitHub-style checkboxes
-  - `- [ ]` for unchecked, `- [x]` for checked
-  - Disabled checkboxes for display only
-  - Works with nested lists
-  - ~300 bytes added
-
-### CI/CD & Release Automation
-* ✅ **GitHub Actions CI** - Automated testing pipeline
-  - Tests on Node 16.x, 18.x, 20.x
-  - Coverage reporting to Codecov
-  - Build verification
-* ✅ **NPM Publish Workflow** - Automated package publishing
-  - Triggered on release or manual dispatch
-  - Version management
-* ✅ **GitHub Release Workflow** - Automated releases
-  - Changelog generation
-  - Asset uploads (UMD, ESM, CJS bundles)
-  - Tag-based triggers
-
-### Security Enhancements
-* ✅ Added URL sanitization to prevent XSS attacks
-  - Blocks javascript:, data: (except data:image/*), vbscript: URLs
-  - Added `allow_unsafe_urls` option for opt-in when needed
-  - Added rel="noopener noreferrer" to all external links
-
-### Parser Improvements  
-* ✅ Fixed fenced code regex to allow non-word language identifiers (c++, tsx, etc.)
-  - Now supports: c++, tsx, jsx, asp.net, shell-session, etc.
-* ✅ Support for ~~~ fences alongside ```
-* ✅ Support for autolinks - bare URLs are now clickable
-* ✅ Tolerates heading trailing #'s: `## Title ##` → `<h2>`
-* ✅ Tables now work without leading/trailing pipes (GFM style)
-
-### Code Quality
-* ✅ Consolidated duplicate styles to save ~200 bytes
-* ✅ Fixed fence plugin fallback when returning undefined
-
-
-## 📋 Todo
-
-### High Priority - Documentation & Release:
-* [ ] Light and Darkmode css examples (quikdown.light.css quikdown.dark.css)
-  - quikdown theming css should be scoped so 2 different quikdown containers can use different themes
-* [ ] quikdown should have a render options to support lazy linefeeds (some content emitters don't have 2 spaces before previos carraige return)
-* [x] Update README with new features
-  - Task list examples
-  - CI/CD badges
-  - NPM installation instructions
-* [ ] Update package.json metadata for NPM
-  - Repository URL
-  - Keywords
-  - Author information
-* [ ] Create CHANGELOG.md
-* [ ] Add README badges
-  - CI status
-  - NPM version
-  - Coverage percentage
-  - Bundle size
-
-### Reduce Code Size (no feature chages)
-* [ ] look in code to remove redundant constructs like html.replace = html.replace ... etc
-* [ ] single global built-in styles dictionary
+### Reduce Code Size (no feature changes)
+* [ ] Look in code to remove redundant constructs like html.replace = html.replace ... etc
+* [ ] Single global built-in styles dictionary (currently duplicated)
 
 ### List Improvements:
-* [ ] Treat tabs as 4 spaces
+* [ ] Treat tabs as 4 spaces for indentation
 * [ ] Better handling of mixed indentation
 
 ### Table Improvements:
 * [ ] Better handling of malformed tables
+* [ ] More robust table parsing edge cases
 
 ### Code Quality:
 * [ ] Remove buggy blockquote merge line that can strip tags (needs investigation)
@@ -105,14 +29,13 @@ A small markdown to html parser with fence plugin support
 ### Testing:
 * [ ] Add edge case tests for malformed markdown
 * [ ] Create fixtures for common patterns
-* [ ] Add micro-benchmarks
-* [ ] Add fuzz tests 
+* [ ] Add micro-benchmarks for performance tracking
+* [ ] Add fuzz tests for robustness
 
 ### Nice to Have:
-* [ ] Task lists support (`- [ ]` and `- [x]`)
 * [ ] Heading IDs/slugification for in-page linking (behind option)
-* [ ] Support for definition lists (maybe) // what is this?
-
+* [ ] Support for definition lists (maybe)
+* [ ] Lazy line break option (treat single \n as <br> in certain contexts)
 
 ## 🤔 Under Consideration
 
@@ -122,8 +45,8 @@ These items need more thought before implementation:
 * Complex emphasis (`***bold+italic***`) - May add too much complexity
 * Reference-style links - Rarely used in chat/LLM context
 * Footnotes - Not common in target use case
-* [?] Drop lookbehind in italics regex for older Safari compatibility
-d
+* Drop lookbehind in italics regex for older Safari compatibility
+* Add customizable class prefix option (default 'quikdown-') to avoid CSS conflicts
 
 ## ❌ Won't Implement
 
@@ -132,41 +55,45 @@ These items go against the design philosophy:
 * Full CommonMark compliance - Would bloat the codebase
 * HTML blocks support - Security risk, use fence plugins instead
 * Nested blockquotes with different markers - Too complex for benefit
-* [?]Add customizable class prefix option (default 'quikdown-') to avoid CSS 
 
-## 🔮 Future
+## 🔮 Future Enhancements
 
+* Generate theme CSS files from emitStyles() function
+  - Create build script to generate quikdown.light.css and quikdown.dark.css
+  - Allow custom color palettes to be passed to emitStyles()
+  - Ensure proper scoping for multiple themes on same page
 * Bidirectional text support
 * TypeScript definitions
 * Streaming parser mode (if needed)
 * Plugin marketplace/registry
 * Official plugins for common use cases:
-  - Syntax highlighting
+  - Syntax highlighting (highlight.js integration)
   - Mermaid diagrams
   - Math (KaTeX/MathJax)
   - Social media embeds
-
 
 ## 📝 Notes
 
 ### Design Principles to Maintain:
 1. Security first - escape by default
-2. Small size - keep under 5KB minified
+2. Small size - keep under 10KB minified
 3. Zero dependencies
 4. Fast parsing - single pass where possible
 5. Browser-first - but Node.js compatible
 
 ### Current Stats:
-- Size: **8.7KB minified** (still under 10KB target!)
+- Size: **~9.2KB minified** (under 10KB target!)
 - Test Coverage: 99.58% statements, 100% functions, 100% lines, 88.73% branches
 - Tests: 107 passing
 - Dependencies: 0
 - Browser Support: Modern browsers (2017+)
-- New Features: 
+- Key Features Implemented: 
   - ✅ Task lists
   - ✅ URL sanitization
   - ✅ Autolinks
-  - ✅ ~~~ fences
+  - ✅ ~~~ fences (with proper line-start matching)
   - ✅ Flexible tables
   - ✅ Trailing # support
+  - ✅ Light/Dark themes
 - CI/CD: GitHub Actions ready
+- Documentation: Complete with API reference, security guide, plugin guide
