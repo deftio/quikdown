@@ -6,7 +6,7 @@ import { readFileSync } from 'fs';
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
 
 const banner = `/**
- * quikdown - Lightweight Markdown Parser
+ * quikdown-lex - Lightweight Markdown Parser (Lexer Implementation)
  * @version ${pkg.version}
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
@@ -25,36 +25,11 @@ const replaceVersion = () => ({
 });
 
 export default [
-  // UMD build (browser)
-  {
-    input: 'src/quikdown.js',
-    output: {
-      file: 'dist/quikdown.umd.js',
-      format: 'umd',
-      name: 'quikdown',
-      banner
-    },
-    plugins: [replaceVersion(), nodeResolve()]
-  },
-  
-  // UMD minified
-  {
-    input: 'src/quikdown.js',
-    output: {
-      file: 'dist/quikdown.umd.min.js',
-      format: 'umd',
-      name: 'quikdown',
-      banner,
-      sourcemap: true
-    },
-    plugins: [replaceVersion(), nodeResolve(), terser()]
-  },
-  
   // ESM build
   {
-    input: 'src/quikdown.js',
+    input: 'src/quikdown-lex.js',
     output: {
-      file: 'dist/quikdown.esm.js',
+      file: 'dist/quikdown-lex.esm.js',
       format: 'es',
       banner
     },
@@ -63,9 +38,9 @@ export default [
   
   // ESM minified
   {
-    input: 'src/quikdown.js',
+    input: 'src/quikdown-lex.js',
     output: {
-      file: 'dist/quikdown.esm.min.js',
+      file: 'dist/quikdown-lex.esm.min.js',
       format: 'es',
       banner,
       sourcemap: true
@@ -75,12 +50,37 @@ export default [
   
   // CommonJS build
   {
-    input: 'src/quikdown.js',
+    input: 'src/quikdown-lex.js',
     output: {
-      file: 'dist/quikdown.cjs',
+      file: 'dist/quikdown-lex.cjs',
       format: 'cjs',
       banner
     },
     plugins: [replaceVersion(), nodeResolve()]
+  },
+  
+  // UMD build
+  {
+    input: 'src/quikdown-lex.js',
+    output: {
+      file: 'dist/quikdown-lex.umd.js',
+      format: 'umd',
+      name: 'quikdown',
+      banner
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+  
+  // UMD minified
+  {
+    input: 'src/quikdown-lex.js',
+    output: {
+      file: 'dist/quikdown-lex.umd.min.js',
+      format: 'umd',
+      name: 'quikdown',
+      banner,
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
   }
 ];

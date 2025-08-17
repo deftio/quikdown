@@ -2,25 +2,54 @@
 
 ## v1.0.3 (Unreleased)
 
-### Size Optimizations
-- **Major size reduction**: Reduced bundle from ~9.2KB to 7.4KB (20% reduction)
-  - Moved style definitions to module-level `QUIKDOWN_STYLES` constant (single source of truth)
-  - Created `createGetAttr` factory function to eliminate 4 duplicate definitions
-  - Implemented replace chain arrays for cleanup patterns and inline formatting
-  - Consolidated inline markdown processing patterns into arrays
-- Target: Working towards <6.5KB while maintaining readability and maintainability
+### Major Size Optimizations
+- **Achieved 24% size reduction**: Bundle now ~7.0KB (down from 9.2KB)
+  - Implemented minifier-aware optimizations across dev2-dev4 phases
+  - Module-level constant hoisting (QUIKDOWN_STYLES, CLASS_PREFIX, PLACEHOLDER_CB, ESC_MAP)
+  - Optimized placeholder strings (§CB§ vs %%%CODEBLOCK%%%)
+  - CSS string optimization (removed spaces after colons)
+  - Build-time version injection instead of runtime imports
+  - Shorter variable names in critical paths
+  - Eliminated duplicate getAttr functions
+
+### Experimental Lexer Implementation
+- Developed alternative state-machine based parser (`quikdown-lex`)
+  - Available as separate build: `npm run build:lex`
+  - 100% test compatibility with regex implementation
+  - ~7.9KB minified (0.9KB larger than regex version)
+  - 4-8% slower but more maintainable architecture
+  - Better suited for future features like streaming or AST generation
+  - Comprehensive documentation in `docs/lexer-implementation.md`
+
+### Build System Improvements
+- Fixed sourcemap warnings in Rollup configuration
+- Separated lexer build from main distribution
+- Added performance benchmarking: `npm run test:perf`
+- Test coverage now properly tracks dist files (99.56% coverage)
+
+### Developer Experience
+- Added TypeScript definitions (`dist/quikdown.d.ts`)
+  - Full type safety for options and return values
+  - Comprehensive JSDoc comments
+  - Compatible with all modern IDEs
+- Created performance benchmark suite
+  - Compares regex vs lexer implementations
+  - Tests both small (400 char) and large (22KB) documents
+  - Memory usage tracking capabilities
 
 ### Code Quality
 - Eliminated style duplication between main function and `emitStyles()`
 - Improved code organization with pattern arrays
-- Maintained 100% test coverage during refactoring
+- Fixed test configuration to measure dist files instead of src
+- Maintained high test coverage (99.56% statements, 92.12% branches)
 
-### Developer Experience
-- Added TypeScript definitions (`quikdown.d.ts`) for better IDE support
-- Full type safety for options and return values
-- Improved documentation with TypeScript examples
+### Documentation
+- Added comprehensive lexer implementation guide
+- Updated todo.md with current progress
+- Added experimental feature note to README
+- Created detailed architecture documentation
 
-## v1.0.2 (Unreleased)
+## v1.0.2 
 
 ### Bug Fixes
 - Fixed critical ~~~ fence regex bug that was matching fence markers in the middle of text
@@ -40,7 +69,7 @@
 - Added quikdown icon/favicon to all example pages
 - Updated todo.md with current feature set
 
-## v1.0.1 (2025-01-01)
+## v1.0.1 (2025-08-09)
 
 ### Bug Fixes
 - Fixed README demo URL
@@ -54,7 +83,7 @@
 ### Build
 - Prepared CI/CD for automated releases
 
-## v1.0.0 (2024-12-31)
+## v1.0.0 
 
 ### Initial Release
 - Core markdown parser with CommonMark subset support

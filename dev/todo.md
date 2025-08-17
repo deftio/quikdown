@@ -10,8 +10,14 @@ A small markdown to html parser with fence plugin support
 * [ ] quikdown should have a render option to support lazy linefeeds (some content emitters don't have 2 spaces before previous carriage return)
 * [ ] Add keywords to package.json for better NPM discoverability
 * [?] Add a quikdown-cli.js standalone tool that converst markdown to html.  should support all quikdown features like inline styles or passing in your own css (assumes quikdown classes)  
+* [ ] Add a pure cdn example with plugins for highlightjs and mermaid
 
 ### Reduce Code Size (no feature changes)
+* [x] Implemented minifier-aware optimizations (dev2-dev4)
+* [x] Module-level constant hoisting (QUIKDOWN_STYLES, CLASS_PREFIX, etc.)
+* [x] Optimized placeholder strings (§CB§ vs %%%CODEBLOCK%%%)
+* [x] CSS string optimization (removed spaces after colons)
+* [x] Build-time version injection
 * [ ] Look in code to remove redundant constructs like html.replace = html.replace ... etc
 * [ ] Single global built-in styles dictionary (currently duplicated)
 
@@ -30,7 +36,9 @@ A small markdown to html parser with fence plugin support
 ### Testing:
 * [ ] Add edge case tests for malformed markdown
 * [ ] Create fixtures for common patterns
-* [ ] Add micro-benchmarks for performance tracking
+* [x] Add performance benchmarks (tests/performance-benchmark.js)
+  - `npm run test:perf` to run benchmarks
+  - Compares regex vs lexer implementations
 * [ ] Add fuzz tests for robustness
 
 ### Nice to Have:
@@ -64,8 +72,14 @@ These items go against the design philosophy:
   - Allow custom color palettes to be passed to emitStyles()
   - Ensure proper scoping for multiple themes on same page
 * Bidirectional text support
-* TypeScript definitions
+* [x] TypeScript definitions (added dist/quikdown.d.ts)
 * Streaming parser mode (if needed)
+* **Experimental lexer implementation** (completed, available as quikdown-lex)
+  - State machine-based parser as alternative to regex
+  - 100% test compatibility
+  - ~13% larger, 4-8% slower
+  - Better maintainability and extensibility
+  - See docs/lexer-implementation.md for details
 * Plugin marketplace/registry
 * Official plugins for common use cases:
   - Syntax highlighting (highlight.js integration)
@@ -83,9 +97,10 @@ These items go against the design philosophy:
 5. Browser-first - but Node.js compatible
 
 ### Current Stats:
-- Size: **~9.2KB minified** (under 10KB target!)
-- Test Coverage: 99.58% statements, 100% functions, 100% lines, 88.73% branches
-- Tests: 107 passing
+- Size: **~7.0KB minified** (optimized from 9.2KB!)
+- Lexer Size: **~7.9KB minified** (experimental alternative)
+- Test Coverage: 99.56% statements, 100% functions, 100% lines, 92.12% branches
+- Tests: 107 passing (both implementations)
 - Dependencies: 0
 - Browser Support: Modern browsers (2017+)
 - Key Features Implemented: 

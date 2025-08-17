@@ -65,14 +65,14 @@
 <body>
     <article class="markdown-body">
         <h1>quikdown</h1>
-<p><a href="https://github.com/deftio/quikdown/actions/workflows/ci.yml"><img src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" alt="CI"></a><br><a href="https://www.npmjs.com/package/quikdown"><img src="https://badge.fury.io/js/quikdown.svg" alt="npm version"></a><br><a href="https://github.com/deftio/quikdown"><img src="https://img.shields.io/badge/coverage-99%25-brightgreen.svg" alt="Coverage Status"></a><br><a href="https://opensource.org/licenses/BSD-2-Clause"><img src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" alt="License: BSD-2-Clause"></a><br><a href="https://github.com/deftio/quikdown/tree/main/dist"><img src="https://img.shields.io/badge/minified-8.7KB-green.svg" alt="Bundle Size"></a></p>
+<p><a href="https://github.com/deftio/quikdown/actions/workflows/ci.yml"><img src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" alt="CI"></a><br><a href="https://www.npmjs.com/package/quikdown"><img src="https://img.shields.io/npm/v/quikdown.svg" alt="npm version"></a><br><a href="https://github.com/deftio/quikdown"><img src="https://img.shields.io/badge/coverage-99%25-blue.svg" alt="Coverage Status"></a><br><a href="https://opensource.org/licenses/BSD-2-Clause"><img src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" alt="License: BSD-2-Clause"></a><br><a href="https://github.com/deftio/quikdown/tree/main/dist"><img src="https://img.shields.io/badge/minified-%3C10KB-blue.svg" alt="Bundle Size"></a></p>
 <p>A lightweight, fast markdown parser with built-in XSS protection. Quikdown works in both browser and Node.js environments.  Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.</p>
-<p>🚀 <strong><a href="https://deftio.github.io/quikdown/examples/live-demo.html">Try Live Demo</a></strong> - Interactive markdown editor with real-time preview<br>📚 <strong><a href="examples/">View Examples</a></strong> - Additional demos and test pages<br>📖 <strong><a href="docs/">Read Documentation</a></strong> - Architecture, security, API reference, and plugin guide</p>
+<p>🚀 <strong><a href="https://deftio.github.io/quikdown/examples/quikdown-live.html">Try Live Demo</a></strong> - Interactive markdown editor with real-time preview<br>📚 <strong><a href="examples/">View Examples</a></strong> - Additional demos and test pages<br>📖 <strong><a href="docs/">Read Documentation</a></strong> - Architecture, security, API reference, and plugin guide</p>
 <h2>Features</h2>
 <ul>
-<li>🚀 <strong>Lightweight</strong> - Under 10KB minified (currently 8.7KB)</li>
+<li>🚀 <strong>Lightweight</strong> - Under 10KB minified</li>
 <li>🔒 <strong>Secure by default</strong> - Built-in XSS protection with URL sanitization</li>
-<li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes</li>
+<li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes including examples for light and dark mode generation</li>
 <li>🔌 <strong>Plugin system</strong> - Extensible fence block handlers</li>
 <li>📦 <strong>Zero dependencies</strong> - No external libraries required</li>
 <li>🌐 <strong>Universal</strong> - Works in browsers and Node.js</li>
@@ -101,6 +101,19 @@ console.log(html);
     inline_styles: true,  // Use inline styles instead of classes
     fence_plugin: myFenceHandler  // Custom code fence handler
 });
+</code></pre>
+<h3>TypeScript Support</h3>
+<p>quikdown includes TypeScript definitions for better IDE support and type safety:</p>
+<pre><code class="language-typescript">import quikdown, { QuikdownOptions } from &#39;quikdown&#39;;
+
+const options: QuikdownOptions = {
+    inline_styles: true,
+    fence_plugin: (content: string, language: string) =&gt; {
+        return `&lt;pre class=&quot;hljs ${language}&quot;&gt;${content}&lt;/pre&gt;`;
+    }
+};
+
+const html: string = quikdown(markdown, options);
 </code></pre>
 <h2>Supported Markdown</h2>
 <p>quikdown supports a practical subset of CommonMark:</p>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release Notes - quikdown Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1>Release Notes</h1>
+<h2>v1.0.3 (Unreleased)</h2>
+<h3>Size Optimizations</h3>
+<ul>
+<li><strong>Major size reduction</strong>: Reduced bundle from ~9.2KB to 7.4KB (20% reduction)<ul>
+<li>Moved style definitions to module-level <code>QUIKDOWN_STYLES</code> constant (single source of truth)</li>
+<li>Created <code>createGetAttr</code> factory function to eliminate 4 duplicate definitions</li>
+<li>Implemented replace chain arrays for cleanup patterns and inline formatting</li>
+<li>Consolidated inline markdown processing patterns into arrays</li>
+</ul>
+</li>
+<li>Target: Working towards &lt;6.5KB while maintaining readability and maintainability</li>
+</ul>
+<h3>Code Quality</h3>
+<ul>
+<li>Eliminated style duplication between main function and <code>emitStyles()</code></li>
+<li>Improved code organization with pattern arrays</li>
+<li>Maintained 100% test coverage during refactoring</li>
+</ul>
+<h3>Developer Experience</h3>
+<ul>
+<li>Added TypeScript definitions (<code>quikdown.d.ts</code>) for better IDE support</li>
+<li>Full type safety for options and return values</li>
+<li>Improved documentation with TypeScript examples</li>
+</ul>
+<h2>v1.0.2 (Unreleased)</h2>
+<h3>Bug Fixes</h3>
+<ul>
+<li>Fixed critical ~~~ fence regex bug that was matching fence markers in the middle of text<ul>
+<li>Now requires fence markers to be at the start of lines</li>
+<li>Properly handles text like &quot;## Test with ~~~&quot; without creating empty code blocks</li>
+</ul>
+</li>
+</ul>
+<h3>Improvements</h3>
+<ul>
+<li>Simplified theme styles for minimal footprint</li>
+<li>Updated multi-theme demo with better contrast<ul>
+<li>Fixed dark mode text visibility issues</li>
+<li>Improved light theme code block contrast</li>
+<li>Enhanced table header readability in both themes</li>
+</ul>
+</li>
+</ul>
+<h3>Documentation</h3>
+<ul>
+<li>Removed hardcoded file size references from README</li>
+<li>Renamed main demo from <code>live-demo.html</code> to <code>quikdown-live.html</code></li>
+<li>Added quikdown icon/favicon to all example pages</li>
+<li>Updated todo.md with current feature set</li>
+</ul>
+<h2>v1.0.1 (2025-01-01)</h2>
+<h3>Bug Fixes</h3>
+<ul>
+<li>Fixed README demo URL</li>
+<li>Version sync updates across all distribution files</li>
+</ul>
+<h3>Improvements</h3>
+<ul>
+<li>Minor performance optimizations</li>
+<li>Test coverage improvements</li>
+<li>Documentation updates</li>
+</ul>
+<h3>Build</h3>
+<ul>
+<li>Prepared CI/CD for automated releases</li>
+</ul>
+<h2>v1.0.0 (2024-12-31)</h2>
+<h3>Initial Release</h3>
+<ul>
+<li>Core markdown parser with CommonMark subset support</li>
+<li>Built-in XSS protection with HTML escaping</li>
+<li>URL sanitization for links and images</li>
+<li>Support for both ``` and ~~~ fence markers</li>
+<li>Flexible table parsing (with/without leading pipes)</li>
+<li>Task list support with checkboxes</li>
+<li>Autolink detection for bare URLs</li>
+<li>Fence plugin system for custom code block rendering</li>
+<li>Inline styles or CSS class output modes</li>
+<li>Zero dependencies</li>
+<li>Under 10KB minified</li>
+<li>99%+ test coverage</li>
+<li>Works in browser and Node.js environments</li>
+</ul>
+<h3>Supported Markdown Features</h3>
+<ul>
+<li>Headings (H1-H6) with optional trailing #&#39;s</li>
+<li>Bold, italic, strikethrough formatting</li>
+<li>Inline code and fenced code blocks</li>
+<li>Links and images with URL sanitization</li>
+<li>Tables with alignment support</li>
+<li>Ordered and unordered lists</li>
+<li>Nested lists</li>
+<li>Task lists with checkboxes</li>
+<li>Blockquotes</li>
+<li>Horizontal rules</li>
+<li>Line breaks (two spaces)</li>
+<li>Paragraphs</li>
+</ul>
+<h3>Security Features</h3>
+<ul>
+<li>HTML entity escaping by default</li>
+<li>URL sanitization blocking javascript:, vbscript:, data: protocols</li>
+<li>Exception for data:image/* for embedded images</li>
+<li>External links get rel=&quot;noopener noreferrer&quot;</li>
+<li>Optional allow_unsafe_urls flag for trusted content</li>
+</ul>
+<h3>API</h3>
+<ul>
+<li><code>quikdown(markdown, options)</code> - Main parser function</li>
+<li><code>quikdown.emitStyles()</code> - Generate CSS for quikdown classes</li>
+<li><code>quikdown.configure(options)</code> - Create configured parser</li>
+<li><code>quikdown.version</code> - Version string</li>
+</ul>
+
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>

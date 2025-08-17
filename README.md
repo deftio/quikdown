@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage Status](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](https://github.com/deftio/quikdown)
+[![Coverage Status](https://img.shields.io/badge/coverage-99%25-blue.svg)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-<10KB-green.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![Bundle Size](https://img.shields.io/badge/minified-<10KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
 
 A lightweight, fast markdown parser with built-in XSS protection. Quikdown works in both browser and Node.js environments.  Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.
 
@@ -37,6 +37,8 @@ Or via CDN:
 ```
 
 ## Quick Start
+
+> **Note:** An experimental lexer-based implementation is available for testing. See [docs/lexer-implementation.md](docs/lexer-implementation.md) for details.
 
 ### Basic Usage
 

@@ -1,4 +1,4 @@
-import quikdown from '../src/quikdown.js';
+import quikdown from '../dist/quikdown.esm.js';
 
 describe('quikdown markdown parser', () => {
     
@@ -539,7 +539,7 @@ def analyze():
             const input = '| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |';
             const result = quikdown(input, { inline_styles: true });
             expect(result).toContain('style="');
-            expect(result).toContain('border-collapse: collapse');
+            expect(result).toContain('border-collapse:collapse');
             expect(result).toContain('Header 1');
             expect(result).toContain('Cell 1');
         });
@@ -559,7 +559,7 @@ def analyze():
             const input = 'Some text\n\n| Col1 | Col2 |\n|------|------|\n| A    | B    |\n\nMore text';
             const result = quikdown(input, { inline_styles: true });
             expect(result).toContain('style="');
-            expect(result).toContain('border: 1px solid #ddd');
+            expect(result).toContain('border:1px solid #ddd');
         });
 
         test('should handle table with empty first row', () => {
@@ -660,7 +660,7 @@ def analyze():
             // If inline styles are supported, expect style attributes, otherwise expect classes
             if (result.includes('style="')) {
                 expect(result).toContain('style="');
-                expect(result).toContain('margin: 0.67em 0');
+                expect(result).toContain('margin:.67em 0');
                 expect(result).not.toContain('class="');
             } else {
                 expect(result).toContain('class="quikdown-');
@@ -673,7 +673,7 @@ def analyze():
             expect(css).toContain('.quikdown-h1');
             expect(css).toContain('.quikdown-strong');
             expect(css).toContain('.quikdown-table');
-            expect(css).toContain('margin: 0.5em 0');
+            expect(css).toContain('margin:.5em 0');
         });
         
         test('configure should return a function', () => {
@@ -687,7 +687,7 @@ def analyze():
             // If inline styles are supported, expect style attributes, otherwise expect classes
             if (result.includes('style="')) {
                 expect(result).toContain('style="');
-            expect(result).toContain('font-weight: bold');
+            expect(result).toContain('font-weight:bold');
                 expect(result).not.toContain('class="');
             } else {
                 expect(result).toContain('class="quikdown-');
@@ -702,7 +702,7 @@ def analyze():
             // If inline styles are supported, expect style attributes, otherwise expect classes
             if (result.includes('style="')) {
                 expect(result).toContain('style="');
-            expect(result).toContain('border-collapse: collapse');
+            expect(result).toContain('border-collapse:collapse');
                 expect(result).not.toContain('class="');
             } else {
                 expect(result).toContain('class="quikdown-');
@@ -715,7 +715,7 @@ def analyze():
             // If inline styles are supported, expect style attributes, otherwise expect classes
             if (result.includes('style="')) {
                 expect(result).toContain('style="');
-            expect(result).toContain('margin: 0.5em 0');
+            expect(result).toContain('margin:.5em 0');
                 expect(result).not.toContain('class="');
             } else {
                 expect(result).toContain('class="quikdown-');
@@ -735,7 +735,7 @@ def analyze():
             // If inline styles are supported, expect style attributes, otherwise expect classes
             if (result.includes('style="')) {
                 expect(result).toContain('style="');
-                expect(result).toContain('background: #f4f4f4');
+                expect(result).toContain('background:#f4f4f4');
                 expect(result).not.toContain('class="language-javascript"');
             } else {
                 expect(result).toContain('class="quikdown-');
@@ -961,8 +961,8 @@ code3
         test('should handle task lists with inline styles', () => {
             const task = '- [x] Task with styles';
             const result = quikdown(task, { inline_styles: true });
-            expect(result).toContain('style="margin-right: 0.5em"');
-            expect(result).toContain('style="list-style: none"');
+            expect(result).toContain('style="margin-right:.5em"');
+            expect(result).toContain('style="list-style:none"');
         });
         
         test('should handle nested task lists', () => {
@@ -1004,14 +1004,14 @@ code3
 | L | C | R |`;
             
             const result = quikdown(alignedTable, { inline_styles: true });
-            expect(result).toContain('text-align: center');
-            expect(result).toContain('text-align: right');
+            expect(result).toContain('text-align:center');
+            expect(result).toContain('text-align:right');
             
             // Test processInlineMarkdown with inline styles
             const processInlineMarkdown = require('../src/quikdown.js').processInlineMarkdown;
             if (typeof processInlineMarkdown === 'function') {
                 const inlineResult = processInlineMarkdown('**bold** and *italic*', true, {
-                    strong: 'font-weight: bold',
+                    strong: 'font-weight:bold',
                     em: 'font-style: italic'
                 });
                 expect(inlineResult).toContain('style=');
@@ -1025,7 +1025,7 @@ code3
 | Center |`;
             
             const result = quikdown(centerTable, { inline_styles: true });
-            expect(result).toContain('text-align: center');
+            expect(result).toContain('text-align:center');
         });
         
         test('should handle fence plugin returning undefined properly', () => {
@@ -1053,7 +1053,7 @@ code3
             // This tests the processInlineMarkdown function's inline code handling
             const input = 'Text with `inline code` here';
             const result = quikdown(input, { inline_styles: true });
-            expect(result).toContain('background: #f0f0f0');
+            expect(result).toContain('background:#f0f0f0');
         });
     });
 });

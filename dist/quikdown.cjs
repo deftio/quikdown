@@ -1,15 +1,10 @@
 /**
  * quikdown - Lightweight Markdown Parser
- * @version 1.0.3dev2
+ * @version 1.0.3dev4
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
 'use strict';
-
-// Auto-generated version file - DO NOT EDIT MANUALLY
-// This file is automatically updated by tools/updateVersion.js
-
-const quikdownVersion = "1.0.3dev2";
 
 /**
  * quikdown - A minimal markdown parser optimized for chat/LLM output
@@ -22,48 +17,55 @@ const quikdownVersion = "1.0.3dev2";
  * @returns {string} - The rendered HTML
  */
 
+// Version will be injected at build time  
+const quikdownVersion = '1.0.3dev4';
 
-// Single source of truth for all style definitions
+// Constants for reuse
+const CLASS_PREFIX = 'quikdown-';
+const PLACEHOLDER_CB = '§CB';
+const PLACEHOLDER_IC = '§IC';
+
+// Escape map at module level
+const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+
+// Single source of truth for all style definitions - optimized
 const QUIKDOWN_STYLES = {
-    h1: 'font-size: 2em; font-weight: 600; margin: 0.67em 0; text-align: left',
-    h2: 'font-size: 1.5em; font-weight: 600; margin: 0.83em 0',
-    h3: 'font-size: 1.25em; font-weight: 600; margin: 1em 0',
-    h4: 'font-size: 1em; font-weight: 600; margin: 1.33em 0',
-    h5: 'font-size: 0.875em; font-weight: 600; margin: 1.67em 0',
-    h6: 'font-size: 0.85em; font-weight: 600; margin: 2em 0',
-    pre: 'background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 1em 0',
-    code: 'background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace',
-    blockquote: 'border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em',
-    table: 'border-collapse: collapse; width: 100%; margin: 1em 0',
-    thead: '',
-    tbody: '',
-    tr: '',
-    th: 'border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold; text-align: left',
-    td: 'border: 1px solid #ddd; padding: 8px; text-align: left',
-    hr: 'border: none; border-top: 1px solid #ddd; margin: 1em 0',
-    img: 'max-width: 100%; height: auto',
-    a: 'color: #0066cc; text-decoration: underline',
-    strong: 'font-weight: bold',
-    em: 'font-style: italic',
-    del: 'text-decoration: line-through',
-    ul: 'margin: 0.5em 0; padding-left: 2em',
-    ol: 'margin: 0.5em 0; padding-left: 2em',
-    li: 'margin: 0.25em 0',
-    br: '',
+    h1: 'font-size:2em;font-weight:600;margin:.67em 0;text-align:left',
+    h2: 'font-size:1.5em;font-weight:600;margin:.83em 0',
+    h3: 'font-size:1.25em;font-weight:600;margin:1em 0',
+    h4: 'font-size:1em;font-weight:600;margin:1.33em 0',
+    h5: 'font-size:.875em;font-weight:600;margin:1.67em 0',
+    h6: 'font-size:.85em;font-weight:600;margin:2em 0',
+    pre: 'background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto;margin:1em 0',
+    code: 'background:#f0f0f0;padding:2px 4px;border-radius:3px;font-family:monospace',
+    blockquote: 'border-left:4px solid #ddd;margin-left:0;padding-left:1em',
+    table: 'border-collapse:collapse;width:100%;margin:1em 0',
+    th: 'border:1px solid #ddd;padding:8px;background-color:#f2f2f2;font-weight:bold;text-align:left',
+    td: 'border:1px solid #ddd;padding:8px;text-align:left',
+    hr: 'border:none;border-top:1px solid #ddd;margin:1em 0',
+    img: 'max-width:100%;height:auto',
+    a: 'color:#06c;text-decoration:underline',
+    strong: 'font-weight:bold',
+    em: 'font-style:italic',
+    del: 'text-decoration:line-through',
+    ul: 'margin:.5em 0;padding-left:2em',
+    ol: 'margin:.5em 0;padding-left:2em',
+    li: 'margin:.25em 0',
     // Task list specific styles
-    'task-item': 'list-style: none',
-    'task-checkbox': 'margin-right: 0.5em'
+    'task-item': 'list-style:none',
+    'task-checkbox': 'margin-right:.5em'
 };
 
 // Factory function to create getAttr for a given context
 function createGetAttr(inline_styles, styles) {
     return function(tag, additionalStyle = '') {
         if (inline_styles) {
-            const style = styles[tag] || '';
-            const fullStyle = additionalStyle ? `${style}; ${additionalStyle}` : style;
-            return fullStyle ? ` style="${fullStyle}"` : '';
+            const style = styles[tag];
+            if (!style && !additionalStyle) return '';
+            const fullStyle = additionalStyle ? (style ? `${style};${additionalStyle}` : additionalStyle) : style;
+            return ` style="${fullStyle}"`;
         } else {
-            return ` class="quikdown-${tag}"`;
+            return ` class="${CLASS_PREFIX}${tag}"`;
         }
     };
 }
@@ -79,14 +81,7 @@ function quikdown(markdown, options = {}) {
 
     // Escape HTML entities to prevent XSS
     function escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-        };
-        return text.replace(/[&<>"']/g, m => map[m]);
+        return text.replace(/[&<>"']/g, m => ESC_MAP[m]);
     }
     
     // Sanitize URLs to prevent XSS attacks
@@ -96,7 +91,6 @@ function quikdown(markdown, options = {}) {
         // If unsafe URLs are explicitly allowed, return as-is
         if (allowUnsafe) return url;
         
-        // Trim and lowercase for checking
         const trimmedUrl = url.trim();
         const lowerUrl = trimmedUrl.toLowerCase();
         
@@ -128,7 +122,7 @@ function quikdown(markdown, options = {}) {
     // Match paired fences - ``` with ``` and ~~~ with ~~~
     // Fence must be at start of line
     html = html.replace(/^(```|~~~)([^\n]*)\n([\s\S]*?)^\1$/gm, (match, fence, lang, code) => {
-        const placeholder = `%%%CODEBLOCK${codeBlocks.length}%%%`;
+        const placeholder = `${PLACEHOLDER_CB}${codeBlocks.length}§`;
         
         // Trim the language specification
         const langTrimmed = lang ? lang.trim() : '';
@@ -152,7 +146,7 @@ function quikdown(markdown, options = {}) {
     
     // Extract inline code
     html = html.replace(/`([^`]+)`/g, (match, code) => {
-        const placeholder = `%%%INLINECODE${inlineCodes.length}%%%`;
+        const placeholder = `${PLACEHOLDER_IC}${inlineCodes.length}§`;
         inlineCodes.push(escapeHtml(code));
         return placeholder;
     });
@@ -163,7 +157,7 @@ function quikdown(markdown, options = {}) {
     // Phase 2: Process block elements
     
     // Process tables
-    html = processTable(html, inline_styles, styles);
+    html = processTable(html, getAttr);
     
     // Process headings (supports optional trailing #'s)
     html = html.replace(/^(#{1,6})\s+(.+?)\s*#*$/gm, (match, hashes, content) => {
@@ -180,7 +174,7 @@ function quikdown(markdown, options = {}) {
     html = html.replace(/^---+$/gm, `<hr${getAttr('hr')}>`);
     
     // Process lists
-    html = processLists(html, inline_styles, styles);
+    html = processLists(html, getAttr, inline_styles);
     
     // Phase 3: Process inline elements
     
@@ -239,7 +233,7 @@ function quikdown(markdown, options = {}) {
         [/(<\/table>)<\/p>/g, '$1'],
         [/<p>(<pre[^>]*>)/g, '$1'],
         [/(<\/pre>)<\/p>/g, '$1'],
-        [/<p>(%%%CODEBLOCK\d+%%%)<\/p>/g, '$1']
+        [new RegExp(`<p>(${PLACEHOLDER_CB}\\d+§)<\/p>`, 'g'), '$1']
     ];
     
     cleanupPatterns.forEach(([pattern, replacement]) => {
@@ -268,13 +262,13 @@ function quikdown(markdown, options = {}) {
             replacement = `<pre${getAttr('pre')}><code${codeAttr}>${block.code}</code></pre>`;
         }
         
-        const placeholder = `%%%CODEBLOCK${i}%%%`;
+        const placeholder = `${PLACEHOLDER_CB}${i}§`;
         html = html.replace(placeholder, replacement);
     });
     
     // Restore inline code
     inlineCodes.forEach((code, i) => {
-        const placeholder = `%%%INLINECODE${i}%%%`;
+        const placeholder = `${PLACEHOLDER_IC}${i}§`;
         html = html.replace(placeholder, `<code${getAttr('code')}>${code}</code>`);
     });
     
@@ -284,8 +278,7 @@ function quikdown(markdown, options = {}) {
 /**
  * Process inline markdown formatting
  */
-function processInlineMarkdown(text, inline_styles, styles) {
-    const getAttr = createGetAttr(inline_styles, styles);
+function processInlineMarkdown(text, getAttr) {
     
     // Process inline formatting patterns
     const patterns = [
@@ -307,7 +300,7 @@ function processInlineMarkdown(text, inline_styles, styles) {
 /**
  * Process markdown tables
  */
-function processTable(text, inline_styles, styles) {
+function processTable(text, getAttr) {
     const lines = text.split('\n');
     const result = [];
     let inTable = false;
@@ -327,7 +320,7 @@ function processTable(text, inline_styles, styles) {
             // Not a table line
             if (inTable) {
                 // Process the accumulated table
-                const tableHtml = buildTable(tableLines, inline_styles, styles);
+                const tableHtml = buildTable(tableLines, getAttr);
                 if (tableHtml) {
                     result.push(tableHtml);
                 } else {
@@ -343,7 +336,7 @@ function processTable(text, inline_styles, styles) {
     
     // Handle table at end of text
     if (inTable && tableLines.length > 0) {
-        const tableHtml = buildTable(tableLines, inline_styles, styles);
+        const tableHtml = buildTable(tableLines, getAttr);
         if (tableHtml) {
             result.push(tableHtml);
         } else {
@@ -357,8 +350,7 @@ function processTable(text, inline_styles, styles) {
 /**
  * Build an HTML table from markdown table lines
  */
-function buildTable(lines, inline_styles, styles) {
-    const getAttr = createGetAttr(inline_styles, styles);
+function buildTable(lines, getAttr) {
     
     if (lines.length < 2) return null;
     
@@ -398,8 +390,8 @@ function buildTable(lines, inline_styles, styles) {
             // Handle pipes at start/end or not
             const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
             cells.forEach((cell, i) => {
-                const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align: ${alignments[i]}` : '';
-                const processedCell = processInlineMarkdown(cell.trim(), inline_styles, styles);
+                const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
+                const processedCell = processInlineMarkdown(cell.trim(), getAttr);
                 html += `<th${getAttr('th', alignStyle)}>${processedCell}</th>\n`;
             });
             html += '</tr>\n';
@@ -415,8 +407,8 @@ function buildTable(lines, inline_styles, styles) {
             // Handle pipes at start/end or not
             const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
             cells.forEach((cell, i) => {
-                const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align: ${alignments[i]}` : '';
-                const processedCell = processInlineMarkdown(cell.trim(), inline_styles, styles);
+                const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
+                const processedCell = processInlineMarkdown(cell.trim(), getAttr);
                 html += `<td${getAttr('td', alignStyle)}>${processedCell}</td>\n`;
             });
             html += '</tr>\n';
@@ -431,8 +423,7 @@ function buildTable(lines, inline_styles, styles) {
 /**
  * Process markdown lists (ordered and unordered)
  */
-function processLists(text, inline_styles, styles) {
-    const getAttr = createGetAttr(inline_styles, styles);
+function processLists(text, getAttr, inline_styles) {
     
     const lines = text.split('\n');
     const result = [];
@@ -456,10 +447,10 @@ function processLists(text, inline_styles, styles) {
                 const [, checked, taskContent] = taskMatch;
                 const isChecked = checked.toLowerCase() === 'x';
                 const checkboxAttr = inline_styles 
-                    ? ' style="margin-right: 0.5em"' 
-                    : ' class="quikdown-task-checkbox"';
+                    ? ' style="margin-right:.5em"' 
+                    : ` class="${CLASS_PREFIX}task-checkbox"`;
                 listItemContent = `<input type="checkbox"${checkboxAttr}${isChecked ? ' checked' : ''} disabled> ${taskContent}`;
-                taskListClass = inline_styles ? ' style="list-style: none"' : ' class="quikdown-task-item"';
+                taskListClass = inline_styles ? ' style="list-style:none"' : ` class="${CLASS_PREFIX}task-item"`;
             }
             
             // Close deeper levels
@@ -515,7 +506,7 @@ quikdown.emitStyles = function() {
     let css = '';
     for (const [tag, style] of Object.entries(styles)) {
         if (style) {
-            css += `.quikdown-${tag} { ${style} }\n`;
+            css += `.${CLASS_PREFIX}${tag} { ${style} }\n`;
         }
     }
     
