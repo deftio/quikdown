@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.0.3 (Unreleased)
+## v1.0.3 (2025-08-17)
 
 ### Major Size Optimizations
 - **Achieved 24% size reduction**: Bundle now ~7.0KB (down from 9.2KB)
