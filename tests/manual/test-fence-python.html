@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test ~~~ Python Fence</title>
+    <script src="../../dist/quikdown.umd.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+</head>
+<body>
+    <h1>Testing ~~~ Python Fence Rendering</h1>
+    
+    <h2>Without Plugin (Default)</h2>
+    <div id="output-default"></div>
+    
+    <h2>With Highlight.js Plugin</h2>
+    <div id="output-plugin"></div>
+    
+    <h2>Raw HTML Output</h2>
+    <pre id="raw-default" style="background: #f0f0f0; padding: 10px;"></pre>
+    <pre id="raw-plugin" style="background: #f0f0f0; padding: 10px;"></pre>
+    
+    <script>
+        const markdown = `
+## Python with ~~~ Fences
+
+~~~python
+# Python code with ~~~ fences
+def parse_markdown(text):
+    """Parse markdown with quikdown"""
+    return quikdown(text)
+    
+print(parse_markdown("# Hello"))
+~~~
+
+## Python with \`\`\` Fences
+
+\`\`\`python
+# Python code with \`\`\` fences
+def parse_markdown(text):
+    """Parse markdown with quikdown"""
+    return quikdown(text)
+    
+print(parse_markdown("# Hello"))
+\`\`\`
+`;
+        
+        // Test without plugin
+        const htmlDefault = quikdown(markdown);
+        document.getElementById('output-default').innerHTML = htmlDefault;
+        document.getElementById('raw-default').textContent = htmlDefault;
+        
+        // Test with plugin
+        const htmlPlugin = quikdown(markdown, {
+            fence_plugin: (code, language) => {
+                if (language && hljs.getLanguage(language)) {
+                    try {
+                        const highlighted = hljs.highlight(code, { language }).value;
+                        return `<pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>`;
+                    } catch (err) {
+                        console.error('Highlight error:', err);
+                    }
+                }
+                return undefined; // Use default
+            }
+        });
+        document.getElementById('output-plugin').innerHTML = htmlPlugin;
+        document.getElementById('raw-plugin').textContent = htmlPlugin;
+        
+        console.log('Default HTML:', htmlDefault);
+        console.log('Plugin HTML:', htmlPlugin);
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="dist/quikdown.umd.js"></script>
+</head>
+<body>
+    <div id="output"></div>
+    <script>
+        const markdown = `
+## Test ~~~ Fences
+
+~~~python
+def hello():
+    print("hello world")
+~~~
+
+## Test \`\`\` Fences
+
+\`\`\`python
+def goodbye():
+    print("goodbye world")
+\`\`\`
+`;
+        document.getElementById('output').innerHTML = quikdown(markdown);
+        console.log('HTML:', quikdown(markdown));
+    </script>
+</body>
+</html>

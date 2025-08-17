@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Fences with Highlight.js</title>
+    <script src="../../dist/quikdown.umd.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        h2 { color: #333; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Testing ~~~ vs ``` with Highlight.js</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Python with ```</h2>
+        <div id="test1"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Python with ~~~</h2>
+        <div id="test2"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Mixed in same document</h2>
+        <div id="test3"></div>
+    </div>
+    
+    <script>
+        // Fence plugin that uses highlight.js
+        function fencePlugin(code, language) {
+            console.log(`fencePlugin called: language="${language}", code length=${code.length}`);
+            
+            if (language && hljs.getLanguage(language)) {
+                try {
+                    const highlighted = hljs.highlight(code, { language }).value;
+                    return `<pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>`;
+                } catch (err) {
+                    console.error('Highlight.js error:', err);
+                }
+            }
+            return undefined; // Use default rendering
+        }
+        
+        // Test 1: Python with backticks
+        const test1 = `\`\`\`python
+def parse_markdown(text):
+    """Parse markdown with quikdown"""
+    return quikdown(text)
+    
+print(parse_markdown("# Hello"))
+\`\`\``;
+        
+        document.getElementById('test1').innerHTML = quikdown(test1, { fence_plugin: fencePlugin });
+        
+        // Test 2: Python with tildes
+        const test2 = `~~~python
+def parse_markdown(text):
+    """Parse markdown with quikdown"""
+    return quikdown(text)
+    
+print(parse_markdown("# Hello"))
+~~~`;
+        
+        document.getElementById('test2').innerHTML = quikdown(test2, { fence_plugin: fencePlugin });
+        
+        // Test 3: Mixed
+        const test3 = `
+## First: Python with \`\`\`
+
+\`\`\`python
+def hello():
+    return "Hello from backticks"
+\`\`\`
+
+## Second: Python with ~~~
+
+~~~python
+def goodbye():
+    return "Goodbye from tildes"
+~~~
+
+## Third: JavaScript with ~~~
+
+~~~javascript
+console.log("JavaScript with tildes");
+~~~
+
+## Fourth: JavaScript with \`\`\`
+
+\`\`\`javascript
+console.log("JavaScript with backticks");
+\`\`\`
+`;
+        
+        document.getElementById('test3').innerHTML = quikdown(test3, { fence_plugin: fencePlugin });
+    </script>
+</body>
+</html>

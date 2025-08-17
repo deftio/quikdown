@@ -117,7 +117,8 @@ function quikdown(markdown, options = {}) {
     
     // Extract fenced code blocks first (supports both ``` and ~~~)
     // Match paired fences - ``` with ``` and ~~~ with ~~~
-    html = html.replace(/(```|~~~)([^\n]*)\n([\s\S]*?)\1/g, (match, fence, lang, code) => {
+    // Fence must be at start of line
+    html = html.replace(/^(```|~~~)([^\n]*)\n([\s\S]*?)^\1$/gm, (match, fence, lang, code) => {
         const placeholder = `%%%CODEBLOCK${codeBlocks.length}%%%`;
         
         // Trim the language specification
