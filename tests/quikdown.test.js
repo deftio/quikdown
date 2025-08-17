@@ -676,6 +676,23 @@ def analyze():
             expect(css).toContain('margin:.5em 0');
         });
         
+        test('should emit dark theme CSS styles', () => {
+            const css = quikdown.emitStyles('quikdown-', 'dark');
+            expect(typeof css).toBe('string');
+            expect(css).toContain('.quikdown-h1');
+            expect(css).toContain('color:#e0e0e0'); // Dark theme text color
+            expect(css).toContain('#2a2a2a'); // Dark theme background color
+            expect(css).toContain('#3a3a3a'); // Dark theme border color
+        });
+        
+        test('should emit light theme CSS styles', () => {
+            const css = quikdown.emitStyles('quikdown-', 'light');
+            expect(typeof css).toBe('string');
+            expect(css).toContain('.quikdown-h1');
+            expect(css).toContain('#f4f4f4'); // Light theme pre background
+            expect(css).not.toContain('color:#e0e0e0'); // Should not have dark text color
+        });
+        
         test('configure should return a function', () => {
             const parser = quikdown.configure({ inline_styles: true });
             expect(typeof parser).toBe('function');

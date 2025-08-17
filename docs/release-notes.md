@@ -43,11 +43,32 @@
 - Fixed test configuration to measure dist files instead of src
 - Maintained high test coverage (99.56% statements, 92.12% branches)
 
+### CSS Theme System Improvements
+- **Container-based theme scoping**: Themes now use parent-child selectors
+  - Light theme: `.quikdown-light .quikdown-h1 { ... }`
+  - Dark theme: `.quikdown-dark .quikdown-h1 { ... }`
+  - Allows multiple themes on the same page without conflicts
+- **Explicit color properties for robustness**: Both themes now specify text colors
+  - Light theme explicitly sets `color: #333` for all text elements
+  - Dark theme sets `color: #e0e0e0` for light text on dark backgrounds
+  - Prevents inheritance issues when deployed on pages with custom styles
+- **CSS generation from emitStyles()**: All theme CSS generated directly from JS
+  - `npm run build:css` generates theme files from `emitStyles('quikdown-', 'light/dark')`
+  - `npm run minify:css` creates production-ready minified versions
+  - Single source of truth for styles in JavaScript
+- **Auto dark mode support**: Dark CSS includes media query for system preferences
+  - `.quikdown-auto` class automatically applies dark theme when `prefers-color-scheme: dark`
+- **Theme file organization**:
+  - `dist/quikdown.light.css` - Light theme (3.2KB)
+  - `dist/quikdown.dark.css` - Dark theme with auto mode (4.3KB)
+  - Minified versions: 1.9KB and 2.6KB respectively
+
 ### Documentation
 - Added comprehensive lexer implementation guide
 - Updated todo.md with current progress
 - Added experimental feature note to README
 - Created detailed architecture documentation
+- CSS theme generation tools in `tools/generateThemeCSS.js`
 
 ## v1.0.2 
 

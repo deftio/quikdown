@@ -1,48 +1,69 @@
 /**
- * quikdown Light Theme CSS
- * Minimal light theme - just basic styling, no fancy colors
+ * QuikDown Light Theme CSS
+ * Generated from quikdown.emitStyles('quikdown-', 'light')
+ * 
+ * Theme with container-based scoping.
+ * Usage: <div class="quikdown-light">...content...</div>
+ * 
+ * @generated 2025-08-17T10:56:53.658Z
+ * @source tools/generateThemeCSS.js
  */
 
-/* Headings - just size differences */
-.quikdown-h1 {
+/* ============================================
+   QuikDown Light Theme Styles
+   All selectors scoped to .quikdown-light container
+   ============================================ */
+
+/* Primary heading */
+.quikdown-light .quikdown-h1 {
     font-size: 2em;
     font-weight: 600;
     margin: 0.67em 0;
     text-align: left;
+    color: #333;
 }
 
-.quikdown-h2 {
+/* Secondary heading */
+.quikdown-light .quikdown-h2 {
     font-size: 1.5em;
     font-weight: 600;
     margin: 0.83em 0;
+    color: #333;
 }
 
-.quikdown-h3 {
+/* Tertiary heading */
+.quikdown-light .quikdown-h3 {
     font-size: 1.25em;
     font-weight: 600;
     margin: 1em 0;
+    color: #333;
 }
 
-.quikdown-h4 {
+/* Fourth level heading */
+.quikdown-light .quikdown-h4 {
     font-size: 1em;
     font-weight: 600;
     margin: 1.33em 0;
+    color: #333;
 }
 
-.quikdown-h5 {
-    font-size: 0.875em;
+/* Fifth level heading */
+.quikdown-light .quikdown-h5 {
+    font-size: .875em;
     font-weight: 600;
     margin: 1.67em 0;
+    color: #333;
 }
 
-.quikdown-h6 {
-    font-size: 0.85em;
+/* Sixth level heading */
+.quikdown-light .quikdown-h6 {
+    font-size: .85em;
     font-weight: 600;
     margin: 2em 0;
+    color: #333;
 }
 
-/* Code blocks */
-.quikdown-pre {
+.quikdown-light .quikdown-pre {
     background: #f4f4f4;
     padding: 10px;
     border-radius: 4px;
@@ -50,28 +71,27 @@
     margin: 1em 0;
 }
 
-.quikdown-code {
+.quikdown-light .quikdown-code {
     background: #f0f0f0;
     padding: 2px 4px;
     border-radius: 3px;
     font-family: monospace;
 }
 
-/* Blockquotes */
-.quikdown-blockquote {
+.quikdown-light .quikdown-blockquote {
     border-left: 4px solid #ddd;
     margin-left: 0;
     padding-left: 1em;
+    color: #333;
 }
 
-/* Tables */
-.quikdown-table {
+.quikdown-light .quikdown-table {
     border-collapse: collapse;
     width: 100%;
     margin: 1em 0;
 }
 
-.quikdown-th {
+.quikdown-light .quikdown-th {
     border: 1px solid #ddd;
     padding: 8px;
     background-color: #f2f2f2;
@@ -79,60 +99,72 @@
     text-align: left;
 }
 
-.quikdown-td {
+.quikdown-light .quikdown-td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
+    color: #333;
 }
 
-/* Lists */
-.quikdown-ul,
-.quikdown-ol {
-    margin: 0.5em 0;
-    padding-left: 2em;
-}
-
-.quikdown-li {
-    margin: 0.25em 0;
-}
-
-/* Task lists */
-.quikdown-task-item {
-    list-style: none;
-}
-
-.quikdown-task-checkbox {
-    margin-right: 0.5em;
-}
-
-/* Links */
-.quikdown-a {
-    color: #0066cc;
-    text-decoration: underline;
-}
-
-/* Images */
-.quikdown-img {
-    max-width: 100%;
-    height: auto;
-}
-
-/* Horizontal rule */
-.quikdown-hr {
+.quikdown-light .quikdown-hr {
     border: none;
     border-top: 1px solid #ddd;
     margin: 1em 0;
 }
 
-/* Text formatting */
-.quikdown-strong {
+.quikdown-light .quikdown-img {
+    max-width: 100%;
+    height: auto;
+}
+
+.quikdown-light .quikdown-a {
+    color: #06c;
+    text-decoration: underline;
+}
+
+.quikdown-light .quikdown-strong {
     font-weight: bold;
 }
 
-.quikdown-em {
+.quikdown-light .quikdown-em {
     font-style: italic;
 }
 
-.quikdown-del {
+.quikdown-light .quikdown-del {
     text-decoration: line-through;
+}
+
+.quikdown-light .quikdown-ul {
+    margin: 0.5em 0;
+    padding-left: 2em;
+}
+
+.quikdown-light .quikdown-ol {
+    margin: 0.5em 0;
+    padding-left: 2em;
+}
+
+.quikdown-light .quikdown-li {
+    margin: 0.25em 0;
+    color: #333;
+}
+
+.quikdown-light .quikdown-task-item {
+    list-style: none;
+}
+
+.quikdown-light .quikdown-task-checkbox {
+    margin-right: .5em;
+}
+
+/* ============================================
+   Container Styling
+   ============================================ */
+
+.quikdown-light {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: #fff;
+    padding: 1rem;
 }

@@ -490,15 +490,56 @@ function processLists(text, getAttr, inline_styles) {
 
 /**
  * Emit CSS styles for quikdown elements
+ * @param {string} prefix - Optional class prefix (default: 'quikdown-')
+ * @param {string} theme - Optional theme: 'light' (default) or 'dark'
  * @returns {string} CSS string with quikdown styles
  */
-quikdown.emitStyles = function() {
-    const styles = QUIKDOWN_STYLES; // Use the same module-level styles
+quikdown.emitStyles = function(prefix = 'quikdown-', theme = 'light') {
+    const styles = QUIKDOWN_STYLES;
+    
+    // Define theme color overrides
+    const themeOverrides = {
+        dark: {
+            '#f4f4f4': '#2a2a2a', // pre background
+            '#f0f0f0': '#2a2a2a', // code background
+            '#f2f2f2': '#2a2a2a', // th background
+            '#ddd': '#3a3a3a',    // borders
+            '#06c': '#6db3f2',    // links
+            _textColor: '#e0e0e0'
+        },
+        light: {
+            _textColor: '#333'    // Explicit text color for light theme
+        }
+    };
     
     let css = '';
     for (const [tag, style] of Object.entries(styles)) {
         if (style) {
-            css += `.${CLASS_PREFIX}${tag} { ${style} }\n`;
+            let themedStyle = style;
+            
+            // Apply theme overrides if dark theme
+            if (theme === 'dark' && themeOverrides.dark) {
+                // Replace colors
+                for (const [oldColor, newColor] of Object.entries(themeOverrides.dark)) {
+                    if (!oldColor.startsWith('_')) {
+                        themedStyle = themedStyle.replace(new RegExp(oldColor, 'g'), newColor);
+                    }
+                }
+                
+                // Add text color for certain elements in dark theme
+                const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];
+                if (needsTextColor.includes(tag)) {
+                    themedStyle += `;color:${themeOverrides.dark._textColor}`;
+                }
+            } else if (theme === 'light' && themeOverrides.light) {
+                // Add explicit text color for light theme elements too
+                const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];
+                if (needsTextColor.includes(tag)) {
+                    themedStyle += `;color:${themeOverrides.light._textColor}`;
+                }
+            }
+            
+            css += `.${prefix}${tag} { ${themedStyle} }\n`;
         }
     }
     

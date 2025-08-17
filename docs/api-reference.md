@@ -66,31 +66,44 @@ const html = myParser('# Heading');
 
 ## Style Methods
 
-### `quikdown.emitStyles()`
+### `quikdown.emitStyles(prefix?, theme?)`
 
 Returns CSS styles for quikdown HTML output when not using inline styles.
 
 #### Parameters
 
-None
+- `prefix` (string, optional) - CSS class prefix. Default: `'quikdown-'`
+- `theme` (string, optional) - Theme name: `'light'` (default) or `'dark'`
 
 #### Returns
 
-`string` - CSS stylesheet content
+`string` - CSS stylesheet content with theme-appropriate colors
 
 #### Example
 
 ```javascript
-const styles = quikdown.emitStyles();
+// Generate light theme CSS
+const lightStyles = quikdown.emitStyles('quikdown-', 'light');
+
+// Generate dark theme CSS  
+const darkStyles = quikdown.emitStyles('quikdown-', 'dark');
 
 // Add to your page
 const styleElement = document.createElement('style');
-styleElement.textContent = styles;
+styleElement.textContent = lightStyles;
 document.head.appendChild(styleElement);
 
-// Or include in your CSS build
-fs.writeFileSync('quikdown.css', styles);
+// Or use pre-generated theme files
+// dist/quikdown.light.css - Light theme with explicit colors
+// dist/quikdown.dark.css - Dark theme with auto dark mode support
 ```
+
+#### Theme Features
+
+- **Container-based scoping**: Use `.quikdown-light` or `.quikdown-dark` containers
+- **Explicit colors**: Both themes specify text colors for robustness
+- **Auto dark mode**: Dark CSS includes `.quikdown-auto` for system preferences
+- **No conflicts**: Multiple themes can coexist on the same page
 
 #### Generated CSS Classes
 
@@ -398,7 +411,7 @@ declare module 'quikdown' {
   interface QuikdownFunction {
     (markdown: string, options?: QuikdownOptions): string;
     configure(options: QuikdownOptions): (markdown: string) => string;
-    emitStyles(): string;
+    emitStyles(prefix?: string, theme?: 'light' | 'dark'): string;
     version: string;
   }
   

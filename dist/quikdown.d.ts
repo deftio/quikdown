@@ -42,10 +42,12 @@ declare module 'quikdown' {
 
   namespace quikdown {
     /**
-     * Generate CSS styles for quikdown classes
-     * @returns CSS string with .quikdown-* styles
+     * Generate CSS styles for quikdown classes with theme support
+     * @param prefix - CSS class prefix (default: 'quikdown-')
+     * @param theme - Theme name: 'light' (default) or 'dark'
+     * @returns CSS string with themed .quikdown-* styles
      */
-    export function emitStyles(): string;
+    export function emitStyles(prefix?: string, theme?: 'light' | 'dark'): string;
     
     /**
      * Create a configured parser function with preset options

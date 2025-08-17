@@ -7,6 +7,10 @@
     <meta name="description" content="Try quikdown - A lightweight markdown parser with plugin support">
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     
+    <!-- QuikDown theme CSS files -->
+    <link rel="stylesheet" href="../dist/quikdown.light.css">
+    <link rel="stylesheet" href="../dist/quikdown.dark.css">
+    
     <!-- Highlight.js for syntax highlighting -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -46,7 +50,7 @@
             gap: 2rem;
         }
         
-        h1 {
+        header h1 {
             font-size: 1.75rem;
             font-weight: 700;
             color: #2c3e50;
@@ -191,10 +195,7 @@
         }
         
         #html-output {
-            padding: 1.5rem;
             overflow: auto;
-            font-size: 16px;
-            line-height: 1.6;
         }
         
         #raw-html {
@@ -213,94 +214,7 @@
             color: #718096;
         }
         
-        /* Rendered output styles */
-        #html-output h1 { 
-            color: #1a202c;
-            margin: 1.5rem 0 1rem;
-            padding-bottom: 0.5rem;
-        }
-        
-        #html-output h2 {
-            color: #2d3748;
-            margin: 1.25rem 0 0.75rem;
-        }
-        
-        #html-output h3 {
-            color: #4a5568;
-            margin: 1rem 0 0.5rem;
-        }
-        
-        #html-output pre {
-            background: #1a202c;
-            color: #e2e8f0;
-            padding: 1rem;
-            border-radius: 8px;
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
-        
-        #html-output code {
-            background: #edf2f7;
-            padding: 0.125rem 0.25rem;
-            border-radius: 3px;
-            font-size: 0.875em;
-        }
-        
-        #html-output pre code {
-            background: none;
-            padding: 0;
-        }
-        
-        #html-output blockquote {
-            border-left: 4px solid #667eea;
-            padding-left: 1rem;
-            margin: 1rem 0;
-            color: #4a5568;
-            font-style: italic;
-        }
-        
-        #html-output table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 1rem 0;
-        }
-        
-        #html-output th,
-        #html-output td {
-            border: 1px solid #cbd5e0;
-            padding: 0.5rem;
-            text-align: left;
-        }
-        
-        #html-output th {
-            background: #f7fafc;
-            font-weight: 600;
-        }
-        
-        #html-output a {
-            color: #667eea;
-            text-decoration: none;
-            border-bottom: 1px solid transparent;
-        }
-        
-        #html-output a:hover {
-            border-bottom-color: #667eea;
-        }
-        
-        #html-output ul, #html-output ol {
-            margin: 0.5rem 0;
-            padding-left: 2rem;
-        }
-        
-        #html-output li {
-            margin: 0.25rem 0;
-        }
-        
-        #html-output hr {
-            border: none;
-            border-top: 2px solid #e2e8f0;
-            margin: 1.5rem 0;
-        }
+        /* Remove custom styles - all theming comes from QuikDown CSS files */
         
         .mermaid {
             text-align: center;
@@ -321,92 +235,7 @@
             font-weight: 600;
         }
         
-        /* Dark mode styles - only for rendered output */
-        .output-dark {
-            background: #1a1b26;
-            color: #c0caf5;
-        }
-        
-        .output-dark h1,
-        .output-dark h2,
-        .output-dark h3,
-        .output-dark h4,
-        .output-dark h5,
-        .output-dark h6 {
-            color: #c0caf5;
-        }
-        
-        .output-dark pre {
-            background: #16161e;
-            border: 1px solid #24283b;
-        }
-        
-        .output-dark code {
-            background: #24283b;
-            color: #9ece6a;
-        }
-        
-        .output-dark pre code {
-            background: none;
-        }
-        
-        .output-dark blockquote {
-            border-left-color: #7aa2f7;
-            color: #9aa5ce;
-        }
-        
-        .output-dark table {
-            color: #c0caf5;
-        }
-        
-        .output-dark th {
-            background: #24283b;
-            border-color: #414868;
-        }
-        
-        .output-dark td {
-            border-color: #414868;
-        }
-        
-        .output-dark tr:nth-child(even) {
-            background: #1f2335;
-        }
-        
-        .output-dark a {
-            color: #7aa2f7;
-        }
-        
-        .output-dark hr {
-            border-top-color: #414868;
-        }
-        
-        /* Removed - controls stay light */
-            background: #1a1b26;
-            border-bottom-color: #414868;
-        }
-        
-        /* Removed - buttons stay light */
-            background: #24283b;
-            border-color: #414868;
-            color: #c0caf5;
-        }
-        
-        /* Removed - buttons stay light */
-            background: #7aa2f7;
-            color: #1a1b26;
-            border-color: #7aa2f7;
-        }
-        
-        /* Removed - stats stay light */
-            background: #16161e;
-            color: #9aa5ce;
-            border-top-color: #414868;
-        }
-        
-        .output-dark #raw-html {
-            background: #16161e;
-            color: #9ece6a;
-        }
+        /* No custom theme styles - all theming comes from QuikDown CSS files */
         
         /* Mobile responsiveness */
         @media (max-width: 1024px) {
@@ -1125,12 +954,38 @@ All the above are rendered as escaped text, not executable HTML.
             const input = document.getElementById('markdown-input').value;
             const inlineStyles = document.getElementById('inline-styles').checked;
             const showRaw = document.getElementById('show-raw').checked;
+            const darkMode = document.getElementById('dark-mode').checked;
             
             try {
-                const html = quikdown(input, {
+                // When using inline styles with dark mode, we need to post-process the HTML
+                let html = quikdown(input, {
                     inline_styles: inlineStyles,
                     fence_plugin: fencePlugin
                 });
+                
+                // Apply dark mode transformations to inline styles if needed
+                if (inlineStyles && darkMode) {
+                    // Replace light colors with dark colors in inline styles
+                    html = html.replace(/color:#333/g, 'color:#e0e0e0')  // Default text
+                               .replace(/color:#2c3e50/g, 'color:#e0e0e0') // Headers
+                               .replace(/color:#2d3748/g, 'color:#e0e0e0') // H2
+                               .replace(/color:#4a5568/g, 'color:#b0b0b0') // H3
+                               .replace(/background:#f4f4f4/g, 'background:#2a2a2a') // pre
+                               .replace(/background:#f0f0f0/g, 'background:#2a2a2a') // code
+                               .replace(/background-color:#f2f2f2/g, 'background-color:#2a2a2a') // th
+                               .replace(/border:1px solid #ddd/g, 'border:1px solid #3a3a3a') // borders
+                               .replace(/border-left:4px solid #ddd/g, 'border-left:4px solid #3a3a3a') // blockquote
+                               .replace(/border-top:1px solid #ddd/g, 'border-top:1px solid #3a3a3a') // hr
+                               .replace(/color:#06c/g, 'color:#6db3f2'); // links
+                    
+                    // Add text color to headers that don't have it
+                    html = html.replace(/<h([1-6])\s+style="([^"]+)"/g, (match, level, style) => {
+                        if (!style.includes('color:')) {
+                            return `<h${level} style="${style};color:#e0e0e0"`;
+                        }
+                        return match;
+                    });
+                }
                 
                 document.getElementById('html-output').innerHTML = html;
                 document.getElementById('raw-html').textContent = html;
@@ -1174,8 +1029,24 @@ All the above are rendered as escaped text, not executable HTML.
         // Toggle dark mode
         function toggleTheme() {
             const darkMode = document.getElementById('dark-mode').checked;
-            document.getElementById('output-container').classList.toggle('output-dark', darkMode);
+            const htmlOutput = document.getElementById('html-output');
+            const inlineStyles = document.getElementById('inline-styles').checked;
+            
+            // Apply the proper theme class to the content
+            if (darkMode) {
+                htmlOutput.classList.remove('quikdown-light');
+                htmlOutput.classList.add('quikdown-dark');
+            } else {
+                htmlOutput.classList.remove('quikdown-dark');
+                htmlOutput.classList.add('quikdown-light');
+            }
+            
             localStorage.setItem('quikdown-theme', darkMode ? 'dark' : 'light');
+            
+            // Re-render if using inline styles to apply theme colors
+            if (inlineStyles) {
+                render();
+            }
         }
         
         // Auto-render on input
@@ -1183,19 +1054,25 @@ All the above are rendered as escaped text, not executable HTML.
         
         // Initialize with comprehensive example
         document.getElementById('markdown-input').value = examples.comprehensive;
-        render();
         
         // Show version
         if (typeof quikdown !== 'undefined' && quikdown.version) {
             document.querySelector('.version').textContent = 'v' + quikdown.version;
         }
         
-        // Restore theme preference
+        // Restore theme preference and set initial theme class
         const savedTheme = localStorage.getItem('quikdown-theme');
+        const htmlOutput = document.getElementById('html-output');
+        
         if (savedTheme === 'dark') {
             document.getElementById('dark-mode').checked = true;
-            document.getElementById('output-container').classList.add('output-dark');
+            htmlOutput.classList.add('quikdown-dark');
+        } else {
+            htmlOutput.classList.add('quikdown-light');
         }
+        
+        // Now render with the theme applied
+        render();
     </script>
 </body>
 </html>

@@ -6,7 +6,7 @@
     <title>quikdown - Multiple Themes Demo</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     
-    <!-- Load the theme CSS files -->
+    <!-- Load both theme CSS files - they're scoped so won't conflict -->
     <link rel="stylesheet" href="../dist/quikdown.light.css">
     <link rel="stylesheet" href="../dist/quikdown.dark.css">
     
@@ -77,79 +77,7 @@
             overflow-y: auto;
         }
         
-        /* Scope light theme to .light-theme container */
-        .light-theme {
-            background: #ffffff;
-            color: #333;
-        }
-        
-        /* Fix light theme code blocks */
-        .light-theme .quikdown-pre {
-            background-color: #f6f6f6 !important;
-            color: #333 !important;
-        }
-        
-        .light-theme .quikdown-code {
-            background-color: #f0f0f0 !important;
-            color: #333 !important;
-        }
-        
-        /* Fix light theme table headers */
-        .light-theme .quikdown-th {
-            background-color: #f0f0f0 !important;
-            color: #333 !important;
-        }
-        
-        .light-theme .quikdown-td {
-            color: #333 !important;
-        }
-        
-        /* Scope dark theme to .dark-theme container */
-        .dark-theme {
-            background: #1a1a1a;
-            color: #e0e0e0;
-        }
-        
-        /* Dark theme needs lighter text for readability */
-        .dark-theme .quikdown-h1,
-        .dark-theme .quikdown-h2,
-        .dark-theme .quikdown-h3,
-        .dark-theme .quikdown-h4,
-        .dark-theme .quikdown-h5,
-        .dark-theme .quikdown-h6 {
-            color: #ffffff !important;
-        }
-        
-        .dark-theme .quikdown-strong {
-            color: #ffffff !important;
-        }
-        
-        .dark-theme .quikdown-em,
-        .dark-theme .quikdown-del,
-        .dark-theme .quikdown-li,
-        .dark-theme .quikdown-td,
-        .dark-theme p {
-            color: #e0e0e0 !important;
-        }
-        
-        .dark-theme .quikdown-th {
-            background-color: #2a2a2a !important;
-            color: #ffffff !important;
-        }
-        
-        .dark-theme .quikdown-blockquote {
-            color: #b0b0b0 !important;
-        }
-        
-        .dark-theme .quikdown-code {
-            background-color: #333333 !important;
-            color: #e0e0e0 !important;
-        }
-        
-        .dark-theme .quikdown-pre {
-            background-color: #262626 !important;
-            color: #e0e0e0 !important;
-        }
+        /* Content area styling - themes are handled by quikdown.multi-theme.css */
         
         .input-area {
             height: 100%;
@@ -205,8 +133,8 @@
             <div class="demo-header">
                 Light Theme Output
             </div>
-            <div class="demo-content light-theme">
-                <div id="light-output"></div>
+            <div class="demo-content">
+                <div id="light-output" class="quikdown-light"></div>
             </div>
         </div>
         
@@ -214,8 +142,8 @@
             <div class="demo-header">
                 Dark Theme Output
             </div>
-            <div class="demo-content dark-theme">
-                <div id="dark-output"></div>
+            <div class="demo-content">
+                <div id="dark-output" class="quikdown-dark"></div>
             </div>
         </div>
     </div>
@@ -274,7 +202,7 @@ console.log(greet('World'));
             // Use the same quikdown function with CSS classes (not inline styles)
             const html = quikdown(markdown, { inline_styles: false });
             
-            // Same HTML, rendered in both containers
+            // Same HTML, rendered in both containers with different theme classes
             lightOutput.innerHTML = html;
             darkOutput.innerHTML = html;
         }

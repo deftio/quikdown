@@ -1,48 +1,69 @@
 /**
- * quikdown Dark Theme CSS
- * Minimal dark theme - just inverted colors, no fancy styling
+ * QuikDown Dark Theme CSS
+ * Generated from quikdown.emitStyles('quikdown-', 'dark')
+ * 
+ * Theme with container-based scoping.
+ * Usage: <div class="quikdown-dark">...content...</div>
+ * 
+ * @generated 2025-08-17T10:56:53.660Z
+ * @source tools/generateThemeCSS.js
  */
 
-/* Headings - just size differences */
-.quikdown-h1 {
+/* ============================================
+   QuikDown Dark Theme Styles
+   All selectors scoped to .quikdown-dark container
+   ============================================ */
+
+/* Primary heading */
+.quikdown-dark .quikdown-h1 {
     font-size: 2em;
     font-weight: 600;
     margin: 0.67em 0;
     text-align: left;
+    color: #e0e0e0;
 }
 
-.quikdown-h2 {
+/* Secondary heading */
+.quikdown-dark .quikdown-h2 {
     font-size: 1.5em;
     font-weight: 600;
     margin: 0.83em 0;
+    color: #e0e0e0;
 }
 
-.quikdown-h3 {
+/* Tertiary heading */
+.quikdown-dark .quikdown-h3 {
     font-size: 1.25em;
     font-weight: 600;
     margin: 1em 0;
+    color: #e0e0e0;
 }
 
-.quikdown-h4 {
+/* Fourth level heading */
+.quikdown-dark .quikdown-h4 {
     font-size: 1em;
     font-weight: 600;
     margin: 1.33em 0;
+    color: #e0e0e0;
 }
 
-.quikdown-h5 {
-    font-size: 0.875em;
+/* Fifth level heading */
+.quikdown-dark .quikdown-h5 {
+    font-size: .875em;
     font-weight: 600;
     margin: 1.67em 0;
+    color: #e0e0e0;
 }
 
-.quikdown-h6 {
-    font-size: 0.85em;
+/* Sixth level heading */
+.quikdown-dark .quikdown-h6 {
+    font-size: .85em;
     font-weight: 600;
     margin: 2em 0;
+    color: #e0e0e0;
 }
 
-/* Code blocks */
-.quikdown-pre {
+.quikdown-dark .quikdown-pre {
     background: #2a2a2a;
     padding: 10px;
     border-radius: 4px;
@@ -50,89 +71,127 @@
     margin: 1em 0;
 }
 
-.quikdown-code {
-    background: #333;
+.quikdown-dark .quikdown-code {
+    background: #2a2a2a;
     padding: 2px 4px;
     border-radius: 3px;
     font-family: monospace;
 }
 
-/* Blockquotes */
-.quikdown-blockquote {
-    border-left: 4px solid #444;
+.quikdown-dark .quikdown-blockquote {
+    border-left: 4px solid #3a3a3a;
     margin-left: 0;
     padding-left: 1em;
+    color: #e0e0e0;
 }
 
-/* Tables */
-.quikdown-table {
+.quikdown-dark .quikdown-table {
     border-collapse: collapse;
     width: 100%;
     margin: 1em 0;
 }
 
-.quikdown-th {
-    border: 1px solid #444;
+.quikdown-dark .quikdown-th {
+    border: 1px solid #3a3a3a;
     padding: 8px;
     background-color: #2a2a2a;
     font-weight: bold;
     text-align: left;
 }
 
-.quikdown-td {
-    border: 1px solid #444;
+.quikdown-dark .quikdown-td {
+    border: 1px solid #3a3a3a;
     padding: 8px;
     text-align: left;
+    color: #e0e0e0;
 }
 
-/* Lists */
-.quikdown-ul,
-.quikdown-ol {
-    margin: 0.5em 0;
-    padding-left: 2em;
+.quikdown-dark .quikdown-hr {
+    border: none;
+    border-top: 1px solid #3a3a3a;
+    margin: 1em 0;
 }
 
-.quikdown-li {
-    margin: 0.25em 0;
-}
-
-/* Task lists */
-.quikdown-task-item {
-    list-style: none;
-}
-
-.quikdown-task-checkbox {
-    margin-right: 0.5em;
-}
-
-/* Links */
-.quikdown-a {
-    color: #66b3ff;
-    text-decoration: underline;
-}
-
-/* Images */
-.quikdown-img {
+.quikdown-dark .quikdown-img {
     max-width: 100%;
     height: auto;
 }
 
-/* Horizontal rule */
-.quikdown-hr {
-    border: none;
-    border-top: 1px solid #444;
-    margin: 1em 0;
+.quikdown-dark .quikdown-a {
+    color: #6db3f2;
+    text-decoration: underline;
 }
 
-/* Text formatting */
-.quikdown-strong {
+.quikdown-dark .quikdown-strong {
     font-weight: bold;
 }
 
-.quikdown-em {
+.quikdown-dark .quikdown-em {
     font-style: italic;
 }
 
-.quikdown-del {
+.quikdown-dark .quikdown-del {
     text-decoration: line-through;
+}
+
+.quikdown-dark .quikdown-ul {
+    margin: 0.5em 0;
+    padding-left: 2em;
+}
+
+.quikdown-dark .quikdown-ol {
+    margin: 0.5em 0;
+    padding-left: 2em;
+}
+
+.quikdown-dark .quikdown-li {
+    margin: 0.25em 0;
+    color: #e0e0e0;
+}
+
+.quikdown-dark .quikdown-task-item {
+    list-style: none;
+}
+
+.quikdown-dark .quikdown-task-checkbox {
+    margin-right: .5em;
+}
+
+/* ============================================
+   Container Styling
+   ============================================ */
+
+.quikdown-dark {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    line-height: 1.6;
+    color: #e0e0e0;
+    background: #1a1a1a;
+    padding: 1rem;
+}
+
+/* ============================================
+   Auto Dark Mode Support
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+    .quikdown-auto {
+        color: #e0e0e0;
+        background: #1a1a1a;
+    }
+    
+    /* Auto-apply dark theme styles */
+    .quikdown-auto .quikdown-h1,
+    .quikdown-auto .quikdown-h2,
+    .quikdown-auto .quikdown-h3,
+    .quikdown-auto .quikdown-h4,
+    .quikdown-auto .quikdown-h5,
+    .quikdown-auto .quikdown-h6 { color: #e0e0e0; }
+    .quikdown-auto .quikdown-pre { background: #2a2a2a; }
+    .quikdown-auto .quikdown-code { background: #2a2a2a; }
+    .quikdown-auto .quikdown-blockquote { border-left-color: #3a3a3a; color: #e0e0e0; }
+    .quikdown-auto .quikdown-th { background-color: #2a2a2a; border-color: #3a3a3a; }
+    .quikdown-auto .quikdown-td { border-color: #3a3a3a; color: #e0e0e0; }
+    .quikdown-auto .quikdown-hr { border-top-color: #3a3a3a; }
+    .quikdown-auto .quikdown-a { color: #6db3f2; }
+    .quikdown-auto .quikdown-li { color: #e0e0e0; }
 }

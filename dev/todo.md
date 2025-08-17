@@ -18,8 +18,8 @@ A small markdown to html parser with fence plugin support
 * [x] Optimized placeholder strings (§CB§ vs %%%CODEBLOCK%%%)
 * [x] CSS string optimization (removed spaces after colons)
 * [x] Build-time version injection
-* [ ] Look in code to remove redundant constructs like html.replace = html.replace ... etc
-* [ ] Single global built-in styles dictionary (currently duplicated)
+* [x] Look in code to remove redundant constructs (no html.replace = html.replace found)
+* [x] Single global built-in styles dictionary (QUIKDOWN_STYLES constant)
 
 ### List Improvements:
 * [ ] Treat tabs as 4 spaces for indentation
@@ -30,7 +30,9 @@ A small markdown to html parser with fence plugin support
 * [ ] More robust table parsing edge cases
 
 ### Code Quality:
-* [ ] Remove buggy blockquote merge line that can strip tags (needs investigation)
+* [ ] Remove buggy blockquote merge line that can strip tags (line 163 - needs investigation)
+  - Current: `html.replace(/<\/blockquote>\n<blockquote>/g, '\n')`
+  - Could potentially strip content between blockquotes
 * [ ] Add optional error callback: `onError: (error) => {}`
 
 ### Testing:
@@ -67,10 +69,11 @@ These items go against the design philosophy:
 
 ## 🔮 Future Enhancements
 
-* Generate theme CSS files from emitStyles() function
-  - Create build script to generate quikdown.light.css and quikdown.dark.css
-  - Allow custom color palettes to be passed to emitStyles()
-  - Ensure proper scoping for multiple themes on same page
+* [x] Generate theme CSS files from emitStyles() function
+  - [x] Created quikdown.light.css and quikdown.dark.css in dist/
+  - [x] Added generation script: `npm run build:css` (tools/generateThemeCSS.js)
+  - [ ] Allow custom color palettes to be passed to emitStyles()
+  - [ ] Ensure proper scoping for multiple themes on same page
 * Bidirectional text support
 * [x] TypeScript definitions (added dist/quikdown.d.ts)
 * Streaming parser mode (if needed)
