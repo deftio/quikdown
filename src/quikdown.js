@@ -11,44 +11,41 @@
 
 import quikdownVersion from './quikdown_version.js';
 
-function quikdown(markdown, options = {}) {
-    if (!markdown || typeof markdown !== 'string') {
-        return '';
-    }
-    
-    const { fence_plugin, inline_styles = false } = options;
+// Single source of truth for all style definitions
+const QUIKDOWN_STYLES = {
+    h1: 'font-size: 2em; font-weight: 600; margin: 0.67em 0; text-align: left',
+    h2: 'font-size: 1.5em; font-weight: 600; margin: 0.83em 0',
+    h3: 'font-size: 1.25em; font-weight: 600; margin: 1em 0',
+    h4: 'font-size: 1em; font-weight: 600; margin: 1.33em 0',
+    h5: 'font-size: 0.875em; font-weight: 600; margin: 1.67em 0',
+    h6: 'font-size: 0.85em; font-weight: 600; margin: 2em 0',
+    pre: 'background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 1em 0',
+    code: 'background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace',
+    blockquote: 'border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em',
+    table: 'border-collapse: collapse; width: 100%; margin: 1em 0',
+    thead: '',
+    tbody: '',
+    tr: '',
+    th: 'border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold; text-align: left',
+    td: 'border: 1px solid #ddd; padding: 8px; text-align: left',
+    hr: 'border: none; border-top: 1px solid #ddd; margin: 1em 0',
+    img: 'max-width: 100%; height: auto',
+    a: 'color: #0066cc; text-decoration: underline',
+    strong: 'font-weight: bold',
+    em: 'font-style: italic',
+    del: 'text-decoration: line-through',
+    ul: 'margin: 0.5em 0; padding-left: 2em',
+    ol: 'margin: 0.5em 0; padding-left: 2em',
+    li: 'margin: 0.25em 0',
+    br: '',
+    // Task list specific styles
+    'task-item': 'list-style: none',
+    'task-checkbox': 'margin-right: 0.5em'
+};
 
-    // Style definitions - minimal, matching emitStyles
-    const styles = {
-        h1: 'font-size: 2em; font-weight: 600; margin: 0.67em 0; text-align: left',
-        h2: 'font-size: 1.5em; font-weight: 600; margin: 0.83em 0',
-        h3: 'font-size: 1.25em; font-weight: 600; margin: 1em 0',
-        h4: 'font-size: 1em; font-weight: 600; margin: 1.33em 0',
-        h5: 'font-size: 0.875em; font-weight: 600; margin: 1.67em 0',
-        h6: 'font-size: 0.85em; font-weight: 600; margin: 2em 0',
-        pre: 'background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 1em 0',
-        code: 'background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace',
-        blockquote: 'border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em',
-        table: 'border-collapse: collapse; width: 100%; margin: 1em 0',
-        thead: '',
-        tbody: '',
-        tr: '',
-        th: 'border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold; text-align: left',
-        td: 'border: 1px solid #ddd; padding: 8px; text-align: left',
-        hr: 'border: none; border-top: 1px solid #ddd; margin: 1em 0',
-        img: 'max-width: 100%; height: auto',
-        a: 'color: #0066cc; text-decoration: underline',
-        strong: 'font-weight: bold',
-        em: 'font-style: italic',
-        del: 'text-decoration: line-through',
-        ul: 'margin: 0.5em 0; padding-left: 2em',
-        ol: 'margin: 0.5em 0; padding-left: 2em',
-        li: 'margin: 0.25em 0',
-        br: ''
-    };
-
-    // Helper to get class or style attribute
-    function getAttr(tag, additionalStyle = '') {
+// Factory function to create getAttr for a given context
+function createGetAttr(inline_styles, styles) {
+    return function(tag, additionalStyle = '') {
         if (inline_styles) {
             const style = styles[tag] || '';
             const fullStyle = additionalStyle ? `${style}; ${additionalStyle}` : style;
@@ -56,7 +53,17 @@ function quikdown(markdown, options = {}) {
         } else {
             return ` class="quikdown-${tag}"`;
         }
+    };
+}
+
+function quikdown(markdown, options = {}) {
+    if (!markdown || typeof markdown !== 'string') {
+        return '';
     }
+    
+    const { fence_plugin, inline_styles = false } = options;
+    const styles = QUIKDOWN_STYLES; // Use module-level styles
+    const getAttr = createGetAttr(inline_styles, styles); // Create getAttr once
 
     // Escape HTML entities to prevent XSS
     function escapeHtml(text) {
@@ -186,16 +193,18 @@ function quikdown(markdown, options = {}) {
         return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>`;
     });
     
-    // Bold (must use non-greedy matching)
-    html = html.replace(/\*\*(.+?)\*\*/g, `<strong${getAttr('strong')}>$1</strong>`);
-    html = html.replace(/__(.+?)__/g, `<strong${getAttr('strong')}>$1</strong>`);
+    // Process inline formatting (bold, italic, strikethrough)
+    const inlinePatterns = [
+        [/\*\*(.+?)\*\*/g, 'strong'],
+        [/__(.+?)__/g, 'strong'],
+        [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
+        [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em'],
+        [/~~(.+?)~~/g, 'del']
+    ];
     
-    // Italic (must not match bold markers)
-    html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, `<em${getAttr('em')}>$1</em>`);
-    html = html.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, `<em${getAttr('em')}>$1</em>`);
-    
-    // Strikethrough
-    html = html.replace(/~~(.+?)~~/g, `<del${getAttr('del')}>$1</del>`);
+    inlinePatterns.forEach(([pattern, tag]) => {
+        html = html.replace(pattern, `<${tag}${getAttr(tag)}>$1</${tag}>`);
+    });
     
     // Line breaks (two spaces at end of line)
     html = html.replace(/  $/gm, `<br${getAttr('br')}>`);
@@ -204,21 +213,26 @@ function quikdown(markdown, options = {}) {
     html = html.replace(/\n\n+/g, '</p><p>');
     html = '<p>' + html + '</p>';
     
-    // Clean up empty paragraphs and unwrap block elements (account for attributes)
-    html = html.replace(/<p><\/p>/g, '');
-    html = html.replace(/<p>(<h[1-6][^>]*>)/g, '$1');
-    html = html.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<blockquote[^>]*>)/g, '$1');
-    html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<ul[^>]*>|<ol[^>]*>)/g, '$1');
-    html = html.replace(/(<\/ul>|<\/ol>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<hr[^>]*>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<table[^>]*>)/g, '$1');
-    html = html.replace(/(<\/table>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<pre[^>]*>)/g, '$1');
-    html = html.replace(/(<\/pre>)<\/p>/g, '$1');
-    // Also unwrap code block placeholders
-    html = html.replace(/<p>(%%%CODEBLOCK\d+%%%)<\/p>/g, '$1');
+    // Clean up empty paragraphs and unwrap block elements
+    const cleanupPatterns = [
+        [/<p><\/p>/g, ''],
+        [/<p>(<h[1-6][^>]*>)/g, '$1'],
+        [/(<\/h[1-6]>)<\/p>/g, '$1'],
+        [/<p>(<blockquote[^>]*>)/g, '$1'],
+        [/(<\/blockquote>)<\/p>/g, '$1'],
+        [/<p>(<ul[^>]*>|<ol[^>]*>)/g, '$1'],
+        [/(<\/ul>|<\/ol>)<\/p>/g, '$1'],
+        [/<p>(<hr[^>]*>)<\/p>/g, '$1'],
+        [/<p>(<table[^>]*>)/g, '$1'],
+        [/(<\/table>)<\/p>/g, '$1'],
+        [/<p>(<pre[^>]*>)/g, '$1'],
+        [/(<\/pre>)<\/p>/g, '$1'],
+        [/<p>(%%%CODEBLOCK\d+%%%)<\/p>/g, '$1']
+    ];
+    
+    cleanupPatterns.forEach(([pattern, replacement]) => {
+        html = html.replace(pattern, replacement);
+    });
     
     // Phase 4: Restore code blocks and inline code
     
@@ -259,30 +273,21 @@ function quikdown(markdown, options = {}) {
  * Process inline markdown formatting
  */
 function processInlineMarkdown(text, inline_styles, styles) {
-    // Helper to get attributes
-    function getAttr(tag, additionalStyle = '') {
-        if (inline_styles) {
-            const style = styles[tag] || '';
-            const fullStyle = additionalStyle ? `${style}; ${additionalStyle}` : style;
-            return fullStyle ? ` style="${fullStyle}"` : '';
-        } else {
-            return ` class="quikdown-${tag}"`;
-        }
-    }
+    const getAttr = createGetAttr(inline_styles, styles);
     
-    // Process bold
-    text = text.replace(/\*\*(.+?)\*\*/g, `<strong${getAttr('strong')}>$1</strong>`);
-    text = text.replace(/__(.+?)__/g, `<strong${getAttr('strong')}>$1</strong>`);
+    // Process inline formatting patterns
+    const patterns = [
+        [/\*\*(.+?)\*\*/g, 'strong'],
+        [/__(.+?)__/g, 'strong'],
+        [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
+        [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em'],
+        [/~~(.+?)~~/g, 'del'],
+        [/`([^`]+)`/g, 'code']
+    ];
     
-    // Process italic (must not match bold markers)
-    text = text.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, `<em${getAttr('em')}>$1</em>`);
-    text = text.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, `<em${getAttr('em')}>$1</em>`);
-    
-    // Process strikethrough
-    text = text.replace(/~~(.+?)~~/g, `<del${getAttr('del')}>$1</del>`);
-    
-    // Process inline code
-    text = text.replace(/`([^`]+)`/g, `<code${getAttr('code')}>$1</code>`);
+    patterns.forEach(([pattern, tag]) => {
+        text = text.replace(pattern, `<${tag}${getAttr(tag)}>$1</${tag}>`);
+    });
     
     return text;
 }
@@ -341,16 +346,7 @@ function processTable(text, inline_styles, styles) {
  * Build an HTML table from markdown table lines
  */
 function buildTable(lines, inline_styles, styles) {
-    // Helper to get attributes
-    function getAttr(tag, additionalStyle = '') {
-        if (inline_styles) {
-            const style = styles[tag] || '';
-            const fullStyle = additionalStyle ? `${style}; ${additionalStyle}` : style;
-            return fullStyle ? ` style="${fullStyle}"` : '';
-        } else {
-            return ` class="quikdown-${tag}"`;
-        }
-    }
+    const getAttr = createGetAttr(inline_styles, styles);
     
     if (lines.length < 2) return null;
     
@@ -424,16 +420,7 @@ function buildTable(lines, inline_styles, styles) {
  * Process markdown lists (ordered and unordered)
  */
 function processLists(text, inline_styles, styles) {
-    // Helper to get attributes
-    function getAttr(tag, additionalStyle = '') {
-        if (inline_styles) {
-            const style = styles[tag] || '';
-            const fullStyle = additionalStyle ? `${style}; ${additionalStyle}` : style;
-            return fullStyle ? ` style="${fullStyle}"` : '';
-        } else {
-            return ` class="quikdown-${tag}"`;
-        }
-    }
+    const getAttr = createGetAttr(inline_styles, styles);
     
     const lines = text.split('\n');
     const result = [];
@@ -511,31 +498,7 @@ function processLists(text, inline_styles, styles) {
  * @returns {string} CSS string with quikdown styles
  */
 quikdown.emitStyles = function() {
-    const styles = {
-        h1: 'font-size: 2em; font-weight: 600; margin: 0.67em 0; text-align: left',
-        h2: 'font-size: 1.5em; font-weight: 600; margin: 0.83em 0',
-        h3: 'font-size: 1.25em; font-weight: 600; margin: 1em 0',
-        h4: 'font-size: 1em; font-weight: 600; margin: 1.33em 0',
-        h5: 'font-size: 0.875em; font-weight: 600; margin: 1.67em 0',
-        h6: 'font-size: 0.85em; font-weight: 600; margin: 2em 0',
-        pre: 'background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; margin: 1em 0',
-        code: 'background: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace',
-        blockquote: 'border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em',
-        table: 'border-collapse: collapse; width: 100%; margin: 1em 0',
-        th: 'border: 1px solid #ddd; padding: 8px; background-color: #f2f2f2; font-weight: bold; text-align: left',
-        td: 'border: 1px solid #ddd; padding: 8px; text-align: left',
-        hr: 'border: none; border-top: 1px solid #ddd; margin: 1em 0',
-        img: 'max-width: 100%; height: auto',
-        a: 'color: #0066cc; text-decoration: underline',
-        strong: 'font-weight: bold',
-        em: 'font-style: italic',
-        del: 'text-decoration: line-through',
-        ul: 'margin: 0.5em 0; padding-left: 2em',
-        ol: 'margin: 0.5em 0; padding-left: 2em',
-        li: 'margin: 0.25em 0',
-        'task-item': 'list-style: none',
-        'task-checkbox': 'margin-right: 0.5em'
-    };
+    const styles = QUIKDOWN_STYLES; // Use the same module-level styles
     
     let css = '';
     for (const [tag, style] of Object.entries(styles)) {

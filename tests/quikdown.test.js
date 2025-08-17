@@ -645,7 +645,7 @@ def analyze():
         test('should have a version property', () => {
             expect(quikdown.version).toBeDefined();
             expect(typeof quikdown.version).toBe('string');
-            expect(quikdown.version).toMatch(/^\d+\.\d+(\.\d+)?$/); // Matches format like "1.0" or "1.0.1"
+            expect(quikdown.version).toMatch(/^\d+\.\d+(\.\d+)?(dev\d+)?$/); // Matches format like "1.0", "1.0.1", or "1.0.3dev2"
         });
     });
 

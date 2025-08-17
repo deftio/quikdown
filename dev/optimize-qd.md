@@ -5,141 +5,261 @@
 - **Target:** <7.5KB
 - **Potential Savings:** ~2KB
 
-## Theme System Architecture (Clarification)
+## Theme System Architecture (Clarified)
 
-### Current Issue
-The styles are hardcoded in the source file, duplicated in two places. This is NOT the intended design.
+### Design Goals
+1. **"Batteries Included"** - Built-in styles for inline usage work out of the box
+2. **Flexible Class-based** - Users can use our CSS or bring their own
+3. **Multi-instance Support** - Different quikdown instances can use different themes on same page
+4. **Size Efficient** - Share style definitions between inline and CSS generation
 
-### Intended Design
-1. **Theme Parameters** - Core should have configurable theme parameters:
-   ```javascript
-   const THEME_PARAMS = {
-     colors: {
-       text: '#333',
-       background: '#fff',
-       codeBg: '#f4f4f4',
-       codeText: '#333',
-       link: '#0066cc',
-       border: '#ddd',
-       // etc...
-     },
-     fonts: {
-       body: 'sans-serif',
-       code: 'monospace'
-     },
-     spacing: {
-       // margins, paddings, etc.
-     }
-   };
-   ```
+### How It Should Work
 
-2. **emitStyles(theme)** - Should accept theme parameters:
-   ```javascript
-   quikdown.emitStyles = function(theme = 'light') {
-     const params = THEMES[theme];
-     // Generate CSS from params
-     return generateCSS(params);
-   };
-   ```
-
-3. **Build Process** - Should generate theme files:
-   ```javascript
-   // tools/generateThemes.js
-   const lightCSS = quikdown.emitStyles('light');
-   fs.writeFileSync('dist/quikdown.light.css', lightCSS);
-   
-   const darkCSS = quikdown.emitStyles('dark');
-   fs.writeFileSync('dist/quikdown.dark.css', darkCSS);
-   ```
-
-4. **User Options:**
-   - Use pre-built themes: `<link rel="stylesheet" href="quikdown.light.css">`
-   - Use inline styles: `quikdown(md, { inline_styles: true })`
-   - Custom CSS: Write own styles for `.quikdown-*` classes
-
-## Size Optimizations
-
-### 1. Remove Style Duplication (~800 bytes)
-**Problem:** Styles defined twice - in main function and emitStyles()
-
-**Solution:** 
-- [ ] Create theme parameter system
-- [ ] Generate styles from parameters
-- [ ] Build tool to create CSS files
-
-### 2. Consolidate getAttr() Function (~200 bytes)
-**Problem:** Defined 4 times in different functions
-
-**Solution:**
-- [ ] Create single factory function
-- [ ] Pass as parameter or use closure
-
-### 3. Optimize Replace Chains (~400 bytes)
-**Problem:** 30+ sequential `html = html.replace()` calls
-
-**Solution:**
+#### Option 1: Inline Styles (Batteries Included)
 ```javascript
-// Current (verbose)
-html = html.replace(/<p><\/p>/g, '');
-html = html.replace(/<p>(<h[1-6][^>]*>)/g, '$1');
-html = html.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
-// ... 10+ more lines
+// User gets nice looking output immediately
+const html = quikdown(markdown, { inline_styles: true });
+// Uses built-in theme styles directly in HTML
+// Output: <h1 style="font-size: 2em; font-weight: 600; ...">
+```
 
-// Optimized
-const paragraphCleanups = [
-  [/<p><\/p>/g, ''],
-  [/<p>(<h[1-6][^>]*>)/g, '$1'],
-  [/(<\/h[1-6]>)<\/p>/g, '$1'],
-  // ...
-];
-for (const [pattern, replacement] of paragraphCleanups) {
-  html = html.replace(pattern, replacement);
+#### Option 2: Class-based with Our Themes
+```html
+<!-- User includes our theme -->
+<link rel="stylesheet" href="quikdown.light.css">
+<!-- Or -->
+<link rel="stylesheet" href="quikdown.dark.css">
+
+<div class="quikdown quikdown-light">
+  <!-- quikdown output with classes -->
+  <h1 class="quikdown-h1">Title</h1>
+</div>
+```
+
+#### Option 3: Custom CSS
+```css
+/* User brings their own styles */
+.my-theme .quikdown-h1 { 
+  color: purple; 
+  font-family: 'Comic Sans'; 
 }
 ```
 
-### 4. Remove processInlineMarkdown Duplication (~300 bytes)
-**Problem:** Duplicate logic for bold/italic/strikethrough
+### Multi-Instance Theme Support
+```html
+<!-- Critical: CSS selectors must support scoping -->
+<div class="quikdown quikdown-light">
+  <!-- Uses light theme -->
+  <div id="output1"></div>
+</div>
 
-**Options:**
-- A) Use processInlineMarkdown everywhere
-- B) Remove it and inline in tables
-- C) Refactor to eliminate duplication
+<div class="quikdown quikdown-dark">
+  <!-- Uses dark theme on same page -->
+  <div id="output2"></div>
+</div>
 
-### 5. Pre-compile Common Regexes (~100 bytes)
-**Problem:** Regex literals created multiple times
+<style>
+/* Properly scoped selectors - namespaced to avoid collisions */
+.quikdown.quikdown-light .quikdown-h1 { color: #1a202c; }
+.quikdown.quikdown-dark .quikdown-h1 { color: #f7fafc; }
+</style>
+```
 
-**Solution:**
+## Implementation Architecture
+
+### 1. Core Style Definitions (Single Source of Truth)
 ```javascript
-// Module level
-const REGEX = {
-  bold: /\*\*(.+?)\*\*/g,
-  italic: /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g,
-  // ...
+// Base style definitions (structure, not colors)
+const BASE_STYLES = {
+  h1: { fontSize: '2em', fontWeight: '600', margin: '0.67em 0' },
+  h2: { fontSize: '1.5em', fontWeight: '600', margin: '0.83em 0' },
+  // ... structural styles
+};
+
+// Theme-specific parameters
+const THEMES = {
+  light: {
+    colors: {
+      text: '#333',
+      heading: '#1a202c',
+      background: '#fff',
+      codeBg: '#f4f4f4',
+      codeText: '#333',
+      link: '#0066cc',
+      border: '#ddd',
+      tableBg: '#f2f2f2'
+    }
+  },
+  dark: {
+    colors: {
+      text: '#e2e8f0',
+      heading: '#f7fafc',
+      background: '#1a202c',
+      codeBg: '#2d3748',
+      codeText: '#e2e8f0',
+      link: '#90cdf4',
+      border: '#4a5568',
+      tableBg: '#2d3748'
+    }
+  }
 };
 ```
 
+### 2. Style Generation Functions
+```javascript
+// For inline styles (batteries included)
+function getInlineStyle(element, theme = 'light') {
+  const base = BASE_STYLES[element];
+  const colors = THEMES[theme].colors;
+  
+  // Combine base + theme colors
+  return Object.entries(base)
+    .map(([k, v]) => `${camelToKebab(k)}: ${v}`)
+    .join('; ');
+}
+
+// For CSS generation (build time)
+function generateCSS(themeName) {
+  const theme = THEMES[themeName];
+  let css = '';
+  
+  // Generate scoped CSS - namespaced to avoid collisions
+  css += `.quikdown.quikdown-${themeName} .quikdown-h1 {\n`;
+  css += `  font-size: 2em;\n`;
+  css += `  color: ${theme.colors.heading};\n`;
+  css += `}\n`;
+  // ... etc
+  
+  return css;
+}
+```
+
+### 3. Build Process
+```javascript
+// tools/buildThemes.js
+const fs = require('fs');
+
+// Generate theme CSS files
+const lightCSS = generateCSS('light');
+fs.writeFileSync('dist/quikdown.light.css', lightCSS);
+
+const darkCSS = generateCSS('dark');  
+fs.writeFileSync('dist/quikdown.dark.css', darkCSS);
+
+// Also generate a combined file with both themes
+const combinedCSS = lightCSS + '\n' + darkCSS;
+fs.writeFileSync('dist/quikdown.themes.css', combinedCSS);
+```
+
+## Size Optimizations
+
+### 1. Unified Style System (~800 bytes saved)
+**Current Problem:** Styles duplicated in main function and emitStyles()
+
+**Solution:**
+```javascript
+// Single source of truth at module level
+const STYLE_DEFS = { /* base styles */ };
+
+// In main function for inline styles
+if (inline_styles) {
+  const style = STYLE_DEFS[tag];
+  // ... apply inline
+}
+
+// In emitStyles for CSS generation
+quikdown.emitStyles = function(theme) {
+  // Use same STYLE_DEFS
+  return generateCSS(STYLE_DEFS, theme);
+};
+```
+
+### 2. Consolidate getAttr() (~200 bytes saved)
+**Problem:** Defined 4 times
+
+**Solution:**
+```javascript
+// Single factory function
+function createGetAttr(inline_styles, styleDefs) {
+  return (tag, additionalStyle = '') => {
+    if (inline_styles) {
+      const style = styleDefs[tag];
+      // ... generate inline style
+    } else {
+      return ` class="quikdown-${tag}"`;
+    }
+  };
+}
+```
+
+### 3. Replace Chain Optimization (~400 bytes saved)
+```javascript
+// Array of replacements instead of chain
+const cleanups = [
+  [/<p><\/p>/g, ''],
+  [/<p>(<h[1-6][^>]*>)/g, '$1'],
+  // ...
+];
+cleanups.forEach(([pattern, replacement]) => {
+  html = html.replace(pattern, replacement);
+});
+```
+
+### 4. Deduplicate Inline Processing (~300 bytes saved)
+- Use single function for inline markdown (bold, italic, etc.)
+- Call it from both main and table processing
+
+## CSS Scoping Requirements
+
+### Must Support:
+```css
+/* Multiple themes on same page - properly namespaced */
+.quikdown.quikdown-light .quikdown-h1 { /* light styles */ }
+.quikdown.quikdown-dark .quikdown-h1 { /* dark styles */ }
+
+/* Custom overrides - user can add their own theme */
+.quikdown.quikdown-custom .quikdown-h1 { /* custom */ }
+
+/* User can also override specific elements */
+.my-app .quikdown .quikdown-h1 { /* app-specific override */ }
+```
+
+### CSS Architecture:
+1. **Never use bare selectors** - Always scope under theme class
+2. **Use consistent naming** - `.quikdown-*` for all elements
+3. **Avoid !important** - Allow easy overrides
+4. **Support cascading** - More specific selectors win
+
 ## Implementation Plan
 
-### Phase 1: Theme System Refactor
-1. [ ] Design theme parameter structure
-2. [ ] Implement theme-based style generation
-3. [ ] Create build script for CSS generation
-4. [ ] Test generated CSS matches current output
+### Phase 1: Refactor Style System
+- [ ] Create STYLE_DEFS constant (single source)
+- [ ] Update main function to use STYLE_DEFS
+- [ ] Update emitStyles to use STYLE_DEFS
+- [ ] Add theme parameter support
 
-### Phase 2: Size Optimizations
-1. [ ] Implement replace chain optimization
-2. [ ] Consolidate getAttr functions
-3. [ ] Remove processInlineMarkdown duplication
-4. [ ] Pre-compile regexes
+### Phase 2: Build Theme Generation
+- [ ] Create buildThemes.js tool
+- [ ] Generate quikdown.light.css
+- [ ] Generate quikdown.dark.css
+- [ ] Test multi-instance support
 
-### Phase 3: Testing & Validation
-1. [ ] Run full test suite
-2. [ ] Compare outputs (original vs optimized)
-3. [ ] Verify size reduction
-4. [ ] Test theme generation
+### Phase 3: Size Optimizations
+- [ ] Implement replace chain array
+- [ ] Consolidate getAttr functions
+- [ ] Deduplicate inline processing
+- [ ] Measure size reduction
 
-## Notes
-- The theme system should be the priority - it's the intended design
-- Size optimizations should not break theme flexibility
-- Each optimization should be tested independently
-- Keep backward compatibility for existing usage
+### Phase 4: Testing
+- [ ] Test inline styles work
+- [ ] Test class-based with our CSS
+- [ ] Test multi-theme on same page
+- [ ] Verify backward compatibility
+
+## Success Criteria
+1. ✅ Size reduced to <7.5KB
+2. ✅ Inline styles work out of box
+3. ✅ Theme CSS properly scoped
+4. ✅ Multiple themes on same page work
+5. ✅ All tests pass
+6. ✅ Backward compatible
