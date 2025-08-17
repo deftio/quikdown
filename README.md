@@ -58,6 +58,23 @@ const html = quikdown(markdown, {
 });
 ```
 
+### TypeScript Support
+
+quikdown includes TypeScript definitions for better IDE support and type safety:
+
+```typescript
+import quikdown, { QuikdownOptions } from 'quikdown';
+
+const options: QuikdownOptions = {
+    inline_styles: true,
+    fence_plugin: (content: string, language: string) => {
+        return `<pre class="hljs ${language}">${content}</pre>`;
+    }
+};
+
+const html: string = quikdown(markdown, options);
+```
+
 ## Supported Markdown
 
 quikdown supports a practical subset of CommonMark:

@@ -244,11 +244,11 @@ cleanups.forEach(([pattern, replacement]) => {
 - [ ] Generate quikdown.dark.css
 - [ ] Test multi-instance support
 
-### Phase 3: Size Optimizations
-- [ ] Implement replace chain array
-- [ ] Consolidate getAttr functions
-- [ ] Deduplicate inline processing
-- [ ] Measure size reduction
+### Phase 3: Size Optimizations (Completed)
+- [x] Implement replace chain array
+- [x] Consolidate getAttr functions  
+- [x] Deduplicate inline processing (partial)
+- [x] Measure size reduction (9.2KB → 7.4KB)
 
 ### Phase 4: Testing
 - [ ] Test inline styles work
@@ -263,3 +263,122 @@ cleanups.forEach(([pattern, replacement]) => {
 4. ✅ Multiple themes on same page work
 5. ✅ All tests pass
 6. ✅ Backward compatible
+
+## Sam's Minifier-Aware Recommendations
+
+### Size-impactful (survive minification)
+
+1. **Kill duplication of logic**
+   - Create `getAttr` **once** in `quikdown()` and **pass it** into `processInlineMarkdown`, `processTable`, and `processLists` instead of recreating it there.
+   - Use **one** inline-formatting pass (`processInlineMarkdown`) everywhere (main flow and table cells) instead of maintaining two sets of replacements.
+
+2. **Tighten string literals (cannot be minified)**
+   - **CSS in `QUIKDOWN_STYLES`:** remove spaces after `:`/`;`, shorten colors (`#0066cc`→`#06c`), drop redundant declarations (e.g., `font-weight:bold` for `<strong>`), and unify margins across headings where acceptable.
+   - Deduplicate common fragments: hoist `"quikdown-"` (and task checkbox fragments) into a single constant and reuse.
+
+3. **Prune noop/unused styles**
+   - Remove empty entries (`thead`, `tbody`, `tr`, `br:''`) and any map keys that never affect output. `emitStyles` already skips falsy values; keeping them only bloats literals.
+
+4. **Collapse unwrap/cleanup boilerplate**
+   - Replace the array of many `<p>…</p>` unwrappers with one tiny helper invoked per tag-group. Same behavior, fewer repeated regex literals.
+
+5. **Drop multi-target export glue (if possible)**
+   - If your distribution allows: ship an **ESM-only** build (or separate builds). Removing CommonJS + `window.quikdown` scaffolding trims real bytes.
+
+6. **Version string source**
+   - Avoid importing a version module just to attach `quikdown.version`. Inject it at build-time (define/replace plugin) so the import and filename go away.
+
+7. **Sanitizer allowlist = shorter code**
+   - Make `sanitizeUrl` an **allowlist** (`https?`, `mailto:`, `tel:`, `data:image/…`) and default everything else to `#`. This is both smaller and safer than checking "dangerous" protocols.
+
+8. **Regex reuse**
+   - Hoist repeated regexes/constants (list markers, emphasis patterns) and reuse them across helpers to cut literal duplication in the final bundle.
+
+9. **Fence regex generalization**
+   - Use a single pattern that supports ``` and `~~~` and 3+ markers. One generalized fence pattern lets you remove alternative branches and comments later.
+
+10. **Optional features as flags/builds**
+    - Gate **task list rendering** (checkbox DOM, styles) behind an option or offer a "core" build without it. That lets bundlers tree-shake the feature out.
+
+11. **Heading styles: rely on UA where acceptable**
+    - If your UI doesn't require custom `font-size`/`font-weight` on `h1–h6`, drop them from the style map and keep just margin adjustments. Big string savings with no functional change to semantics.
+
+12. **Autolink regex refinement**
+    - Use a single autolink approach that trims common trailing punctuation in replacement. It avoids later fix-ups and reduces literal variations.
+
+### Robustness / quality (not primarily size, but worth doing)
+
+1. **Remove blockquote "merge" line**
+   - The `</blockquote>\n<blockquote>` → `\n` replacement drops structure and can erase content between quotes. Safer to delete it entirely.
+
+2. **Table row detection is too loose**
+   - Current check will treat many non-table lines as tables. Tighten the detection (e.g., require at least one `|` **between** two non-empty cells). This prevents misclassification and reduces need for fallback code.
+
+3. **Fence parity with GFM**
+   - Support **3+** markers and match identical marker on close. Keeps behavior predictable for copy-pasted GitHub code blocks.
+
+4. **Lookbehind in italics**
+   - Replace lookbehind-based patterns with lookbehind-free heuristics for compatibility with older Safari/WebViews (and less regex backtracking risk).
+
+5. **Autolink punctuation**
+   - Exclude trailing `.,);:?!` from the URL capture so rendered links are clean (no user-visible defects).
+
+6. **Consistent inline-code handling**
+   - Ensure inline code is treated consistently inside/outside tables (either via placeholder or via the same `processInlineMarkdown` path). It simplifies mental model and testing.
+
+7. **Stable attribute order**
+   - Keep link attributes in a stable order (`href`, then `rel`) to reduce diff churn and make tests deterministic.
+
+8. **Tests that guard the tiny surface**
+   - Keep a handful of fixtures (headings, nested lists, tables with/without trailing pipes, both fences, autolinks, task lists). Prevents regressions without adding runtime code.
+
+### Sam's Prioritization for Size Wins
+For **pure size wins post-minify**, focus on:
+- **(1) dedup helpers**
+- **(2) CSS literal slimming**
+- **(3) prune empty styles**
+- **(5) export glue**
+- **(6) version injection**
+
+These deliver the biggest bite without touching behavior.
+
+## Comparison: Our Analysis vs Sam's
+
+### Overlapping Ideas
+1. **CSS string optimization** - Both identified removing spaces/shortening
+2. **Empty style removal** - Both saw thead/tbody/tr/br as waste
+3. **getAttr deduplication** - Both identified passing it rather than recreating
+4. **URL sanitization** - Both suggested simplification (though different approaches)
+
+### Sam's Unique Insights
+1. **Version injection at build time** - Remove import entirely
+2. **Export glue removal** - ESM-only could save significant bytes
+3. **"quikdown-" constant** - Hoist repeated string prefix
+4. **Allowlist vs blocklist for URLs** - Safer AND smaller
+5. **Fence regex generalization** - Support 3+ markers like GFM
+6. **Optional features/builds** - Task lists as optional feature
+
+### Our Unique Ideas
+1. **Escape map to module level** - Simple win
+2. **Shorter placeholders** - %%%CODEBLOCK%%% → §CB§
+3. **Inline processInlineMarkdown** - Called only from tables
+4. **Combined bold/italic regex** - Use backreferences
+
+### Recommended Next Steps (Prioritized)
+
+#### Phase 1: Quick Wins (Target: ~400 bytes)
+1. **CSS literal slimming** - Remove spaces, shorten colors
+2. **Remove empty styles** - thead, tbody, tr, br
+3. **Escape map to module level** - Stop recreating
+4. **Shorter placeholders** - Reduce string literals
+5. **"quikdown-" constant** - Deduplicate prefix
+
+#### Phase 2: Structural Changes (Target: ~300 bytes)
+6. **Pass getAttr instead of recreating** - True deduplication
+7. **Version injection at build** - Remove import
+8. **URL allowlist approach** - Smaller and safer
+
+#### Phase 3: Consider for Future (Target: ~200 bytes)
+9. **ESM-only build option** - Separate build targets
+10. **Optional task lists** - Feature flag or separate build
+11. **Fence regex generalization** - GFM compatibility

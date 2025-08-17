@@ -1,5 +1,25 @@
 # Release Notes
 
+## v1.0.3 (Unreleased)
+
+### Size Optimizations
+- **Major size reduction**: Reduced bundle from ~9.2KB to 7.4KB (20% reduction)
+  - Moved style definitions to module-level `QUIKDOWN_STYLES` constant (single source of truth)
+  - Created `createGetAttr` factory function to eliminate 4 duplicate definitions
+  - Implemented replace chain arrays for cleanup patterns and inline formatting
+  - Consolidated inline markdown processing patterns into arrays
+- Target: Working towards <6.5KB while maintaining readability and maintainability
+
+### Code Quality
+- Eliminated style duplication between main function and `emitStyles()`
+- Improved code organization with pattern arrays
+- Maintained 100% test coverage during refactoring
+
+### Developer Experience
+- Added TypeScript definitions (`quikdown.d.ts`) for better IDE support
+- Full type safety for options and return values
+- Improved documentation with TypeScript examples
+
 ## v1.0.2 (Unreleased)
 
 ### Bug Fixes
