@@ -45,6 +45,7 @@ jobs:
         ls -lh dist/*.min.js | awk '{print "- " $9 ": " $5}' >> changelog.md
     
     - name: Create Release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
