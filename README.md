@@ -4,26 +4,43 @@
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
 [![Coverage Status](https://img.shields.io/badge/coverage-99%25-blue.svg)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-<10KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![Bundle Size](https://img.shields.io/badge/core-7.4KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![Bundle Size BD](https://img.shields.io/badge/bidirectional-10KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
 
-A lightweight, fast markdown parser with built-in XSS protection. Quikdown works in both browser and Node.js environments.  Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.
+A lightweight, fast markdown parser with built-in XSS protection and optional bidirectional conversion support. Quikdown works in both browser and Node.js environments. Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.
 
-🚀 **[Try Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** - Interactive markdown editor with real-time preview  
+🚀 **[Try Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** - Interactive markdown ot HTML editor with real-time preview 
+🚀 **[Try Bidirectional Demo](https://deftio.github.io/quikdown/examples/quikdown-bd-editor.html)** - Interactive markdown editor with bidirectional support (can edit either markdown or html and see other update)
 📚 **[View Examples](examples/)** - Additional demos and test pages  
 📖 **[Read Documentation](docs/)** - Architecture, security, API reference, and plugin guide
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Bidirectional Conversion](#bidirectional-conversion-new)
+- [Supported Markdown](#supported-markdown)
+- [Configuration Options](#configuration-options)
+- [Plugin System](#plugin-system)
+- [Framework Integration](#framework-integration)
+- [API Reference](#api-reference)
+- [Security](#security)
+- [Contributing](#contributing)
+
 ## Features
 
-- 🚀 **Lightweight** - Under 10KB minified
+- 📦 **Zero dependencies** - No external libraries required
+- 🌐 **Universal** - Works in browsers and Node.js
+- 🚀 **Lightweight** - 7.4KB minified (core), 10KB with bidirectional support
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
 - 🎨 **Flexible styling** - Inline styles or CSS classes including light and dark mode generation, custom themes
 - 🔌 **Plugin system** - Extensible fence block handlers
-- 📦 **Zero dependencies** - No external libraries required
-- 🌐 **Universal** - Works in browsers and Node.js
 - ⚡ **Fast** - Optimized regex-based parsing
 - 📝 **CommonMark subset** - Supports essential markdown features
 - ✅ **Task Lists** - GitHub-style checkboxes
 - 🔗 **Autolinks** - Automatic URL detection
+- 🔄 **Bidirectional** - Convert HTML back to Markdown (requires `quikdown_bd` module) 
 
 ## Installation
 
@@ -52,11 +69,11 @@ Or via CDN:
 </script>
 ```
 
-> **Production tip:** Pin to a specific version for stability (e.g., `https://unpkg.com/quikdown@1.0.3/dist/quikdown.esm.min.js`)
+> **Production tip:** Pin to a specific version for stability (e.g., `https://unpkg.com/quikdown@1.0.4/dist/quikdown.esm.min.js`)
 
 ## Quick Start
 
-### Basic Usage
+### Basic Usage (Standard - One-way conversion)
 
 ```javascript
 import quikdown from 'quikdown';
@@ -65,6 +82,25 @@ const markdown = '# Hello World\n\nThis is **bold** text.';
 const html = quikdown(markdown);
 console.log(html);
 // Output: <h1>Hello World</h1><p>This is <strong>bold</strong> text.</p>
+
+// Note: Regular quikdown does NOT support HTML to Markdown conversion
+```
+
+### Bidirectional Usage (Two-way conversion)
+
+```javascript
+// Use quikdown_bd for bidirectional support
+import quikdown_bd from 'quikdown/bd';
+
+const markdown = '# Hello World\n\nThis is **bold** text.';
+
+// Markdown to HTML
+const html = quikdown_bd(markdown);
+
+// HTML back to Markdown (only available in quikdown_bd)
+const recoveredMarkdown = quikdown_bd.toMarkdown(html);
+console.log(recoveredMarkdown);
+// Output: # Hello World\n\nThis is **bold** text.
 ```
 
 ### With Options
@@ -264,15 +300,102 @@ const safe = quikdown(unsafe);
 // Output: &lt;script&gt;alert("XSS")&lt;/script&gt; <strong>bold</strong>
 ```
 
+## Bidirectional Conversion (1.0.4+)
+
+**⚠️ Important:** Bidirectional conversion requires the `quikdown_bd` module, not the regular `quikdown` module.
+
+The `quikdown_bd` module is a separate build that includes both markdown-to-HTML and HTML-to-markdown conversion capabilities. It's perfect for WYSIWYG editors and round-trip conversion scenarios.
+
+### Installation
+
+```javascript
+// ES Modules - Use quikdown_bd, NOT quikdown
+import quikdown_bd from 'quikdown/bd';
+
+// CommonJS - Use quikdown_bd, NOT quikdown
+const quikdown_bd = require('quikdown/bd');
+
+// Browser - Load the quikdown_bd script, NOT the regular quikdown
+<script src="https://unpkg.com/quikdown/dist/quikdown_bd.umd.min.js"></script>
+<script>
+  // Available as window.quikdown_bd
+  const html = quikdown_bd(markdown);
+</script>
+```
+
+### Basic Usage
+
+```javascript
+// IMPORTANT: Use quikdown_bd for bidirectional support
+import quikdown_bd from 'quikdown/bd';
+
+// Markdown to HTML with source tracking
+const html = quikdown_bd('**Hello** world', { bidirectional: true });
+console.log(html);
+// <strong data-qd="**">Hello</strong> world
+
+// HTML back to Markdown (only available in quikdown_bd)
+const markdown = quikdown_bd.toMarkdown(html);
+console.log(markdown);
+// **Hello** world
+
+// Note: Regular quikdown does NOT have toMarkdown method
+// This will fail: quikdown.toMarkdown(html) // ❌ Error
+```
+
+### Use Cases
+
+- **Live Editors**: Build WYSIWYG markdown editors where users can edit in either view
+- **Content Migration**: Convert existing HTML content to Markdown
+- **Round-trip Preservation**: Maintain markdown source formatting through HTML conversion
+- **Collaborative Editing**: Enable rich-text editing while storing content as Markdown
+
+### Browser Example
+
+```html
+<div id="editor" contenteditable="true"></div>
+<script type="module">
+  import quikdown_bd from 'https://unpkg.com/quikdown/dist/quikdown_bd.esm.min.js';
+  
+  const editor = document.getElementById('editor');
+  const markdown = '# Edit me\n\n**Bold** and *italic*';
+  
+  // Convert to HTML and display
+  editor.innerHTML = quikdown_bd(markdown, { bidirectional: true });
+  
+  // Convert back to Markdown when needed
+  editor.addEventListener('blur', () => {
+    const updatedMarkdown = quikdown_bd.toMarkdown(editor);
+    console.log('Updated markdown:', updatedMarkdown);
+  });
+</script>
+```
+
+For complete documentation, see [Bidirectional Documentation](docs/quikdown-bidirectional.md).
+
 ## Quikdown Lexer Version
+
 An experimental lexer-based implementation is available for testing. See [docs/lexer-implementation.md](docs/lexer-implementation.md) for details.
 
+
+## Framework Integration
+
+quikdown integrates seamlessly with modern JavaScript frameworks:
+
+- **React** - Hooks, components, and Next.js support
+- **Vue** - Composition API, Options API, and Nuxt support  
+- **Svelte** - Reactive statements and stores
+- **Angular** - Components, services, and pipes
+
+See the [Framework Integration Guide](docs/framework-integration.md) for detailed examples and best practices.
 
 ## API Reference
 
 For complete API documentation, see [docs/api-reference.md](docs/api-reference.md)
 
-### `quikdown(markdown, options?)`
+### Core API
+
+#### `quikdown(markdown, options?)`
 
 Main function to convert markdown to HTML.
 
@@ -284,7 +407,7 @@ Main function to convert markdown to HTML.
 
 **Returns:** HTML string
 
-### `quikdown.configure(options)`
+#### `quikdown.configure(options)`
 
 Creates a configured instance of the parser.
 
@@ -298,13 +421,9 @@ const myParser = quikdown.configure({
 const html = myParser(markdown);
 ```
 
-### `quikdown.emitStyles(prefix?, theme?)`
+#### `quikdown.emitStyles(prefix?, theme?)`
 
 Returns CSS styles for quikdown HTML output when not using inline styles.
-
-**Parameters:**
-- `prefix` (string, optional): CSS class prefix (default: 'quikdown-')
-- `theme` (string, optional): Theme name - 'light' or 'dark' (default: 'light')
 
 ```javascript
 // Get light theme CSS
@@ -312,9 +431,36 @@ const lightStyles = quikdown.emitStyles();
 
 // Get dark theme CSS  
 const darkStyles = quikdown.emitStyles('quikdown-', 'dark');
-
-// Add to your stylesheet or <style> tag
 ```
+
+### Bidirectional API
+
+**⚠️ These methods are only available in `quikdown_bd`, not in regular `quikdown`:**
+
+#### `quikdown_bd(markdown, options?)`
+
+Converts markdown to HTML with source tracking for bidirectional conversion.
+
+#### `quikdown_bd.toMarkdown(htmlOrElement)`
+
+Converts HTML back to Markdown. **This method only exists in `quikdown_bd`.**
+
+**Parameters:**
+- `htmlOrElement` (string | HTMLElement): HTML string or DOM element
+
+**Returns:** Markdown string
+
+```javascript
+// ✅ Correct - using quikdown_bd
+import quikdown_bd from 'quikdown/bd';
+const markdown = quikdown_bd.toMarkdown(html);
+
+// ❌ Wrong - regular quikdown doesn't have toMarkdown
+import quikdown from 'quikdown';
+const markdown = quikdown.toMarkdown(html); // Error: toMarkdown is not a function
+```
+
+See [API Reference](docs/api-reference.md) for complete documentation.
 
 ## Theming
 

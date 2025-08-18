@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown Bidirectional Editor</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    
+    <!-- Load Mermaid for diagram rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    
+    <!-- Load theme CSS -->
+    <link rel="stylesheet" href="../dist/quikdown.light.css">
+    <link rel="stylesheet" href="../dist/quikdown.dark.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 2rem);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        
+        header h1 {
+            font-size: 1.4rem;
+            margin: 0;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        button {
+            padding: 0.4rem 0.8rem;
+            border: none;
+            border-radius: 6px;
+            background: #667eea;
+            color: white;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+        
+        button.active {
+            background: #48bb78;
+        }
+        
+        button.secondary {
+            background: #6c757d;
+        }
+        
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        
+        .mode-indicator {
+            padding: 0.4rem 0.8rem;
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        
+        .editors {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            overflow: hidden;
+        }
+        
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #dee2e6;
+            overflow: hidden;
+        }
+        
+        .editor-panel:last-child {
+            border-right: none;
+        }
+        
+        .editor-header {
+            background: #f8f9fa;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .editor-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #markdown-input {
+            width: 100%;
+            height: 100%;
+            padding: 1rem;
+            border: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            overflow-y: auto;
+            background: white;
+        }
+        
+        #rendered-output {
+            width: 100%;
+            height: 100%;
+            padding: 1rem;
+            overflow-y: auto;
+            outline: none;
+            min-height: 100%;
+        }
+        
+        #rendered-output:focus {
+            background: rgba(102, 126, 234, 0.02);
+        }
+        
+        #rendered-output.quikdown-dark {
+            background: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        #rendered-output.quikdown-dark:focus {
+            background: #222;
+        }
+        
+        .status-bar {
+            background: #343a40;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .sync-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #48bb78;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .inactive {
+            background: #dc3545;
+            animation: none;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .editors {
+                grid-template-columns: 1fr;
+            }
+            
+            .editor-panel {
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+            
+            .editor-panel:last-child {
+                border-bottom: none;
+            }
+        }
+        
+        /* Syntax highlighting for rendered code blocks */
+        #rendered-output pre {
+            background: #f6f8fa;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+        
+        #rendered-output.quikdown-dark pre {
+            background: #2d2d2d;
+        }
+        
+        #rendered-output code {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+        
+        /* Make tables look nice */
+        #rendered-output table {
+            margin: 1rem 0;
+        }
+        
+        #rendered-output.quikdown-dark table {
+            border-color: #444;
+        }
+        
+        #rendered-output.quikdown-dark th {
+            background: #2d2d2d;
+        }
+        
+        /* Mermaid diagram styles */
+        .mermaid-container {
+            margin: 1rem 0;
+            min-height: 100px;
+        }
+        
+        .mermaid {
+            text-align: center;
+        }
+        
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        .mermaid-source {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 Quikdown Bidirectional Editor</h1>
+            <div class="controls">
+                <span class="mode-indicator">
+                    <span class="sync-indicator" id="sync-indicator"></span>
+                    <span id="sync-status">Live Sync ON</span>
+                </span>
+                <button id="toggle-sync" onclick="toggleSync()">Pause Sync</button>
+                <button class="secondary" onclick="toggleTheme()">Toggle Theme</button>
+                <button class="secondary" onclick="loadExample()">Load Example</button>
+            </div>
+        </header>
+        
+        <div class="editors">
+            <div class="editor-panel">
+                <div class="editor-header">
+                    <span>📝 Markdown Source</span>
+                    <span id="md-stats"></span>
+                </div>
+                <div class="editor-content">
+                    <textarea id="markdown-input" placeholder="Type markdown here..."></textarea>
+                </div>
+            </div>
+            
+            <div class="editor-panel">
+                <div class="editor-header">
+                    <span>🌐 Rendered Output (Editable)</span>
+                    <span id="render-stats"></span>
+                </div>
+                <div class="editor-content">
+                    <div id="rendered-output" class="quikdown-light" contenteditable="true"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <span id="status-left">Ready</span>
+            <span id="status-right">Markdown ↔ HTML</span>
+        </div>
+    </div>
+    
+    <!-- Load the bidirectional quikdown -->
+    <script type="module">
+        import quikdownCore from '../dist/quikdown.esm.js';
+        import quikdown_bd from '../dist/quikdown_bd.esm.js';
+        
+        // Make available globally
+        window.quikdownCore = quikdownCore;
+        window.quikdown_bd = quikdown_bd;
+        window.quikdownBD = quikdown_bd; // Keep backward compatibility
+    </script>
+    
+    <script>
+        // State
+        let isDarkTheme = false;
+        let isSyncEnabled = true;
+        let isUpdating = false; // Prevent infinite loops
+        let lastEditSource = null; // Track which side was last edited
+        
+        // Default example content (will be loaded from file if available)
+        let exampleMarkdown = `# Loading example...`;
+        
+        // Initialize
+        async function init() {
+            // Wait for mermaid to load
+            let retries = 0;
+            while (typeof mermaid === 'undefined' && retries < 10) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
+            
+            if (typeof mermaid !== 'undefined') {
+                console.log('Mermaid loaded successfully');
+            } else {
+                console.warn('Mermaid failed to load');
+            }
+            
+            // Load example
+            await loadExample();
+            
+            // Set up event listeners
+            setupEventListeners();
+        }
+        
+        // Set up event listeners
+        function setupEventListeners() {
+            const mdInput = document.getElementById('markdown-input');
+            const renderedOutput = document.getElementById('rendered-output');
+            
+            // Markdown input changes
+            mdInput.addEventListener('input', debounce(() => {
+                if (isSyncEnabled && !isUpdating) {
+                    lastEditSource = 'markdown';
+                    convertMdToHtml();
+                }
+            }, 150));
+            
+            // Rendered output changes
+            renderedOutput.addEventListener('input', debounce(() => {
+                if (isSyncEnabled && !isUpdating) {
+                    lastEditSource = 'rendered';
+                    convertHtmlToMd();
+                }
+            }, 150));
+            
+            // Handle checkbox clicks in rendered output
+            renderedOutput.addEventListener('click', (e) => {
+                if (e.target.type === 'checkbox') {
+                    // Allow the checkbox to toggle
+                    setTimeout(() => {
+                        if (isSyncEnabled && !isUpdating) {
+                            lastEditSource = 'rendered';
+                            convertHtmlToMd();
+                        }
+                    }, 10);
+                }
+            });
+            
+            // Track focus
+            mdInput.addEventListener('focus', () => {
+                updateStatus('Editing Markdown source', 'Markdown → HTML');
+            });
+            
+            renderedOutput.addEventListener('focus', () => {
+                updateStatus('Editing rendered output', 'HTML → Markdown');
+            });
+        }
+        
+        // Convert Markdown to HTML
+        function convertMdToHtml() {
+            if (isUpdating) return;
+            
+            const markdown = document.getElementById('markdown-input').value;
+            const startTime = performance.now();
+            
+            try {
+                isUpdating = true;
+                
+                const html = quikdownBD(markdown, { 
+                    bidirectional: true,
+                    inline_styles: false,
+                    fence_plugin: function(code, lang) {
+                        if (lang === 'mermaid') {
+                            // Create a unique ID for this diagram
+                            const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                            // Store source and create pre element as fallback
+                            return `<div class="mermaid-container" data-qd="mermaid" data-qd-fence="\`\`\`" data-qd-lang="mermaid">
+                                <div class="mermaid-source" style="display:none">${escapeHtml(code)}</div>
+                                <pre class="mermaid" id="${id}">${code}</pre>
+                            </div>`;
+                        }
+                        return undefined; // Let default handle other languages
+                    }
+                });
+                
+                document.getElementById('rendered-output').innerHTML = html;
+                
+                // Render any mermaid diagrams
+                setTimeout(() => {
+                    try {
+                        if (typeof mermaid !== 'undefined') {
+                            // Re-initialize mermaid with current theme
+                            mermaid.initialize({ 
+                                startOnLoad: false,
+                                theme: isDarkTheme ? 'dark' : 'default',
+                                securityLevel: 'loose',
+                                flowchart: {
+                                    useMaxWidth: true,
+                                    htmlLabels: true
+                                }
+                            });
+                            
+                            // Use mermaid.init to process all .mermaid elements
+                            const mermaidElements = document.querySelectorAll('pre.mermaid');
+                            console.log('Found mermaid elements:', mermaidElements.length);
+                            
+                            if (mermaidElements.length > 0) {
+                                // Mermaid.init will automatically convert <pre class="mermaid"> to diagrams
+                                mermaid.init(undefined, mermaidElements);
+                                console.log('Mermaid init called');
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Mermaid processing error:', e);
+                    }
+                }, 100);
+                
+                const endTime = performance.now();
+                updateStatus(`Converted in ${(endTime - startTime).toFixed(1)}ms`, 'Markdown → HTML');
+                updateStats();
+                
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, 'Conversion failed');
+            } finally {
+                isUpdating = false;
+            }
+        }
+        
+        // Helper to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Convert HTML to Markdown
+        function convertHtmlToMd() {
+            if (isUpdating) return;
+            
+            const renderedElement = document.getElementById('rendered-output');
+            const startTime = performance.now();
+            
+            try {
+                isUpdating = true;
+                
+                // Use DOM walking to convert back
+                const markdown = quikdownBD.toMarkdown(renderedElement);
+                document.getElementById('markdown-input').value = markdown;
+                
+                const endTime = performance.now();
+                updateStatus(`Converted in ${(endTime - startTime).toFixed(1)}ms`, 'HTML → Markdown');
+                updateStats();
+                
+            } catch (error) {
+                updateStatus(`Error: ${error.message}`, 'Conversion failed');
+            } finally {
+                isUpdating = false;
+            }
+        }
+        
+        // Toggle sync
+        function toggleSync() {
+            isSyncEnabled = !isSyncEnabled;
+            const btn = document.getElementById('toggle-sync');
+            const indicator = document.getElementById('sync-indicator');
+            const status = document.getElementById('sync-status');
+            
+            if (isSyncEnabled) {
+                btn.textContent = 'Pause Sync';
+                btn.classList.remove('active');
+                indicator.classList.remove('inactive');
+                status.textContent = 'Live Sync ON';
+                updateStatus('Live sync enabled', 'Markdown ↔ HTML');
+            } else {
+                btn.textContent = 'Resume Sync';
+                btn.classList.add('active');
+                indicator.classList.add('inactive');
+                status.textContent = 'Live Sync OFF';
+                updateStatus('Live sync paused', 'Manual mode');
+            }
+        }
+        
+        // Toggle theme
+        function toggleTheme() {
+            const output = document.getElementById('rendered-output');
+            isDarkTheme = !isDarkTheme;
+            
+            if (isDarkTheme) {
+                output.classList.remove('quikdown-light');
+                output.classList.add('quikdown-dark');
+            } else {
+                output.classList.remove('quikdown-dark');
+                output.classList.add('quikdown-light');
+            }
+            
+            // Reset mermaid initialization for theme change
+            window.mermaidInitialized = false;
+            
+            // Re-render to apply new theme to mermaid diagrams
+            convertMdToHtml();
+            
+            updateStatus(`Switched to ${isDarkTheme ? 'dark' : 'light'} theme`, 'Theme changed');
+        }
+        
+        // Load example
+        async function loadExample() {
+            try {
+                // Try to load from file
+                const response = await fetch('example_bidirectional_sample.md');
+                if (response.ok) {
+                    exampleMarkdown = await response.text();
+                    updateStatus('Example loaded from file', 'Ready to edit');
+                } else {
+                    // Fallback to simple example
+                    exampleMarkdown = `# Quikdown Bidirectional Editor
+
+Welcome! Edit **either side** and watch them sync.
+
+## Try These Features
+
+- Edit this *markdown* on the left
+- Click and edit the rendered output on the right
+- Check/uncheck task items below
+
+### Task List
+
+- [ ] Try editing markdown
+- [ ] Try editing rendered HTML
+- [ ] Toggle dark theme
+
+\`\`\`javascript
+// Code blocks work too!
+console.log("Hello, Quikdown!");
+\`\`\`
+
+> Edit this quote directly in the rendered view!`;
+                    updateStatus('Using default example', 'Ready to edit');
+                }
+            } catch (e) {
+                console.warn('Could not load example file:', e);
+                // Use fallback
+                exampleMarkdown = `# Quikdown Bidirectional Editor\n\nEdit either side!`;
+            }
+            
+            document.getElementById('markdown-input').value = exampleMarkdown;
+            convertMdToHtml();
+        }
+        
+        // Update status bar
+        function updateStatus(left, right) {
+            document.getElementById('status-left').textContent = left;
+            if (right) {
+                document.getElementById('status-right').textContent = right;
+            }
+        }
+        
+        // Update statistics
+        function updateStats() {
+            const md = document.getElementById('markdown-input').value;
+            const html = document.getElementById('rendered-output').innerHTML;
+            
+            document.getElementById('md-stats').textContent = `${md.length} chars`;
+            document.getElementById('render-stats').textContent = `${html.length} chars`;
+        }
+        
+        // Debounce helper
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

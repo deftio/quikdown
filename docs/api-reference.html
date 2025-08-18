@@ -157,23 +157,38 @@ const html = myParser(&#39;# Heading&#39;);
 // No need to pass options each time
 </code></pre>
 <h2>Style Methods</h2>
-<h3><code>quikdown.emitStyles()</code></h3>
+<h3><code>quikdown.emitStyles(prefix?, theme?)</code></h3>
 <p>Returns CSS styles for quikdown HTML output when not using inline styles.</p>
 <h4>Parameters</h4>
-<p>None</p>
+<ul>
+<li><code>prefix</code> (string, optional) - CSS class prefix. Default: <code>&#39;quikdown-&#39;</code></li>
+<li><code>theme</code> (string, optional) - Theme name: <code>&#39;light&#39;</code> (default) or <code>&#39;dark&#39;</code></li>
+</ul>
 <h4>Returns</h4>
-<p><code>string</code> - CSS stylesheet content</p>
+<p><code>string</code> - CSS stylesheet content with theme-appropriate colors</p>
 <h4>Example</h4>
-<pre><code class="language-javascript">const styles = quikdown.emitStyles();
+<pre><code class="language-javascript">// Generate light theme CSS
+const lightStyles = quikdown.emitStyles(&#39;quikdown-&#39;, &#39;light&#39;);
+
+// Generate dark theme CSS  
+const darkStyles = quikdown.emitStyles(&#39;quikdown-&#39;, &#39;dark&#39;);
 
 // Add to your page
 const styleElement = document.createElement(&#39;style&#39;);
-styleElement.textContent = styles;
+styleElement.textContent = lightStyles;
 document.head.appendChild(styleElement);
 
-// Or include in your CSS build
-fs.writeFileSync(&#39;quikdown.css&#39;, styles);
+// Or use pre-generated theme files
+// dist/quikdown.light.css - Light theme with explicit colors
+// dist/quikdown.dark.css - Dark theme with auto dark mode support
 </code></pre>
+<h4>Theme Features</h4>
+<ul>
+<li><strong>Container-based scoping</strong>: Use <code>.quikdown-light</code> or <code>.quikdown-dark</code> containers</li>
+<li><strong>Explicit colors</strong>: Both themes specify text colors for robustness</li>
+<li><strong>Auto dark mode</strong>: Dark CSS includes <code>.quikdown-auto</code> for system preferences</li>
+<li><strong>No conflicts</strong>: Multiple themes can coexist on the same page</li>
+</ul>
 <h4>Generated CSS Classes</h4>
 <pre><code class="language-css">.quikdown-h1 { margin-top: 0.5em; margin-bottom: 0.3em }
 .quikdown-h2 { margin-top: 0.5em; margin-bottom: 0.3em }
@@ -548,8 +563,167 @@ container.innerHTML = quikdown(combined);
 <td>✅ Full</td>
 </tr>
 </tbody></table>
+<h2>Module Comparison</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th><code>quikdown</code></th>
+<th><code>quikdown_bd</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Markdown to HTML</td>
+<td>✅ Yes</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>HTML to Markdown</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Size (minified)</td>
+<td>7.4KB</td>
+<td>10KB</td>
+</tr>
+<tr>
+<td><code>toMarkdown()</code> method</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>data-qd attributes</td>
+<td>❌ No</td>
+<td>✅ Yes</td>
+</tr>
+<tr>
+<td>Use case</td>
+<td>Standard parsing</td>
+<td>WYSIWYG editors</td>
+</tr>
+</tbody></table>
+<h2>Bidirectional API</h2>
+<p><strong>⚠️ Important:</strong> These methods are only available in the <code>quikdown_bd</code> module, NOT in regular <code>quikdown</code>.</p>
+<h3><code>quikdown_bd(markdown, options?)</code></h3>
+<p>Converts markdown to HTML with source tracking for bidirectional conversion. Only available when using <code>quikdown_bd</code>.</p>
+<h4>Parameters</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>markdown</code></td>
+<td><code>string</code></td>
+<td>Yes</td>
+<td>The markdown text to convert</td>
+</tr>
+<tr>
+<td><code>options</code></td>
+<td><code>object</code></td>
+<td>No</td>
+<td>Configuration options</td>
+</tr>
+</tbody></table>
+<h4>Options</h4>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>inline_styles</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Use inline styles instead of CSS classes</td>
+</tr>
+<tr>
+<td><code>fence_plugin</code></td>
+<td><code>function</code></td>
+<td><code>undefined</code></td>
+<td>Custom handler for fenced code blocks</td>
+</tr>
+<tr>
+<td><code>bidirectional</code></td>
+<td><code>boolean</code></td>
+<td><code>true</code></td>
+<td>Add data-qd attributes for source tracking</td>
+</tr>
+</tbody></table>
+<h4>Returns</h4>
+<p><code>string</code> - HTML with data-qd attributes for source tracking</p>
+<h4>Example</h4>
+<pre><code class="language-javascript">import quikdown_bd from &#39;quikdown/bd&#39;;
+
+const markdown = &#39;**Hello** world&#39;;
+const html = quikdown_bd(markdown, { bidirectional: true });
+console.log(html);
+// &lt;strong data-qd=&quot;**&quot; class=&quot;quikdown-strong&quot;&gt;Hello&lt;/strong&gt; world
+</code></pre>
+<h3><code>quikdown_bd.toMarkdown(htmlOrElement)</code></h3>
+<p>Converts HTML back to Markdown using DOM walking and data-qd attributes.</p>
+<h4>Parameters</h4>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>htmlOrElement</code></td>
+<td><code>string | HTMLElement</code></td>
+<td>Yes</td>
+<td>HTML string or DOM element to convert</td>
+</tr>
+</tbody></table>
+<h4>Returns</h4>
+<p><code>string</code> - The reconstructed Markdown</p>
+<h4>Example</h4>
+<pre><code class="language-javascript">// From HTML string
+const markdown = quikdown_bd.toMarkdown(&#39;&lt;strong&gt;bold&lt;/strong&gt;&#39;);
+console.log(markdown); // **bold**
+
+// From DOM element
+const element = document.getElementById(&#39;content&#39;);
+const markdown = quikdown_bd.toMarkdown(element);
+</code></pre>
+<h4>Browser Requirement</h4>
+<p><code>toMarkdown</code> requires a DOM environment. In Node.js, use a library like jsdom:</p>
+<pre><code class="language-javascript">const { JSDOM } = require(&#39;jsdom&#39;);
+const dom = new JSDOM();
+global.document = dom.window.document;
+global.window = dom.window;
+global.Node = dom.window.Node;
+</code></pre>
+<h3><code>quikdown_bd.configure(options)</code></h3>
+<p>Creates a pre-configured bidirectional parser with default options.</p>
+<h4>Example</h4>
+<pre><code class="language-javascript">const myParser = quikdown_bd.configure({
+  inline_styles: true,
+  bidirectional: true
+});
+
+const html = myParser(markdown);
+</code></pre>
+<h3><code>quikdown_bd.emitStyles(prefix?, theme?)</code></h3>
+<p>Returns CSS styles for bidirectional HTML output (currently returns empty string, reserved for future use).</p>
+<h3><code>quikdown_bd.version</code></h3>
+<p>Returns the version string of the quikdown_bd module.</p>
 <h2>Module Formats</h2>
 <p>quikdown is distributed in multiple formats:</p>
+<h3>Core Module</h3>
 <table>
 <thead>
 <tr>
@@ -584,8 +758,43 @@ container.innerHTML = quikdown(combined);
 <td>Node.js require()</td>
 </tr>
 </tbody></table>
+<h3>Bidirectional Module</h3>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>File</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>UMD</td>
+<td><code>dist/quikdown_bd.umd.js</code></td>
+<td>Browser script tag</td>
+</tr>
+<tr>
+<td>UMD minified</td>
+<td><code>dist/quikdown_bd.umd.min.js</code></td>
+<td>Production browser</td>
+</tr>
+<tr>
+<td>ESM</td>
+<td><code>dist/quikdown_bd.esm.js</code></td>
+<td>ES6 imports</td>
+</tr>
+<tr>
+<td>ESM minified</td>
+<td><code>dist/quikdown_bd.esm.min.js</code></td>
+<td>Production ES6</td>
+</tr>
+<tr>
+<td>CommonJS</td>
+<td><code>dist/quikdown_bd.cjs</code></td>
+<td>Node.js require()</td>
+</tr>
+</tbody></table>
 <h2>TypeScript</h2>
-<p>TypeScript definitions are planned but not yet available. For now, use:</p>
+<p>TypeScript definitions are included for both modules:</p>
 <pre><code class="language-typescript">declare module &#39;quikdown&#39; {
   interface QuikdownOptions {
     inline_styles?: boolean;
@@ -595,7 +804,7 @@ container.innerHTML = quikdown(combined);
   interface QuikdownFunction {
     (markdown: string, options?: QuikdownOptions): string;
     configure(options: QuikdownOptions): (markdown: string) =&gt; string;
-    emitStyles(): string;
+    emitStyles(prefix?: string, theme?: &#39;light&#39; | &#39;dark&#39;): string;
     version: string;
   }
   

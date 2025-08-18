@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Framework Integration - quikdown Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1>Framework Integration Guide</h1>
+<p>This guide shows how to integrate quikdown into popular JavaScript frameworks.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#react">React</a></li>
+<li><a href="#vuejs">Vue.js</a></li>
+<li><a href="#svelte">Svelte</a></li>
+<li><a href="#angular">Angular</a></li>
+<li><a href="#nextjs">Next.js</a></li>
+<li><a href="#nuxt">Nuxt</a></li>
+</ul>
+<h2>React</h2>
+<h3>Basic Usage</h3>
+<pre><code class="language-jsx">import React, { useState, useMemo } from &#39;react&#39;;
+import quikdown from &#39;quikdown&#39;;
+
+function MarkdownEditor() {
+  const [markdown, setMarkdown] = useState(&#39;# Hello React\n\nEdit me!&#39;);
+  
+  const html = useMemo(() =&gt; {
+    return quikdown(markdown, { inline_styles: true });
+  }, [markdown]);
+  
+  return (
+    &lt;div style={{ display: &#39;flex&#39;, gap: &#39;20px&#39; }}&gt;
+      &lt;textarea
+        value={markdown}
+        onChange={(e) =&gt; setMarkdown(e.target.value)}
+        style={{ width: &#39;50%&#39;, minHeight: &#39;400px&#39; }}
+      /&gt;
+      &lt;div 
+        dangerouslySetInnerHTML={{ __html: html }}
+        style={{ width: &#39;50%&#39; }}
+      /&gt;
+    &lt;/div&gt;
+  );
+}
+
+export default MarkdownEditor;
+</code></pre>
+<h3>With Bidirectional Support</h3>
+<p><strong>⚠️ Note:</strong> Bidirectional support requires <code>quikdown_bd</code>, not regular <code>quikdown</code>.</p>
+<pre><code class="language-jsx">import React, { useState, useEffect, useRef } from &#39;react&#39;;
+// Use quikdown_bd for bidirectional support, NOT regular quikdown
+import quikdown_bd from &#39;quikdown/bd&#39;;
+
+function BidirectionalEditor() {
+  const [markdown, setMarkdown] = useState(&#39;# Bidirectional Editor\n\n**Edit** either side!&#39;);
+  const [isEditingHtml, setIsEditingHtml] = useState(false);
+  const htmlRef = useRef(null);
+  
+  useEffect(() =&gt; {
+    if (!isEditingHtml &amp;&amp; htmlRef.current) {
+      htmlRef.current.innerHTML = quikdown_bd(markdown, { bidirectional: true });
+    }
+  }, [markdown, isEditingHtml]);
+  
+  const handleHtmlEdit = () =&gt; {
+    if (htmlRef.current) {
+      const newMarkdown = quikdown_bd.toMarkdown(htmlRef.current);
+      setMarkdown(newMarkdown);
+      setIsEditingHtml(false);
+    }
+  };
+  
+  return (
+    &lt;div style={{ display: &#39;flex&#39;, gap: &#39;20px&#39; }}&gt;
+      &lt;textarea
+        value={markdown}
+        onChange={(e) =&gt; {
+          setMarkdown(e.target.value);
+          setIsEditingHtml(false);
+        }}
+        style={{ width: &#39;50%&#39;, minHeight: &#39;400px&#39; }}
+      /&gt;
+      &lt;div
+        ref={htmlRef}
+        contentEditable
+        onFocus={() =&gt; setIsEditingHtml(true)}
+        onBlur={handleHtmlEdit}
+        style={{ width: &#39;50%&#39;, border: &#39;1px solid #ccc&#39;, padding: &#39;10px&#39; }}
+      /&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<h3>Custom Hook</h3>
+<pre><code class="language-jsx">import { useState, useMemo } from &#39;react&#39;;
+import quikdown from &#39;quikdown&#39;;
+
+export function useMarkdown(initialMarkdown = &#39;&#39;, options = {}) {
+  const [markdown, setMarkdown] = useState(initialMarkdown);
+  
+  const html = useMemo(() =&gt; {
+    return quikdown(markdown, options);
+  }, [markdown, options]);
+  
+  return { markdown, setMarkdown, html };
+}
+
+// Usage
+function MyComponent() {
+  const { markdown, setMarkdown, html } = useMarkdown(&#39;# Hello&#39;);
+  // ...
+}
+</code></pre>
+<h2>Vue.js</h2>
+<h3>Vue 3 Composition API</h3>
+<pre><code class="language-vue">&lt;template&gt;
+  &lt;div class=&quot;markdown-editor&quot;&gt;
+    &lt;textarea 
+      v-model=&quot;markdown&quot; 
+      class=&quot;editor&quot;
+    /&gt;
+    &lt;div 
+      v-html=&quot;html&quot; 
+      class=&quot;preview&quot;
+    /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref, computed } from &#39;vue&#39;;
+import quikdown from &#39;quikdown&#39;;
+
+const markdown = ref(&#39;# Hello Vue 3\n\nEdit this **markdown**!&#39;);
+
+const html = computed(() =&gt; {
+  return quikdown(markdown.value, { inline_styles: true });
+});
+&lt;/script&gt;
+
+&lt;style scoped&gt;
+.markdown-editor {
+  display: flex;
+  gap: 20px;
+}
+.editor, .preview {
+  width: 50%;
+  min-height: 400px;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+&lt;/style&gt;
+</code></pre>
+<h3>Vue 2 Options API</h3>
+<pre><code class="language-vue">&lt;template&gt;
+  &lt;div class=&quot;markdown-editor&quot;&gt;
+    &lt;textarea 
+      v-model=&quot;markdown&quot; 
+      class=&quot;editor&quot;
+    /&gt;
+    &lt;div 
+      v-html=&quot;html&quot; 
+      class=&quot;preview&quot;
+    /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script&gt;
+import quikdown from &#39;quikdown&#39;;
+
+export default {
+  data() {
+    return {
+      markdown: &#39;# Hello Vue 2\n\nEdit me!&#39;
+    };
+  },
+  computed: {
+    html() {
+      return quikdown(this.markdown, { inline_styles: true });
+    }
+  }
+};
+&lt;/script&gt;
+</code></pre>
+<h3>Vue Component with Bidirectional Support</h3>
+<pre><code class="language-vue">&lt;template&gt;
+  &lt;div class=&quot;bidirectional-editor&quot;&gt;
+    &lt;textarea 
+      v-model=&quot;markdown&quot; 
+      @input=&quot;syncFromMarkdown&quot;
+      class=&quot;editor&quot;
+    /&gt;
+    &lt;div 
+      ref=&quot;htmlEditor&quot;
+      contenteditable=&quot;true&quot;
+      @blur=&quot;syncFromHtml&quot;
+      class=&quot;preview&quot;
+    /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref, onMounted } from &#39;vue&#39;;
+import quikdown_bd from &#39;quikdown/bd&#39;;
+
+const markdown = ref(&#39;# Bidirectional\n\n**Edit** either side!&#39;);
+const htmlEditor = ref(null);
+let isUpdating = false;
+
+const syncFromMarkdown = () =&gt; {
+  if (!isUpdating &amp;&amp; htmlEditor.value) {
+    isUpdating = true;
+    htmlEditor.value.innerHTML = quikdown_bd(markdown.value, { bidirectional: true });
+    isUpdating = false;
+  }
+};
+
+const syncFromHtml = () =&gt; {
+  if (!isUpdating &amp;&amp; htmlEditor.value) {
+    isUpdating = true;
+    markdown.value = quikdown_bd.toMarkdown(htmlEditor.value);
+    isUpdating = false;
+  }
+};
+
+onMounted(() =&gt; {
+  syncFromMarkdown();
+});
+&lt;/script&gt;
+</code></pre>
+<h2>Svelte</h2>
+<h3>Basic Svelte Component</h3>
+<pre><code class="language-svelte">&lt;script&gt;
+  import quikdown from &#39;quikdown&#39;;
+  
+  let markdown = &#39;# Hello Svelte\n\n**Bold** and *italic* text&#39;;
+  
+  $: html = quikdown(markdown, { inline_styles: true });
+&lt;/script&gt;
+
+&lt;div class=&quot;editor&quot;&gt;
+  &lt;textarea bind:value={markdown} /&gt;
+  &lt;div class=&quot;preview&quot;&gt;
+    {@html html}
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+  .editor {
+    display: flex;
+    gap: 20px;
+  }
+  textarea, .preview {
+    width: 50%;
+    min-height: 400px;
+    padding: 10px;
+    border: 1px solid #ccc;
+  }
+&lt;/style&gt;
+</code></pre>
+<h3>Svelte Store Integration</h3>
+<pre><code class="language-javascript">// markdownStore.js
+import { writable, derived } from &#39;svelte/store&#39;;
+import quikdown from &#39;quikdown&#39;;
+
+export function createMarkdownStore(initialValue = &#39;&#39;) {
+  const markdown = writable(initialValue);
+  
+  const html = derived(markdown, $markdown =&gt; 
+    quikdown($markdown, { inline_styles: true })
+  );
+  
+  return {
+    markdown,
+    html,
+    setMarkdown: markdown.set,
+    updateMarkdown: markdown.update
+  };
+}
+</code></pre>
+<pre><code class="language-svelte">&lt;!-- Component.svelte --&gt;
+&lt;script&gt;
+  import { createMarkdownStore } from &#39;./markdownStore.js&#39;;
+  
+  const { markdown, html, setMarkdown } = createMarkdownStore(&#39;# Hello Store&#39;);
+&lt;/script&gt;
+
+&lt;textarea value={$markdown} on:input={(e) =&gt; setMarkdown(e.target.value)} /&gt;
+&lt;div&gt;{@html $html}&lt;/div&gt;
+</code></pre>
+<h3>Bidirectional Svelte Component</h3>
+<pre><code class="language-svelte">&lt;script&gt;
+  import { onMount } from &#39;svelte&#39;;
+  import quikdown_bd from &#39;quikdown/bd&#39;;
+  
+  let markdown = &#39;# Bidirectional\n\n**Edit** anywhere!&#39;;
+  let htmlElement;
+  let isUpdating = false;
+  
+  function updateHtml() {
+    if (!isUpdating &amp;&amp; htmlElement) {
+      isUpdating = true;
+      htmlElement.innerHTML = quikdown_bd(markdown, { bidirectional: true });
+      isUpdating = false;
+    }
+  }
+  
+  function updateMarkdown() {
+    if (!isUpdating &amp;&amp; htmlElement) {
+      isUpdating = true;
+      markdown = quikdown_bd.toMarkdown(htmlElement);
+      isUpdating = false;
+    }
+  }
+  
+  onMount(() =&gt; {
+    updateHtml();
+  });
+  
+  $: if (markdown) updateHtml();
+&lt;/script&gt;
+
+&lt;div class=&quot;editor&quot;&gt;
+  &lt;textarea bind:value={markdown} /&gt;
+  &lt;div 
+    bind:this={htmlElement}
+    contenteditable=&quot;true&quot;
+    on:blur={updateMarkdown}
+    class=&quot;preview&quot;
+  /&gt;
+&lt;/div&gt;
+</code></pre>
+<h2>Angular</h2>
+<h3>Angular Component</h3>
+<pre><code class="language-typescript">// markdown-editor.component.ts
+import { Component, OnInit } from &#39;@angular/core&#39;;
+import quikdown from &#39;quikdown&#39;;
+
+@Component({
+  selector: &#39;app-markdown-editor&#39;,
+  template: `
+    &lt;div class=&quot;editor-container&quot;&gt;
+      &lt;textarea 
+        [(ngModel)]=&quot;markdown&quot; 
+        (ngModelChange)=&quot;updateHtml()&quot;
+        class=&quot;editor&quot;
+      &gt;&lt;/textarea&gt;
+      &lt;div 
+        [innerHTML]=&quot;html&quot; 
+        class=&quot;preview&quot;
+      &gt;&lt;/div&gt;
+    &lt;/div&gt;
+  `,
+  styles: [`
+    .editor-container {
+      display: flex;
+      gap: 20px;
+    }
+    .editor, .preview {
+      width: 50%;
+      min-height: 400px;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+  `]
+})
+export class MarkdownEditorComponent implements OnInit {
+  markdown = &#39;# Hello Angular\n\n**Bold** text&#39;;
+  html = &#39;&#39;;
+  
+  ngOnInit() {
+    this.updateHtml();
+  }
+  
+  updateHtml() {
+    this.html = quikdown(this.markdown, { inline_styles: true });
+  }
+}
+</code></pre>
+<h3>Angular Service</h3>
+<pre><code class="language-typescript">// markdown.service.ts
+import { Injectable } from &#39;@angular/core&#39;;
+import quikdown from &#39;quikdown&#39;;
+import quikdown_bd from &#39;quikdown/bd&#39;;
+
+@Injectable({
+  providedIn: &#39;root&#39;
+})
+export class MarkdownService {
+  
+  toHtml(markdown: string, options?: any): string {
+    return quikdown(markdown, options);
+  }
+  
+  toHtmlBidirectional(markdown: string): string {
+    return quikdown_bd(markdown, { bidirectional: true });
+  }
+  
+  toMarkdown(html: string | HTMLElement): string {
+    return quikdown_bd.toMarkdown(html);
+  }
+}
+</code></pre>
+<h3>Angular Pipe</h3>
+<pre><code class="language-typescript">// markdown.pipe.ts
+import { Pipe, PipeTransform } from &#39;@angular/core&#39;;
+import quikdown from &#39;quikdown&#39;;
+
+@Pipe({
+  name: &#39;markdown&#39;
+})
+export class MarkdownPipe implements PipeTransform {
+  transform(value: string, options?: any): string {
+    return value ? quikdown(value, options) : &#39;&#39;;
+  }
+}
+
+// Usage in template
+// &lt;div [innerHTML]=&quot;markdownContent | markdown&quot;&gt;&lt;/div&gt;
+</code></pre>
+<h2>Next.js</h2>
+<h3>Next.js Page with SSR</h3>
+<pre><code class="language-jsx">// pages/markdown-demo.js
+import { useState } from &#39;react&#39;;
+import quikdown from &#39;quikdown&#39;;
+
+// Server-side rendering
+export async function getServerSideProps() {
+  const initialMarkdown = &#39;# Server-Rendered\n\nThis was rendered on the server!&#39;;
+  const initialHtml = quikdown(initialMarkdown, { inline_styles: true });
+  
+  return {
+    props: {
+      initialMarkdown,
+      initialHtml
+    }
+  };
+}
+
+export default function MarkdownDemo({ initialMarkdown, initialHtml }) {
+  const [markdown, setMarkdown] = useState(initialMarkdown);
+  const [html, setHtml] = useState(initialHtml);
+  
+  const handleChange = (e) =&gt; {
+    const newMarkdown = e.target.value;
+    setMarkdown(newMarkdown);
+    setHtml(quikdown(newMarkdown, { inline_styles: true }));
+  };
+  
+  return (
+    &lt;div style={{ display: &#39;flex&#39;, gap: &#39;20px&#39;, padding: &#39;20px&#39; }}&gt;
+      &lt;textarea 
+        value={markdown} 
+        onChange={handleChange}
+        style={{ width: &#39;50%&#39;, minHeight: &#39;400px&#39; }}
+      /&gt;
+      &lt;div 
+        dangerouslySetInnerHTML={{ __html: html }}
+        style={{ width: &#39;50%&#39; }}
+      /&gt;
+    &lt;/div&gt;
+  );
+}
+</code></pre>
+<h3>Next.js API Route</h3>
+<pre><code class="language-javascript">// pages/api/markdown.js
+import quikdown from &#39;quikdown&#39;;
+
+export default function handler(req, res) {
+  if (req.method === &#39;POST&#39;) {
+    const { markdown, options = {} } = req.body;
+    
+    try {
+      const html = quikdown(markdown, options);
+      res.status(200).json({ html });
+    } catch (error) {
+      res.status(400).json({ error: error.message });
+    }
+  } else {
+    res.status(405).json({ error: &#39;Method not allowed&#39; });
+  }
+}
+</code></pre>
+<h2>Nuxt</h2>
+<h3>Nuxt 3 Component</h3>
+<pre><code class="language-vue">&lt;!-- components/MarkdownEditor.vue --&gt;
+&lt;template&gt;
+  &lt;div class=&quot;markdown-editor&quot;&gt;
+    &lt;textarea 
+      v-model=&quot;markdown&quot; 
+      class=&quot;editor&quot;
+    /&gt;
+    &lt;div 
+      v-html=&quot;html&quot; 
+      class=&quot;preview&quot;
+    /&gt;
+  &lt;/div&gt;
+&lt;/template&gt;
+
+&lt;script setup&gt;
+import { ref, computed } from &#39;vue&#39;;
+import quikdown from &#39;quikdown&#39;;
+
+const markdown = ref(&#39;# Hello Nuxt 3&#39;);
+const html = computed(() =&gt; quikdown(markdown.value, { inline_styles: true }));
+&lt;/script&gt;
+</code></pre>
+<h3>Nuxt Plugin</h3>
+<pre><code class="language-javascript">// plugins/quikdown.client.js
+import quikdown from &#39;quikdown&#39;;
+import quikdown_bd from &#39;quikdown/bd&#39;;
+
+export default defineNuxtPlugin(() =&gt; {
+  return {
+    provide: {
+      quikdown,
+      quikdown_bd
+    }
+  };
+});
+
+// Usage in component
+// const { $quikdown } = useNuxtApp();
+// const html = $quikdown(markdown);
+</code></pre>
+<h2>Common Patterns</h2>
+<h3>Debounced Updates</h3>
+<p>For better performance with large documents:</p>
+<pre><code class="language-javascript">import { debounce } from &#39;lodash-es&#39;; // or your debounce implementation
+
+const debouncedConvert = debounce((markdown, callback) =&gt; {
+  const html = quikdown(markdown);
+  callback(html);
+}, 300);
+</code></pre>
+<h3>Syntax Highlighting Integration</h3>
+<pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
+import hljs from &#39;highlight.js&#39;;
+
+function highlightPlugin(code, language) {
+  if (language &amp;&amp; hljs.getLanguage(language)) {
+    try {
+      const result = hljs.highlight(code, { language });
+      return `&lt;pre&gt;&lt;code class=&quot;hljs language-${language}&quot;&gt;${result.value}&lt;/code&gt;&lt;/pre&gt;`;
+    } catch (e) {
+      console.error(&#39;Highlighting failed:&#39;, e);
+    }
+  }
+  return undefined; // Use default
+}
+
+const html = quikdown(markdown, { 
+  fence_plugin: highlightPlugin 
+});
+</code></pre>
+<h3>Sanitization</h3>
+<p>While quikdown has built-in XSS protection, you can add extra sanitization:</p>
+<pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
+import DOMPurify from &#39;dompurify&#39;;
+
+function safeRender(markdown) {
+  const html = quikdown(markdown);
+  return DOMPurify.sanitize(html);
+}
+</code></pre>
+<h2>TypeScript Support</h2>
+<p>All frameworks can benefit from quikdown&#39;s TypeScript definitions:</p>
+<pre><code class="language-typescript">import quikdown, { QuikdownOptions } from &#39;quikdown&#39;;
+import quikdown_bd from &#39;quikdown/bd&#39;;
+
+const options: QuikdownOptions = {
+  inline_styles: true,
+  fence_plugin: (code: string, lang: string) =&gt; {
+    // Custom plugin logic
+    return `&lt;pre class=&quot;${lang}&quot;&gt;${code}&lt;/pre&gt;`;
+  }
+};
+
+const html: string = quikdown(markdown, options);
+const backToMarkdown: string = quikdown_bd.toMarkdown(html);
+</code></pre>
+<h2>Performance Tips</h2>
+<ol>
+<li><strong>Memoize conversions</strong> - Use React.useMemo, Vue computed, or Svelte reactive statements</li>
+<li><strong>Debounce updates</strong> - For live editors, debounce the conversion by 200-300ms</li>
+<li><strong>Virtual scrolling</strong> - For very long documents, consider virtual scrolling</li>
+<li><strong>Web Workers</strong> - For large documents, consider moving conversion to a Web Worker</li>
+<li><strong>Lazy loading</strong> - Load quikdown dynamically when needed:</li>
+</ol>
+<pre><code class="language-javascript">// Dynamic import
+const quikdown = await import(&#39;quikdown&#39;);
+const html = quikdown.default(markdown);
+</code></pre>
+<h2>See Also</h2>
+<ul>
+<li><a href="./api-reference.md">API Reference</a></li>
+<li><a href="./plugin-guide.md">Plugin Guide</a></li>
+<li><a href="./quikdown-bidirectional.md">Bidirectional Documentation</a></li>
+<li><a href="../examples/">Examples</a></li>
+</ul>
+
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>

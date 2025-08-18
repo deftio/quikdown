@@ -82,5 +82,66 @@ export default [
       banner
     },
     plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // ========== quikdown_bd (Bidirectional) Builds ==========
+  
+  // BD UMD build (browser)
+  {
+    input: 'src/quikdown_bd.js',
+    output: {
+      file: 'dist/quikdown_bd.umd.js',
+      format: 'umd',
+      name: 'quikdown_bd',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_bd - Bidirectional')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+  
+  // BD UMD minified
+  {
+    input: 'src/quikdown_bd.js',
+    output: {
+      file: 'dist/quikdown_bd.umd.min.js',
+      format: 'umd',
+      name: 'quikdown_bd',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_bd - Bidirectional'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+  
+  // BD ESM build
+  {
+    input: 'src/quikdown_bd.js',
+    output: {
+      file: 'dist/quikdown_bd.esm.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_bd - Bidirectional')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+  
+  // BD ESM minified
+  {
+    input: 'src/quikdown_bd.js',
+    output: {
+      file: 'dist/quikdown_bd.esm.min.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_bd - Bidirectional'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+  
+  // BD CommonJS build
+  {
+    input: 'src/quikdown_bd.js',
+    output: {
+      file: 'dist/quikdown_bd.cjs',
+      format: 'cjs',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_bd - Bidirectional')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
   }
 ];

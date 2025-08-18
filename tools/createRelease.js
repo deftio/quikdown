@@ -128,10 +128,10 @@ async function createRelease() {
             process.exit(1);
         }
         
-        // Build the project
-        log('\n📦 Building project...', colors.cyan);
-        exec('npm run build');
-        log('✓ Build complete', colors.green);
+        // Build the project and documentation
+        log('\n📦 Building project and documentation...', colors.cyan);
+        exec('npm run build:all');
+        log('✓ Build complete (including docs)', colors.green);
         
         // Run tests
         log('\n🧪 Running tests...', colors.cyan);
@@ -173,6 +173,7 @@ ${minFiles.map(file => {
 ${recentCommits}
 
 ## 🚀 Features
+- Bidirectional conversion (quikdown_bd module)
 - Task lists support
 - URL sanitization
 - Autolinks

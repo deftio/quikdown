@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Automated Round-trip Test</title>
+</head>
+<body>
+    <h1>Automated Round-trip Test Results</h1>
+    <pre id="results"></pre>
+    
+    <script type="module">
+        import quikdownCore from '../dist/quikdown.esm.js';
+        import quikdownBD from './quikdown-bd.esm.js';
+        
+        const testCases = [
+            { name: 'Headers', md: '# H1\n## H2\n### H3' },
+            { name: 'Bold', md: '**bold text**' },
+            { name: 'Italic', md: '*italic text*' },
+            { name: 'Code', md: 'Some `inline code` here' },
+            { name: 'Link', md: '[Click here](https://example.com)' },
+            { name: 'Image', md: '![Alt text](image.jpg)' },
+            { name: 'List', md: '- Item 1\n- Item 2\n- Item 3' },
+            { name: 'Ordered List', md: '1. First\n2. Second\n3. Third' },
+            { name: 'Blockquote', md: '> This is a quote' },
+            { name: 'Code Block', md: '```js\nconst x = 1;\n```' },
+            { name: 'Table', md: '| A | B |\n|---|---|\n| 1 | 2 |' },
+            { name: 'HR', md: '---' },
+            { name: 'Strikethrough', md: '~~deleted~~' },
+            { name: 'Task List', md: '- [ ] Todo\n- [x] Done' },
+            { name: 'Mixed', md: '# Title\n\n**Bold** and *italic* with `code`.\n\n- List item' }
+        ];
+        
+        const results = [];
+        let passed = 0;
+        let failed = 0;
+        
+        for (const test of testCases) {
+            try {
+                // Convert MD → HTML with bidirectional support
+                const html = quikdownBD(test.md, { bidirectional: true });
+                
+                // Convert HTML → MD using DOM walking
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const recovered = quikdownBD.toMarkdown(tempDiv);
+                
+                // Normalize for comparison
+                const original = test.md.trim().replace(/\n+/g, '\n');
+                const result = recovered.trim().replace(/\n+/g, '\n');
+                
+                const match = original === result;
+                
+                if (match) {
+                    results.push(`✅ ${test.name}`);
+                    passed++;
+                } else {
+                    results.push(`❌ ${test.name}`);
+                    results.push(`   Original:  "${original}"`);
+                    results.push(`   Recovered: "${result}"`);
+                    failed++;
+                }
+            } catch (e) {
+                results.push(`❌ ${test.name} - Error: ${e.message}`);
+                failed++;
+            }
+        }
+        
+        results.push('');
+        results.push(`Summary: ${passed} passed, ${failed} failed`);
+        results.push(`Total tests: ${testCases.length}`);
+        results.push(`Success rate: ${((passed/testCases.length)*100).toFixed(1)}%`);
+        
+        document.getElementById('results').textContent = results.join('\n');
+        
+        // Color based on results
+        if (failed === 0) {
+            document.getElementById('results').style.color = 'green';
+        } else if (failed < 5) {
+            document.getElementById('results').style.color = 'orange';
+        } else {
+            document.getElementById('results').style.color = 'red';
+        }
+    </script>
+</body>
+</html>

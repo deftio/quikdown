@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexer Implementation - quikdown Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1>QuikDown Lexer Implementation (Experimental)</h1>
+<h2>Overview</h2>
+<p>The QuikDown lexer implementation (<code>quikdown-lex</code>) is an experimental alternative parser that uses a hand-coded state machine approach instead of regular expressions. While the primary regex-based implementation remains the recommended version, the lexer provides an interesting alternative architecture that may become the foundation for future versions.</p>
+<p><strong>Current Status:</strong> Experimental - passes all tests but is ~1KB larger and 4-8% slower than the regex version.</p>
+<h2>Installation and Usage</h2>
+<p>The lexer implementation is built separately from the main distribution:</p>
+<pre><code class="language-bash"># Build the lexer implementation
+npm run build:lex
+
+# Run performance comparison
+npm run test:perf
+</code></pre>
+<h3>Using the Lexer Version</h3>
+<pre><code class="language-javascript">// ESM
+import quikdown from &#39;quikdown/dist/quikdown-lex.esm.js&#39;;
+
+// CommonJS
+const quikdown = require(&#39;quikdown/dist/quikdown-lex.cjs&#39;);
+
+// Browser (UMD)
+&lt;script src=&quot;quikdown/dist/quikdown-lex.umd.min.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<p>The API is identical to the main implementation:</p>
+<pre><code class="language-javascript">const html = quikdown(markdownText, {
+  inline_styles: false,
+  class_prefix: &#39;quikdown-&#39;,
+  allow_unsafe_urls: false,
+  fence_plugin: null
+});
+</code></pre>
+<h2>Architecture Deep Dive</h2>
+<h3>State Machine Design</h3>
+<p>The lexer implementation processes markdown line-by-line using a finite state machine with the following states:</p>
+<pre><code class="language-javascript">const STATE_NORMAL = 0;      // Default state, ready for any block element
+const STATE_FENCE = 1;       // Inside a code fence block
+const STATE_LIST = 2;        // Processing list items (unused - lists handled atomically)
+const STATE_TABLE = 3;       // Processing table rows (unused - tables handled atomically)
+const STATE_BLOCKQUOTE = 4;  // Inside a blockquote
+const STATE_PARAGRAPH = 5;   // Accumulating paragraph lines
+</code></pre>
+<h3>Line Classification</h3>
+<p>Each line is classified into one of these types:</p>
+<pre><code class="language-javascript">const LINE_BLANK = 0;           // Empty line
+const LINE_HEADING = 1;         // # Heading
+const LINE_HR = 2;              // --- horizontal rule
+const LINE_FENCE = 3;           // ``` code fence
+const LINE_BLOCKQUOTE = 4;      // &gt; blockquote
+const LINE_LIST_UNORDERED = 5;  // - list item
+const LINE_LIST_ORDERED = 6;    // 1. list item
+const LINE_TABLE = 7;           // | table | row |
+const LINE_TABLE_SEP = 8;       // |---|---|
+const LINE_TEXT = 9;            // Regular text
+</code></pre>
+<h3>Processing Flow</h3>
+<ol>
+<li><p><strong>Line-by-Line Parsing</strong></p>
+<pre><code class="language-javascript">const lines = markdown.split(&#39;\n&#39;);
+let state = STATE_NORMAL;
+let i = 0;
+
+while (i &lt; lines.length) {
+  const line = lines[i];
+  const lineType = getLineType(line);
+  
+  // State machine handles transitions
+  switch (state) {
+    case STATE_NORMAL:
+      // Can transition to any state
+      break;
+    case STATE_PARAGRAPH:
+      // Accumulate or end paragraph
+      break;
+    // ... other states
+  }
+}
+</code></pre>
+</li>
+<li><p><strong>Line Type Detection</strong></p>
+<ul>
+<li>Uses optimized character-based discrimination</li>
+<li>First character check for quick classification</li>
+<li>Regex patterns only when necessary</li>
+</ul>
+<pre><code class="language-javascript">const getLineType = (line) =&gt; {
+  const trimmed = line.trim();
+  if (!trimmed) return LINE_BLANK;
+  
+  const firstChar = trimmed[0];
+  switch (firstChar) {
+    case &#39;#&#39;: 
+      if (/^#{1,6}\s+/.test(trimmed)) return LINE_HEADING;
+      break;
+    case &#39;-&#39;:
+    case &#39;*&#39;:
+    case &#39;_&#39;:
+      // Could be HR or list
+      if (/^[-*_](\s*[-*_]){2,}$/.test(trimmed)) return LINE_HR;
+      if (/^[*+-]\s+/.test(trimmed)) return LINE_LIST_UNORDERED;
+      break;
+    // ... more cases
+  }
+};
+</code></pre>
+</li>
+<li><p><strong>Block Element Processing</strong></p>
+<p><strong>Lists:</strong> Processed atomically with stack-based nesting</p>
+<pre><code class="language-javascript">const processList = (startIdx) =&gt; {
+  const listStack = []; // Stack of { type, indent, items }
+  // Process all consecutive list items
+  // Handle nesting via indentation
+  // Return next line index to process
+};
+</code></pre>
+<p><strong>Tables:</strong> Require separator line for validation</p>
+<pre><code class="language-javascript">const processTable = (startIdx) =&gt; {
+  // Parse header row
+  // Check for separator (required)
+  // Parse body rows
+  // Generate complete table HTML
+};
+</code></pre>
+<p><strong>Blockquotes:</strong> Accumulate and recursively process</p>
+<pre><code class="language-javascript">const flushBlockquote = () =&gt; {
+  if (blockquoteBuffer.length === 1) {
+    // Simple single-line blockquote
+    output.push(`&lt;blockquote&gt;${processInline(content)}&lt;/blockquote&gt;`);
+  } else {
+    // Multi-line - recursively parse content
+    const innerHtml = quikdown(innerContent, opts);
+    output.push(`&lt;blockquote&gt;${innerHtml}&lt;/blockquote&gt;`);
+  }
+};
+</code></pre>
+</li>
+<li><p><strong>Inline Processing</strong></p>
+<ul>
+<li>Single-pass transformation with temporary markers</li>
+<li>Code spans extracted first to protect content</li>
+<li>Control characters (\x01, \x02) as placeholders</li>
+<li>Sequential regex replacements for formatting</li>
+</ul>
+</li>
+</ol>
+<h3>Key Optimizations</h3>
+<ol>
+<li><p><strong>Character-Based Line Classification</strong></p>
+<ul>
+<li>First character discrimination reduces regex usage</li>
+<li>Switch statements for O(1) branching</li>
+<li>Lazy regex compilation</li>
+</ul>
+</li>
+<li><p><strong>Minimal Memory Allocation</strong></p>
+<ul>
+<li>Reuses buffers where possible</li>
+<li>Direct string concatenation for small operations</li>
+<li>Stack-based list processing</li>
+</ul>
+</li>
+<li><p><strong>Single-Pass Inline Processing</strong></p>
+<ul>
+<li>Extracts code spans first</li>
+<li>Sequential replacements without re-parsing</li>
+<li>Efficient placeholder system</li>
+</ul>
+</li>
+</ol>
+<h2>Performance Comparison</h2>
+<p>Based on benchmark testing with both small (400 char) and large (22KB) documents:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Regex Version</th>
+<th>Lexer Version</th>
+<th>Difference</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Bundle Size</strong></td>
+<td>7.0KB</td>
+<td>7.9KB</td>
+<td>+0.9KB (+13%)</td>
+</tr>
+<tr>
+<td><strong>Small Docs</strong></td>
+<td>27,429 ops/sec</td>
+<td>25,397 ops/sec</td>
+<td>-7.4%</td>
+</tr>
+<tr>
+<td><strong>Large Docs</strong></td>
+<td>727 ops/sec</td>
+<td>697 ops/sec</td>
+<td>-4.1%</td>
+</tr>
+<tr>
+<td><strong>Memory Usage</strong></td>
+<td>Baseline</td>
+<td>Similar</td>
+<td>~0%</td>
+</tr>
+</tbody></table>
+<h3>Performance Analysis</h3>
+<p>The lexer is slightly slower due to:</p>
+<ul>
+<li>Additional function call overhead for state transitions</li>
+<li>More granular line-by-line processing</li>
+<li>Stack management for nested structures</li>
+</ul>
+<p>However, it offers advantages in:</p>
+<ul>
+<li>Code maintainability and debugging</li>
+<li>Predictable performance characteristics</li>
+<li>Easier to extend with new features</li>
+<li>Better error recovery potential</li>
+</ul>
+<h2>Advantages of the Lexer Approach</h2>
+<ol>
+<li><p><strong>Maintainability</strong></p>
+<ul>
+<li>Clear state machine logic</li>
+<li>Explicit state transitions</li>
+<li>Easier to debug and trace execution</li>
+</ul>
+</li>
+<li><p><strong>Extensibility</strong></p>
+<ul>
+<li>Adding new block types is straightforward</li>
+<li>State machine can be extended without affecting other states</li>
+<li>Plugin points are more obvious</li>
+</ul>
+</li>
+<li><p><strong>Error Recovery</strong></p>
+<ul>
+<li>Can potentially recover from malformed markdown</li>
+<li>State machine can reset to known good state</li>
+<li>Better position tracking for error messages</li>
+</ul>
+</li>
+<li><p><strong>Predictable Performance</strong></p>
+<ul>
+<li>O(n) complexity for document length</li>
+<li>No catastrophic backtracking</li>
+<li>Consistent performance across input types</li>
+</ul>
+</li>
+</ol>
+<h2>Disadvantages</h2>
+<ol>
+<li><p><strong>Code Size</strong></p>
+<ul>
+<li>More verbose than regex patterns</li>
+<li>Explicit state management code</li>
+<li>Results in ~13% larger bundle</li>
+</ul>
+</li>
+<li><p><strong>Performance</strong></p>
+<ul>
+<li>4-8% slower on typical documents</li>
+<li>More function calls and state checks</li>
+<li>Additional overhead from line-by-line processing</li>
+</ul>
+</li>
+<li><p><strong>Complexity</strong></p>
+<ul>
+<li>Requires understanding of state machines</li>
+<li>More moving parts than regex approach</li>
+<li>Harder to make quick fixes</li>
+</ul>
+</li>
+</ol>
+<h2>Future Potential</h2>
+<p>The lexer implementation could become the primary version if:</p>
+<ol>
+<li><p><strong>Performance improvements</strong> through:</p>
+<ul>
+<li>WebAssembly compilation</li>
+<li>Further optimization of hot paths</li>
+<li>Reduced function call overhead</li>
+</ul>
+</li>
+<li><p><strong>Size reduction</strong> through:</p>
+<ul>
+<li>More aggressive minification strategies</li>
+<li>Shared code extraction</li>
+<li>Compile-time optimizations</li>
+</ul>
+</li>
+<li><p><strong>Feature requirements</strong> that favor state machines:</p>
+<ul>
+<li>Incremental parsing</li>
+<li>Streaming support</li>
+<li>Better error messages</li>
+<li>AST generation</li>
+</ul>
+</li>
+</ol>
+<h2>Testing</h2>
+<p>The lexer implementation passes all 107 tests in the QuikDown test suite:</p>
+<pre><code class="language-bash"># Run tests against lexer implementation
+npm run build:lex
+npm test  # Uses main implementation
+# To test lexer specifically, import it in test files
+</code></pre>
+<h2>Migration Guide</h2>
+<p>If the lexer becomes the primary implementation, migration would be seamless:</p>
+<ol>
+<li>The API is 100% compatible</li>
+<li>All options work identically</li>
+<li>Output HTML is identical (except whitespace)</li>
+<li>No code changes required</li>
+</ol>
+<h2>Contributing</h2>
+<p>If you&#39;re interested in improving the lexer implementation:</p>
+<ol>
+<li>Focus on performance optimizations</li>
+<li>Maintain 100% test compatibility</li>
+<li>Document any architectural changes</li>
+<li>Run performance benchmarks before/after</li>
+</ol>
+<h2>Conclusion</h2>
+<p>The lexer implementation represents a different architectural approach to markdown parsing. While currently experimental and slightly slower, it provides a solid foundation for future development and demonstrates that QuikDown&#39;s test suite and API can support multiple implementation strategies.</p>
+<p>For production use, continue using the main regex-based implementation. The lexer is available for experimentation and evaluation by developers interested in alternative parsing strategies.</p>
+
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>

@@ -8,6 +8,9 @@ Complete documentation for the quikdown markdown parser.
 - **[Security Guide](security.md)** - Security model, XSS prevention, and safe usage
 - **[API Reference](api-reference.md)** - Complete API documentation with examples
 - **[Plugin Development](plugin-guide.md)** - How to create custom fence plugins
+- **[Framework Integration](framework-integration.md)** - Using quikdown with React, Vue, Svelte, Angular
+- **[Bidirectional Conversion](quikdown-bidirectional.md)** - HTML to Markdown round-trip conversion
+- **[Lexer Implementation](lexer-implementation.md)** - Experimental lexer-based parser
 
 ## 🚀 Quick Links
 
@@ -20,9 +23,10 @@ Complete documentation for the quikdown markdown parser.
 quikdown is a lightweight, secure markdown parser designed for chat and LLM outputs. It prioritizes:
 
 - **Security** - All HTML is escaped by default
-- **Size** - ~3KB minified with zero dependencies
+- **Size** - 7.4KB minified (core), 10KB with bidirectional support, zero dependencies
 - **Extensibility** - Plugin system for custom rendering
 - **Simplicity** - Easy to understand and audit
+- **Bidirectional** - Convert HTML back to Markdown for WYSIWYG editing
 
 ## 🎯 Use Cases
 

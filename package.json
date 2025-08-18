@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
   "author": "deftio (https://github.com/deftio",
   "license": "BSD-2-Clause",
@@ -17,6 +17,21 @@
   "unpkg": "dist/quikdown.umd.min.js",
   "browser": "dist/quikdown.umd.min.js",
   "types": "dist/quikdown.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/quikdown.esm.js",
+      "require": "./dist/quikdown.cjs",
+      "browser": "./dist/quikdown.umd.min.js",
+      "types": "./dist/quikdown.d.ts"
+    },
+    "./bd": {
+      "import": "./dist/quikdown_bd.esm.js",
+      "require": "./dist/quikdown_bd.cjs",
+      "browser": "./dist/quikdown_bd.umd.min.js",
+      "types": "./dist/quikdown_bd.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist"
   ],
@@ -25,7 +40,7 @@
     "examples": "examples"
   },
   "scripts": {
-    "test": "jest --coverage",
+    "test": "NODE_NO_WARNINGS=1 jest --coverage",
     "test:quikdown": "jest tests/quikdown.test.js",
     "test:unit": "jest --coverage",
     "test:e2e": "npx playwright test --config=playwright.config.cjs",
@@ -41,8 +56,10 @@
     "docs:api": "npx jsdoc src/quikchat.js -d docs/api",
     "updateExampleCopies": "cp dist/quikchat.umd.min.js examples/fastapi_llm/static && cp dist/quikchat.min.css examples/fastapi_llm/static && cp dist/quikchat.umd.min.js examples/npm_express/static && cp dist/quikchat.min.css examples/npm_express/static",
     "build": "npm run updateVersion && rollup -c && npm run css",
+    "build:all": "npm run build && npm run buildDocs",
     "build:lex": "rollup -c rollup.config.lex.js",
     "build:css": "node tools/generateThemeCSS.js",
+    "build:docs": "node ./tools/buildDocs.js",
     "minify:css": "node tools/minifyThemeCSS.js",
     "css": "npm run build:css && npm run minify:css",
     "test:perf": "node tests/performance-benchmark.js"
@@ -111,6 +128,7 @@
     "docbat": "^0.9.3",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
+    "jsdom": "^26.1.0",
     "marked": "^16.1.2",
     "playwright": "^1.54.2",
     "rollup": "^4.18.1",
