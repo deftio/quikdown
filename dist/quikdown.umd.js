@@ -79,7 +79,7 @@
             return '';
         }
         
-        const { fence_plugin, inline_styles = false } = options;
+        const { fence_plugin, inline_styles = false, bidirectional = false } = options;
         const styles = QUIKDOWN_STYLES; // Use module-level styles
         const getAttr = createGetAttr(inline_styles, styles); // Create getAttr once
 
@@ -87,6 +87,9 @@
         function escapeHtml(text) {
             return text.replace(/[&<>"']/g, m => ESC_MAP[m]);
         }
+        
+        // Helper to add data-qd attributes for bidirectional support
+        const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
         
         // Sanitize URLs to prevent XSS attacks
         function sanitizeUrl(url, allowUnsafe = false) {
@@ -136,13 +139,15 @@
                 codeBlocks.push({
                     lang: langTrimmed,
                     code: code.trimEnd(),
-                    custom: true
+                    custom: true,
+                    fence: fence
                 });
             } else {
                 codeBlocks.push({
                     lang: langTrimmed,
                     code: escapeHtml(code.trimEnd()),
-                    custom: false
+                    custom: false,
+                    fence: fence
                 });
             }
             return placeholder;
@@ -166,7 +171,7 @@
         // Process headings (supports optional trailing #'s)
         html = html.replace(/^(#{1,6})\s+(.+?)\s*#*$/gm, (match, hashes, content) => {
             const level = hashes.length;
-            return `<h${level}${getAttr('h' + level)}>${content}</h${level}>`;
+            return `<h${level}${getAttr('h' + level)}${dataQd(hashes)}>${content}</h${level}>`;
         });
         
         // Process blockquotes (must handle escaped > since we already escaped HTML)
@@ -178,14 +183,16 @@
         html = html.replace(/^---+$/gm, `<hr${getAttr('hr')}>`);
         
         // Process lists
-        html = processLists(html, getAttr, inline_styles);
+        html = processLists(html, getAttr, inline_styles, bidirectional);
         
         // Phase 3: Process inline elements
         
         // Images (must come before links, with URL sanitization)
         html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
             const sanitizedSrc = sanitizeUrl(src, options.allow_unsafe_urls);
-            return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${alt}">`;
+            const altAttr = bidirectional && alt ? ` data-qd-alt="${escapeHtml(alt)}"` : '';
+            const srcAttr = bidirectional ? ` data-qd-src="${escapeHtml(src)}"` : '';
+            return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${alt}"${altAttr}${srcAttr}${dataQd('!')}>`;
         });
         
         // Links (with URL sanitization)
@@ -194,7 +201,8 @@
             const sanitizedHref = sanitizeUrl(href, options.allow_unsafe_urls);
             const isExternal = /^https?:\/\//i.test(sanitizedHref);
             const rel = isExternal ? ' rel="noopener noreferrer"' : '';
-            return `<a${getAttr('a')} href="${sanitizedHref}"${rel}>${text}</a>`;
+            const textAttr = bidirectional ? ` data-qd-text="${escapeHtml(text)}"` : '';
+            return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${textAttr}${dataQd('[')}>${text}</a>`;
         });
         
         // Autolinks - convert bare URLs to clickable links
@@ -205,15 +213,15 @@
         
         // Process inline formatting (bold, italic, strikethrough)
         const inlinePatterns = [
-            [/\*\*(.+?)\*\*/g, 'strong'],
-            [/__(.+?)__/g, 'strong'],
-            [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
-            [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em'],
-            [/~~(.+?)~~/g, 'del']
+            [/\*\*(.+?)\*\*/g, 'strong', '**'],
+            [/__(.+?)__/g, 'strong', '__'],
+            [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em', '*'],
+            [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em', '_'],
+            [/~~(.+?)~~/g, 'del', '~~']
         ];
         
-        inlinePatterns.forEach(([pattern, tag]) => {
-            html = html.replace(pattern, `<${tag}${getAttr(tag)}>$1</${tag}>`);
+        inlinePatterns.forEach(([pattern, tag, marker]) => {
+            html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(marker)}>$1</${tag}>`);
         });
         
         // Line breaks (two spaces at end of line)
@@ -257,13 +265,17 @@
                 if (replacement === undefined) {
                     const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
                     const codeAttr = inline_styles ? getAttr('code') : langClass;
-                    replacement = `<pre${getAttr('pre')}><code${codeAttr}>${escapeHtml(block.code)}</code></pre>`;
+                    const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
+                    const fenceAttr = bidirectional ? ` data-qd-fence="${escapeHtml(block.fence)}"` : '';
+                    replacement = `<pre${getAttr('pre')}${fenceAttr}${langAttr}><code${codeAttr}>${escapeHtml(block.code)}</code></pre>`;
                 }
             } else {
                 // Default rendering
                 const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
                 const codeAttr = inline_styles ? getAttr('code') : langClass;
-                replacement = `<pre${getAttr('pre')}><code${codeAttr}>${block.code}</code></pre>`;
+                const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
+                const fenceAttr = bidirectional ? ` data-qd-fence="${escapeHtml(block.fence)}"` : '';
+                replacement = `<pre${getAttr('pre')}${fenceAttr}${langAttr}><code${codeAttr}>${block.code}</code></pre>`;
             }
             
             const placeholder = `${PLACEHOLDER_CB}${i}§`;
@@ -273,7 +285,7 @@
         // Restore inline code
         inlineCodes.forEach((code, i) => {
             const placeholder = `${PLACEHOLDER_IC}${i}§`;
-            html = html.replace(placeholder, `<code${getAttr('code')}>${code}</code>`);
+            html = html.replace(placeholder, `<code${getAttr('code')}${dataQd('`')}>${code}</code>`);
         });
         
         return html.trim();
@@ -427,11 +439,15 @@
     /**
      * Process markdown lists (ordered and unordered)
      */
-    function processLists(text, getAttr, inline_styles) {
+    function processLists(text, getAttr, inline_styles, bidirectional) {
         
         const lines = text.split('\n');
         const result = [];
         let listStack = []; // Track nested lists
+        
+        // Helper to escape HTML for data-qd attributes
+        const escapeHtml = (text) => text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+        const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
@@ -480,7 +496,7 @@
                 }
                 
                 const liAttr = taskListClass || getAttr('li');
-                result.push(`<li${liAttr}>${listItemContent}</li>`);
+                result.push(`<li${liAttr}${dataQd(marker)}>${listItemContent}</li>`);
             } else {
                 // Not a list item, close all lists
                 while (listStack.length > 0) {

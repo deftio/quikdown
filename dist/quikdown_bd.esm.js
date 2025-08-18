@@ -5,121 +5,143 @@
  * @copyright DeftIO 2025
  */
 /**
- * quikdown_bd - Bidirectional markdown/HTML converter
- * Standalone version with round-trip conversion support
- * 
- * Uses data-qd attributes to preserve original markdown syntax
- * Enables HTML→Markdown conversion for quikdown-generated HTML
+ * quikdown - A minimal markdown parser optimized for chat/LLM output
+ * Supports tables, code blocks, lists, and common formatting
+ * @param {string} markdown - The markdown source text
+ * @param {Object} options - Optional configuration object
+ * @param {Function} options.fence_plugin - Custom renderer for fenced code blocks
+ *                   (content, fence_string) => html string
+ * @param {boolean} options.inline_styles - If true, uses inline styles instead of classes
+ * @returns {string} - The rendered HTML
  */
 
-// Version - uses same version as core quikdown
-const VERSION = '1.0.5dev1';
+// Version will be injected at build time  
+const quikdownVersion = '1.0.5dev1';
 
-// Helper to escape HTML (same as core)
+// Constants for reuse
+const CLASS_PREFIX = 'quikdown-';
+const PLACEHOLDER_CB = '§CB';
+const PLACEHOLDER_IC = '§IC';
+
+// Escape map at module level
 const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
-function escapeHtml(text) {
-    return text.replace(/[&<>"']/g, m => ESC_MAP[m]);
-}
 
-// Modified getAttr that adds data-qd attributes
-function createGetAttrBD(inline_styles, styles) {
-    return function(tag, additionalStyle = '', sourceMarker = '') {
-        let attrs = '';
-        
-        // Add data-qd attribute if source marker provided
-        if (sourceMarker) {
-            attrs += ` data-qd="${escapeHtml(sourceMarker)}"`;
-        }
-        
-        // Add style or class
+// Single source of truth for all style definitions - optimized
+const QUIKDOWN_STYLES = {
+    h1: 'font-size:2em;font-weight:600;margin:.67em 0;text-align:left',
+    h2: 'font-size:1.5em;font-weight:600;margin:.83em 0',
+    h3: 'font-size:1.25em;font-weight:600;margin:1em 0',
+    h4: 'font-size:1em;font-weight:600;margin:1.33em 0',
+    h5: 'font-size:.875em;font-weight:600;margin:1.67em 0',
+    h6: 'font-size:.85em;font-weight:600;margin:2em 0',
+    pre: 'background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto;margin:1em 0',
+    code: 'background:#f0f0f0;padding:2px 4px;border-radius:3px;font-family:monospace',
+    blockquote: 'border-left:4px solid #ddd;margin-left:0;padding-left:1em',
+    table: 'border-collapse:collapse;width:100%;margin:1em 0',
+    th: 'border:1px solid #ddd;padding:8px;background-color:#f2f2f2;font-weight:bold;text-align:left',
+    td: 'border:1px solid #ddd;padding:8px;text-align:left',
+    hr: 'border:none;border-top:1px solid #ddd;margin:1em 0',
+    img: 'max-width:100%;height:auto',
+    a: 'color:#06c;text-decoration:underline',
+    strong: 'font-weight:bold',
+    em: 'font-style:italic',
+    del: 'text-decoration:line-through',
+    ul: 'margin:.5em 0;padding-left:2em',
+    ol: 'margin:.5em 0;padding-left:2em',
+    li: 'margin:.25em 0',
+    // Task list specific styles
+    'task-item': 'list-style:none',
+    'task-checkbox': 'margin-right:.5em'
+};
+
+// Factory function to create getAttr for a given context
+function createGetAttr(inline_styles, styles) {
+    return function(tag, additionalStyle = '') {
         if (inline_styles) {
             const style = styles[tag];
-            if (style || additionalStyle) {
-                const fullStyle = additionalStyle ? (style ? `${style};${additionalStyle}` : additionalStyle) : style;
-                attrs += ` style="${fullStyle}"`;
-            }
+            if (!style && !additionalStyle) return '';
+            const fullStyle = additionalStyle ? (style ? `${style};${additionalStyle}` : additionalStyle) : style;
+            return ` style="${fullStyle}"`;
         } else {
-            attrs += ` class="quikdown-${tag}"`;
+            return ` class="${CLASS_PREFIX}${tag}"`;
         }
-        
-        return attrs;
     };
 }
 
-/**
- * Enhanced markdown parser with bidirectional support
- * Wraps the core parser and adds data-qd attributes
- */
-function quikdown_bd(markdown, options = {}) {
+function quikdown(markdown, options = {}) {
     if (!markdown || typeof markdown !== 'string') {
         return '';
     }
     
-    const { fence_plugin, inline_styles = false, bidirectional = true } = options;
-    
-    // If not bidirectional mode, process without data-qd attributes
-    if (!bidirectional) {
-        // Process without bidirectional tracking
-        options.bidirectional = false;
+    const { fence_plugin, inline_styles = false, bidirectional = false } = options;
+    const styles = QUIKDOWN_STYLES; // Use module-level styles
+    const getAttr = createGetAttr(inline_styles, styles); // Create getAttr once
+
+    // Escape HTML entities to prevent XSS
+    function escapeHtml(text) {
+        return text.replace(/[&<>"']/g, m => ESC_MAP[m]);
     }
     
-    // For bidirectional, we need to manually process with source tracking
-    // This is a custom implementation that adds data-qd attributes
+    // Helper to add data-qd attributes for bidirectional support
+    const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
     
-    const QUIKDOWN_STYLES = {
-        h1: 'font-size:2em;font-weight:600;margin:.67em 0;text-align:left',
-        h2: 'font-size:1.5em;font-weight:600;margin:.83em 0',
-        h3: 'font-size:1.25em;font-weight:600;margin:1em 0',
-        h4: 'font-size:1em;font-weight:600;margin:1.33em 0',
-        h5: 'font-size:.875em;font-weight:600;margin:1.67em 0',
-        h6: 'font-size:.85em;font-weight:600;margin:2em 0',
-        pre: 'background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto;margin:1em 0',
-        code: 'background:#f0f0f0;padding:2px 4px;border-radius:3px;font-family:monospace',
-        blockquote: 'border-left:4px solid #ddd;margin-left:0;padding-left:1em',
-        table: 'border-collapse:collapse;width:100%;margin:1em 0',
-        th: 'border:1px solid #ddd;padding:8px;background-color:#f2f2f2;font-weight:bold;text-align:left',
-        td: 'border:1px solid #ddd;padding:8px;text-align:left',
-        hr: 'border:none;border-top:1px solid #ddd;margin:1em 0',
-        img: 'max-width:100%;height:auto',
-        a: 'color:#06c;text-decoration:underline',
-        strong: 'font-weight:bold',
-        em: 'font-style:italic',
-        del: 'text-decoration:line-through',
-        ul: 'margin:.5em 0;padding-left:2em',
-        ol: 'margin:.5em 0;padding-left:2em',
-        li: 'margin:.25em 0',
-        'task-item': 'list-style:none',
-        'task-checkbox': 'margin-right:.5em'
-    };
-    
-    const getAttr = createGetAttrBD(inline_styles, QUIKDOWN_STYLES);
-    
-    // Process markdown with source tracking
+    // Sanitize URLs to prevent XSS attacks
+    function sanitizeUrl(url, allowUnsafe = false) {
+        if (!url) return '';
+        
+        // If unsafe URLs are explicitly allowed, return as-is
+        if (allowUnsafe) return url;
+        
+        const trimmedUrl = url.trim();
+        const lowerUrl = trimmedUrl.toLowerCase();
+        
+        // Block dangerous protocols
+        const dangerousProtocols = ['javascript:', 'vbscript:', 'data:'];
+        
+        for (const protocol of dangerousProtocols) {
+            if (lowerUrl.startsWith(protocol)) {
+                // Exception: Allow data:image/* for images
+                if (protocol === 'data:' && lowerUrl.startsWith('data:image/')) {
+                    return trimmedUrl;
+                }
+                // Return safe empty link for dangerous protocols
+                return '#';
+            }
+        }
+        
+        return trimmedUrl;
+    }
+
+    // Process the markdown in phases
     let html = markdown;
     
-    // Phase 1: Extract and protect code blocks
+    // Phase 1: Extract and protect code blocks and inline code
     const codeBlocks = [];
     const inlineCodes = [];
     
-    // Extract fenced code blocks
+    // Extract fenced code blocks first (supports both ``` and ~~~)
+    // Match paired fences - ``` with ``` and ~~~ with ~~~
+    // Fence must be at start of line
     html = html.replace(/^(```|~~~)([^\n]*)\n([\s\S]*?)^\1$/gm, (match, fence, lang, code) => {
-        const placeholder = `§CB${codeBlocks.length}§`;
-        const langTrimmed = lang.trim();
+        const placeholder = `${PLACEHOLDER_CB}${codeBlocks.length}§`;
         
-        // Store raw code if fence_plugin exists, escaped otherwise (matching quikdown.js behavior)
+        // Trim the language specification
+        const langTrimmed = lang ? lang.trim() : '';
+        
+        // If custom fence plugin is provided, use it
         if (fence_plugin && typeof fence_plugin === 'function') {
             codeBlocks.push({
-                fence,
                 lang: langTrimmed,
                 code: code.trimEnd(),
-                custom: true
+                custom: true,
+                fence: fence
             });
         } else {
             codeBlocks.push({
-                fence,
                 lang: langTrimmed,
                 code: escapeHtml(code.trimEnd()),
-                custom: false
+                custom: false,
+                fence: fence
             });
         }
         return placeholder;
@@ -127,165 +149,168 @@ function quikdown_bd(markdown, options = {}) {
     
     // Extract inline code
     html = html.replace(/`([^`]+)`/g, (match, code) => {
-        const placeholder = `§IC${inlineCodes.length}§`;
-        inlineCodes.push({
-            code: escapeHtml(code),
-            original: match
-        });
+        const placeholder = `${PLACEHOLDER_IC}${inlineCodes.length}§`;
+        inlineCodes.push(escapeHtml(code));
         return placeholder;
     });
     
-    // Escape HTML
+    // Now escape HTML in the rest of the content
     html = escapeHtml(html);
     
-    // Process headings with source tracking
-    html = html.replace(/^(#{1,6})\s+(.+?)\s*#*$/gm, (match, hashes, content) => {
-        const level = hashes.length;
-        const sourceMarker = hashes;
-        return `<h${level}${getAttr('h' + level, '', sourceMarker)}>${content}</h${level}>`;
-    });
-    
-    // Process bold/italic/strikethrough with source tracking
-    html = html.replace(/\*\*(.+?)\*\*/g, `<strong${getAttr('strong', '', '**')}>$1</strong>`);
-    html = html.replace(/__(.+?)__/g, `<strong${getAttr('strong', '', '__')}>$1</strong>`);
-    html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, `<em${getAttr('em', '', '*')}>$1</em>`);
-    html = html.replace(/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, `<em${getAttr('em', '', '_')}>$1</em>`);
-    html = html.replace(/~~(.+?)~~/g, `<del${getAttr('del', '', '~~')}>$1</del>`);
-    
-    // Process blockquotes
-    html = html.replace(/^&gt;\s+(.+)$/gm, `<blockquote${getAttr('blockquote', '', '>')}>$1</blockquote>`);
-    html = html.replace(/<\/blockquote>\n<blockquote[^>]*>/g, '\n');
-    
-    // Process horizontal rules
-    html = html.replace(/^---+$/gm, `<hr${getAttr('hr', '', '---')}>`);
-    
-    // Process lists (simplified for now)
-    html = processListsBD(html, getAttr);
-    
-    // Process links and images
-    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-        return `<img${getAttr('img', '', '!')} src="${src}" alt="${alt}" data-qd-alt="${escapeHtml(alt)}" data-qd-src="${escapeHtml(src)}">`;
-    });
-    
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, href) => {
-        return `<a${getAttr('a', '', '[')} href="${href}" data-qd-text="${escapeHtml(text)}">${text}</a>`;
-    });
+    // Phase 2: Process block elements
     
     // Process tables
-    html = processTablesBD(html, getAttr);
+    html = processTable(html, getAttr);
     
-    // Line breaks
-    html = html.replace(/  $/gm, '<br data-qd="  ">');
+    // Process headings (supports optional trailing #'s)
+    html = html.replace(/^(#{1,6})\s+(.+?)\s*#*$/gm, (match, hashes, content) => {
+        const level = hashes.length;
+        return `<h${level}${getAttr('h' + level)}${dataQd(hashes)}>${content}</h${level}>`;
+    });
     
-    // Paragraphs
+    // Process blockquotes (must handle escaped > since we already escaped HTML)
+    html = html.replace(/^&gt;\s+(.+)$/gm, `<blockquote${getAttr('blockquote')}>$1</blockquote>`);
+    // Merge consecutive blockquotes
+    html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+    
+    // Process horizontal rules
+    html = html.replace(/^---+$/gm, `<hr${getAttr('hr')}>`);
+    
+    // Process lists
+    html = processLists(html, getAttr, inline_styles, bidirectional);
+    
+    // Phase 3: Process inline elements
+    
+    // Images (must come before links, with URL sanitization)
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+        const sanitizedSrc = sanitizeUrl(src, options.allow_unsafe_urls);
+        const altAttr = bidirectional && alt ? ` data-qd-alt="${escapeHtml(alt)}"` : '';
+        const srcAttr = bidirectional ? ` data-qd-src="${escapeHtml(src)}"` : '';
+        return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${alt}"${altAttr}${srcAttr}${dataQd('!')}>`;
+    });
+    
+    // Links (with URL sanitization)
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, href) => {
+        // Sanitize URL to prevent XSS
+        const sanitizedHref = sanitizeUrl(href, options.allow_unsafe_urls);
+        const isExternal = /^https?:\/\//i.test(sanitizedHref);
+        const rel = isExternal ? ' rel="noopener noreferrer"' : '';
+        const textAttr = bidirectional ? ` data-qd-text="${escapeHtml(text)}"` : '';
+        return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${textAttr}${dataQd('[')}>${text}</a>`;
+    });
+    
+    // Autolinks - convert bare URLs to clickable links
+    html = html.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (match, prefix, url) => {
+        const sanitizedUrl = sanitizeUrl(url, options.allow_unsafe_urls);
+        return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>`;
+    });
+    
+    // Process inline formatting (bold, italic, strikethrough)
+    const inlinePatterns = [
+        [/\*\*(.+?)\*\*/g, 'strong', '**'],
+        [/__(.+?)__/g, 'strong', '__'],
+        [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em', '*'],
+        [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em', '_'],
+        [/~~(.+?)~~/g, 'del', '~~']
+    ];
+    
+    inlinePatterns.forEach(([pattern, tag, marker]) => {
+        html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(marker)}>$1</${tag}>`);
+    });
+    
+    // Line breaks (two spaces at end of line)
+    html = html.replace(/  $/gm, `<br${getAttr('br')}>`);
+    
+    // Paragraphs (double newlines)
     html = html.replace(/\n\n+/g, '</p><p>');
     html = '<p>' + html + '</p>';
     
     // Clean up empty paragraphs and unwrap block elements
-    html = html.replace(/<p><\/p>/g, '');
-    html = html.replace(/<p>(<h[1-6][^>]*>)/g, '$1');
-    html = html.replace(/(<\/h[1-6]>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<blockquote[^>]*>)/g, '$1');
-    html = html.replace(/(<\/blockquote>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<ul[^>]*>|<ol[^>]*>)/g, '$1');
-    html = html.replace(/(<\/ul>|<\/ol>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<hr[^>]*>)<\/p>/g, '$1');
-    html = html.replace(/<p>(<table[^>]*>)/g, '$1');
-    html = html.replace(/(<\/table>)<\/p>/g, '$1');
+    const cleanupPatterns = [
+        [/<p><\/p>/g, ''],
+        [/<p>(<h[1-6][^>]*>)/g, '$1'],
+        [/(<\/h[1-6]>)<\/p>/g, '$1'],
+        [/<p>(<blockquote[^>]*>)/g, '$1'],
+        [/(<\/blockquote>)<\/p>/g, '$1'],
+        [/<p>(<ul[^>]*>|<ol[^>]*>)/g, '$1'],
+        [/(<\/ul>|<\/ol>)<\/p>/g, '$1'],
+        [/<p>(<hr[^>]*>)<\/p>/g, '$1'],
+        [/<p>(<table[^>]*>)/g, '$1'],
+        [/(<\/table>)<\/p>/g, '$1'],
+        [/<p>(<pre[^>]*>)/g, '$1'],
+        [/(<\/pre>)<\/p>/g, '$1'],
+        [new RegExp(`<p>(${PLACEHOLDER_CB}\\d+§)<\/p>`, 'g'), '$1']
+    ];
+    
+    cleanupPatterns.forEach(([pattern, replacement]) => {
+        html = html.replace(pattern, replacement);
+    });
+    
+    // Phase 4: Restore code blocks and inline code
     
     // Restore code blocks
     codeBlocks.forEach((block, i) => {
-        const placeholder = `§CB${i}§`;
         let replacement;
         
         if (block.custom && fence_plugin) {
-            // Use custom fence plugin with raw code
+            // Use custom fence plugin
             replacement = fence_plugin(block.code, block.lang);
             // If plugin returns undefined, fall back to default rendering
             if (replacement === undefined) {
-                // Need to escape the code for default rendering
-                replacement = `<pre${getAttr('pre', '', block.fence)}><code data-qd-lang="${block.lang}">${escapeHtml(block.code)}</code></pre>`;
+                const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+                const codeAttr = inline_styles ? getAttr('code') : langClass;
+                const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
+                const fenceAttr = bidirectional ? ` data-qd-fence="${escapeHtml(block.fence)}"` : '';
+                replacement = `<pre${getAttr('pre')}${fenceAttr}${langAttr}><code${codeAttr}>${escapeHtml(block.code)}</code></pre>`;
             }
         } else {
-            // Code is already escaped
-            replacement = `<pre${getAttr('pre', '', block.fence)} data-qd-fence="${block.fence}" data-qd-lang="${block.lang}"><code>${block.code}</code></pre>`;
+            // Default rendering
+            const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+            const codeAttr = inline_styles ? getAttr('code') : langClass;
+            const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
+            const fenceAttr = bidirectional ? ` data-qd-fence="${escapeHtml(block.fence)}"` : '';
+            replacement = `<pre${getAttr('pre')}${fenceAttr}${langAttr}><code${codeAttr}>${block.code}</code></pre>`;
         }
         
+        const placeholder = `${PLACEHOLDER_CB}${i}§`;
         html = html.replace(placeholder, replacement);
     });
     
-    // Restore inline codes
-    inlineCodes.forEach((item, i) => {
-        const placeholder = `§IC${i}§`;
-        html = html.replace(placeholder, `<code${getAttr('code', '', '`')}>${item.code}</code>`);
+    // Restore inline code
+    inlineCodes.forEach((code, i) => {
+        const placeholder = `${PLACEHOLDER_IC}${i}§`;
+        html = html.replace(placeholder, `<code${getAttr('code')}${dataQd('`')}>${code}</code>`);
     });
     
     return html.trim();
 }
 
-// Process lists with source tracking
-function processListsBD(text, getAttr, inline_styles) {
-    const lines = text.split('\n');
-    const result = [];
-    let listStack = [];
+/**
+ * Process inline markdown formatting
+ */
+function processInlineMarkdown(text, getAttr) {
     
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        const match = line.match(/^(\s*)([*\-+]|\d+\.)\s+(.+)$/);
-        
-        if (match) {
-            const [, indent, marker, content] = match;
-            const level = Math.floor(indent.length / 2);
-            const isOrdered = /^\d+\./.test(marker);
-            const listType = isOrdered ? 'ol' : 'ul';
-            const sourceMarker = isOrdered ? '1.' : marker;
-            
-            // Handle task lists
-            let listItemContent = content;
-            let taskAttrs = '';
-            const taskMatch = content.match(/^\[([x ])\]\s+(.*)$/i);
-            if (taskMatch && !isOrdered) {
-                const [, checked, taskContent] = taskMatch;
-                const isChecked = checked.toLowerCase() === 'x';
-                listItemContent = `<input type="checkbox"${getAttr('task-checkbox', '', '[')}${isChecked ? ' checked' : ''}> ${taskContent}`;
-                taskAttrs = getAttr('task-item', '', '- [ ]');
-            }
-            
-            // Close deeper levels
-            while (listStack.length > level + 1) {
-                const list = listStack.pop();
-                result.push(`</${list.type}>`);
-            }
-            
-            // Open new level if needed
-            if (listStack.length === level) {
-                listStack.push({ type: listType, level, marker: sourceMarker });
-                result.push(`<${listType}${getAttr(listType, '', sourceMarker)}>`);
-            }
-            
-            const liAttr = taskAttrs || getAttr('li', '', sourceMarker);
-            result.push(`<li${liAttr}>${listItemContent}</li>`);
-        } else {
-            // Close all lists
-            while (listStack.length > 0) {
-                const list = listStack.pop();
-                result.push(`</${list.type}>`);
-            }
-            result.push(line);
-        }
-    }
+    // Process inline formatting patterns
+    const patterns = [
+        [/\*\*(.+?)\*\*/g, 'strong'],
+        [/__(.+?)__/g, 'strong'],
+        [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
+        [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em'],
+        [/~~(.+?)~~/g, 'del'],
+        [/`([^`]+)`/g, 'code']
+    ];
     
-    // Close remaining lists
-    while (listStack.length > 0) {
-        const list = listStack.pop();
-        result.push(`</${list.type}>`);
-    }
+    patterns.forEach(([pattern, tag]) => {
+        text = text.replace(pattern, `<${tag}${getAttr(tag)}>$1</${tag}>`);
+    });
     
-    return result.join('\n');
+    return text;
 }
 
-// Process tables with source tracking
-function processTablesBD(text, getAttr) {
+/**
+ * Process markdown tables
+ */
+function processTable(text, getAttr) {
     const lines = text.split('\n');
     const result = [];
     let inTable = false;
@@ -294,18 +319,22 @@ function processTablesBD(text, getAttr) {
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         
-        if (line.includes('|')) {
+        // Check if this line looks like a table row (with or without trailing |)
+        if (line.includes('|') && (line.startsWith('|') || /[^\\|]/.test(line))) {
             if (!inTable) {
                 inTable = true;
                 tableLines = [];
             }
             tableLines.push(line);
         } else {
+            // Not a table line
             if (inTable) {
-                const tableHtml = buildTableBD(tableLines, getAttr);
+                // Process the accumulated table
+                const tableHtml = buildTable(tableLines, getAttr);
                 if (tableHtml) {
                     result.push(tableHtml);
                 } else {
+                    // Not a valid table, restore original lines
                     result.push(...tableLines);
                 }
                 inTable = false;
@@ -315,8 +344,9 @@ function processTablesBD(text, getAttr) {
         }
     }
     
+    // Handle table at end of text
     if (inTable && tableLines.length > 0) {
-        const tableHtml = buildTableBD(tableLines, getAttr);
+        const tableHtml = buildTable(tableLines, getAttr);
         if (tableHtml) {
             result.push(tableHtml);
         } else {
@@ -327,53 +357,69 @@ function processTablesBD(text, getAttr) {
     return result.join('\n');
 }
 
-// Build table with source tracking
-function buildTableBD(lines, getAttr) {
+/**
+ * Build an HTML table from markdown table lines
+ */
+function buildTable(lines, getAttr) {
+    
     if (lines.length < 2) return null;
     
-    // Find separator
+    // Check for separator line (second line should be the separator)
     let separatorIndex = -1;
-    let alignments = [];
-    
     for (let i = 1; i < lines.length; i++) {
+        // Support separator with or without leading/trailing pipes
         if (/^\|?[\s\-:|]+\|?$/.test(lines[i]) && lines[i].includes('-')) {
             separatorIndex = i;
-            const cells = lines[i].replace(/^\|/, '').replace(/\|$/, '').split('|');
-            alignments = cells.map(cell => {
-                const trimmed = cell.trim();
-                if (trimmed.startsWith(':') && trimmed.endsWith(':')) return 'center';
-                if (trimmed.endsWith(':')) return 'right';
-                return 'left';
-            });
             break;
         }
     }
     
     if (separatorIndex === -1) return null;
     
-    let html = `<table${getAttr('table', '', '|')} data-qd-align="${alignments.join(',')}">\n`;
+    const headerLines = lines.slice(0, separatorIndex);
+    const bodyLines = lines.slice(separatorIndex + 1);
     
-    // Headers
-    if (separatorIndex > 0) {
-        html += `<thead${getAttr('thead', '', '|')}>\n<tr${getAttr('tr', '', '|')}>\n`;
-        const cells = lines[0].replace(/^\|/, '').replace(/\|$/, '').split('|');
-        cells.forEach((cell, i) => {
-            const align = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
-            html += `<th${getAttr('th', align, '|')} data-qd-align="${alignments[i] || 'left'}">${escapeHtml(cell.trim())}</th>\n`;
+    // Parse alignment from separator
+    const separator = lines[separatorIndex];
+    // Handle pipes at start/end or not
+    const separatorCells = separator.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+    const alignments = separatorCells.map(cell => {
+        const trimmed = cell.trim();
+        if (trimmed.startsWith(':') && trimmed.endsWith(':')) return 'center';
+        if (trimmed.endsWith(':')) return 'right';
+        return 'left';
+    });
+    
+    let html = `<table${getAttr('table')}>\n`;
+    
+    // Build header
+    if (headerLines.length > 0) {
+        html += `<thead${getAttr('thead')}>\n`;
+        headerLines.forEach(line => {
+            html += `<tr${getAttr('tr')}>\n`;
+            // Handle pipes at start/end or not
+            const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+            cells.forEach((cell, i) => {
+                const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
+                const processedCell = processInlineMarkdown(cell.trim(), getAttr);
+                html += `<th${getAttr('th', alignStyle)}>${processedCell}</th>\n`;
+            });
+            html += '</tr>\n';
         });
-        html += '</tr>\n</thead>\n';
+        html += '</thead>\n';
     }
     
-    // Body
-    const bodyLines = lines.slice(separatorIndex + 1);
+    // Build body
     if (bodyLines.length > 0) {
-        html += `<tbody${getAttr('tbody', '', '|')}>\n`;
+        html += `<tbody${getAttr('tbody')}>\n`;
         bodyLines.forEach(line => {
-            html += `<tr${getAttr('tr', '', '|')}>\n`;
-            const cells = line.replace(/^\|/, '').replace(/\|$/, '').split('|');
+            html += `<tr${getAttr('tr')}>\n`;
+            // Handle pipes at start/end or not
+            const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
             cells.forEach((cell, i) => {
-                const align = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
-                html += `<td${getAttr('td', align, '|')} data-qd-align="${alignments[i] || 'left'}">${escapeHtml(cell.trim())}</td>\n`;
+                const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
+                const processedCell = processInlineMarkdown(cell.trim(), getAttr);
+                html += `<td${getAttr('td', alignStyle)}>${processedCell}</td>\n`;
             });
             html += '</tr>\n';
         });
@@ -385,10 +431,196 @@ function buildTableBD(lines, getAttr) {
 }
 
 /**
- * Convert HTML back to Markdown by walking the DOM tree
- * Uses data-qd attributes when available, falls back to canonical forms
- * Assumes browser environment with DOM API available
+ * Process markdown lists (ordered and unordered)
  */
+function processLists(text, getAttr, inline_styles, bidirectional) {
+    
+    const lines = text.split('\n');
+    const result = [];
+    let listStack = []; // Track nested lists
+    
+    // Helper to escape HTML for data-qd attributes
+    const escapeHtml = (text) => text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+    const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const match = line.match(/^(\s*)([*\-+]|\d+\.)\s+(.+)$/);
+        
+        if (match) {
+            const [, indent, marker, content] = match;
+            const level = Math.floor(indent.length / 2);
+            const isOrdered = /^\d+\./.test(marker);
+            const listType = isOrdered ? 'ol' : 'ul';
+            
+            // Check for task list items
+            let listItemContent = content;
+            let taskListClass = '';
+            const taskMatch = content.match(/^\[([x ])\]\s+(.*)$/i);
+            if (taskMatch && !isOrdered) {
+                const [, checked, taskContent] = taskMatch;
+                const isChecked = checked.toLowerCase() === 'x';
+                const checkboxAttr = inline_styles 
+                    ? ' style="margin-right:.5em"' 
+                    : ` class="${CLASS_PREFIX}task-checkbox"`;
+                listItemContent = `<input type="checkbox"${checkboxAttr}${isChecked ? ' checked' : ''} disabled> ${taskContent}`;
+                taskListClass = inline_styles ? ' style="list-style:none"' : ` class="${CLASS_PREFIX}task-item"`;
+            }
+            
+            // Close deeper levels
+            while (listStack.length > level + 1) {
+                const list = listStack.pop();
+                result.push(`</${list.type}>`);
+            }
+            
+            // Open new level if needed
+            if (listStack.length === level) {
+                // Need to open a new list
+                listStack.push({ type: listType, level });
+                result.push(`<${listType}${getAttr(listType)}>`);
+            } else if (listStack.length === level + 1) {
+                // Check if we need to switch list type
+                const currentList = listStack[listStack.length - 1];
+                if (currentList.type !== listType) {
+                    result.push(`</${currentList.type}>`);
+                    listStack.pop();
+                    listStack.push({ type: listType, level });
+                    result.push(`<${listType}${getAttr(listType)}>`);
+                }
+            }
+            
+            const liAttr = taskListClass || getAttr('li');
+            result.push(`<li${liAttr}${dataQd(marker)}>${listItemContent}</li>`);
+        } else {
+            // Not a list item, close all lists
+            while (listStack.length > 0) {
+                const list = listStack.pop();
+                result.push(`</${list.type}>`);
+            }
+            result.push(line);
+        }
+    }
+    
+    // Close any remaining lists
+    while (listStack.length > 0) {
+        const list = listStack.pop();
+        result.push(`</${list.type}>`);
+    }
+    
+    return result.join('\n');
+}
+
+/**
+ * Emit CSS styles for quikdown elements
+ * @param {string} prefix - Optional class prefix (default: 'quikdown-')
+ * @param {string} theme - Optional theme: 'light' (default) or 'dark'
+ * @returns {string} CSS string with quikdown styles
+ */
+quikdown.emitStyles = function(prefix = 'quikdown-', theme = 'light') {
+    const styles = QUIKDOWN_STYLES;
+    
+    // Define theme color overrides
+    const themeOverrides = {
+        dark: {
+            '#f4f4f4': '#2a2a2a', // pre background
+            '#f0f0f0': '#2a2a2a', // code background
+            '#f2f2f2': '#2a2a2a', // th background
+            '#ddd': '#3a3a3a',    // borders
+            '#06c': '#6db3f2',    // links
+            _textColor: '#e0e0e0'
+        },
+        light: {
+            _textColor: '#333'    // Explicit text color for light theme
+        }
+    };
+    
+    let css = '';
+    for (const [tag, style] of Object.entries(styles)) {
+        if (style) {
+            let themedStyle = style;
+            
+            // Apply theme overrides if dark theme
+            if (theme === 'dark' && themeOverrides.dark) {
+                // Replace colors
+                for (const [oldColor, newColor] of Object.entries(themeOverrides.dark)) {
+                    if (!oldColor.startsWith('_')) {
+                        themedStyle = themedStyle.replace(new RegExp(oldColor, 'g'), newColor);
+                    }
+                }
+                
+                // Add text color for certain elements in dark theme
+                const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];
+                if (needsTextColor.includes(tag)) {
+                    themedStyle += `;color:${themeOverrides.dark._textColor}`;
+                }
+            } else if (theme === 'light' && themeOverrides.light) {
+                // Add explicit text color for light theme elements too
+                const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];
+                if (needsTextColor.includes(tag)) {
+                    themedStyle += `;color:${themeOverrides.light._textColor}`;
+                }
+            }
+            
+            css += `.${prefix}${tag} { ${themedStyle} }\n`;
+        }
+    }
+    
+    return css;
+};
+
+/**
+ * Configure quikdown with options and return a function
+ * @param {Object} options - Configuration options
+ * @returns {Function} Configured quikdown function
+ */
+quikdown.configure = function(options) {
+    return function(markdown) {
+        return quikdown(markdown, options);
+    };
+};
+
+/**
+ * Version information
+ */
+quikdown.version = quikdownVersion;
+
+// Export for both CommonJS and ES6
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = quikdown;
+}
+
+// For browser global
+if (typeof window !== 'undefined') {
+    window.quikdown = quikdown;
+}
+
+/**
+ * quikdown_bd - Bidirectional markdown/HTML converter
+ * Extends core quikdown with HTML→Markdown conversion
+ * 
+ * Uses data-qd attributes to preserve original markdown syntax
+ * Enables HTML→Markdown conversion for quikdown-generated HTML
+ */
+
+
+// Version - uses same version as core quikdown
+const VERSION = '1.0.5dev1';
+
+/**
+ * Create bidirectional version by extending quikdown
+ * This wraps quikdown and adds the toMarkdown method
+ */
+function quikdown_bd(markdown, options = {}) {
+    // Use core quikdown with bidirectional flag to add data-qd attributes
+    return quikdown(markdown, { ...options, bidirectional: true });
+}
+
+// Copy all properties and methods from quikdown
+Object.keys(quikdown).forEach(key => {
+    quikdown_bd[key] = quikdown[key];
+});
+
+// Add the toMarkdown method for HTML→Markdown conversion
 quikdown_bd.toMarkdown = function(htmlOrElement) {
     // Accept either HTML string or DOM element
     let container;
@@ -673,22 +905,14 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
     return markdown;
 };
 
-// Add emitStyles method (same as core)
-quikdown_bd.emitStyles = function(prefix = 'quikdown-', theme = 'light') {
-    // This would generate CSS based on the styles
-    // For now, returning empty string as placeholder
-    // In production, this would generate the full CSS
-    return '';
-};
-
-// Configure method
+// Override the configure method to return a bidirectional version
 quikdown_bd.configure = function(options) {
     return function(markdown) {
         return quikdown_bd(markdown, options);
     };
 };
 
-// Version property
+// Set version
 quikdown_bd.version = VERSION;
 
 // Export for both module and browser

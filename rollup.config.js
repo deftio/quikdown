@@ -86,7 +86,7 @@ export default [
 
   // ========== quikdown_bd (Bidirectional) Builds ==========
   
-  // BD UMD build (browser)
+  // BD UMD build (browser) - standalone with everything bundled
   {
     input: 'src/quikdown_bd.js',
     output: {
