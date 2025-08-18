@@ -385,9 +385,121 @@ container.innerHTML = quikdown(combined);
 | 18.x | ✅ Full |
 | 20.x | ✅ Full |
 
+## Module Comparison
+
+| Feature | `quikdown` | `quikdown_bd` |
+|---------|------------|---------------|
+| Markdown to HTML | ✅ Yes | ✅ Yes |
+| HTML to Markdown | ❌ No | ✅ Yes |
+| Size (minified) | 7.4KB | 10KB |
+| `toMarkdown()` method | ❌ No | ✅ Yes |
+| data-qd attributes | ❌ No | ✅ Yes |
+| Use case | Standard parsing | WYSIWYG editors |
+
+## Bidirectional API
+
+**⚠️ Important:** These methods are only available in the `quikdown_bd` module, NOT in regular `quikdown`.
+
+### `quikdown_bd(markdown, options?)`
+
+Converts markdown to HTML with source tracking for bidirectional conversion. Only available when using `quikdown_bd`.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `markdown` | `string` | Yes | The markdown text to convert |
+| `options` | `object` | No | Configuration options |
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `inline_styles` | `boolean` | `false` | Use inline styles instead of CSS classes |
+| `fence_plugin` | `function` | `undefined` | Custom handler for fenced code blocks |
+| `bidirectional` | `boolean` | `true` | Add data-qd attributes for source tracking |
+
+#### Returns
+
+`string` - HTML with data-qd attributes for source tracking
+
+#### Example
+
+```javascript
+import quikdown_bd from 'quikdown/bd';
+
+const markdown = '**Hello** world';
+const html = quikdown_bd(markdown, { bidirectional: true });
+console.log(html);
+// <strong data-qd="**" class="quikdown-strong">Hello</strong> world
+```
+
+### `quikdown_bd.toMarkdown(htmlOrElement)`
+
+Converts HTML back to Markdown using DOM walking and data-qd attributes.
+
+#### Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `htmlOrElement` | `string \| HTMLElement` | Yes | HTML string or DOM element to convert |
+
+#### Returns
+
+`string` - The reconstructed Markdown
+
+#### Example
+
+```javascript
+// From HTML string
+const markdown = quikdown_bd.toMarkdown('<strong>bold</strong>');
+console.log(markdown); // **bold**
+
+// From DOM element
+const element = document.getElementById('content');
+const markdown = quikdown_bd.toMarkdown(element);
+```
+
+#### Browser Requirement
+
+`toMarkdown` requires a DOM environment. In Node.js, use a library like jsdom:
+
+```javascript
+const { JSDOM } = require('jsdom');
+const dom = new JSDOM();
+global.document = dom.window.document;
+global.window = dom.window;
+global.Node = dom.window.Node;
+```
+
+### `quikdown_bd.configure(options)`
+
+Creates a pre-configured bidirectional parser with default options.
+
+#### Example
+
+```javascript
+const myParser = quikdown_bd.configure({
+  inline_styles: true,
+  bidirectional: true
+});
+
+const html = myParser(markdown);
+```
+
+### `quikdown_bd.emitStyles(prefix?, theme?)`
+
+Returns CSS styles for bidirectional HTML output (currently returns empty string, reserved for future use).
+
+### `quikdown_bd.version`
+
+Returns the version string of the quikdown_bd module.
+
 ## Module Formats
 
 quikdown is distributed in multiple formats:
+
+### Core Module
 
 | Format | File | Usage |
 |--------|------|-------|
@@ -397,9 +509,19 @@ quikdown is distributed in multiple formats:
 | ESM minified | `dist/quikdown.esm.min.js` | Production ES6 |
 | CommonJS | `dist/quikdown.cjs` | Node.js require() |
 
+### Bidirectional Module
+
+| Format | File | Usage |
+|--------|------|-------|
+| UMD | `dist/quikdown_bd.umd.js` | Browser script tag |
+| UMD minified | `dist/quikdown_bd.umd.min.js` | Production browser |
+| ESM | `dist/quikdown_bd.esm.js` | ES6 imports |
+| ESM minified | `dist/quikdown_bd.esm.min.js` | Production ES6 |
+| CommonJS | `dist/quikdown_bd.cjs` | Node.js require() |
+
 ## TypeScript
 
-TypeScript definitions are planned but not yet available. For now, use:
+TypeScript definitions are included for both modules:
 
 ```typescript
 declare module 'quikdown' {

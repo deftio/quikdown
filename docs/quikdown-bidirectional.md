@@ -1,8 +1,21 @@
 # quikdown_bd - Bidirectional Markdown/HTML Conversion
 
+## ⚠️ Important: Use quikdown_bd, not quikdown
+
+**Bidirectional conversion is only available in the `quikdown_bd` module.** The regular `quikdown` module does NOT support HTML-to-Markdown conversion.
+
+```javascript
+// ✅ Correct - Use quikdown_bd for bidirectional support
+import quikdown_bd from 'quikdown/bd';
+
+// ❌ Wrong - Regular quikdown doesn't have bidirectional support
+import quikdown from 'quikdown';
+// quikdown.toMarkdown(html); // Error: toMarkdown is not a function
+```
+
 ## Overview
 
-`quikdown_bd` is an extension of quikdown that provides bidirectional conversion between Markdown and HTML. It allows you to convert Markdown to HTML (like regular quikdown) and also convert the HTML back to Markdown, preserving the original structure and formatting.
+`quikdown_bd` is a separate build of quikdown that provides bidirectional conversion between Markdown and HTML. It includes all the features of regular quikdown PLUS the ability to convert HTML back to Markdown, preserving the original structure and formatting.
 
 ## Installation
 
