@@ -19,6 +19,8 @@ Converts markdown text to HTML.
 |--------|------|---------|-------------|
 | `inline_styles` | `boolean` | `false` | Use inline styles instead of CSS classes |
 | `fence_plugin` | `function` | `undefined` | Custom handler for fenced code blocks |
+| `bidirectional` | `boolean` | `false` | Add data-qd attributes for source tracking (v1.0.5+) |
+| `allow_unsafe_urls` | `boolean` | `false` | Allow javascript: and other potentially unsafe URLs |
 
 #### Returns
 

@@ -3,19 +3,13 @@
  * Tests bidirectional markdown/HTML conversion
  */
 
-// Fix for TextEncoder/TextDecoder not defined in Node.js environment
-// Required for jsdom in Node.js 18+
-const { TextEncoder, TextDecoder } = require('util');
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
-
-const quikdown_bd = require('../dist/quikdown_bd.cjs');
-const quikdown = require('../dist/quikdown.cjs');
-const { JSDOM } = require('jsdom');
+import { JSDOM } from 'jsdom';
+import quikdown_bd from '../dist/quikdown_bd.esm.js';
+import quikdown from '../dist/quikdown.esm.js';
 
 // Import the base tests to ensure feature parity
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 describe('quikdown_bd bidirectional parser', () => {
   
@@ -120,34 +114,283 @@ describe('quikdown_bd bidirectional parser', () => {
       const result = quikdown_bd.toMarkdown(html);
       expect(result).toBe('**bold**');
     });
-    
-    test('should preserve data-qd attributes', () => {
-      const markdown = '**bold** *italic*';
-      const html = quikdown_bd(markdown);
+
+    test('should convert all inline formatting back to markdown', () => {
+      // Test bold
+      expect(quikdown_bd.toMarkdown('<strong data-qd="**">bold</strong>')).toBe('**bold**');
+      expect(quikdown_bd.toMarkdown('<strong data-qd="__">bold</strong>')).toBe('__bold__');
       
-      // Check that data-qd attributes are present
-      expect(html).toContain('data-qd');
+      // Test italic
+      expect(quikdown_bd.toMarkdown('<em data-qd="*">italic</em>')).toBe('*italic*');
+      expect(quikdown_bd.toMarkdown('<em data-qd="_">italic</em>')).toBe('_italic_');
+      
+      // Test strikethrough
+      expect(quikdown_bd.toMarkdown('<del data-qd="~~">strike</del>')).toBe('~~strike~~');
+      
+      // Test inline code
+      expect(quikdown_bd.toMarkdown('<code data-qd="`">code</code>')).toBe('`code`');
+    });
+
+    test('should convert headings back to markdown', () => {
+      expect(quikdown_bd.toMarkdown('<h1 data-qd="#">Heading 1</h1>')).toBe('# Heading 1');
+      expect(quikdown_bd.toMarkdown('<h2 data-qd="##">Heading 2</h2>')).toBe('## Heading 2');
+      expect(quikdown_bd.toMarkdown('<h3 data-qd="###">Heading 3</h3>')).toBe('### Heading 3');
+      expect(quikdown_bd.toMarkdown('<h4 data-qd="####">Heading 4</h4>')).toBe('#### Heading 4');
+      expect(quikdown_bd.toMarkdown('<h5 data-qd="#####">Heading 5</h5>')).toBe('##### Heading 5');
+      expect(quikdown_bd.toMarkdown('<h6 data-qd="######">Heading 6</h6>')).toBe('###### Heading 6');
+    });
+
+    test('should convert links back to markdown', () => {
+      const html = '<a href="https://example.com" data-qd="[" data-qd-text="link text">link text</a>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toBe('[link text](https://example.com)');
+    });
+
+    test('should convert images back to markdown', () => {
+      const html = '<img src="image.png" alt="alt text" data-qd="!" data-qd-alt="alt text" data-qd-src="image.png">';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toBe('![alt text](image.png)');
+    });
+
+    test('should convert lists back to markdown', () => {
+      // Unordered list
+      const ulHtml = '<ul><li data-qd="-">Item 1</li><li data-qd="-">Item 2</li></ul>';
+      expect(quikdown_bd.toMarkdown(ulHtml)).toBe('- Item 1\n- Item 2');
+      
+      // Ordered list
+      const olHtml = '<ol><li data-qd="1.">First</li><li data-qd="2.">Second</li></ol>';
+      expect(quikdown_bd.toMarkdown(olHtml)).toBe('1. First\n2. Second');
+      
+      // Different markers
+      const starHtml = '<ul><li data-qd="*">Star item</li></ul>';
+      expect(quikdown_bd.toMarkdown(starHtml)).toBe('* Star item');
+      
+      const plusHtml = '<ul><li data-qd="+">Plus item</li></ul>';
+      expect(quikdown_bd.toMarkdown(plusHtml)).toBe('+ Plus item');
+    });
+
+    test('should convert nested lists back to markdown', () => {
+      const html = `<ul>
+        <li data-qd="-">Item 1
+          <ul>
+            <li data-qd="-">Nested 1</li>
+            <li data-qd="-">Nested 2</li>
+          </ul>
+        </li>
+        <li data-qd="-">Item 2</li>
+      </ul>`;
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('- Item 1');
+      expect(result).toContain('  - Nested 1');
+      expect(result).toContain('  - Nested 2');
+      expect(result).toContain('- Item 2');
+    });
+
+    test('should convert blockquotes back to markdown', () => {
+      const html = '<blockquote>Quote text</blockquote>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toBe('> Quote text');
+    });
+
+    test('should convert code blocks back to markdown', () => {
+      const html = '<pre data-qd-fence="```" data-qd-lang="js"><code>const x = 1;</code></pre>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toBe('```js\nconst x = 1;\n```');
+      
+      // Test tilde fence
+      const tildeHtml = '<pre data-qd-fence="~~~" data-qd-lang="python"><code>print("hello")</code></pre>';
+      const tildeResult = quikdown_bd.toMarkdown(tildeHtml);
+      expect(tildeResult).toBe('~~~python\nprint("hello")\n~~~');
+    });
+
+    test('should convert horizontal rules back to markdown', () => {
+      const html = '<hr>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toBe('---');
+    });
+
+    test('should convert tables back to markdown', () => {
+      const html = `<table>
+        <thead>
+          <tr>
+            <th>Header 1</th>
+            <th>Header 2</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Cell 1</td>
+            <td>Cell 2</td>
+          </tr>
+        </tbody>
+      </table>`;
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('| Header 1 | Header 2 |');
+      expect(result).toContain('| --- | --- |');  // Separator has spaces
+      expect(result).toContain('| Cell 1 | Cell 2 |');
+    });
+
+    test('should convert task lists back to markdown', () => {
+      const html = `<ul>
+        <li data-qd="-"><input type="checkbox" checked disabled> Done task</li>
+        <li data-qd="-"><input type="checkbox" disabled> Todo task</li>
+      </ul>`;
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toBe('- [x] Done task\n- [ ] Todo task');
+    });
+
+    test('should handle paragraphs correctly', () => {
+      const html = '<p>First paragraph</p><p>Second paragraph</p>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toBe('First paragraph\n\nSecond paragraph');
+    });
+
+    test('should handle line breaks', () => {
+      const html = '<p>Line 1<br>Line 2</p>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toBe('Line 1  \nLine 2');
+    });
+
+    test('should handle mixed inline formatting', () => {
+      const html = '<p>Text with <strong data-qd="**">bold</strong> and <em data-qd="*">italic</em> and <code data-qd="`">code</code></p>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toBe('Text with **bold** and *italic* and `code`');
+    });
+
+    test('should handle HTML without data-qd attributes gracefully', () => {
+      // Without data-qd, should use default markers
+      expect(quikdown_bd.toMarkdown('<strong>bold</strong>')).toBe('**bold**');
+      expect(quikdown_bd.toMarkdown('<em>italic</em>')).toBe('*italic*');
+      expect(quikdown_bd.toMarkdown('<del>strike</del>')).toBe('~~strike~~');
+      expect(quikdown_bd.toMarkdown('<code>code</code>')).toBe('`code`');
+    });
+
+    test('should handle empty elements', () => {
+      expect(quikdown_bd.toMarkdown('<p></p>')).toBe('');
+      expect(quikdown_bd.toMarkdown('<strong></strong>')).toBe('');
+      expect(quikdown_bd.toMarkdown('<ul><li data-qd="-"></li></ul>')).toBe('-');
+    });
+
+    test('should handle DOM elements directly', () => {
+      // Create DOM element and test with its innerHTML
+      const div = document.createElement('div');
+      div.innerHTML = '<p><strong data-qd="**">bold</strong></p>';
+      // Pass the innerHTML string instead of the element itself
+      const result = quikdown_bd.toMarkdown(div.innerHTML);
+      expect(result.trim()).toBe('**bold**');
+    });
+
+    test('should handle complex nested structures', () => {
+      const html = `
+        <h1 data-qd="#">Title</h1>
+        <p>Paragraph with <strong data-qd="**">bold</strong> text.</p>
+        <ul>
+          <li data-qd="-">List item 1</li>
+          <li data-qd="-">List item 2</li>
+        </ul>
+        <blockquote>A quote</blockquote>
+        <pre data-qd-fence="\`\`\`" data-qd-lang="js"><code>code block</code></pre>
+      `;
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('# Title');
+      expect(result).toContain('Paragraph with **bold** text.');
+      expect(result).toContain('- List item 1');
+      expect(result).toContain('- List item 2');
+      expect(result).toContain('> A quote');
+      expect(result).toContain('```js\ncode block\n```');
+    });
+
+    test('should handle special characters in text content', () => {
+      const html = '<p>Text with * asterisk and _ underscore</p>';
+      const result = quikdown_bd.toMarkdown(html);
+      // Note: toMarkdown does not escape special characters by default
+      // This is intentional to allow round-trip conversion
+      expect(result).toBe('Text with * asterisk and _ underscore');
+    });
+
+    test('should handle whitespace in text content', () => {
+      const html = '<p>  Text   with   spaces  </p>';
+      const result = quikdown_bd.toMarkdown(html);
+      // Note: toMarkdown preserves whitespace as-is
+      expect(result).toBe('Text   with   spaces');
+    });
+
+    test('should handle unsupported elements gracefully', () => {
+      const html = '<div><span>Text in span</span><button>Button</button></div>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('Text in span');
+      expect(result).toContain('Button');
     });
     
     describe('Round-trip conversions', () => {
       const roundTripTests = [
-        '**bold text**',
-        '*italic text*',
-        '# Heading 1',
-        '## Heading 2',
-        '- List item 1\n- List item 2',
-        '1. Ordered item 1\n2. Ordered item 2',
-        '`inline code`',
-        '[link text](https://example.com)',
-        '![alt text](image.png)',
+        ['**bold text**', '**bold text**'],
+        ['*italic text*', '*italic text*'],
+        ['# Heading 1', '# Heading 1'],
+        ['## Heading 2', '## Heading 2'],
+        ['- List item 1\n- List item 2', '- List item 1\n- List item 2'],
+        ['1. Ordered item 1\n2. Ordered item 2', '1. Ordered item 1\n2. Ordered item 2'],
+        ['`inline code`', '`inline code`'],
+        ['[link text](https://example.com)', '[link text](https://example.com)'],
+        ['![alt text](image.png)', '![alt text](image.png)'],
+        ['> Quote text', '> Quote text'],
+        ['---', '---'],
+        ['~~strikethrough~~', '~~strikethrough~~'],
       ];
       
-      test.each(roundTripTests)('round-trip: %s', (markdown) => {
-        const html = quikdown_bd(markdown);
-        // Note: toMarkdown requires DOM, so this will need proper DOM testing
-        // For now, just verify the HTML contains expected markers
-        expect(html).toContain('data-qd');
+      test.each(roundTripTests)('round-trip: %s', (originalMarkdown, expectedMarkdown) => {
+        const html = quikdown_bd(originalMarkdown);
+        const recoveredMarkdown = quikdown_bd.toMarkdown(html);
+        expect(recoveredMarkdown).toBe(expectedMarkdown);
       });
+    });
+
+    test('should handle complex round-trip conversion', () => {
+      const originalMarkdown = `# Main Title
+
+This is a paragraph with **bold** and *italic* text.
+
+## Section 1
+
+- First item
+- Second item
+- Third item
+
+## Section 2
+
+1. Ordered first
+2. Ordered second
+
+> This is a quote
+
+\`\`\`javascript
+const code = "example";
+\`\`\`
+
+[Link](https://example.com) and ![Image](test.png)
+
+---
+
+End of document.`;
+
+      const html = quikdown_bd(originalMarkdown);
+      const recoveredMarkdown = quikdown_bd.toMarkdown(html);
+      
+      // Check key elements are preserved
+      expect(recoveredMarkdown).toContain('# Main Title');
+      expect(recoveredMarkdown).toContain('**bold**');
+      expect(recoveredMarkdown).toContain('*italic*');
+      expect(recoveredMarkdown).toContain('- First item');
+      expect(recoveredMarkdown).toContain('- Second item');
+      expect(recoveredMarkdown).toContain('- Third item');
+      expect(recoveredMarkdown).toContain('1. Ordered first');
+      expect(recoveredMarkdown).toContain('> This is a quote');
+      expect(recoveredMarkdown).toContain('```javascript');
+      expect(recoveredMarkdown).toContain('[Link](https://example.com)');
+      expect(recoveredMarkdown).toContain('![Image](test.png)');
+      expect(recoveredMarkdown).toContain('---');
+      // Note: Nested lists aren't properly preserved in current implementation
+      // This is a known limitation that should be addressed in future versions
     });
   });
   

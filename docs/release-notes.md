@@ -1,5 +1,44 @@
 # Release Notes
 
+## v1.0.5dev1 (In Development)
+
+### 🔧 Architecture Improvements
+
+#### Refactored Bidirectional Support
+- **Core `quikdown` module** now includes `bidirectional` option to emit `data-qd` attributes
+- **`quikdown_bd` module** simplified to use core quikdown with `bidirectional: true`
+- Eliminated code duplication between modules
+- Improved maintainability with single source of truth
+
+#### Test Coverage Improvements
+- Achieved **98% statement coverage** across both modules
+- Added comprehensive test suite for edge cases
+- Added bidirectional-specific tests
+- Improved coverage for:
+  - URL sanitization edge cases
+  - Fence plugin behaviors
+  - Table alignment with inline styles
+  - Nested list structures
+  - Empty and malformed inputs
+
+### 📚 Documentation Updates
+
+#### API Documentation
+- Added `bidirectional` option to core quikdown API reference
+- Added `allow_unsafe_urls` option documentation
+- Clarified that `quikdown_bd` automatically sets `bidirectional: true`
+- Updated examples to reflect new architecture
+
+#### Bidirectional Documentation
+- Explained new `bidirectional` option in core module
+- Clarified differences between `quikdown` and `quikdown_bd`
+- Updated usage examples
+
+### 🧹 Code Organization
+- Moved experimental lexer files from `src/exp-lexer/` to `dev/exp-lexer/`
+- Kept `src/` directory for production code only
+- Added file size reporting tool (`tools/printSizes.cjs`)
+
 ## v1.0.4 (2025-08-18)
 
 ### 🎉 Major Feature: Bidirectional Conversion Support

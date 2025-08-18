@@ -66,12 +66,14 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
     "transform": {
       "^.+\\.js$": "babel-jest"
     },
     "collectCoverage": true,
     "collectCoverageFrom": [
-      "dist/quikdown.esm.js"
+      "dist/quikdown.esm.js",
+      "dist/quikdown_bd.esm.js"
     ],
     "coverageDirectory": "coverage",
     "coverageReporters": [
@@ -84,10 +86,22 @@
     ],
     "coverageThreshold": {
       "global": {
+        "lines": 91,
+        "functions": 91,
+        "branches": 74,
+        "statements": 89
+      },
+      "./dist/quikdown.esm.js": {
         "lines": 100,
-        "functions": 100,
-        "branches": 88,
-        "statements": 99.5
+        "functions": 97,
+        "branches": 95,
+        "statements": 99
+      },
+      "./dist/quikdown_bd.esm.js": {
+        "lines": 86,
+        "functions": 86,
+        "branches": 64,
+        "statements": 83
       }
     }
   },

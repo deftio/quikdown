@@ -670,6 +670,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
             case 'b':
                 // Check if it's bold through style too
                 if (styles.fontWeight === 'bold' || styles.fontWeight >= 700 || tag === 'strong' || tag === 'b') {
+                    if (!childContent) return ''; // Don't add markers for empty content
                     const boldMarker = dataQd || '**';
                     return `${boldMarker}${childContent}${boldMarker}`;
                 }
@@ -679,6 +680,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
             case 'i':
                 // Check for italic through style
                 if (styles.fontStyle === 'italic' || tag === 'em' || tag === 'i') {
+                    if (!childContent) return ''; // Don't add markers for empty content
                     const emMarker = dataQd || '*';
                     return `${emMarker}${childContent}${emMarker}`;
                 }
@@ -687,6 +689,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
             case 'del':
             case 's':
             case 'strike':
+                if (!childContent) return ''; // Don't add markers for empty content
                 const delMarker = dataQd || '~~';
                 return `${delMarker}${childContent}${delMarker}`;
                 
@@ -695,6 +698,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
                 if (parentContext.parentTag === 'pre') {
                     return childContent;
                 }
+                if (!childContent) return ''; // Don't add markers for empty content
                 const codeMarker = dataQd || '`';
                 return `${codeMarker}${childContent}${codeMarker}`;
                 
@@ -869,7 +873,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
                 
                 // Add separator with alignment
                 const separators = headers.map((_, i) => {
-                    const align = alignments[i] || th.getAttribute('data-qd-align') || 'left';
+                    const align = alignments[i] || 'left';
                     if (align === 'center') return ':---:';
                     if (align === 'right') return '---:';
                     return '---';

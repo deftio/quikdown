@@ -17,6 +17,8 @@ import quikdown from 'quikdown';
 
 `quikdown_bd` is a separate build of quikdown that provides bidirectional conversion between Markdown and HTML. It includes all the features of regular quikdown PLUS the ability to convert HTML back to Markdown, preserving the original structure and formatting.
 
+**New in v1.0.5:** The core `quikdown` module now supports emitting `data-qd` attributes via the `bidirectional` option, though it doesn't include the `toMarkdown` function. The `quikdown_bd` module automatically enables this option and adds the HTML-to-Markdown conversion capability.
+
 ## Installation
 
 ```bash
@@ -118,8 +120,11 @@ Convert Markdown to HTML with bidirectional support.
   - `fence_plugin` (function): Custom renderer for fenced code blocks
   - `inline_styles` (boolean): Use inline styles instead of CSS classes
   - `allow_unsafe_urls` (boolean): Allow potentially unsafe URLs
+  - `bidirectional` (boolean): Always `true` for quikdown_bd (automatically set)
 
 **Returns:** HTML string with data-qd attributes
+
+**Note:** The `quikdown_bd` function automatically sets `bidirectional: true` internally, which adds the `data-qd` attributes needed for reverse conversion.
 
 ### quikdown_bd.toMarkdown(htmlOrElement)
 

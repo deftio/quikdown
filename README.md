@@ -302,9 +302,11 @@ const safe = quikdown(unsafe);
 
 ## Bidirectional Conversion (1.0.4+)
 
-**⚠️ Important:** Bidirectional conversion requires the `quikdown_bd` module, not the regular `quikdown` module.
+**⚠️ Important:** Full bidirectional conversion (including HTML-to-Markdown) requires the `quikdown_bd` module, not the regular `quikdown` module.
 
 The `quikdown_bd` module is a separate build that includes both markdown-to-HTML and HTML-to-markdown conversion capabilities. It's perfect for WYSIWYG editors and round-trip conversion scenarios.
+
+**New in v1.0.5:** The core `quikdown` module now supports the `bidirectional` option to emit `data-qd` attributes, but only `quikdown_bd` includes the `toMarkdown()` function for converting HTML back to Markdown.
 
 ### Installation
 
@@ -329,8 +331,8 @@ const quikdown_bd = require('quikdown/bd');
 // IMPORTANT: Use quikdown_bd for bidirectional support
 import quikdown_bd from 'quikdown/bd';
 
-// Markdown to HTML with source tracking
-const html = quikdown_bd('**Hello** world', { bidirectional: true });
+// Markdown to HTML with source tracking (bidirectional is automatic)
+const html = quikdown_bd('**Hello** world');
 console.log(html);
 // <strong data-qd="**">Hello</strong> world
 
