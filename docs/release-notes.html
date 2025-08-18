@@ -65,6 +65,161 @@
 <body>
     <article class="markdown-body">
         <h1>Release Notes</h1>
+<h2>v1.0.4 (2025-08-18)</h2>
+<h3>🎉 Major Feature: Bidirectional Conversion Support</h3>
+<h4>New <code>quikdown_bd</code> Module</h4>
+<ul>
+<li><strong>HTML to Markdown conversion</strong>: Convert HTML back to Markdown with high fidelity</li>
+<li><strong>Round-trip preservation</strong>: Maintains original markdown formatting through conversion cycles</li>
+<li><strong>Smart source tracking</strong>: Uses <code>data-qd</code> attributes to preserve original markdown syntax</li>
+<li><strong>DOM-based conversion</strong>: Walks the DOM tree for accurate HTML-to-Markdown transformation</li>
+<li><strong>Bundle size</strong>: 10KB minified (compared to 7.4KB for core quikdown)</li>
+</ul>
+<h4>Bidirectional API</h4>
+<ul>
+<li><code>quikdown_bd(markdown, options)</code> - Markdown to HTML with source tracking</li>
+<li><code>quikdown_bd.toMarkdown(htmlOrElement)</code> - Convert HTML or DOM element back to Markdown</li>
+<li><code>quikdown_bd.configure(options)</code> - Create configured bidirectional parser</li>
+<li><code>quikdown_bd.version</code> - Version string (synced with core)</li>
+</ul>
+<h4>Use Cases</h4>
+<ul>
+<li><strong>WYSIWYG Editors</strong>: Build rich-text editors that store content as Markdown</li>
+<li><strong>Live Preview</strong>: Edit in either Markdown or rendered view with real-time sync</li>
+<li><strong>Content Migration</strong>: Convert existing HTML content to Markdown</li>
+<li><strong>Collaborative Editing</strong>: Enable rich-text editing while maintaining Markdown storage</li>
+</ul>
+<h3>📦 Package Improvements</h3>
+<h4>Module Exports</h4>
+<ul>
+<li>Added <code>exports</code> field in package.json for clean imports:<pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;        // Core parser
+import quikdown_bd from &#39;quikdown/bd&#39;;  // Bidirectional parser
+</code></pre>
+</li>
+<li>Multiple format support: ESM, UMD, CommonJS for both modules</li>
+<li>TypeScript definitions for both core and bidirectional modules</li>
+</ul>
+<h4>Build System</h4>
+<ul>
+<li>Integrated <code>quikdown_bd</code> into Rollup build pipeline</li>
+<li>Generates all format variants (ESM, UMD, CJS, minified)</li>
+<li>Source maps for all production builds</li>
+<li>Version injection at build time for both modules</li>
+</ul>
+<h3>📚 Documentation</h3>
+<h4>New Documentation</h4>
+<ul>
+<li><strong>Framework Integration Guide</strong> (<code>docs/framework-integration.md</code>)<ul>
+<li>React (hooks, components, Next.js)</li>
+<li>Vue (Composition API, Options API, Nuxt)</li>
+<li>Svelte (stores, reactive statements)</li>
+<li>Angular (components, services, pipes)</li>
+<li>Complete examples with bidirectional support</li>
+</ul>
+</li>
+<li><strong>Bidirectional Documentation</strong> (<code>docs/quikdown-bidirectional.md</code>)<ul>
+<li>Comprehensive guide for HTML-to-Markdown conversion</li>
+<li>API reference and examples</li>
+<li>Limitations and best practices</li>
+</ul>
+</li>
+</ul>
+<h4>Documentation Updates</h4>
+<ul>
+<li>Updated README with bidirectional module information</li>
+<li>Added clear distinction between <code>quikdown</code> and <code>quikdown_bd</code> modules</li>
+<li>Added module comparison table in API reference</li>
+<li>Updated all version references to 1.0.4</li>
+</ul>
+<h3>🧪 Testing</h3>
+<h4>Test Suite Expansion</h4>
+<ul>
+<li>Added 35 new tests for bidirectional functionality</li>
+<li>Integrated jsdom for DOM-based testing in Node.js</li>
+<li>Fixed TextEncoder/TextDecoder compatibility for Node.js 18+</li>
+<li>Suppressed punycode deprecation warnings from jsdom</li>
+<li>All 144 tests passing (109 core + 35 bidirectional)</li>
+</ul>
+<h4>Test Coverage</h4>
+<ul>
+<li>Core quikdown: 99.58% statement coverage</li>
+<li>100% line coverage maintained</li>
+<li>92.3% branch coverage</li>
+</ul>
+<h3>🎨 Examples</h3>
+<h4>New Examples</h4>
+<ul>
+<li><strong>Bidirectional Editor</strong> (<code>examples/quikdown-bd-editor.html</code>)<ul>
+<li>Full-featured WYSIWYG markdown editor</li>
+<li>Real-time bidirectional sync</li>
+<li>Mermaid diagram support</li>
+<li>Theme toggling</li>
+</ul>
+</li>
+<li><strong>Bidirectional Basic</strong> (<code>examples/quikdown-bd-basic.html</code>)<ul>
+<li>Simple demonstration of round-trip conversion</li>
+<li>Side-by-side Markdown, HTML, and rendered views</li>
+<li>Test suite integration</li>
+</ul>
+</li>
+</ul>
+<h4>Example Updates</h4>
+<ul>
+<li>All examples now use consistent favicon (<code>favicon.svg</code>)</li>
+<li>Updated script paths to use distribution files</li>
+<li>Added bidirectional demos to examples index</li>
+</ul>
+<h3>🐛 Bug Fixes</h3>
+<ul>
+<li>Fixed mermaid diagram rendering in bidirectional mode</li>
+<li>Fixed checkbox state preservation in task lists</li>
+<li>Fixed scrolling issues in example editors</li>
+<li>Fixed CSS layout for multi-panel editors</li>
+</ul>
+<h3>🔧 Technical Details</h3>
+<h4>Bidirectional Implementation</h4>
+<ul>
+<li>Standalone module (doesn&#39;t import core quikdown)</li>
+<li>Feature parity with core parser</li>
+<li>DOM walking algorithm for HTML parsing</li>
+<li>Preserves markdown source indicators through <code>data-qd</code> attributes</li>
+<li>Handles nested structures and special cases</li>
+</ul>
+<h4>Bundle Sizes</h4>
+<ul>
+<li><code>quikdown.min.js</code>: 7.4KB (core parser)</li>
+<li><code>quikdown_bd.min.js</code>: 10KB (bidirectional)</li>
+<li>Both maintain zero dependencies</li>
+</ul>
+<h3>🚀 Migration Guide</h3>
+<h4>Upgrading from 1.0.3</h4>
+<ul>
+<li>No breaking changes for existing <code>quikdown</code> usage</li>
+<li>To add bidirectional support:<pre><code class="language-javascript">// Change from:
+import quikdown from &#39;quikdown&#39;;
+
+// To:
+import quikdown_bd from &#39;quikdown/bd&#39;;
+
+// Then use toMarkdown:
+const markdown = quikdown_bd.toMarkdown(html);
+</code></pre>
+</li>
+</ul>
+<h4>Browser Usage</h4>
+<pre><code class="language-html">&lt;!-- Core only --&gt;
+&lt;script src=&quot;https://unpkg.com/quikdown@1.0.4/dist/quikdown.umd.min.js&quot;&gt;&lt;/script&gt;
+
+&lt;!-- Bidirectional --&gt;
+&lt;script src=&quot;https://unpkg.com/quikdown@1.0.4/dist/quikdown_bd.umd.min.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h3>📝 Notes</h3>
+<ul>
+<li>The <code>toMarkdown()</code> method is only available in <code>quikdown_bd</code>, not in regular <code>quikdown</code></li>
+<li>Bidirectional conversion requires a DOM environment (use jsdom in Node.js)</li>
+<li>Round-trip conversion may normalize some markdown formatting</li>
+<li>Mermaid diagrams are preserved but not editable in rendered view</li>
+</ul>
 <h2>v1.0.3 (2025-08-17)</h2>
 <h3>Major Size Optimizations</h3>
 <ul>
