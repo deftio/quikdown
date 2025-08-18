@@ -6,6 +6,11 @@
     <title>Quikdown Bidirectional Editor</title>
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     
+
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
     <!-- Load Mermaid for diagram rendering -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     
@@ -259,9 +264,6 @@
             height: auto;
         }
         
-        .mermaid-source {
-            display: none !important;
-        }
     </style>
 </head>
 <body>
@@ -411,13 +413,27 @@
                         if (lang === 'mermaid') {
                             // Create a unique ID for this diagram
                             const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-                            // Store source and create pre element as fallback
-                            return `<div class="mermaid-container" data-qd="mermaid" data-qd-fence="\`\`\`" data-qd-lang="mermaid">
-                                <div class="mermaid-source" style="display:none">${escapeHtml(code)}</div>
+                            // Store source in data attribute to preserve exact content
+                            // Escape quotes in the code for the data attribute
+                            const escapedCode = code.replace(/"/g, '&quot;');
+                            return `<div class="mermaid-container" data-qd="mermaid" data-qd-fence="\`\`\`" data-qd-lang="mermaid" data-qd-source="${escapedCode}">
                                 <pre class="mermaid" id="${id}">${code}</pre>
                             </div>`;
                         }
-                        return undefined; // Let default handle other languages
+                        
+                        // For other languages, use highlight.js if available
+                        if (typeof hljs !== 'undefined' && lang) {
+                            try {
+                                // quikdown_bd now passes raw code to fence_plugin (fixed in v1.0.5)
+                                const highlighted = hljs.highlight(code, { language: lang }).value;
+                                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${lang}"><code class="hljs language-${lang}">${highlighted}</code></pre>`;
+                            } catch (e) {
+                                // If language not supported, fall through to default
+                            }
+                        }
+                        
+                        // Default: let quikdown handle fence blocks without hljs
+                        return null;
                     }
                 });
                 
@@ -550,19 +566,18 @@
                     updateStatus('Example loaded from file', 'Ready to edit');
                 } else {
                     // Fallback to simple example
-                    exampleMarkdown = `# Quikdown Bidirectional Editor
+                    exampleMarkdown = `
+# Quikdown Bidirectional Editor
 
-Welcome! Edit **either side** and watch them sync.
-
-## Try These Features
+Welcome! Edit **either side** and watch them sync.## Try These Features XX
 
 - Edit this *markdown* on the left
 - Click and edit the rendered output on the right
 - Check/uncheck task items below
 
-### Task List
+## Task List
 
-- [ ] Try editing markdown
+- [x] Try editing markdown
 - [ ] Try editing rendered HTML
 - [ ] Toggle dark theme
 
@@ -571,7 +586,22 @@ Welcome! Edit **either side** and watch them sync.
 console.log("Hello, Quikdown!");
 \`\`\`
 
-> Edit this quote directly in the rendered view!`;
+> Edit this quote directly in the rendered view!
+
+## Mermaid Diagram
+
+\`\`\`mermaid
+graph LR
+    A[Markdown] --> B[HTML]
+    B --> C[Recovered MD] 
+\`\`\`
+
+## More
+
+- Edit this *markdown* on the left
+- Click and edit the rendered output on the right
+- Check/uncheck task items below
+`;
                     updateStatus('Using default example', 'Ready to edit');
                 }
             } catch (e) {

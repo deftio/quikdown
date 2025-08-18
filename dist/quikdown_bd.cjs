@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.0.4
+ * @version 1.0.5dev1
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -15,7 +15,7 @@
  */
 
 // Version - uses same version as core quikdown
-const VERSION = '1.0.4';
+const VERSION = '1.0.5dev1';
 
 // Helper to escape HTML (same as core)
 const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -106,12 +106,24 @@ function quikdown_bd(markdown, options = {}) {
     // Extract fenced code blocks
     html = html.replace(/^(```|~~~)([^\n]*)\n([\s\S]*?)^\1$/gm, (match, fence, lang, code) => {
         const placeholder = `§CB${codeBlocks.length}§`;
-        codeBlocks.push({
-            fence,
-            lang: lang.trim(),
-            code: escapeHtml(code.trimEnd()),
-            original: match
-        });
+        const langTrimmed = lang.trim();
+        
+        // Store raw code if fence_plugin exists, escaped otherwise (matching quikdown.js behavior)
+        if (fence_plugin && typeof fence_plugin === 'function') {
+            codeBlocks.push({
+                fence,
+                lang: langTrimmed,
+                code: code.trimEnd(),
+                custom: true
+            });
+        } else {
+            codeBlocks.push({
+                fence,
+                lang: langTrimmed,
+                code: escapeHtml(code.trimEnd()),
+                custom: false
+            });
+        }
         return placeholder;
     });
     
@@ -188,12 +200,16 @@ function quikdown_bd(markdown, options = {}) {
         const placeholder = `§CB${i}§`;
         let replacement;
         
-        if (fence_plugin && typeof fence_plugin === 'function') {
+        if (block.custom && fence_plugin) {
+            // Use custom fence plugin with raw code
             replacement = fence_plugin(block.code, block.lang);
+            // If plugin returns undefined, fall back to default rendering
             if (replacement === undefined) {
-                replacement = `<pre${getAttr('pre', '', block.fence)}><code data-qd-lang="${block.lang}">${block.code}</code></pre>`;
+                // Need to escape the code for default rendering
+                replacement = `<pre${getAttr('pre', '', block.fence)}><code data-qd-lang="${block.lang}">${escapeHtml(block.code)}</code></pre>`;
             }
         } else {
+            // Code is already escaped
             replacement = `<pre${getAttr('pre', '', block.fence)} data-qd-fence="${block.fence}" data-qd-lang="${block.lang}"><code>${block.code}</code></pre>`;
         }
         
@@ -511,7 +527,18 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
                 if (node.classList && node.classList.contains('mermaid-container')) {
                     const fence = node.getAttribute('data-qd-fence') || '```';
                     const lang = node.getAttribute('data-qd-lang') || 'mermaid';
-                    // Look for the source element
+                    
+                    // First check for data-qd-source attribute
+                    const source = node.getAttribute('data-qd-source');
+                    if (source) {
+                        // Decode HTML entities from the attribute (mainly &quot;)
+                        const temp = document.createElement('textarea');
+                        temp.innerHTML = source;
+                        const code = temp.value;
+                        return `${fence}${lang}\n${code}\n${fence}\n\n`;
+                    }
+                    
+                    // Fallback: Look for the legacy .mermaid-source element
                     const sourceElement = node.querySelector('.mermaid-source');
                     if (sourceElement) {
                         // Decode HTML entities
@@ -520,7 +547,8 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
                         const code = temp.textContent;
                         return `${fence}${lang}\n${code}\n${fence}\n\n`;
                     }
-                    // Fallback: try to extract from the mermaid element
+                    
+                    // Final fallback: try to extract from the mermaid element (unreliable after rendering)
                     const mermaidElement = node.querySelector('.mermaid');
                     if (mermaidElement && mermaidElement.textContent.includes('graph')) {
                         return `${fence}${lang}\n${mermaidElement.textContent.trim()}\n${fence}\n\n`;
