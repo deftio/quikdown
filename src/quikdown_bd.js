@@ -8,9 +8,6 @@
 
 import quikdown from './quikdown.js';
 
-// Version - uses same version as core quikdown
-const VERSION = '__QUIKDOWN_VERSION__';
-
 /**
  * Create bidirectional version by extending quikdown
  * This wraps quikdown and adds the toMarkdown method
@@ -20,7 +17,7 @@ function quikdown_bd(markdown, options = {}) {
     return quikdown(markdown, { ...options, bidirectional: true });
 }
 
-// Copy all properties and methods from quikdown
+// Copy all properties and methods from quikdown (including version)
 Object.keys(quikdown).forEach(key => {
     quikdown_bd[key] = quikdown[key];
 });
@@ -51,7 +48,6 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
         
         const tag = node.tagName.toLowerCase();
         const dataQd = node.getAttribute('data-qd');
-        const styles = window.getComputedStyle ? window.getComputedStyle(node) : {};
         
         // Process children with context
         let childContent = '';
@@ -73,23 +69,15 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
                 
             case 'strong':
             case 'b':
-                // Check if it's bold through style too
-                if (styles.fontWeight === 'bold' || styles.fontWeight >= 700 || tag === 'strong' || tag === 'b') {
-                    if (!childContent) return ''; // Don't add markers for empty content
-                    const boldMarker = dataQd || '**';
-                    return `${boldMarker}${childContent}${boldMarker}`;
-                }
-                return childContent;
+                if (!childContent) return ''; // Don't add markers for empty content
+                const boldMarker = dataQd || '**';
+                return `${boldMarker}${childContent}${boldMarker}`;
                 
             case 'em':
             case 'i':
-                // Check for italic through style
-                if (styles.fontStyle === 'italic' || tag === 'em' || tag === 'i') {
-                    if (!childContent) return ''; // Don't add markers for empty content
-                    const emMarker = dataQd || '*';
-                    return `${emMarker}${childContent}${emMarker}`;
-                }
-                return childContent;
+                if (!childContent) return ''; // Don't add markers for empty content
+                const emMarker = dataQd || '*';
+                return `${emMarker}${childContent}${emMarker}`;
                 
             case 'del':
             case 's':
@@ -99,10 +87,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
                 return `${delMarker}${childContent}${delMarker}`;
                 
             case 'code':
-                // Skip if inside pre (handled by pre)
-                if (parentContext.parentTag === 'pre') {
-                    return childContent;
-                }
+                // Note: code inside pre is handled directly by the pre case using querySelector
                 if (!childContent) return ''; // Don't add markers for empty content
                 const codeMarker = dataQd || '`';
                 return `${codeMarker}${childContent}${codeMarker}`;
@@ -322,7 +307,7 @@ quikdown_bd.configure = function(options) {
 };
 
 // Set version
-quikdown_bd.version = VERSION;
+// Version is already copied from quikdown via Object.keys loop
 
 // Export for both module and browser
 if (typeof module !== 'undefined' && module.exports) {

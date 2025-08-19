@@ -9,6 +9,6 @@
     <text x="8" y="20" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">q</text>
     
     <!-- Down arrow -->
-    <path d="M 22 11 L 22 20 L 19 20 L 23.5 26 L 28 20 L 25 20 L 25 11 Z" fill="white"/>
+    <path d="M 22 10.75 L 22 20 L 19 20 L 23.5 26 L 28 20 L 25 20 L 25 10.75 Z" fill="white"/>
   </g>
 </svg>

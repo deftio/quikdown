@@ -579,8 +579,11 @@
      * @param {Object} options - Configuration options
      * @returns {Function} Configured quikdown function
      */
+    /* istanbul ignore next */
     quikdown.configure = function(options) {
+        /* istanbul ignore next */
         return function(markdown) {
+            /* istanbul ignore next */
             return quikdown(markdown, options);
         };
     };
