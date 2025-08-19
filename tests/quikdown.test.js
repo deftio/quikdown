@@ -701,14 +701,43 @@ def analyze():
         test('configured parser should apply options', () => {
             const parser = quikdown.configure({ inline_styles: true });
             const result = parser('**bold**');
-            // If inline styles are supported, expect style attributes, otherwise expect classes
-            if (result.includes('style="')) {
-                expect(result).toContain('style="');
+            // Should use inline styles
+            expect(result).toContain('style="');
             expect(result).toContain('font-weight:bold');
-                expect(result).not.toContain('class="');
-            } else {
-                expect(result).toContain('class="quikdown-');
-            }
+            expect(result).not.toContain('class="');
+        });
+        
+        test('configured parser should work with multiple options', () => {
+            // Test with fence_plugin option
+            const customPlugin = (content, lang) => {
+                return `<div class="custom-${lang}">${content}</div>`;
+            };
+            
+            const parser = quikdown.configure({ 
+                fence_plugin: customPlugin,
+                inline_styles: false 
+            });
+            
+            const result = parser('```js\ncode\n```');
+            expect(result).toBe('<div class="custom-js">code</div>');
+        });
+        
+        test('configured parser should work for multiple calls', () => {
+            const parser = quikdown.configure({ inline_styles: true });
+            
+            // Call it multiple times to ensure it's reusable
+            const result1 = parser('# Heading');
+            const result2 = parser('**bold**');
+            const result3 = parser('`code`');
+            
+            expect(result1).toContain('style="');
+            expect(result1).toContain('font-size:2em');
+            
+            expect(result2).toContain('style="');
+            expect(result2).toContain('font-weight:bold');
+            
+            expect(result3).toContain('style="');
+            expect(result3).toContain('background:#f0f0f0');
         });
         
         test('should handle inline styles for tables', () => {

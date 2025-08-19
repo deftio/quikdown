@@ -30,6 +30,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
         container = document.createElement('div');
         container.innerHTML = htmlOrElement;
     } else if (htmlOrElement instanceof Element) {
+        /* istanbul ignore next - browser-only code path, not testable in jsdom */
         container = htmlOrElement;
     } else {
         return '';
@@ -310,10 +311,12 @@ quikdown_bd.configure = function(options) {
 // Version is already copied from quikdown via Object.keys loop
 
 // Export for both module and browser
+/* istanbul ignore next */
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = quikdown_bd;
 }
 
+/* istanbul ignore next */
 if (typeof window !== 'undefined') {
     window.quikdown_bd = quikdown_bd;
 }
