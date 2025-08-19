@@ -4,8 +4,11 @@
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
 [![Coverage Status](https://img.shields.io/badge/coverage-99%25-blue.svg)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/core-7.4KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
-[![Bundle Size BD](https://img.shields.io/badge/bidirectional-10KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+
+### Bundle Sizes
+[![quikdown](https://img.shields.io/badge/quikdown-8.5KB-brightgreen.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![quikdown_bd](https://img.shields.io/badge/quikdown__bd-12.5KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![quikdown_edit](https://img.shields.io/badge/quikdown__edit-24.3KB-purple.svg)](https://github.com/deftio/quikdown/tree/main/dist)
 
 A lightweight, fast markdown parser with built-in XSS protection and optional bidirectional conversion support. Quikdown works in both browser and Node.js environments. Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.
 
@@ -20,6 +23,7 @@ A lightweight, fast markdown parser with built-in XSS protection and optional bi
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Bidirectional Conversion](#bidirectional-conversion-new)
+- [Quikdown Editor](#quikdown-editor-new)
 - [Supported Markdown](#supported-markdown)
 - [Configuration Options](#configuration-options)
 - [Plugin System](#plugin-system)
@@ -32,7 +36,7 @@ A lightweight, fast markdown parser with built-in XSS protection and optional bi
 
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js
-- 🚀 **Lightweight** - 7.4KB minified (core), 10KB with bidirectional support
+- 🚀 **Lightweight** - 8.5KB minified (quikdown), 12.5KB (quikdown_bd), 24.3KB (quikdown_edit)
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
 - 🎨 **Flexible styling** - Inline styles or CSS classes including light and dark mode generation, custom themes
 - 🔌 **Plugin system** - Extensible fence block handlers
@@ -392,6 +396,77 @@ console.log(markdown);
 ```
 
 For complete documentation, see [Bidirectional Documentation](docs/quikdown-bidirectional.md).
+
+## Quikdown Editor (New!)
+
+Quikdown Editor is a drop-in markdown editor control that can be embedded in any webpage. It provides a complete editing experience with live preview, bidirectional editing, and plugin support.
+
+🚀 **[Try Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** - Full-featured editor demonstration
+
+### Features
+
+- 📝 **Three view modes**: Source, Split, and Preview
+- 🔄 **Bidirectional editing**: Edit markdown or preview and see changes sync
+- 🎨 **Theme support**: Light, dark, and auto themes
+- 🔌 **Plugin integration**: Built-in support for Highlight.js and Mermaid
+- ⌨️ **Keyboard shortcuts**: Quick mode switching with Ctrl+1/2/3
+- 📋 **Copy functions**: Copy markdown or HTML to clipboard
+- 📱 **Responsive**: Mobile-friendly interface
+
+### Quick Start (Just 3 Lines!)
+
+```html
+<div id="editor" style="height: 400px;"></div>
+<script type="module">
+  import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
+  new QuikdownEditor('#editor');
+</script>
+```
+
+That's it! For more options:
+
+```javascript
+const editor = new QuikdownEditor('#editor', {
+  mode: 'split',                              // 'source', 'split', or 'preview'
+  plugins: { highlightjs: true, mermaid: true } // Enable plugins
+});
+
+editor.setMarkdown('# Hello World');          // Set content
+const markdown = editor.getMarkdown();        // Get content
+```
+
+### API
+
+```javascript
+// Create editor
+const editor = new QuikdownEditor(container, options);
+
+// Methods
+editor.setMarkdown(markdown);  // Set markdown content
+editor.getMarkdown();          // Get current markdown
+editor.getHTML();              // Get rendered HTML
+editor.setMode('split');       // Change view mode
+editor.destroy();              // Clean up editor
+
+// Properties
+editor.markdown;               // Get/set markdown
+editor.html;                   // Get HTML (read-only)
+editor.mode;                   // Get current mode
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `mode` | string | 'split' | View mode: 'source', 'split', or 'preview' |
+| `theme` | string | 'auto' | Theme: 'light', 'dark', or 'auto' |
+| `showToolbar` | boolean | true | Show/hide toolbar |
+| `lazy_linefeeds` | boolean | false | Enable lazy linefeeds |
+| `debounceDelay` | number | 300 | Debounce delay in ms |
+| `placeholder` | string | 'Start typing...' | Placeholder text |
+| `plugins` | object | {} | Plugin configuration |
+
+For complete documentation, see [Quikdown Editor Documentation](docs/quikdown-editor.md).
 
 ## Quikdown Lexer Version
 

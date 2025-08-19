@@ -129,6 +129,40 @@ function printBuildSizes() {
         printRow(file.name, origFormatted, minFormatted, reduction);
     });
     
+    // Quikdown Editor
+    console.log('├───────────────────────────┼────────────┼────────────┼────────────┤');
+    console.log('│ ' + colors.blue + colors.bright + 'Quikdown Editor' + colors.reset + '           │            │            │            │');
+    console.log('├───────────────────────────┼────────────┼────────────┼────────────┤');
+    
+    const editFiles = [
+        {
+            name: '  quikdown_edit.esm.js',
+            original: 'quikdown_edit.esm.js',
+            minified: 'quikdown_edit.esm.min.js'
+        },
+        {
+            name: '  quikdown_edit.umd.js',
+            original: 'quikdown_edit.umd.js',
+            minified: 'quikdown_edit.umd.min.js'
+        },
+        {
+            name: '  quikdown_edit.cjs',
+            original: 'quikdown_edit.cjs',
+            minified: null
+        }
+    ];
+    
+    editFiles.forEach(file => {
+        const origSize = getFileSize(path.join(distDir, file.original));
+        const minSize = file.minified ? getFileSize(path.join(distDir, file.minified)) : null;
+        
+        const origFormatted = origSize ? formatSize(origSize) : 'N/A';
+        const minFormatted = minSize ? formatSize(minSize) : '—';
+        const reduction = calcReduction(origSize, minSize);
+        
+        printRow(file.name, origFormatted, minFormatted, reduction);
+    });
+    
     // CSS Files
     console.log('├───────────────────────────┼────────────┼────────────┼────────────┤');
     console.log('│ ' + colors.green + colors.bright + 'CSS Themes' + colors.reset + '                │            │            │            │');
@@ -165,12 +199,16 @@ function printBuildSizes() {
     
     const esmMinSize = getFileSize(path.join(distDir, 'quikdown.esm.min.js'));
     const bdEsmMinSize = getFileSize(path.join(distDir, 'quikdown_bd.esm.min.js'));
+    const editEsmMinSize = getFileSize(path.join(distDir, 'quikdown_edit.esm.min.js'));
     
     if (esmMinSize) {
-        console.log(`  ${colors.cyan}●${colors.reset} QuikDown Core (minified):    ${colors.bright}${formatSize(esmMinSize)}${colors.reset}`);
+        console.log(`  ${colors.cyan}●${colors.reset} Quikdown Core (minified):    ${colors.bright}${formatSize(esmMinSize)}${colors.reset}`);
     }
     if (bdEsmMinSize) {
-        console.log(`  ${colors.magenta}●${colors.reset} QuikDown BD (minified):      ${colors.bright}${formatSize(bdEsmMinSize)}${colors.reset}`);
+        console.log(`  ${colors.magenta}●${colors.reset} Quikdown BD (minified):      ${colors.bright}${formatSize(bdEsmMinSize)}${colors.reset}`);
+    }
+    if (editEsmMinSize) {
+        console.log(`  ${colors.blue}●${colors.reset} Quikdown Editor (minified):  ${colors.bright}${formatSize(editEsmMinSize)}${colors.reset}`);
     }
     
     console.log('\n');

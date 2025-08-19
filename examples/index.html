@@ -18,9 +18,6 @@
             color: #333;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 20px;
         }
         
@@ -29,8 +26,8 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             padding: 50px;
-            max-width: 900px;
-            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
         }
         
         h1 {
@@ -51,10 +48,36 @@
             font-size: 1.2em;
         }
         
+        .section {
+            margin: 50px 0;
+        }
+        
+        .section-header {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            color: #333;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-description {
+            color: #555;
+            font-size: 1.05em;
+            line-height: 1.6;
+        }
+        
         .examples-grid {
             display: grid;
             gap: 20px;
-            margin-top: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
         }
         
         .example-card {
@@ -97,10 +120,10 @@
             z-index: 1;
         }
         
-        .example-card h2 {
+        .example-card h3 {
             color: #333;
             margin-bottom: 10px;
-            font-size: 1.5em;
+            font-size: 1.3em;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -122,6 +145,7 @@
         .example-card p {
             color: #555;
             line-height: 1.6;
+            margin-bottom: 10px;
         }
         
         .badge {
@@ -131,7 +155,7 @@
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.85em;
-            margin-top: 10px;
+            margin-right: 5px;
             font-weight: 500;
         }
         
@@ -153,7 +177,9 @@
         
         footer {
             text-align: center;
-            margin-top: 40px;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 1px solid #e0e0e0;
             color: #999;
             font-size: 0.9em;
         }
@@ -173,54 +199,19 @@
             }
             
             .container {
-                padding: 20px;
-                border-radius: 15px;
-                max-width: 100%;
+                padding: 30px 20px;
             }
             
             h1 {
                 font-size: 2em;
             }
             
-            .subtitle {
-                font-size: 1em;
-                margin-bottom: 20px;
+            .section-title {
+                font-size: 1.4em;
             }
             
-            .example-card {
-                padding: 20px;
-            }
-            
-            .example-card h2 {
-                font-size: 1.2em;
-            }
-            
-            .example-card p {
-                font-size: 0.9em;
-            }
-            
-            .features {
-                margin-top: 20px;
-            }
-            
-            .feature {
-                font-size: 0.8em;
-                padding: 6px 12px;
-            }
-            
-            footer {
-                margin-top: 20px;
-                font-size: 0.8em;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 1.5em;
-            }
-            
-            .example-card:hover {
-                transform: none;
+            .examples-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -228,140 +219,227 @@
 <body>
     <div class="container">
         <h1>quikdown</h1>
-        <p class="subtitle">Lightweight Markdown Parser Examples</p>
+        <p class="subtitle">Lightweight Markdown Parser & Editor Suite</p>
         <div style="text-align: center; margin-bottom: 20px;">
-            <a href="../docs/" style="color: #667eea; text-decoration: none; font-weight: 500;">📖 Documentation</a>
+            <a href="../docs/" style="color: #667eea; text-decoration: none; font-weight: 500;">📖 Documentation</a> | 
+            <a href="https://github.com/deftio/quikdown" style="color: #667eea; text-decoration: none; font-weight: 500;">🔗 GitHub</a> | 
+            <a href="https://www.npmjs.com/package/quikdown" style="color: #667eea; text-decoration: none; font-weight: 500;">📦 NPM</a>
         </div>
         
-        <div class="examples-grid">
-            <a href="quikdown-live.html" class="example-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <div class="content">
-                    <h2>
-                        <span class="icon">⭐</span>
-                        Live Editor
-                    </h2>
-                    <p>
-                        Full-featured live markdown editor with real-time preview. 
-                        Includes syntax highlighting, Mermaid diagrams, task lists, 
-                        and comprehensive examples showcasing all quikdown features.
-                    </p>
-                    <span class="badge">Comprehensive Demo</span>
-                </div>
-            </a>
+        <!-- quikdown Core Parser Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span style="font-size: 1.5em;">📝</span>
+                    quikdown - Core Parser (8.5KB)
+                </h2>
+                <p class="section-description">
+                    The foundation module that converts markdown to HTML. Lightweight, secure by default with XSS protection, 
+                    and extensible through fence plugins. Perfect for rendering markdown content in any application. 
+                    Works in both browser and Node.js environments with zero dependencies.
+                </p>
+            </div>
             
-            <a href="quikdown-test.html" class="example-card">
-                <div class="content">
-                    <h2>
-                        <span class="icon">1</span>
-                        Basic Test
-                    </h2>
-                    <p>
-                        Interactive demo showcasing basic markdown parsing capabilities. 
-                        Test various markdown elements including headings, lists, links, 
-                        and formatting in real-time.
-                    </p>
-                    <span class="badge">Interactive Demo</span>
-                </div>
-            </a>
+            <div class="examples-grid">
+                <a href="quikdown-live.html" class="example-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">⭐</span>
+                            Live Parser Demo
+                        </h3>
+                        <p>
+                            Full-featured live parser demo with real-time preview. 
+                            Includes syntax highlighting, Mermaid diagrams, and all markdown features.
+                        </p>
+                        <span class="badge">Comprehensive</span>
+                    </div>
+                </a>
+                
+                <a href="quikdown-test.html" class="example-card">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">1</span>
+                            Basic Test
+                        </h3>
+                        <p>
+                            Interactive demo showcasing basic markdown parsing. Test various elements 
+                            including headings, lists, links, and formatting.
+                        </p>
+                        <span class="badge">Interactive</span>
+                    </div>
+                </a>
+                
+                <a href="quikdown-fence.html" class="example-card">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">2</span>
+                            Fence Plugins
+                        </h3>
+                        <p>
+                            Demonstrates custom fence block handling with syntax highlighting 
+                            and custom renderers for specialized content.
+                        </p>
+                        <span class="badge">Plugins</span>
+                    </div>
+                </a>
+                
+                <a href="quikdown-styles-test.html" class="example-card">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">3</span>
+                            Styling Options
+                        </h3>
+                        <p>
+                            Explore inline styles vs CSS classes. See how quikdown handles 
+                            different styling approaches for flexibility.
+                        </p>
+                        <span class="badge">CSS</span>
+                    </div>
+                </a>
+                
+                <a href="multi-theme-demo.html" class="example-card">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">4</span>
+                            Multi-Theme
+                        </h3>
+                        <p>
+                            Multiple quikdown instances with different themes on the same page. 
+                            Shows CSS scoping and theme flexibility.
+                        </p>
+                        <span class="badge">Themes</span>
+                    </div>
+                </a>
+                
+                <a href="quikdown-cdn-demo.html" class="example-card" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">🌐</span>
+                            CDN Template
+                        </h3>
+                        <p>
+                            Complete standalone demo loading from CDN with Highlight.js and Mermaid.
+                            Perfect template to copy for your projects!
+                        </p>
+                        <span class="badge" style="background: #30cfd0;">CDN</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- quikdown_bd Bidirectional Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span style="font-size: 1.5em;">🔄</span>
+                    quikdown_bd - Bidirectional Parser (12.5KB)
+                </h2>
+                <p class="section-description">
+                    Extends quikdown with HTML-to-Markdown conversion capabilities. Perfect for WYSIWYG editors, 
+                    content migration, and round-trip conversion scenarios. Maintains markdown source fidelity 
+                    through data-qd attributes, enabling true bidirectional editing.
+                </p>
+            </div>
             
-            <a href="quikdown-fence.html" class="example-card">
-                <div class="content">
-                    <h2>
-                        <span class="icon">2</span>
-                        Fence Blocks
-                    </h2>
-                    <p>
-                        Demonstrates custom fence block handling with syntax highlighting 
-                        and custom renderers. Perfect for code blocks, diagrams, and 
-                        specialized content rendering.
-                    </p>
-                    <span class="badge">Plugin System</span>
-                </div>
-            </a>
+            <div class="examples-grid">
+                <a href="quikdown-bd-editor.html" class="example-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">🔄</span>
+                            Bidirectional Editor
+                        </h3>
+                        <p>
+                            Live bidirectional editing demo. Edit markdown or HTML and see real-time updates.
+                            Features mermaid diagrams and round-trip conversion.
+                        </p>
+                        <span class="badge">Live Demo</span>
+                    </div>
+                </a>
+                
+                <a href="quikdown-bd-basic.html" class="example-card">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">↔️</span>
+                            Conversion Testing
+                        </h3>
+                        <p>
+                            Test and explore bidirectional conversion capabilities.
+                            Convert markdown to HTML and back with source preservation.
+                        </p>
+                        <span class="badge">Testing</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- quikdown_edit Editor Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <span style="font-size: 1.5em;">✏️</span>
+                    quikdown_edit - Editor Component (24.3KB)
+                </h2>
+                <p class="section-description">
+                    A complete drop-in markdown editor control that can be embedded in any webpage. Features three view modes 
+                    (source, split, preview), bidirectional editing, plugin support for syntax highlighting and diagrams, 
+                    keyboard shortcuts, and theme support. Just 5 lines of code to add a full editor to your page!
+                </p>
+            </div>
             
-            <a href="quikdown-styles-test.html" class="example-card">
-                <div class="content">
-                    <h2>
-                        <span class="icon">3</span>
-                        Styles Test
-                    </h2>
-                    <p>
-                        Explore the difference between inline styles and CSS classes. 
-                        See how quikdown handles styling options for maximum flexibility 
-                        in your applications.
-                    </p>
-                    <span class="badge">Styling Options</span>
-                </div>
-            </a>
-            
-            <a href="multi-theme-demo.html" class="example-card">
-                <div class="content">
-                    <h2>
-                        <span class="icon">4</span>
-                        Multi-Theme
-                    </h2>
-                    <p>
-                        Demonstrates multiple quikdown instances with different themes 
-                        on the same page. Shows how CSS scoping enables theme flexibility.
-                    </p>
-                    <span class="badge">CSS Themes</span>
-                </div>
-            </a>
-            
-            <!-- Bidirectional Examples -->
-            <a href="quikdown-bd-editor.html" class="example-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
-                <div class="content">
-                    <h2>
-                        <span class="icon">🔄</span>
-                        Bidirectional Editor
-                    </h2>
-                    <p>
-                        Live bidirectional editing with quikdown_bd. Edit markdown or HTML and see real-time updates.
-                        Features mermaid diagrams and round-trip conversion.
-                    </p>
-                    <span class="badge" style="background: #ff6b6b; color: white;">NEW!</span>
-                    <span class="badge">Bidirectional</span>
-                </div>
-            </a>
-            
-            <a href="quikdown-bd-basic.html" class="example-card">
-                <div class="content">
-                    <h2>
-                        <span class="icon">↔️</span>
-                        Bidirectional Basics
-                    </h2>
-                    <p>
-                        Test and explore the bidirectional conversion capabilities of quikdown_bd.
-                        Convert markdown to HTML and back with data-qd attributes.
-                    </p>
-                    <span class="badge" style="background: #ff6b6b; color: white;">NEW!</span>
-                    <span class="badge">Testing</span>
-                </div>
-            </a>
-            
-            <a href="quikdown-cdn-demo.html" class="example-card" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
-                <div class="content">
-                    <h2>
-                        <span class="icon">🌐</span>
-                        CDN Demo
-                    </h2>
-                    <p>
-                        Complete standalone demo loading everything from CDN - QuikDown, Highlight.js, and Mermaid.
-                        Perfect template to copy and use in your own projects!
-                    </p>
-                    <span class="badge" style="background: #30cfd0; color: white;">CDN</span>
-                    <span class="badge">Copy-Ready</span>
-                </div>
-            </a>
+            <div class="examples-grid">
+                <a href="qde/" class="example-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">✏️</span>
+                            Full Editor Demo
+                        </h3>
+                        <p>
+                            Complete editor demonstration with all features. Shows source code 
+                            examples and integration patterns.
+                        </p>
+                        <span class="badge">Full Featured</span>
+                    </div>
+                </a>
+                
+                <a href="quikdown-editor-simple.html" class="example-card">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">📝</span>
+                            Minimal Setup
+                        </h3>
+                        <p>
+                            The simplest possible implementation - just 5 lines of code!
+                            Perfect starting point for adding an editor.
+                        </p>
+                        <span class="badge">5 Lines!</span>
+                    </div>
+                </a>
+                
+                <a href="quikdown-editor-cdn.html" class="example-card">
+                    <div class="content">
+                        <h3>
+                            <span class="icon">🚀</span>
+                            CDN Integration
+                        </h3>
+                        <p>
+                            Load the editor from CDN with no build tools. 
+                            Complete HTML example with configuration options.
+                        </p>
+                        <span class="badge">No Build</span>
+                    </div>
+                </a>
+            </div>
         </div>
         
         <div class="features">
-            <span class="feature">🚀 <10KB minified</span>
+            <span class="feature">🚀 Zero Dependencies</span>
             <span class="feature">🔒 XSS Protected</span>
-            <span class="feature">📦 Zero Dependencies</span>
+            <span class="feature">📦 Modular Design</span>
             <span class="feature">🎨 Flexible Styling</span>
             <span class="feature">🔌 Plugin System</span>
             <span class="feature">⚡ Fast Parsing</span>
+            <span class="feature">🔄 Bidirectional</span>
+            <span class="feature">✏️ Full Editor</span>
         </div>
         
         <footer>

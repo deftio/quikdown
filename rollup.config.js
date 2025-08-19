@@ -143,5 +143,64 @@ export default [
       banner: banner.replace('quikdown - Lightweight', 'quikdown_bd - Bidirectional')
     },
     plugins: [replaceVersion(), nodeResolve()]
+  },
+  
+  // Quikdown Editor UMD build
+  {
+    input: 'src/quikdown_edit.js',
+    output: {
+      file: 'dist/quikdown_edit.umd.js',
+      format: 'umd',
+      name: 'QuikdownEditor',
+      banner: banner.replace('quikdown - Lightweight', 'Quikdown Editor - Drop-in')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+  
+  // Quikdown Editor UMD minified
+  {
+    input: 'src/quikdown_edit.js',
+    output: {
+      file: 'dist/quikdown_edit.umd.min.js',
+      format: 'umd',
+      name: 'QuikdownEditor',
+      banner: banner.replace('quikdown - Lightweight', 'Quikdown Editor - Drop-in'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+  
+  // Quikdown Editor ESM build
+  {
+    input: 'src/quikdown_edit.js',
+    output: {
+      file: 'dist/quikdown_edit.esm.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'Quikdown Editor - Drop-in')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+  
+  // Quikdown Editor ESM minified
+  {
+    input: 'src/quikdown_edit.js',
+    output: {
+      file: 'dist/quikdown_edit.esm.min.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'Quikdown Editor - Drop-in'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+  
+  // Quikdown Editor CommonJS build
+  {
+    input: 'src/quikdown_edit.js',
+    output: {
+      file: 'dist/quikdown_edit.cjs',
+      format: 'cjs',
+      banner: banner.replace('quikdown - Lightweight', 'Quikdown Editor - Drop-in')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
   }
 ];

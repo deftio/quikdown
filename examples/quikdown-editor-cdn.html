@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown Editor - CDN Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+        
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        h2 { color: #555; margin-top: 30px; }
+        
+        .code-block {
+            background: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        
+        code {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .editor-container {
+            height: 400px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Quikdown Editor - CDN Example</h1>
+    
+    <div class="info">
+        <strong>This page demonstrates loading Quikdown Editor from CDN.</strong><br>
+        No build tools needed - just include the script and go!
+    </div>
+
+    <h2>Live Demo</h2>
+    <div id="my-editor" class="editor-container"></div>
+
+    <h2>Complete HTML Code</h2>
+    <div class="code-block">
+        <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;My Markdown Editor&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;!-- Container for editor --&gt;
+    &lt;div id="editor" style="height: 400px;"&gt;&lt;/div&gt;
+    
+    &lt;!-- Load and initialize (that's it!) --&gt;
+    &lt;script type="module"&gt;
+        import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
+        new QuikdownEditor('#editor');
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+    </div>
+
+    <h2>With Options</h2>
+    <div class="code-block">
+        <pre><code>const editor = new QuikdownEditor('#editor', {
+    mode: 'split',                               // View mode
+    lazy_linefeeds: false,                       // Single \n becomes &lt;br&gt;
+    plugins: { highlightjs: true, mermaid: true }, // Plugins
+    customFences: {
+        'graph': (code) => `&lt;div class="graph"&gt;${code}&lt;/div&gt;`,
+        'math': (code) => `&lt;div class="math"&gt;${code}&lt;/div&gt;`
+    }
+});
+
+// Toggle lazy linefeeds at runtime
+editor.setLazyLinefeeds(true);
+const isLazy = editor.getLazyLinefeeds(); // true</code></pre>
+    </div>
+
+    <h2>Key Features</h2>
+    <ul>
+        <li>✅ <strong>Zero dependencies</strong> - Everything included</li>
+        <li>✅ <strong>No build step</strong> - Works directly in browser</li>
+        <li>✅ <strong>~23KB minified</strong> - Includes everything</li>
+        <li>✅ <strong>Bidirectional editing</strong> - Edit markdown or preview</li>
+        <li>✅ <strong>Plugin support</strong> - Highlight.js and Mermaid built-in</li>
+    </ul>
+
+    <h2>Try Different Modes</h2>
+    <button onclick="editor.setMode('source')">Source Only</button>
+    <button onclick="editor.setMode('split')">Split View</button>
+    <button onclick="editor.setMode('preview')">Rendered Only</button>
+    <button onclick="editor.setLazyLinefeeds(!editor.getLazyLinefeeds()); this.textContent = 'Lazy Linefeeds: ' + (editor.getLazyLinefeeds() ? 'ON' : 'OFF')">Lazy Linefeeds: OFF</button>
+    
+    <script type="module">
+        // Using relative path for local testing, use CDN URL in production:
+        // import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
+        import QuikdownEditor from '../dist/quikdown_edit.esm.min.js';
+        
+        // Create editor with just one line (options are optional)
+        window.editor = new QuikdownEditor('#my-editor', {
+            mode: 'split',
+            plugins: { highlightjs: true, mermaid: true }
+        });
+        
+        // Load some sample content
+        editor.setMarkdown(`# Quikdown Editor from CDN
+
+This editor was loaded directly from CDN with **no build tools**!
+
+## Features Demo
+
+### Code Highlighting
+\`\`\`javascript
+function hello(name) {
+    console.log(\`Hello, \${name}!\`);
+}
+hello('World');
+\`\`\`
+
+### Mermaid Diagrams
+\`\`\`mermaid
+graph LR
+    A[CDN] --> B[Browser]
+    B --> C[Editor Ready!]
+\`\`\`
+
+### Lists and Tasks
+- [x] Load from CDN
+- [x] No build tools needed
+- [x] Instant setup
+- [ ] You try it!
+
+> **Tip:** Edit this content in either panel!`);
+    </script>
+</body>
+</html>

@@ -461,7 +461,7 @@ End of document.`;
   
   describe('API Methods', () => {
     test('should have version property', () => {
-      expect(quikdown_bd.version).toBe('1.0.5');
+      expect(quikdown_bd.version).toBe('1.0.5dev2');
     });
     
     test('should have emitStyles method', () => {

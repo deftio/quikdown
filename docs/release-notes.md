@@ -2,6 +2,32 @@
 
 ## v1.0.5 (In Development)
 
+### 🚀 New: Quikdown Editor
+
+#### Drop-in Markdown Editor Control
+- **New `QuikdownEditor` class**: Complete markdown editor that can be embedded in any webpage
+- **Three view modes**: Source-only, Split view, and Preview-only modes
+- **Bidirectional editing**: Edit markdown or preview and see changes sync in real-time
+- **Plugin support**: Built-in integration with Highlight.js and Mermaid
+- **Theme support**: Light, dark, and auto themes that follow system preferences
+- **Keyboard shortcuts**: Quick mode switching with Ctrl/Cmd+1/2/3
+- **Toolbar actions**: Copy markdown or HTML to clipboard with one click
+- **Mobile responsive**: Automatically adapts layout for mobile devices
+- **Bundle size**: 24.3KB minified (includes embedded quikdown_bd)
+
+#### Editor API
+- Simple constructor: `new QuikdownEditor(container, options)`
+- Methods: `setMarkdown()`, `getMarkdown()`, `getHTML()`, `setMode()`, `setLazyLinefeeds()`, `destroy()`
+- Properties: `markdown`, `html`, `mode`
+- Callbacks: `onChange`, `onModeChange`
+- Full documentation in `docs/quikdown-editor.md`
+
+#### Editor Examples
+- **Full-featured demo**: `examples/qde/index.html`
+- **CDN usage example**: `examples/quikdown-editor-cdn.html`
+- **Simple 5-line setup**: `examples/quikdown-editor-simple.html`
+- Multiple integration examples in documentation
+
 ### 🎉 Major Architecture Refactor
 
 #### Complete Bidirectional Module Refactoring
@@ -15,7 +41,8 @@
 - **Achieved 98%+ overall test coverage**
 - **`quikdown.esm.js`**: 100% line coverage, 100% branch coverage
 - **`quikdown_bd.esm.js`**: 97.97% line coverage, 89.36% function coverage
-- **377 tests** all passing (including comprehensive lazy linefeeds tests)
+- **`quikdown_edit`**: 14 build verification tests all passing
+- **391 tests** all passing (including comprehensive lazy linefeeds tests)
 - Added comprehensive test suites for:
   - Bidirectional conversion round-trips
   - Edge cases and malformed inputs
@@ -26,14 +53,16 @@
   - Task list checkbox states
   - Empty and null inputs
   - DOM element conversions
+  - QuikdownEditor build verification (14 tests)
 
 ### 🔧 Build System Improvements
 - **Fixed CSS regeneration issue**: CSS files now use version number instead of timestamp
   - Prevents CSS files from appearing modified on every build
   - CSS only regenerates when version changes
 - **Bundle sizes** (with lazy_linefeeds feature):
-  - QuikDown Core: 8.5 KB minified (was 7.4KB in v1.0.4)
-  - QuikDown BD: 12.5 KB minified (includes core)
+  - Quikdown Core: 8.5 KB minified (was 7.4KB in v1.0.4)
+  - Quikdown BD: 12.5 KB minified (includes core)
+  - Quikdown Editor: 24.3 KB minified (includes quikdown_bd)
 
 ### 🎯 New Features
 
@@ -80,6 +109,8 @@
 - Kept `src/` directory for production code only
 - Added file size reporting tool (`tools/printSizes.cjs`)
 - Updated bidir-fixes.md documentation with completion status
+- Reorganized examples index page with clear sections for each module
+- Added individual size badges for all three modules in README
 
 ## v1.0.4 (2025-08-18)
 
