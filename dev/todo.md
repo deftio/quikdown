@@ -8,9 +8,9 @@ A small markdown to html parser with fence plugin support
 
 ### High Priority - Missing Features:
 * [ ] quikdown should have a render option to support lazy linefeeds (some content emitters don't have 2 spaces before previous carriage return)
-* [ ] Add keywords to package.json for better NPM discoverability
+* [x] Add keywords to package.json for better NPM discoverability
 * [?] Add a quikdown-cli.js standalone tool that converst markdown to html.  should support all quikdown features like inline styles or passing in your own css (assumes quikdown classes)  
-* [ ] Add a pure cdn example with plugins for highlightjs and mermaid
+* [x] Add a pure cdn example with plugins for highlightjs and mermaid
 
 ### Reduce Code Size (no feature changes)
 * [ ] Investigate further size optimizations (target: < 7KB)
@@ -20,6 +20,7 @@ A small markdown to html parser with fence plugin support
 * [ ] Better handling of mixed indentation
 
 ### Table Improvements:
+* [ ] Test table alignment (left, center, right) - verify it's working correctly
 * [ ] Better handling of malformed tables
 * [ ] More robust table parsing edge cases
 

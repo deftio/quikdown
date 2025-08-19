@@ -194,6 +194,237 @@ describe('quikdown markdown parser', () => {
             const input = 'Line 1  \nLine 2';
             expect(quikdown(input)).toContain('<br class="quikdown-br">');
         });
+        
+        test('should support lazy linefeeds when option is enabled', () => {
+            // Single newline becomes <br> with lazy_linefeeds
+            const input = 'Line 1\nLine 2\nLine 3';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            expect(result).toContain('Line 1<br class="quikdown-br">Line 2<br class="quikdown-br">Line 3');
+            
+            // Without lazy_linefeeds, single newlines don't create breaks
+            const standardResult = quikdown(input);
+            expect(standardResult).not.toContain('<br');
+            expect(standardResult).toContain('<p>Line 1\nLine 2\nLine 3</p>');
+        });
+        
+        test('should preserve paragraph breaks with lazy linefeeds', () => {
+            const input = 'Para 1\n\nPara 2\nLine 2 of para 2';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            // Should have two paragraphs
+            expect(result).toContain('<p>Para 1</p>');
+            expect(result).toContain('<p>Para 2<br class="quikdown-br">Line 2 of para 2</p>');
+        });
+        
+        test('should handle lazy linefeeds with other formatting', () => {
+            const input = '**Bold text**\nNext line\n*Italic text*';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('<strong class="quikdown-strong">Bold text</strong>');
+            expect(result).toContain('<br class="quikdown-br">');
+            expect(result).toContain('<em class="quikdown-em">Italic text</em>');
+        });
+        
+        test('should not add breaks in code blocks with lazy linefeeds', () => {
+            const input = '```\nline 1\nline 2\n```';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            // Code blocks should preserve newlines, not convert to <br>
+            expect(result).toContain('<pre');
+            expect(result).toContain('line 1\nline 2');
+            // Should not have <br> inside code block
+            const codeMatch = result.match(/<pre[^>]*>.*?<\/pre>/s);
+            expect(codeMatch[0]).not.toContain('<br');
+        });
+        
+        test('should handle lists properly with lazy linefeeds', () => {
+            const input = '- Item 1\n- Item 2\n\nNormal text\nwith lazy break';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            // List items should not have breaks between them
+            expect(result).toContain('<ul');
+            expect(result).toContain('<li class="quikdown-li">Item 1</li>');
+            expect(result).toContain('<li class="quikdown-li">Item 2</li>');
+            
+            // But normal text after list should have lazy breaks
+            expect(result).toContain('Normal text<br class="quikdown-br">with lazy break');
+        });
+        
+        test('should work with inline styles and lazy linefeeds', () => {
+            const input = 'Line 1\nLine 2';
+            const result = quikdown(input, { 
+                lazy_linefeeds: true, 
+                inline_styles: true 
+            });
+            
+            // Should have br tags (no style needed for br elements)
+            expect(result).toContain('Line 1<br>Line 2');
+        });
+        
+        test('should handle mixed line break styles with lazy linefeeds', () => {
+            // Two spaces should still work even with lazy linefeeds on
+            const input = 'Force break  \nLazy break\nAnother line';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            // All should have breaks
+            expect(result.match(/<br/g).length).toBe(2);
+        });
+        
+        test('should not add br after headings with lazy linefeeds', () => {
+            const input = '# Heading 1\nText after h1\n## Heading 2\nText after h2\n### Heading 3\nText after h3';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            // Headings should not have <br> after them
+            expect(result).toContain('</h1>');
+            expect(result).toContain('Text after h1');
+            expect(result).toContain('</h2>');
+            expect(result).toContain('Text after h2');
+            expect(result).toContain('</h3>');
+            expect(result).toContain('Text after h3');
+            expect(result).not.toContain('</h1><br');
+            expect(result).not.toContain('</h2><br');
+            expect(result).not.toContain('</h3><br');
+        });
+        
+        test('should not add br after horizontal rules with lazy linefeeds', () => {
+            const input = 'Text before\n---\nText after';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('<hr class="quikdown-hr">');
+            expect(result).not.toContain('<hr class="quikdown-hr"><br');
+            expect(result).toContain('Text before');
+            expect(result).toContain('Text after');
+        });
+        
+        test('should not add br after blockquotes with lazy linefeeds', () => {
+            const input = '> Quote line 1\n> Quote line 2\nText after quote';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('</blockquote>');
+            expect(result).not.toContain('</blockquote><br');
+            expect(result).toContain('Text after quote');
+        });
+        
+        test('should not add br after tables with lazy linefeeds', () => {
+            const input = '| Col1 | Col2 |\n|------|------|\n| A    | B    |\nText after table';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('</table>');
+            expect(result).not.toContain('</table><br');
+            expect(result).toContain('Text after table');
+        });
+        
+        test('should not add br after lists with lazy linefeeds', () => {
+            const input = '- Item 1\n- Item 2\nText after list\n\n1. Ordered 1\n2. Ordered 2\nText after ordered';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('</ul>');
+            expect(result).toContain('</ol>');
+            expect(result).not.toContain('</ul><br');
+            expect(result).not.toContain('</ol><br');
+            expect(result).toContain('Text after list');
+            expect(result).toContain('Text after ordered');
+        });
+        
+        test('should not add br before headings with lazy linefeeds', () => {
+            const input = 'Text before h1\n# Heading 1\nText before h2\n## Heading 2';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('Text before h1');
+            expect(result).toContain('<h1');
+            expect(result).not.toContain('h1<br');
+            expect(result).not.toContain('br><h1');
+        });
+        
+        test('should not add br before blockquotes with lazy linefeeds', () => {
+            const input = 'Text before quote\n> Quoted text';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('Text before quote');
+            expect(result).toContain('<blockquote');
+            expect(result).not.toContain('br><blockquote');
+        });
+        
+        test('should not add br before lists with lazy linefeeds', () => {
+            const input = 'Text before list\n- Item 1\n- Item 2';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('Text before list');
+            expect(result).toContain('<ul');
+            expect(result).not.toContain('br><ul');
+        });
+        
+        test('should not add br before tables with lazy linefeeds', () => {
+            const input = 'Text before table\n| Col1 | Col2 |\n|------|------|\n| A    | B    |';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('Text before table');
+            expect(result).toContain('<table');
+            expect(result).not.toContain('br><table');
+        });
+        
+        test('should not add br before horizontal rules with lazy linefeeds', () => {
+            const input = 'Text before rule\n---';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('Text before rule');
+            expect(result).toContain('<hr');
+            expect(result).not.toContain('br><hr');
+        });
+        
+        test('should handle inline elements with lazy linefeeds', () => {
+            const input = '**Bold** text\n*Italic* text\n`code` text\n~~strike~~ text';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('<strong class="quikdown-strong">Bold</strong> text<br');
+            expect(result).toContain('<em class="quikdown-em">Italic</em> text<br');
+            expect(result).toContain('<code class="quikdown-code">code</code> text<br');
+            expect(result).toContain('<del class="quikdown-del">strike</del> text');
+        });
+        
+        test('should handle links and images with lazy linefeeds', () => {
+            const input = '[Link](url) text\n![Alt](img.jpg) text\nhttps://example.com text';
+            const result = quikdown(input, { lazy_linefeeds: true });
+            
+            expect(result).toContain('<a class="quikdown-a" href="url">Link</a> text<br');
+            expect(result).toContain('<img class="quikdown-img" src="img.jpg" alt="Alt"> text<br');
+            expect(result).toContain('<a class="quikdown-a" href="https://example.com"');
+        });
+        
+        // Comparison tests: lazy_linefeeds false vs true
+        test('should compare paragraph handling with lazy linefeeds on vs off', () => {
+            const input = 'Para 1 line 1\nPara 1 line 2\n\nPara 2 line 1\nPara 2 line 2';
+            
+            const lazyOff = quikdown(input, { lazy_linefeeds: false });
+            const lazyOn = quikdown(input, { lazy_linefeeds: true });
+            
+            // With lazy off: single newlines don't create breaks
+            expect(lazyOff).toContain('<p>Para 1 line 1\nPara 1 line 2</p>');
+            expect(lazyOff).toContain('<p>Para 2 line 1\nPara 2 line 2</p>');
+            expect(lazyOff).not.toContain('<br');
+            
+            // With lazy on: single newlines become breaks
+            expect(lazyOn).toContain('Para 1 line 1<br class="quikdown-br">Para 1 line 2');
+            expect(lazyOn).toContain('Para 2 line 1<br class="quikdown-br">Para 2 line 2');
+        });
+        
+        test('should compare block element handling with lazy linefeeds on vs off', () => {
+            const input = '# Heading\nText after heading\n\n> Quote\nText after quote';
+            
+            const lazyOff = quikdown(input, { lazy_linefeeds: false });
+            const lazyOn = quikdown(input, { lazy_linefeeds: true });
+            
+            // Both should handle block elements the same way - no br after blocks
+            expect(lazyOff).toContain('</h1>');
+            expect(lazyOff).toContain('</blockquote>');
+            expect(lazyOff).not.toContain('</h1><br');
+            expect(lazyOff).not.toContain('</blockquote><br');
+            
+            expect(lazyOn).toContain('</h1>');
+            expect(lazyOn).toContain('</blockquote>');
+            expect(lazyOn).not.toContain('</h1><br');
+            expect(lazyOn).not.toContain('</blockquote><br');
+        });
     });
     
     describe('XSS Protection', () => {

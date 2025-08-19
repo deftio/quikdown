@@ -14,6 +14,8 @@
  * @param {Function} options.fence_plugin - Custom renderer for fenced code blocks
  *                   (content, fence_string) => html string
  * @param {boolean} options.inline_styles - If true, uses inline styles instead of classes
+ * @param {boolean} options.bidirectional - If true, adds data-qd attributes for source tracking
+ * @param {boolean} options.lazy_linefeeds - If true, single newlines become <br> tags
  * @returns {string} - The rendered HTML
  */
 
@@ -76,7 +78,7 @@ function quikdown(markdown, options = {}) {
         return '';
     }
     
-    const { fence_plugin, inline_styles = false, bidirectional = false } = options;
+    const { fence_plugin, inline_styles = false, bidirectional = false, lazy_linefeeds = false } = options;
     const styles = QUIKDOWN_STYLES; // Use module-level styles
     const getAttr = createGetAttr(inline_styles, styles); // Create getAttr once
 
@@ -222,12 +224,67 @@ function quikdown(markdown, options = {}) {
         html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(marker)}>$1</${tag}>`);
     });
     
-    // Line breaks (two spaces at end of line)
-    html = html.replace(/  $/gm, `<br${getAttr('br')}>`);
-    
-    // Paragraphs (double newlines)
-    html = html.replace(/\n\n+/g, '</p><p>');
-    html = '<p>' + html + '</p>';
+    // Line breaks
+    if (lazy_linefeeds) {
+        // Lazy linefeeds: single newline becomes <br> (except between paragraphs and after/before block elements)
+        
+        // First, protect complete block structures (tables and lists with their internal newlines)
+        const protectedBlocks = [];
+        let blockIndex = 0;
+        
+        // Protect complete table structures
+        html = html.replace(/<table[^>]*>[\s\S]*?<\/table>/g, (match) => {
+            const placeholder = `§PROTECTED_BLOCK_${blockIndex}§`;
+            protectedBlocks[blockIndex] = match;
+            blockIndex++;
+            return placeholder;
+        });
+        
+        // Protect complete list structures
+        html = html.replace(/<[uo]l[^>]*>[\s\S]*?<\/[uo]l>/g, (match) => {
+            const placeholder = `§PROTECTED_BLOCK_${blockIndex}§`;
+            protectedBlocks[blockIndex] = match;
+            blockIndex++;
+            return placeholder;
+        });
+        
+        // Handle double newlines for paragraphs
+        html = html.replace(/\n\n+/g, '§PARAGRAPH§');
+        
+        // Don't add <br> after block elements
+        html = html.replace(/(<\/(?:h[1-6]|blockquote|pre)>)\n/g, '$1§BLOCKBREAK§');
+        html = html.replace(/(<(?:h[1-6]|blockquote|pre)[^>]*>)\n/g, '$1§BLOCKBREAK§');
+        html = html.replace(/(<hr[^>]*>)\n/g, '$1§BLOCKBREAK§');
+        
+        // Don't add <br> before block elements
+        html = html.replace(/\n(<(?:h[1-6]|blockquote|pre|hr)[^>]*>)/g, '§BLOCKBREAK§$1');
+        html = html.replace(/\n(§PROTECTED_BLOCK_\d+§)/g, '§BLOCKBREAK§$1');
+        html = html.replace(/(§PROTECTED_BLOCK_\d+§)\n/g, '$1§BLOCKBREAK§');
+        
+        // Convert remaining single newlines to <br>
+        html = html.replace(/\n/g, `<br${getAttr('br')}>`);
+        
+        // Restore block breaks as simple newlines
+        html = html.replace(/§BLOCKBREAK§/g, '\n');
+        
+        // Restore paragraph breaks
+        html = html.replace(/§PARAGRAPH§/g, '</p><p>');
+        
+        // Restore protected blocks
+        protectedBlocks.forEach((block, i) => {
+            html = html.replace(`§PROTECTED_BLOCK_${i}§`, block);
+        });
+        
+        // Wrap in paragraph tags
+        html = '<p>' + html + '</p>';
+    } else {
+        // Standard: two spaces at end of line for line breaks
+        html = html.replace(/  $/gm, `<br${getAttr('br')}>`);
+        
+        // Paragraphs (double newlines)
+        html = html.replace(/\n\n+/g, '</p><p>');
+        html = '<p>' + html + '</p>';
+    }
     
     // Clean up empty paragraphs and unwrap block elements
     const cleanupPatterns = [

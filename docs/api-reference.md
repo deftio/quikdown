@@ -20,6 +20,7 @@ Converts markdown text to HTML.
 | `inline_styles` | `boolean` | `false` | Use inline styles instead of CSS classes |
 | `fence_plugin` | `function` | `undefined` | Custom handler for fenced code blocks |
 | `bidirectional` | `boolean` | `false` | Add data-qd attributes for source tracking (v1.0.5+) |
+| `lazy_linefeeds` | `boolean` | `false` | Single newlines become `<br>` tags (v1.0.5+) |
 | `allow_unsafe_urls` | `boolean` | `false` | Allow javascript: and other potentially unsafe URLs |
 
 #### Returns
@@ -277,6 +278,35 @@ quikdown('**bold**', { bidirectional: true });
 - Want to preserve exact markdown syntax
 - Using with `quikdown_bd` module
 
+### `lazy_linefeeds` Option
+Enables lazy line break handling where single newlines become `<br>` tags.
+#### `lazy_linefeeds: false` (Default)
+Standard markdown behavior - only double spaces before newline create breaks:
+```javascript
+quikdown('Line 1\nLine 2');
+// Output: <p>Line 1\nLine 2</p>
+
+quikdown('Line 1  \nLine 2');  // Two spaces before \n
+// Output: <p>Line 1<br class="quikdown-br">Line 2</p>
+```
+#### `lazy_linefeeds: true`
+Single newlines automatically become line breaks:
+```javascript
+quikdown('Line 1\nLine 2', { lazy_linefeeds: true });
+// Output: <p>Line 1<br class="quikdown-br">Line 2</p>
+```
+**Perfect for:**
+- Chat applications
+- LLM/AI output formatting
+- User-generated content where users expect Enter to create a new line
+- Converting informal text to HTML
+
+**Behavior:**
+- Single `\n` → `<br>` tag
+- Double `\n\n` → Paragraph break (unchanged)
+- Code blocks preserve newlines (no `<br>` conversion)
+- Lists maintain proper structure
+
 ### `inline_styles` Option
 
 Controls how styling is applied to generated HTML.
@@ -448,6 +478,7 @@ Converts markdown to HTML with source tracking for bidirectional conversion. Onl
 | `inline_styles` | `boolean` | `false` | Use inline styles instead of CSS classes |
 | `fence_plugin` | `function` | `undefined` | Custom handler for fenced code blocks |
 | `bidirectional` | `boolean` | `true` | Add data-qd attributes for source tracking |
+| `lazy_linefeeds` | `boolean` | `false` | Single newlines become `<br>` tags (v1.0.5+) |
 
 #### Returns
 

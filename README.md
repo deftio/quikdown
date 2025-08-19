@@ -40,7 +40,8 @@ A lightweight, fast markdown parser with built-in XSS protection and optional bi
 - 📝 **CommonMark subset** - Supports essential markdown features
 - ✅ **Task Lists** - GitHub-style checkboxes
 - 🔗 **Autolinks** - Automatic URL detection
-- 🔄 **Bidirectional** - Convert HTML back to Markdown (requires `quikdown_bd` module) 
+- 🔄 **Bidirectional** - Convert HTML back to Markdown (requires `quikdown_bd` module)
+- 💬 **Lazy Linefeeds** - Single newlines become line breaks (perfect for chat/LLM output) 
 
 ## Installation
 
@@ -212,6 +213,19 @@ print("Hello, world!")
 - **Line breaks**: Two spaces at end of line or `<br>`
 
 ## Configuration Options
+
+### `lazy_linefeeds` (boolean) 
+When `true`, single newlines become `<br>` tags. Perfect for chat/LLM applications.
+
+```javascript
+// With lazy_linefeeds: false (default)
+quikdown('Line 1\nLine 2');
+// Output: <p>Line 1\nLine 2</p>
+
+// With lazy_linefeeds: true
+quikdown('Line 1\nLine 2', { lazy_linefeeds: true });
+// Output: <p>Line 1<br>Line 2</p>
+```
 
 ### `inline_styles` (boolean)
 When `true`, uses inline styles for formatting. When `false`, uses CSS classes.

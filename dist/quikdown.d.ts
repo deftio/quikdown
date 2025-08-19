@@ -30,6 +30,20 @@ declare module 'quikdown' {
      * @default false
      */
     allow_unsafe_urls?: boolean;
+    
+    /**
+     * If true, adds data-qd attributes for bidirectional conversion.
+     * Enables HTML to Markdown conversion.
+     * @default false
+     */
+    bidirectional?: boolean;
+    
+    /**
+     * If true, single newlines become <br> tags.
+     * Useful for chat/LLM applications where Enter should create a line break.
+     * @default false
+     */
+    lazy_linefeeds?: boolean;
   }
 
   /**

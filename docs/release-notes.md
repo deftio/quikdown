@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.0.5dev1 (In Development)
+## v1.0.5 (In Development)
 
 ### 🎉 Major Architecture Refactor
 
@@ -35,12 +35,32 @@
   - QuikDown Core: 8.0 KB minified
   - QuikDown BD: 11.7 KB minified (includes core)
 
+### 🎯 New Features
+
+#### NPM Discoverability
+- **Added comprehensive keywords** to package.json for better NPM search visibility
+- Keywords cover: markdown parsing, chat/LLM use cases, bidirectional editing, and more
+
+#### Lazy Linefeeds Support
+- **Added `lazy_linefeeds` option** for chat/LLM applications
+- When enabled, single newlines (`\n`) automatically become `<br>` tags
+- Perfect for chat interfaces where users expect Enter to create a new line
+- Preserves double newlines for paragraph breaks
+- Code blocks and lists maintain proper formatting
+- Example:
+  ```javascript
+  quikdown('Line 1\nLine 2', { lazy_linefeeds: true });
+  // Output: <p>Line 1<br>Line 2</p>
+  ```
+
 ### 📚 Documentation Updates
 
 #### API Documentation
 - Added `bidirectional` option to core quikdown API reference
+- Added `lazy_linefeeds` option documentation with examples
 - Added `allow_unsafe_urls` option documentation
 - Clarified that `quikdown_bd` automatically sets `bidirectional: true`
+- Updated TypeScript definitions with new options
 - Updated examples to reflect new architecture
 
 #### Bidirectional Documentation

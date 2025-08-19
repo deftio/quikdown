@@ -416,6 +416,7 @@
             <button class="example-btn active" onclick="loadExample('comprehensive')">Full Demo</button>
             <button class="example-btn" onclick="loadExample('basic')">Basic Markdown</button>
             <button class="example-btn" onclick="loadExample('bidirectional')">Bidirectional Test</button>
+            <button class="example-btn" onclick="loadExample('lazy')">Lazy Linefeeds</button>
             <button class="example-btn" onclick="loadExample('fence')">Code & Plugins</button>
             <button class="example-btn" onclick="loadExample('tables')">Tables</button>
             <button class="example-btn" onclick="loadExample('tasks')">Task Lists</button>
@@ -442,6 +443,10 @@
             <label class="option" title="Enable editing in the rendered output">
                 <input type="checkbox" id="bidirectional" checked onchange="render('markdown')">
                 <span>Bidirectional</span>
+            </label>
+            <label class="option" title="Single newlines become line breaks">
+                <input type="checkbox" id="lazy-linefeeds" onchange="render('markdown')">
+                <span>Lazy Linefeeds</span>
             </label>
         </div>
     </div>
@@ -863,6 +868,49 @@ Carol | 35 | Chicago
 - [ ] Add more themes
 - [ ] Optimize bundle size`,
 
+            lazy: `# Lazy Linefeeds Demo
+
+## Single Newlines Create Line Breaks
+
+With lazy linefeeds enabled:
+This line
+And this line
+All appear on separate lines!
+
+Without lazy linefeeds:
+You need two spaces at the end  
+To create a line break.
+
+## Still Works with Paragraphs
+
+Double newlines still create paragraphs.
+
+Like this one!
+
+## Code Blocks Preserved
+
+\`\`\`javascript
+// Newlines in code blocks
+// are preserved as-is
+function test() {
+    return true;
+}
+\`\`\`
+
+## Lists Work Normally
+
+- Item 1
+- Item 2
+- Item 3
+
+## Perfect for Chat/LLM Output
+
+When users press Enter
+They expect a new line
+Not a continuous paragraph!
+
+> **Tip:** Toggle the "Lazy Linefeeds" checkbox to see the difference!`,
+
             bidirectional: `# Bidirectional Editing Test
 
 ## Try Editing Either Side!
@@ -1030,6 +1078,7 @@ All the above are rendered as escaped text, not executable HTML.
             const showRaw = document.getElementById('show-raw').checked;
             const darkMode = document.getElementById('dark-mode').checked;
             const bidirectional = document.getElementById('bidirectional').checked;
+            const lazyLinefeeds = document.getElementById('lazy-linefeeds').checked;
             const htmlOutput = document.getElementById('html-output');
             
             // Update contenteditable based on bidirectional mode
@@ -1049,7 +1098,8 @@ All the above are rendered as escaped text, not executable HTML.
                 let html = parser(input, {
                     inline_styles: inlineStyles,
                     fence_plugin: fencePlugin,
-                    bidirectional: bidirectional
+                    bidirectional: bidirectional,
+                    lazy_linefeeds: lazyLinefeeds
                 });
                 
                 // Apply dark mode transformations to inline styles if needed
