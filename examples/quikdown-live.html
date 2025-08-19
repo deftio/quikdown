@@ -196,6 +196,17 @@
         
         #html-output {
             overflow: auto;
+            outline: none;
+            min-height: 100%;
+        }
+        
+        #html-output[contenteditable="true"] {
+            background: rgba(102, 126, 234, 0.02);
+            cursor: text;
+        }
+        
+        #html-output[contenteditable="true"]:focus {
+            background: rgba(102, 126, 234, 0.05);
         }
         
         #raw-html {
@@ -390,7 +401,7 @@
     <header>
         <div class="header-left">
             <h1>quikdown</h1>
-            <span class="version">v1.0.2</span>
+            <span class="version">v1.0.5dev1</span>
         </div>
         <div class="header-links">
             <a href="https://github.com/deftio/quikdown" target="_blank">GitHub</a>
@@ -404,6 +415,7 @@
         <div class="example-buttons">
             <button class="example-btn active" onclick="loadExample('comprehensive')">Full Demo</button>
             <button class="example-btn" onclick="loadExample('basic')">Basic Markdown</button>
+            <button class="example-btn" onclick="loadExample('bidirectional')">Bidirectional Test</button>
             <button class="example-btn" onclick="loadExample('fence')">Code & Plugins</button>
             <button class="example-btn" onclick="loadExample('tables')">Tables</button>
             <button class="example-btn" onclick="loadExample('tasks')">Task Lists</button>
@@ -416,16 +428,20 @@
                 <span>Show HTML</span>
             </label>
             <label class="option">
-                <input type="checkbox" id="inline-styles" onchange="render()">
+                <input type="checkbox" id="inline-styles" onchange="render('markdown')">
                 <span>Inline Styles</span>
             </label>
             <label class="option">
-                <input type="checkbox" id="enable-plugins" checked onchange="render()">
+                <input type="checkbox" id="enable-plugins" checked onchange="render('markdown')">
                 <span>Enable Plugins</span>
             </label>
             <label class="option">
                 <input type="checkbox" id="dark-mode" onchange="toggleTheme()">
                 <span>Dark Mode</span>
+            </label>
+            <label class="option" title="Enable editing in the rendered output">
+                <input type="checkbox" id="bidirectional" checked onchange="render('markdown')">
+                <span>Bidirectional</span>
             </label>
         </div>
     </div>
@@ -447,7 +463,7 @@
                 <span class="stats" id="render-time"></span>
             </div>
             <div class="panel-content" id="output-container">
-                <div id="html-output"></div>
+                <div id="html-output" contenteditable="false"></div>
                 <pre id="raw-html"></pre>
             </div>
         </div>
@@ -455,6 +471,7 @@
     
     <!-- Load quikdown from dist -->
     <script src="../dist/quikdown.umd.min.js"></script>
+    <script src="../dist/quikdown_bd.umd.min.js"></script>
     
     <script>
         // Helper function to escape HTML
@@ -846,6 +863,35 @@ Carol | 35 | Chicago
 - [ ] Add more themes
 - [ ] Optimize bundle size`,
 
+            bidirectional: `# Bidirectional Editing Test
+
+## Try Editing Either Side!
+
+With **bidirectional mode** enabled, you can:
+- Edit this text in the *markdown* panel (left)
+- Edit directly in the *rendered* panel (right)
+- Changes sync automatically between both!
+
+### Task List (Click checkboxes!)
+
+- [ ] Click these checkboxes in the preview
+- [ ] Watch them update in markdown
+- [ ] Edit the text directly
+- [ ] It all stays in sync!
+
+### Table (Edit cells directly!)
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Edit here | ✅ | Click to edit |
+| Or here | ⭐ | Works great! |
+
+> **Tip:** Try editing this blockquote directly in the preview panel!
+
+---
+
+*Bidirectional editing powered by QuikDown* 🔄`,
+
             security: `# Security Features Demo
 
 ## XSS Protection
@@ -920,13 +966,19 @@ All the above are rendered as escaped text, not executable HTML.
                 return undefined; // Use default rendering
             }
             
+            const bidirectional = document.getElementById('bidirectional').checked;
+            
             if (language === 'mermaid') {
                 const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                // Escape the code for the data attribute
+                const escapedCode = code.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                
                 // Store the content to render after DOM update
                 setTimeout(() => {
                     const element = document.getElementById(id);
-                    if (element) {
+                    if (element && element.parentElement) {
                         mermaid.render(id + '-svg', code).then(result => {
+                            // Keep the pre element but update its content
                             element.innerHTML = result.svg;
                         }).catch(err => {
                             console.error('Mermaid render error:', err);
@@ -934,13 +986,29 @@ All the above are rendered as escaped text, not executable HTML.
                         });
                     }
                 }, 0);
-                return `<div class="mermaid" id="${id}">Loading diagram...</div>`;
+                
+                // For bidirectional, preserve the original markdown in data attributes
+                if (bidirectional) {
+                    return `<div class="mermaid-container" data-qd-fence="\`\`\`" data-qd-lang="mermaid">
+                        <pre class="mermaid" id="${id}" data-qd-source="${escapedCode}">Loading diagram...</pre>
+                    </div>`;
+                } else {
+                    return `<div class="mermaid" id="${id}">Loading diagram...</div>`;
+                }
             }
             
             if (language && hljs.getLanguage(language)) {
                 try {
                     const highlighted = hljs.highlight(code, { language }).value;
-                    return `<pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>`;
+                    // For bidirectional, let quikdown handle the attributes
+                    if (bidirectional) {
+                        // Return undefined to let quikdown handle it with proper data-qd attributes
+                        // but only if we want highlighting applied by quikdown's default
+                        // Instead, we'll apply highlighting but preserve structure
+                        return `<pre data-qd-fence="\`\`\`" data-qd-lang="${language}"><code class="hljs language-${language}">${highlighted}</code></pre>`;
+                    } else {
+                        return `<pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>`;
+                    }
                 } catch (err) {
                     // Fall back to default
                 }
@@ -949,19 +1017,39 @@ All the above are rendered as escaped text, not executable HTML.
             return undefined; // Use default rendering
         }
         
+        // Track if we're updating to prevent infinite loops
+        let isUpdating = false;
+        
         // Render function
-        function render() {
+        function render(source = 'markdown') {
+            if (isUpdating && source === 'markdown') return;
+            
             const startTime = performance.now();
             const input = document.getElementById('markdown-input').value;
             const inlineStyles = document.getElementById('inline-styles').checked;
             const showRaw = document.getElementById('show-raw').checked;
             const darkMode = document.getElementById('dark-mode').checked;
+            const bidirectional = document.getElementById('bidirectional').checked;
+            const htmlOutput = document.getElementById('html-output');
+            
+            // Update contenteditable based on bidirectional mode
+            htmlOutput.contentEditable = bidirectional ? 'true' : 'false';
+            
+            // Update output label to indicate if editable
+            document.getElementById('output-label').textContent = 
+                showRaw ? 'HTML Output' : 
+                bidirectional ? 'Rendered Output (Editable)' : 
+                'Rendered Output';
             
             try {
+                // Use quikdown_bd if bidirectional is enabled, otherwise use regular quikdown
+                const parser = bidirectional && typeof quikdown_bd !== 'undefined' ? quikdown_bd : quikdown;
+                
                 // When using inline styles with dark mode, we need to post-process the HTML
-                let html = quikdown(input, {
+                let html = parser(input, {
                     inline_styles: inlineStyles,
-                    fence_plugin: fencePlugin
+                    fence_plugin: fencePlugin,
+                    bidirectional: bidirectional
                 });
                 
                 // Apply dark mode transformations to inline styles if needed
@@ -988,7 +1076,12 @@ All the above are rendered as escaped text, not executable HTML.
                     });
                 }
                 
-                document.getElementById('html-output').innerHTML = html;
+                // Only update HTML if source is markdown (not from HTML editing)
+                if (source === 'markdown') {
+                    isUpdating = true;
+                    document.getElementById('html-output').innerHTML = html;
+                    isUpdating = false;
+                }
                 document.getElementById('raw-html').textContent = html;
                 
                 // Update stats
@@ -1016,7 +1109,7 @@ All the above are rendered as escaped text, not executable HTML.
             });
             event.target.classList.add('active');
             
-            render();
+            render('markdown');
         }
         
         // Toggle raw HTML view
@@ -1046,12 +1139,47 @@ All the above are rendered as escaped text, not executable HTML.
             
             // Re-render if using inline styles to apply theme colors
             if (inlineStyles) {
-                render();
+                render('markdown');
+            }
+        }
+        
+        // Convert HTML back to Markdown when edited
+        function convertHtmlToMarkdown() {
+            if (!document.getElementById('bidirectional').checked) return;
+            if (isUpdating) return;
+            
+            const htmlOutput = document.getElementById('html-output');
+            
+            try {
+                isUpdating = true;
+                // Use quikdown_bd.toMarkdown to convert back
+                if (typeof quikdown_bd !== 'undefined' && quikdown_bd.toMarkdown) {
+                    const markdown = quikdown_bd.toMarkdown(htmlOutput);
+                    document.getElementById('markdown-input').value = markdown;
+                    
+                    // Update raw HTML display
+                    document.getElementById('raw-html').textContent = htmlOutput.innerHTML;
+                }
+                isUpdating = false;
+            } catch (err) {
+                console.error('Error converting HTML to Markdown:', err);
+                isUpdating = false;
             }
         }
         
         // Auto-render on input
-        document.getElementById('markdown-input').addEventListener('input', render);
+        document.getElementById('markdown-input').addEventListener('input', () => render('markdown'));
+        
+        // Listen for changes in the HTML output when bidirectional is enabled
+        document.getElementById('html-output').addEventListener('input', convertHtmlToMarkdown);
+        
+        // Handle checkbox clicks in rendered output
+        document.getElementById('html-output').addEventListener('click', (e) => {
+            if (e.target.type === 'checkbox' && document.getElementById('bidirectional').checked) {
+                // Allow checkbox to toggle then convert back to markdown
+                setTimeout(convertHtmlToMarkdown, 10);
+            }
+        });
         
         // Initialize with comprehensive example
         document.getElementById('markdown-input').value = examples.comprehensive;
@@ -1073,7 +1201,7 @@ All the above are rendered as escaped text, not executable HTML.
         }
         
         // Now render with the theme applied
-        render();
+        render('markdown');
     </script>
 </body>
 </html>

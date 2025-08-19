@@ -39,9 +39,17 @@ A small markdown to html parser with fence plugin support
 * [ ] Support for definition lists (maybe)
 * [ ] Lazy line break option (treat single \n as <br> in certain contexts)
 
+
 ## 🤔 Under Consideration
 
 These items need more thought before implementation:
+
+* [ ] make a js control quikdown_edit.js which is a full html drop in control.  with example
+  * should pull in quikdown and have src/split/rendered views in a single div via buttons
+  * manages all deps or uses built-in styles
+  * has option to load hljs,mermaid,etc dynmacally in constructor
+  * has setters/getters for source content 
+  * copy buttons for source, editor content
 
 * HTML passthrough option - Currently using fence plugins for this (safer)
 * Complex emphasis (`***bold+italic***`) - May add too much complexity

@@ -71,6 +71,10 @@ Or via CDN:
 
 > **Production tip:** Pin to a specific version for stability (e.g., `https://unpkg.com/quikdown@1.0.4/dist/quikdown.esm.min.js`)
 
+### Complete CDN Example
+
+See our [complete CDN demo](examples/quikdown-cdn-demo.html) that includes QuikDown with Highlight.js and Mermaid - all loaded from CDN. Perfect for copying as a starting template!
+
 ## Quick Start
 
 ### Basic Usage (Standard - One-way conversion)

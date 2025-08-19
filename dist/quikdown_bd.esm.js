@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.0.5dev1
+ * @version 1.0.5
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -16,7 +16,7 @@
  */
 
 // Version will be injected at build time  
-const quikdownVersion = '1.0.5dev1';
+const quikdownVersion = '1.0.5';
 
 // Constants for reuse
 const CLASS_PREFIX = 'quikdown-';
@@ -749,7 +749,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
                     const fence = node.getAttribute('data-qd-fence') || '```';
                     const lang = node.getAttribute('data-qd-lang') || 'mermaid';
                     
-                    // First check for data-qd-source attribute
+                    // First check for data-qd-source attribute on the container
                     const source = node.getAttribute('data-qd-source');
                     if (source) {
                         // Decode HTML entities from the attribute (mainly &quot;)
@@ -757,6 +757,18 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
                         temp.innerHTML = source;
                         const code = temp.value;
                         return `${fence}${lang}\n${code}\n${fence}\n\n`;
+                    }
+                    
+                    // Check for source on the pre.mermaid element
+                    const mermaidPre = node.querySelector('pre.mermaid');
+                    if (mermaidPre) {
+                        const preSource = mermaidPre.getAttribute('data-qd-source');
+                        if (preSource) {
+                            const temp = document.createElement('textarea');
+                            temp.innerHTML = preSource;
+                            const code = temp.value;
+                            return `${fence}${lang}\n${code}\n${fence}\n\n`;
+                        }
                     }
                     
                     // Fallback: Look for the legacy .mermaid-source element

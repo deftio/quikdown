@@ -8,6 +8,11 @@
 import quikdown from '../dist/quikdown.esm.js';
 import fs from 'fs';
 import path from 'path';
+import { readFileSync } from 'fs';
+
+// Get version from package.json
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf8'));
+const version = packageJson.version;
 
 /**
  * Parse minified CSS and format it nicely
@@ -121,7 +126,7 @@ const lightTheme = `/**
  * Theme with container-based scoping.
  * Usage: <div class="quikdown-light">...content...</div>
  * 
- * @generated ${new Date().toISOString()}
+ * @version ${version}
  * @source tools/generateThemeCSS.js
  */
 
@@ -156,7 +161,7 @@ const darkTheme = `/**
  * Theme with container-based scoping.
  * Usage: <div class="quikdown-dark">...content...</div>
  * 
- * @generated ${new Date().toISOString()}
+ * @version ${version}
  * @source tools/generateThemeCSS.js
  */
 

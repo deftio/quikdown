@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuikDown CDN Demo - Simple Integration Example</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    
+    <!-- QuikDown CSS from CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/quikdown@latest/dist/quikdown.light.min.css">
+    
+    <!-- Highlight.js for syntax highlighting from CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <!-- Mermaid for diagrams from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    
+    <style>
+        /* Simple, clean styles for the demo */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            line-height: 1.6;
+            color: #212529;
+        }
+        
+        .header {
+            background: white;
+            border-bottom: 2px solid #007acc;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .tabs {
+            background: white;
+            border-bottom: 1px solid #ddd;
+            padding: 0 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .tab-button {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .tab-button:hover {
+            color: #007acc;
+        }
+        
+        .tab-button.active {
+            color: #007acc;
+            border-bottom-color: #007acc;
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Editor Tab Styles */
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 200px);
+            max-height: 600px;
+        }
+        
+        .editor-panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .editor-header {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .editor-content {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+        
+        #markdown-input {
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            color: #212529;
+            background: white;
+        }
+        
+        #preview {
+            padding: 16px;
+            height: 100%;
+            overflow-y: auto;
+            outline: none;
+        }
+        
+        #preview:focus {
+            background: rgba(0, 122, 204, 0.05);
+        }
+        
+        /* Source Tab Styles */
+        .source-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        
+        .source-section {
+            margin-bottom: 30px;
+        }
+        
+        .source-section h3 {
+            color: #333;
+            font-size: 18px;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #007acc;
+        }
+        
+        .source-section pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.4;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .source-section code {
+            font-family: 'Courier New', monospace;
+            color: #212529;
+        }
+        
+        .info-box {
+            background: #e8f4fd;
+            border-left: 4px solid #007acc;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        
+        .info-box h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        .info-box ul {
+            margin: 10px 0 0 20px;
+        }
+        
+        /* Mermaid diagram styles */
+        .mermaid-container {
+            margin: 1rem 0;
+            text-align: center;
+        }
+        
+        .mermaid {
+            display: inline-block;
+        }
+        
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+            
+            .editor-panel {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 QuikDown CDN Demo</h1>
+        <p>A simple, clean example of integrating QuikDown from CDN with Highlight.js and Mermaid</p>
+    </div>
+    
+    <div class="tabs">
+        <button class="tab-button active" onclick="showTab('editor')">Live Editor</button>
+        <button class="tab-button" onclick="showTab('source')">View Source</button>
+    </div>
+    
+    <!-- Editor Tab -->
+    <div id="editor-tab" class="tab-content active">
+        <div class="editor-container">
+            <div class="editor-panel">
+                <div class="editor-header">📝 Markdown Input</div>
+                <div class="editor-content">
+                    <textarea id="markdown-input"># QuikDown CDN Demo
+
+## Simple Integration
+
+This demo shows how easy it is to use **QuikDown** from a CDN with:
+- ✅ Syntax highlighting via Highlight.js
+- ✅ Diagram rendering via Mermaid
+- ✅ Bidirectional conversion support
+
+### Code Example
+
+```javascript
+// Everything loads from CDN - no build step needed!
+import quikdown from 'https://unpkg.com/quikdown@latest/dist/quikdown.esm.min.js';
+
+const html = quikdown('**Hello** world!');
+console.log(html);
+```
+
+### Mermaid Diagram
+
+```mermaid
+graph LR
+    A[Markdown] --> B[QuikDown]
+    B --> C[HTML]
+    C --> D[Display]
+```
+
+### Edit Me!
+
+Try editing this text directly in the preview panel on the right! 
+With bidirectional support, your changes will sync back to the markdown.
+
+### Table Example
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Markdown → HTML | ✅ | Fast & efficient |
+| Syntax Highlighting | ✅ | Via Highlight.js |
+| Diagrams | ✅ | Via Mermaid |
+
+### Task List
+
+- [x] Load QuikDown from CDN
+- [x] Add syntax highlighting
+- [x] Add Mermaid support
+- [ ] Build your app!
+
+> **Pro tip:** View the source to see how simple the integration is!
+
+---
+
+*Powered by QuikDown* 🎉</textarea>
+                </div>
+            </div>
+            
+            <div class="editor-panel">
+                <div class="editor-header">👁️ HTML Preview (Editable)</div>
+                <div class="editor-content">
+                    <div id="preview" class="quikdown-light" contenteditable="true"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Source Tab -->
+    <div id="source-tab" class="tab-content">
+        <div class="source-container">
+            <div class="info-box">
+                <h4>📋 Integration Steps</h4>
+                <ul>
+                    <li>Include QuikDown CSS and JavaScript from CDN</li>
+                    <li>Include Highlight.js and Mermaid from CDN</li>
+                    <li>Create a simple fence plugin for code highlighting</li>
+                    <li>Call quikdown() with your markdown</li>
+                </ul>
+            </div>
+            
+            <div class="source-section">
+                <h3>Complete Integration with Bidirectional Support</h3>
+                <pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;!-- QuikDown CSS --&gt;
+    &lt;link rel="stylesheet" href="https://unpkg.com/quikdown@latest/dist/quikdown.light.min.css"&gt;
+    
+    &lt;!-- Optional: Highlight.js for syntax highlighting --&gt;
+    &lt;link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css"&gt;
+    &lt;script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"&gt;&lt;/script&gt;
+    
+    &lt;!-- Optional: Mermaid for diagrams --&gt;
+    &lt;script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"&gt;&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;!-- Your HTML elements --&gt;
+    &lt;textarea id="markdown-input" style="width: 45%; height: 400px;"&gt;# Your markdown&lt;/textarea&gt;
+    &lt;div id="preview" class="quikdown-light" style="width: 45%; height: 400px; overflow: auto;" contenteditable="true"&gt;&lt;/div&gt;
+    
+    &lt;script type="module"&gt;
+        // Import QuikDown with bidirectional support
+        import quikdown_bd from 'https://unpkg.com/quikdown@latest/dist/quikdown_bd.esm.min.js';
+        
+        // Initialize Mermaid (if using)
+        if (typeof mermaid !== 'undefined') {
+            mermaid.initialize({ startOnLoad: false });
+        }
+        
+        // Optional: Create fence plugin for code blocks
+        function fencePlugin(code, lang) {
+            // Handle Mermaid diagrams
+            if (lang === 'mermaid' && typeof mermaid !== 'undefined') {
+                const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                const escapedCode = code.replace(/"/g, '&amp;quot;');
+                // Preserve source for bidirectional conversion
+                setTimeout(() => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        mermaid.render(id + '-svg', code).then(result => {
+                            element.innerHTML = result.svg;
+                        });
+                    }
+                }, 10);
+                return `&lt;div class="mermaid-container" data-qd-fence="\`\`\`" data-qd-lang="mermaid"&gt;
+                    &lt;pre class="mermaid" id="${id}" data-qd-source="${escapedCode}"&gt;${code}&lt;/pre&gt;
+                &lt;/div&gt;`;
+            }
+            
+            // Handle code highlighting with Highlight.js
+            if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) {
+                const highlighted = hljs.highlight(code, { language: lang }).value;
+                return `&lt;pre data-qd-fence="\`\`\`" data-qd-lang="${lang}"&gt;&lt;code class="hljs language-${lang}"&gt;${highlighted}&lt;/code&gt;&lt;/pre&gt;`;
+            }
+            
+            return undefined; // Let QuikDown handle it
+        }
+        
+        let isUpdating = false;
+        
+        // Parse markdown and render
+        function updatePreview() {
+            if (isUpdating) return;
+            const markdown = document.getElementById('markdown-input').value;
+            const html = quikdown_bd(markdown, { 
+                fence_plugin: fencePlugin,
+                bidirectional: true 
+            });
+            
+            isUpdating = true;
+            document.getElementById('preview').innerHTML = html;
+            isUpdating = false;
+        }
+        
+        // Convert HTML back to Markdown (bidirectional)
+        function convertToMarkdown() {
+            if (isUpdating) return;
+            isUpdating = true;
+            const preview = document.getElementById('preview');
+            const markdown = quikdown_bd.toMarkdown(preview);
+            document.getElementById('markdown-input').value = markdown;
+            isUpdating = false;
+        }
+        
+        // Listen for changes
+        document.getElementById('markdown-input').addEventListener('input', updatePreview);
+        document.getElementById('preview').addEventListener('input', convertToMarkdown);
+        
+        // Initial render
+        updatePreview();
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            </div>
+            
+            <div class="source-section">
+                <h3>Minimal Example (No plugins)</h3>
+                <pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;link rel="stylesheet" href="https://unpkg.com/quikdown@latest/dist/quikdown.light.min.css"&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id="output" class="quikdown-light"&gt;&lt;/div&gt;
+    
+    &lt;script type="module"&gt;
+        // For simple markdown rendering (no bidirectional)
+        import quikdown from 'https://unpkg.com/quikdown@latest/dist/quikdown.esm.min.js';
+        
+        const markdown = '# Hello\n\n**QuikDown** is *easy*!';
+        document.getElementById('output').innerHTML = quikdown(markdown);
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+            </div>
+        </div>
+    </div>
+    
+    <!-- QuikDown JavaScript from CDN (ES Module) -->
+    <script type="module">
+        import quikdown from 'https://unpkg.com/quikdown@latest/dist/quikdown.esm.min.js';
+        import quikdown_bd from 'https://unpkg.com/quikdown@latest/dist/quikdown_bd.esm.min.js';
+        
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: false,
+            theme: 'default'
+        });
+        
+        // Custom fence plugin for code highlighting and Mermaid
+        function fencePlugin(code, lang) {
+            if (lang === 'mermaid') {
+                const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                // Escape the code for the data attribute
+                const escapedCode = code.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                
+                // Store code in data attribute for bidirectional conversion
+                // Note: With v1.0.5, quikdown_bd handles data-qd attributes automatically
+                // but we need to preserve the source for Mermaid rendering
+                return `<div class="mermaid-container" data-qd-fence="\`\`\`" data-qd-lang="mermaid">
+                    <pre class="mermaid" id="${id}" data-qd-source="${escapedCode}">Loading diagram...</pre>
+                </div>`;
+            }
+            
+            // Use Highlight.js for code blocks
+            if (lang && hljs.getLanguage(lang)) {
+                try {
+                    const highlighted = hljs.highlight(code, { language: lang }).value;
+                    // With v1.0.5, let quikdown_bd handle the data-qd attributes
+                    // Just return the highlighted code
+                    return `<pre><code class="hljs language-${lang}">${highlighted}</code></pre>`;
+                } catch (e) {
+                    // Fall back to default rendering
+                }
+            }
+            
+            // Let QuikDown handle unknown languages
+            return undefined;
+        }
+        
+        // Track if we're updating to prevent infinite loops
+        let isUpdating = false;
+        
+        // Update preview function
+        function updatePreview(source = 'markdown') {
+            if (isUpdating && source === 'markdown') return;
+            
+            const markdown = document.getElementById('markdown-input').value;
+            
+            // Parse markdown to HTML with fence plugin using bidirectional parser
+            const html = quikdown_bd(markdown, {
+                fence_plugin: fencePlugin,
+                bidirectional: true
+            });
+            
+            if (source === 'markdown') {
+                isUpdating = true;
+                document.getElementById('preview').innerHTML = html;
+                isUpdating = false;
+                
+                // Render any Mermaid diagrams that were added
+                setTimeout(() => {
+                    const mermaidElements = document.querySelectorAll('.mermaid');
+                    mermaidElements.forEach(element => {
+                        if (element.id && element.getAttribute('data-qd-source')) {
+                            const source = element.getAttribute('data-qd-source');
+                            // Decode HTML entities
+                            const temp = document.createElement('textarea');
+                            temp.innerHTML = source;
+                            const code = temp.value;
+                            
+                            mermaid.render(element.id + '-svg', code).then(result => {
+                                element.innerHTML = result.svg;
+                            }).catch(err => {
+                                console.error('Mermaid error:', err);
+                                element.innerHTML = `<div style="color:red;">Mermaid error: ${err.message}</div>`;
+                            });
+                        }
+                    });
+                }, 10);
+            }
+        }
+        
+        // Convert HTML back to Markdown when edited
+        function convertHtmlToMarkdown() {
+            if (isUpdating) return;
+            
+            const preview = document.getElementById('preview');
+            
+            try {
+                isUpdating = true;
+                // Use quikdown_bd.toMarkdown to convert back
+                const markdown = quikdown_bd.toMarkdown(preview);
+                document.getElementById('markdown-input').value = markdown;
+                isUpdating = false;
+            } catch (err) {
+                console.error('Error converting HTML to Markdown:', err);
+                isUpdating = false;
+            }
+        }
+        
+        // Tab switching
+        window.showTab = function(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Highlight code in source tab if shown
+            if (tabName === 'source') {
+                document.querySelectorAll('.source-section pre code').forEach(block => {
+                    hljs.highlightElement(block);
+                });
+            }
+        };
+        
+        // Event listener for live updates from markdown
+        document.getElementById('markdown-input').addEventListener('input', () => updatePreview('markdown'));
+        
+        // Event listener for edits in the preview
+        document.getElementById('preview').addEventListener('input', convertHtmlToMarkdown);
+        
+        // Handle checkbox clicks in preview
+        document.getElementById('preview').addEventListener('click', (e) => {
+            if (e.target.type === 'checkbox') {
+                // Allow checkbox to toggle then convert back to markdown
+                setTimeout(convertHtmlToMarkdown, 10);
+            }
+        });
+        
+        // Initial render
+        updatePreview('markdown');
+    </script>
+</body>
+</html>

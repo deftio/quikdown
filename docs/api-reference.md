@@ -249,6 +249,34 @@ function trustedHtmlPlugin(content, language) {
 
 ## Options Deep Dive
 
+### `bidirectional` Option
+
+Enables preservation of original markdown syntax for HTML→Markdown conversion.
+
+#### `bidirectional: false` (Default)
+
+Standard HTML output without preservation attributes:
+
+```javascript
+quikdown('**bold**', { bidirectional: false });
+// Output: <strong class="quikdown-strong">bold</strong>
+```
+
+#### `bidirectional: true`
+
+Adds `data-qd` attributes to preserve original markdown:
+
+```javascript
+quikdown('**bold**', { bidirectional: true });
+// Output: <strong class="quikdown-strong" data-qd="**">bold</strong>
+```
+
+**Use when:**
+- Building a markdown editor
+- Need HTML→Markdown conversion
+- Want to preserve exact markdown syntax
+- Using with `quikdown_bd` module
+
 ### `inline_styles` Option
 
 Controls how styling is applied to generated HTML.
