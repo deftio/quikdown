@@ -31,20 +31,18 @@
         }
         
         h1 {
-            color: #667eea;
+            color: #9550bb;
             font-size: 3em;
-            margin-bottom: 10px;
-            text-align: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            background: linear-gradient(135deg, #9550bb 0%, #7c3aed 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         
         .subtitle {
-            text-align: center;
             color: #666;
-            margin-bottom: 40px;
+            margin: 0;
             font-size: 1.2em;
         }
         
@@ -53,10 +51,24 @@
         }
         
         .section-header {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 30px;
+        }
+        
+        /* Core parser section - grey tones */
+        .section-core .section-header {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        /* Bidirectional section - blue tones */
+        .section-bidirectional .section-header {
+            background: linear-gradient(135deg, #e6f2ff 0%, #b3d9ff 100%);
+        }
+        
+        /* Editor section - purple tones */
+        .section-editor .section-header {
+            background: linear-gradient(135deg, #f3e6ff 0%, #d9b3ff 100%);
         }
         
         .section-title {
@@ -81,7 +93,6 @@
         }
         
         .example-card {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             border-radius: 15px;
             padding: 25px;
             text-decoration: none;
@@ -92,6 +103,21 @@
             overflow: hidden;
         }
         
+        /* Core parser cards - grey gradient */
+        .section-core .example-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #d1d5db 100%);
+        }
+        
+        /* Bidirectional cards - blue gradient */
+        .section-bidirectional .example-card {
+            background: linear-gradient(135deg, #eff6ff 0%, #bfdbfe 100%);
+        }
+        
+        /* Editor cards - purple gradient */
+        .section-editor .example-card {
+            background: linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%);
+        }
+        
         .example-card::before {
             content: '';
             position: absolute;
@@ -99,10 +125,24 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             opacity: 0;
             transition: opacity 0.3s ease;
             z-index: 0;
+        }
+        
+        /* Core section hover - grey accent */
+        .section-core .example-card::before {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        
+        /* Bidirectional section hover - blue accent */
+        .section-bidirectional .example-card::before {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        
+        /* Editor section hover - purple accent */
+        .section-editor .example-card::before {
+            background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
         }
         
         .example-card:hover::before {
@@ -111,8 +151,24 @@
         
         .example-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-            border-color: #667eea;
+        }
+        
+        /* Core section hover shadow */
+        .section-core .example-card:hover {
+            box-shadow: 0 10px 30px rgba(107, 114, 128, 0.3);
+            border-color: #6b7280;
+        }
+        
+        /* Bidirectional section hover shadow */
+        .section-bidirectional .example-card:hover {
+            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+        
+        /* Editor section hover shadow */
+        .section-editor .example-card:hover {
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.3);
+            border-color: #9333ea;
         }
         
         .example-card .content {
@@ -132,7 +188,6 @@
         .example-card .icon {
             width: 30px;
             height: 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 8px;
             display: flex;
             align-items: center;
@@ -140,6 +195,21 @@
             color: white;
             font-weight: bold;
             font-size: 1.2em;
+        }
+        
+        /* Core section icons - grey */
+        .section-core .example-card .icon {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        
+        /* Bidirectional section icons - blue */
+        .section-bidirectional .example-card .icon {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        
+        /* Editor section icons - purple */
+        .section-editor .example-card .icon {
+            background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
         }
         
         .example-card p {
@@ -150,13 +220,27 @@
         
         .badge {
             display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.85em;
             margin-right: 5px;
             font-weight: 500;
+        }
+        
+        /* Core section badges - grey */
+        .section-core .badge {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        }
+        
+        /* Bidirectional section badges - blue */
+        .section-bidirectional .badge {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        }
+        
+        /* Editor section badges - purple */
+        .section-editor .badge {
+            background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
         }
         
         .features {
@@ -185,7 +269,7 @@
         }
         
         footer a {
-            color: #667eea;
+            color: #9550bb;
             text-decoration: none;
         }
         
@@ -213,21 +297,47 @@
             .examples-grid {
                 grid-template-columns: 1fr;
             }
+            
+            /* Stack header on mobile */
+            .container > div:first-child {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .container > div:first-child > div:first-child {
+                text-align: center;
+            }
+            
+            .container > div:first-child h1,
+            .container > div:first-child .subtitle {
+                text-align: center;
+            }
+            
+            .container > div:first-child img {
+                margin-top: 20px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>quikdown</h1>
-        <p class="subtitle">Lightweight Markdown Parser & Editor Suite</p>
-        <div style="text-align: center; margin-bottom: 20px;">
-            <a href="../docs/" style="color: #667eea; text-decoration: none; font-weight: 500;">📖 Documentation</a> | 
-            <a href="https://github.com/deftio/quikdown" style="color: #667eea; text-decoration: none; font-weight: 500;">🔗 GitHub</a> | 
-            <a href="https://www.npmjs.com/package/quikdown" style="color: #667eea; text-decoration: none; font-weight: 500;">📦 NPM</a>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px;">
+            <div>
+                <h1 style="margin-bottom: 5px; text-align: left;">quikdown</h1>
+                <p class="subtitle" style="text-align: left; margin-bottom: 10px;">Lightweight Markdown Parser & Editor Suite</p>
+                <div style="margin-top: 15px;">
+                    <a href="../docs/" style="color: #9550bb; text-decoration: none; font-weight: 500; margin-right: 20px;">📖 Documentation</a>
+                    <a href="https://github.com/deftio/quikdown" style="color: #9550bb; text-decoration: none; font-weight: 500; margin-right: 20px;">🔗 GitHub</a>
+                    <a href="https://www.npmjs.com/package/quikdown" style="color: #9550bb; text-decoration: none; font-weight: 500;">📦 NPM</a>
+                </div>
+            </div>
+            <div>
+                <img src="../favicon.svg" alt="quikdown logo" style="width: 80px; height: 80px;">
+            </div>
         </div>
         
         <!-- quikdown Core Parser Section -->
-        <div class="section">
+        <div class="section section-core">
             <div class="section-header">
                 <h2 class="section-title">
                     <span style="font-size: 1.5em;">📝</span>
@@ -241,7 +351,7 @@
             </div>
             
             <div class="examples-grid">
-                <a href="quikdown-live.html" class="example-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <a href="quikdown-live.html" class="example-card">
                     <div class="content">
                         <h3>
                             <span class="icon">⭐</span>
@@ -311,7 +421,7 @@
                     </div>
                 </a>
                 
-                <a href="quikdown-cdn-demo.html" class="example-card" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%);">
+                <a href="quikdown-cdn-demo.html" class="example-card">
                     <div class="content">
                         <h3>
                             <span class="icon">🌐</span>
@@ -321,14 +431,14 @@
                             Complete standalone demo loading from CDN with Highlight.js and Mermaid.
                             Perfect template to copy for your projects!
                         </p>
-                        <span class="badge" style="background: #30cfd0;">CDN</span>
+                        <span class="badge">CDN</span>
                     </div>
                 </a>
             </div>
         </div>
         
         <!-- quikdown_bd Bidirectional Section -->
-        <div class="section">
+        <div class="section section-bidirectional">
             <div class="section-header">
                 <h2 class="section-title">
                     <span style="font-size: 1.5em;">🔄</span>
@@ -342,15 +452,15 @@
             </div>
             
             <div class="examples-grid">
-                <a href="quikdown-bd-editor.html" class="example-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <a href="quikdown-bd-editor.html" class="example-card">
                     <div class="content">
                         <h3>
                             <span class="icon">🔄</span>
-                            Bidirectional Editor
+                            Bidirectional Parser Example
                         </h3>
                         <p>
                             Live bidirectional editing demo. Edit markdown or HTML and see real-time updates.
-                            Features mermaid diagrams and round-trip conversion.
+                            Features mermaid diagrams and round-trip conversion. 
                         </p>
                         <span class="badge">Live Demo</span>
                     </div>
@@ -373,7 +483,7 @@
         </div>
         
         <!-- quikdown_edit Editor Section -->
-        <div class="section">
+        <div class="section section-editor">
             <div class="section-header">
                 <h2 class="section-title">
                     <span style="font-size: 1.5em;">✏️</span>
@@ -387,7 +497,7 @@
             </div>
             
             <div class="examples-grid">
-                <a href="qde/" class="example-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <a href="qde/" class="example-card">
                     <div class="content">
                         <h3>
                             <span class="icon">✏️</span>
