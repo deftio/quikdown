@@ -96,7 +96,8 @@ const editor = new QuikdownEditor('#editor', {
 | `debounceDelay` | number | `300` | Debounce delay in milliseconds for updates |
 | `placeholder` | string | `'Start typing markdown...'` | Placeholder text for empty editor |
 | `initialContent` | string | `''` | Initial markdown content |
-| `plugins` | object | `{}` | Plugin configuration |
+| `plugins` | object | `{}` | Built-in plugin configuration |
+| `customFences` | object | `{}` | Custom fence plugin handlers |
 | `onChange` | function | `null` | Callback when content changes |
 | `onModeChange` | function | `null` | Callback when mode changes |
 
@@ -287,20 +288,116 @@ graph LR
 ```
 ````
 
-### Custom Fence Plugin
+### Custom Fence Plugins
 
-Provide a custom fence plugin:
+Provide custom handlers for specific fence languages using the `customFences` option:
 
 ```javascript
 const editor = new QuikdownEditor('#editor', {
-    fence_plugin: (code, language) => {
-        if (language === 'custom') {
+    customFences: {
+        // Each key is a language identifier
+        'custom': (code, language) => {
             return `<div class="custom">${code}</div>`;
+        },
+        'math': (code, language) => {
+            // Handle math blocks
+            return `<div class="math">$$${code}$$</div>`;
         }
-        // Return undefined for default handling
     }
 });
 ```
+
+#### MathJax Integration
+
+```javascript
+const editor = new QuikdownEditor('#editor', {
+    customFences: {
+        'math': (code, lang) => {
+            if (window.MathJax) {
+                const id = `math-${Date.now()}`;
+                const html = `<div id="${id}" class="math-block">\\[${code}\\]</div>`;
+                
+                // Tell MathJax to render after DOM insertion
+                setTimeout(() => {
+                    MathJax.typesetPromise([document.getElementById(id)]);
+                }, 0);
+                
+                return html;
+            }
+            return `<pre class="math-source">${code}</pre>`;
+        }
+    }
+});
+```
+
+#### KaTeX Integration
+
+```javascript
+const editor = new QuikdownEditor('#editor', {
+    customFences: {
+        'math': (code, lang) => {
+            if (window.katex) {
+                try {
+                    return katex.renderToString(code, {
+                        displayMode: true,
+                        throwOnError: false
+                    });
+                } catch (err) {
+                    return `<div class="math-error">Error: ${err.message}</div>`;
+                }
+            }
+            return `<pre>${code}</pre>`;
+        }
+    }
+});
+```
+
+#### Multiple Custom Plugins
+
+```javascript
+const editor = new QuikdownEditor('#editor', {
+    customFences: {
+        // Math rendering
+        'math': (code, lang) => {
+            // Your math rendering logic
+        },
+        
+        // PlantUML diagrams
+        'plantuml': (code, lang) => {
+            const encoded = plantumlEncoder.encode(code);
+            return `<img src="http://www.plantuml.com/plantuml/svg/${encoded}" alt="PlantUML">`;
+        },
+        
+        // JSON visualization
+        'json': (code, lang) => {
+            try {
+                const data = JSON.parse(code);
+                return `<pre class="json">${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (err) {
+                return `<pre class="error">Invalid JSON: ${err.message}</pre>`;
+            }
+        },
+        
+        // Chart rendering
+        'chart': (code, lang) => {
+            try {
+                const config = JSON.parse(code);
+                return renderChart(config); // Your chart rendering function
+            } catch (err) {
+                return `<pre>Invalid chart config: ${err.message}</pre>`;
+            }
+        }
+    },
+    
+    // You can still use built-in plugins alongside custom ones
+    plugins: {
+        highlightjs: true,  // For other code blocks
+        mermaid: true      // Built-in mermaid support
+    }
+});
+```
+
+**Note:** Custom fences are checked first, before built-in plugins. If a custom fence returns `undefined`, it falls back to built-in behavior.
 
 ## Events and Callbacks
 
@@ -465,6 +562,118 @@ editor1.onChange = (markdown) => {
         theme: 'light'
     });
 </script>
+```
+
+### Complete Example with MathJax
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Quikdown Editor with MathJax</title>
+    <!-- Load MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { margin: 20px; font-family: Arial, sans-serif; }
+        #editor { height: 500px; border: 1px solid #ddd; }
+        .math-block { margin: 1em 0; }
+    </style>
+</head>
+<body>
+    <h1>Quikdown Editor with Math Support</h1>
+    <div id="editor"></div>
+    
+    <script type="module">
+        import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
+        
+        // Wait for MathJax to load
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+        
+        const editor = new QuikdownEditor('#editor', {
+            mode: 'split',
+            showToolbar: true,
+            customFences: {
+                // Handle ```math blocks
+                'math': (code, lang) => {
+                    const id = `math-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    // Schedule MathJax rendering
+                    setTimeout(() => {
+                        const element = document.getElementById(id);
+                        if (element && window.MathJax) {
+                            MathJax.typesetPromise([element]).catch(err => {
+                                console.error('MathJax error:', err);
+                            });
+                        }
+                    }, 10);
+                    
+                    return `<div id="${id}" class="math-block">\\[${code}\\]</div>`;
+                },
+                
+                // Handle ```latex blocks
+                'latex': (code, lang) => {
+                    const id = `latex-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    setTimeout(() => {
+                        const element = document.getElementById(id);
+                        if (element && window.MathJax) {
+                            MathJax.typesetPromise([element]);
+                        }
+                    }, 10);
+                    
+                    return `<div id="${id}" class="latex-block">$$${code}$$</div>`;
+                }
+            },
+            
+            // Still use highlight.js for other code blocks
+            plugins: {
+                highlightjs: true
+            },
+            
+            initialContent: `# Math Examples
+
+## Inline Math
+
+This is inline math: $E = mc^2$ (requires inline math processing in your markdown)
+
+## Math Blocks
+
+\`\`\`math
+\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+\`\`\`
+
+## LaTeX Block
+
+\`\`\`latex
+\\begin{align}
+\\nabla \\times \\vec{\\mathbf{B}} -\\, \\frac1c\\, \\frac{\\partial\\vec{\\mathbf{E}}}{\\partial t} &= \\frac{4\\pi}{c}\\vec{\\mathbf{j}} \\\\
+\\nabla \\cdot \\vec{\\mathbf{E}} &= 4 \\pi \\rho \\\\
+\\nabla \\times \\vec{\\mathbf{E}}\\, +\\, \\frac1c\\, \\frac{\\partial\\vec{\\mathbf{B}}}{\\partial t} &= \\vec{\\mathbf{0}} \\\\
+\\nabla \\cdot \\vec{\\mathbf{B}} &= 0
+\\end{align}
+\`\`\`
+
+## Regular Code Block
+
+\`\`\`javascript
+// This still gets syntax highlighted
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+\`\`\`
+`
+        });
+    </script>
+</body>
+</html>
 ```
 
 ## Browser Support
