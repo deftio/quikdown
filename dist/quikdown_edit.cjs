@@ -1286,31 +1286,6 @@ class QuikdownEditor {
                 overflow-x: auto;
             }
             
-            .qde-json-key {
-                color: #881391;
-                font-weight: bold;
-            }
-            
-            .qde-json-string {
-                color: #008000;
-            }
-            
-            .qde-json-number {
-                color: #0000ff;
-            }
-            
-            .qde-json-boolean {
-                color: #d73a49;
-            }
-            
-            .qde-json-null {
-                color: #808080;
-            }
-            
-            .qde-json-invalid {
-                border-left: 3px solid #ff6b6b;
-            }
-            
             .qde-error {
                 background: #fee;
                 border: 1px solid #fcc;
@@ -1345,10 +1320,6 @@ class QuikdownEditor {
                 cursor: text;
             }
             
-            /* Visual indication for non-editable blocks */
-            .qde-preview [contenteditable="false"] {
-                position: relative;
-            }
             
             /* Non-editable complex renderers */
             .qde-preview .qde-svg-container[contenteditable="false"],
@@ -1586,13 +1557,6 @@ class QuikdownEditor {
     preprocessSpecialElements(panel) {
         if (!panel) return;
         
-        // Debug: Check what we're working with
-        if (window.DEBUG_SVG) {
-            console.log('preprocessSpecialElements called');
-            console.log('All elements with data-qd-source:', panel.querySelectorAll('[data-qd-source]').length);
-            console.log('Elements with contenteditable=false:', panel.querySelectorAll('[contenteditable="false"]').length);
-            console.log('Complex fences (both):', panel.querySelectorAll('[contenteditable="false"][data-qd-source]').length);
-        }
         
         // Restore non-editable complex fences from their data attributes
         const complexFences = panel.querySelectorAll('[contenteditable="false"][data-qd-source]');
@@ -1600,14 +1564,6 @@ class QuikdownEditor {
             const source = element.getAttribute('data-qd-source');
             const fence = element.getAttribute('data-qd-fence') || '```';
             const lang = element.getAttribute('data-qd-lang') || '';
-            
-            if (window.DEBUG_SVG) {
-                console.log(`Processing ${lang} fence:`, {
-                    source: source?.substring(0, 50) + '...',
-                    fence,
-                    lang
-                });
-            }
             
             // Create a pre element with the original source
             const pre = document.createElement('pre');
@@ -1999,44 +1955,27 @@ class QuikdownEditor {
      * Render JSON with syntax highlighting
      */
     renderJSON(code, lang) {
-        const escapedCode = this.escapeHtml(code);
-        try {
-            // Parse to validate and format
-            const data = JSON.parse(code);
-            const formatted = JSON.stringify(data, null, 2);
-            
-            // If highlight.js is available with JSON support, use it (keep editable)
-            if (window.hljs && hljs.getLanguage('json')) {
-                const highlighted = hljs.highlight(formatted, { language: 'json' }).value;
-                // Keep editable like other hljs highlighted code
-                return `<pre class="qde-json" data-qd-fence="\`\`\`" data-qd-lang="${lang}"><code class="hljs language-json">${highlighted}</code></pre>`;
-            }
-            
-            // Otherwise, basic syntax highlighting - also needs to be non-editable due to spans
-            const highlighted = formatted
-                .replace(/"([^"]+)":/g, '<span class="qde-json-key">"$1"</span>:')
-                .replace(/: "([^"]*)"/g, ': <span class="qde-json-string">"$1"</span>')
-                .replace(/: (\d+)/g, ': <span class="qde-json-number">$1</span>')
-                .replace(/: (true|false)/g, ': <span class="qde-json-boolean">$1</span>')
-                .replace(/: null/g, ': <span class="qde-json-null">null</span>');
-            
-            // Since we're adding spans, it needs to be non-editable
-            const editableAttrs = `contenteditable="false" data-qd-fence="\`\`\`" data-qd-lang="${lang}" data-qd-source="${escapedCode}"`;
-            return `<pre class="qde-json" ${editableAttrs}><code>${highlighted}</code></pre>`;
-        } catch (err) {
-            // If it's invalid JSON, still try to highlight if hljs is available (keep editable)
-            if (window.hljs && hljs.getLanguage('json')) {
+        // If highlight.js is available, use it for all JSON
+        if (window.hljs && hljs.getLanguage('json')) {
+            try {
+                // Try to format if valid JSON
+                let toHighlight = code;
                 try {
-                    const highlighted = hljs.highlight(code, { language: 'json' }).value;
-                    return `<pre class="qde-json qde-json-invalid" data-qd-fence="\`\`\`" data-qd-lang="${lang}"><code class="hljs language-json">${highlighted}</code></pre>`;
+                    const data = JSON.parse(code);
+                    toHighlight = JSON.stringify(data, null, 2);
                 } catch (e) {
-                    // Fall through
+                    // Use original if not valid JSON
                 }
+                
+                const highlighted = hljs.highlight(toHighlight, { language: 'json' }).value;
+                return `<pre class="qde-json" data-qd-fence="\`\`\`" data-qd-lang="${lang}"><code class="hljs language-json">${highlighted}</code></pre>`;
+            } catch (e) {
+                // Fall through if highlighting fails
             }
-            
-            // No highlighting available - return plain (editable)
-            return `<pre class="qde-json-error" data-qd-fence="\`\`\`" data-qd-lang="${lang}">${escapedCode}</pre>`;
         }
+        
+        // No highlighting available - return plain
+        return `<pre class="qde-json" data-qd-fence="\`\`\`" data-qd-lang="${lang}">${this.escapeHtml(code)}</pre>`;
     }
     
     /**
@@ -2072,26 +2011,8 @@ class QuikdownEditor {
      * Escape HTML for attributes
      */
     escapeHtml(text) {
-        if (text == null) return "";
-        return String(text)
-            .replace(/&/g, "&amp;")   // escape & first
-            .replace(/"/g, "&quot;")  // escape double quotes
-            .replace(/'/g, "&#39;")   // escape single quotes  
-            .replace(/</g, "&lt;")    // escape <
-            .replace(/>/g, "&gt;");   // escape >
-    }
-    
-    /**
-     * Unescape HTML from attributes
-     */
-    unescapeHtml(text) {
-        if (text == null) return "";
-        return String(text)
-            .replace(/&quot;/g, '"')   // unescape double quotes
-            .replace(/&#39;/g, "'")    // unescape single quotes
-            .replace(/&lt;/g, "<")     // unescape <
-            .replace(/&gt;/g, ">")     // unescape >
-            .replace(/&amp;/g, "&");   // unescape & last
+        return (text ?? "").replace(/[&"'<>]/g, m => 
+            ({'&':'&amp;','"':'&quot;',"'":'&#39;','<':'&lt;','>':'&gt;'}[m]));
     }
     
     /**
