@@ -38,10 +38,10 @@ npm install quikdown
 
 ```javascript
 // ES Module
-import QuikdownEditor from 'quikdown/editor';
+import QuikdownEditor from 'quikdown/edit';
 
 // CommonJS
-const QuikdownEditor = require('quikdown/editor');
+const QuikdownEditor = require('quikdown/edit');
 ```
 
 ## Basic Usage

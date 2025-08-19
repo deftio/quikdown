@@ -6,14 +6,17 @@
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
 ### Bundle Sizes
-[![quikdown](https://img.shields.io/badge/quikdown-8.5KB-brightgreen.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![quikdown](https://img.shields.io/badge/quikdown-8.5KB-green.svg)](https://github.com/deftio/quikdown/tree/main/dist)
 [![quikdown_bd](https://img.shields.io/badge/quikdown__bd-12.5KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
 [![quikdown_edit](https://img.shields.io/badge/quikdown__edit-24.3KB-purple.svg)](https://github.com/deftio/quikdown/tree/main/dist)
 
-A lightweight, fast markdown parser with built-in XSS protection and optional bidirectional conversion support. Quikdown works in both browser and Node.js environments. Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.
+A lightweight, fast markdown parser with built-in XSS protection and optional bidirectional conversion support. Quikdown works in both browser and Node.js environments. Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.  
 
-🚀 **[Try Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** - Interactive markdown ot HTML editor with real-time preview 
-🚀 **[Try Bidirectional Demo](https://deftio.github.io/quikdown/examples/quikdown-bd-editor.html)** - Interactive markdown editor with bidirectional support (can edit either markdown or html and see other update)
+A separate quikdown-editor based on the quikdown parser is also provided as a simple drop-in editor control that should work in any div.  
+
+🚀 **[Try Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** - Interactive markdown to HTML parser with real-time preview 
+🚀 **[Bidirectional Parser Demo](https://deftio.github.io/quikdown/examples/quikdown-bd-parser-demo.html)** - Bidirectional parser demo with custom editor (edit markdown or HTML and see updates)
+🚀 **[Quikdown Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** - Standalone drop-in editor control with source/split/preview modes
 📚 **[View Examples](examples/)** - Additional demos and test pages  
 📖 **[Read Documentation](docs/)** - Architecture, security, API reference, and plugin guide
 
@@ -22,8 +25,8 @@ A lightweight, fast markdown parser with built-in XSS protection and optional bi
 - [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Bidirectional Conversion](#bidirectional-conversion-new)
-- [Quikdown Editor](#quikdown-editor-new)
+- [Bidirectional Conversion](#bidirectional-conversion)
+- [Quikdown Editor](#quikdown-editor)
 - [Supported Markdown](#supported-markdown)
 - [Configuration Options](#configuration-options)
 - [Plugin System](#plugin-system)
@@ -45,7 +48,7 @@ A lightweight, fast markdown parser with built-in XSS protection and optional bi
 - ✅ **Task Lists** - GitHub-style checkboxes
 - 🔗 **Autolinks** - Automatic URL detection
 - 🔄 **Bidirectional** - Convert HTML back to Markdown (requires `quikdown_bd` module)
-- 💬 **Lazy Linefeeds** - Single newlines become line breaks (perfect for chat/LLM output) 
+- 💬 **Lazy Linefeeds** - Single newlines become line breaks (for chat/LLM output), api controllable
 
 ## Installation
 
@@ -322,13 +325,13 @@ const safe = quikdown(unsafe);
 // Output: &lt;script&gt;alert("XSS")&lt;/script&gt; <strong>bold</strong>
 ```
 
-## Bidirectional Conversion (1.0.4+)
+## Bidirectional Conversion
 
 **⚠️ Important:** Full bidirectional conversion (including HTML-to-Markdown) requires the `quikdown_bd` module, not the regular `quikdown` module.
 
 The `quikdown_bd` module is a separate build that includes both markdown-to-HTML and HTML-to-markdown conversion capabilities. It's perfect for WYSIWYG editors and round-trip conversion scenarios.
 
-**New in v1.0.5:** The core `quikdown` module now supports the `bidirectional` option to emit `data-qd` attributes, but only `quikdown_bd` includes the `toMarkdown()` function for converting HTML back to Markdown.
+**Note:** As of v1.0.5, the core `quikdown` module supports the `bidirectional` option to emit `data-qd` attributes, but only `quikdown_bd` includes the `toMarkdown()` function for converting HTML back to Markdown.
 
 ### Installation
 
@@ -397,7 +400,7 @@ console.log(markdown);
 
 For complete documentation, see [Bidirectional Documentation](docs/quikdown-bidirectional.md).
 
-## Quikdown Editor (New!)
+## Quikdown Editor
 
 Quikdown Editor is a drop-in markdown editor control that can be embedded in any webpage. It provides a complete editing experience with live preview, bidirectional editing, and plugin support.
 

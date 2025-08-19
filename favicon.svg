@@ -6,9 +6,9 @@
   <!-- Scale q + arrow around the center -->
   <g transform="translate(16,16) scale(1.45) translate(-18.5,-17)">
     <!-- Letter 'q' -->
-    <text x="8" y="20" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">q</text>
+    <text x="9.25" y="19.5" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">q</text>
     
     <!-- Down arrow -->
-    <path d="M 22 10.75 L 22 20 L 19 20 L 23.5 26 L 28 20 L 25 20 L 25 10.75 Z" fill="white"/>
+    <path d="M 22.5 10.25 L 22.5 20 L 19.5 20 L 24 25 L 28 20 L 25 20 L 25 10.25 Z" fill="white"/>
   </g>
 </svg>

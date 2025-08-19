@@ -1,4 +1,4 @@
-# quikdown Documentation
+# quikdown documentation
 
 Complete documentation for the quikdown markdown parser.
 
@@ -23,7 +23,7 @@ Complete documentation for the quikdown markdown parser.
 quikdown is a lightweight, secure markdown parser designed for chat and LLM outputs. It prioritizes:
 
 - **Security** - All HTML is escaped by default
-- **Size** - 7.4KB minified (core), 10KB with bidirectional support, zero dependencies
+- **Size** - 8.5KB minified (core), 12.5KB with bidirectional support, zero dependencies
 - **Extensibility** - Plugin system for custom rendering
 - **Simplicity** - Easy to understand and audit
 - **Bidirectional** - Convert HTML back to Markdown for WYSIWYG editing

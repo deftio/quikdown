@@ -54,13 +54,25 @@ const QUIKDOWN_STYLES = {
 function createGetAttr(inline_styles, styles) {
     return function(tag, additionalStyle = '') {
         if (inline_styles) {
-            const style = styles[tag];
+            let style = styles[tag];
             if (!style && !additionalStyle) return '';
+            
+            // Remove default text-align if we're adding a different alignment
+            if (additionalStyle && additionalStyle.includes('text-align') && style && style.includes('text-align')) {
+                style = style.replace(/text-align:[^;]+;?/, '').trim();
+                if (style && !style.endsWith(';')) style += ';';
+            }
+            
             /* istanbul ignore next - defensive: additionalStyle without style doesn't occur with current tags */
-            const fullStyle = additionalStyle ? (style ? `${style};${additionalStyle}` : additionalStyle) : style;
+            const fullStyle = additionalStyle ? (style ? `${style}${additionalStyle}` : additionalStyle) : style;
             return ` style="${fullStyle}"`;
         } else {
-            return ` class="${CLASS_PREFIX}${tag}"`;
+            const classAttr = ` class="${CLASS_PREFIX}${tag}"`;
+            // Apply inline styles for alignment even when using CSS classes
+            if (additionalStyle) {
+                return `${classAttr} style="${additionalStyle}"`;
+            }
+            return classAttr;
         }
     };
 }

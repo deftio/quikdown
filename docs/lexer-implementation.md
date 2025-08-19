@@ -4,7 +4,9 @@
 
 The QuikDown lexer implementation (`quikdown-lex`) is an experimental alternative parser that uses a hand-coded state machine approach instead of regular expressions. While the primary regex-based implementation remains the recommended version, the lexer provides an interesting alternative architecture that may become the foundation for future versions.
 
-**Current Status:** Experimental - passes all tests but is ~1KB larger and 4-8% slower than the regex version.
+**Current Status:** Experimental - passes some tests but is a little larger and 4-8% slower than the regex version.
+
+NOT SUPPORTED
 
 ## Installation and Usage
 

@@ -121,6 +121,7 @@ Convert Markdown to HTML with bidirectional support.
   - `inline_styles` (boolean): Use inline styles instead of CSS classes
   - `allow_unsafe_urls` (boolean): Allow potentially unsafe URLs
   - `bidirectional` (boolean): Always `true` for quikdown_bd (automatically set)
+  - `lazy_linefeeds` (boolean): Single newlines become `<br>` tags (v1.0.5+)
 
 **Returns:** HTML string with data-qd attributes
 
@@ -196,7 +197,7 @@ const markdown = quikdown_bd.toMarkdown(html);
 
 ## Performance
 
-- **Bundle Size**: <11KB minified
+- **Bundle Size**: 12.5KB minified
 - **Speed**: ~1000 documents/second on modern hardware
 - **Memory**: Minimal overhead with DOM walking approach
 - **Round-trip**: <5ms for typical documents
@@ -278,7 +279,7 @@ const md: string = quikdown_bd.toMarkdown(html);
 
 ## Version
 
-quikdown_bd uses the same version as core quikdown: **1.0.4**
+quikdown_bd uses the same version as core quikdown: **1.0.5**
 
 ## License
 

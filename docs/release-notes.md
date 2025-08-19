@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.0.5 (In Development)
+## v1.0.5 (2025-08-19)
 
 ### 🚀 New: Quikdown Editor
 
@@ -97,6 +97,21 @@
 - Clarified differences between `quikdown` and `quikdown_bd`
 - Updated usage examples
 
+### 🐛 Bug Fixes
+
+#### Table Alignment Fix
+- **Fixed table alignment in CSS class mode**: Table column alignment (left, center, right) now works correctly in both CSS class and inline styles modes
+- Previously, alignment only worked with `inline_styles: true` option
+- Now applies alignment as inline style attribute even when using CSS classes
+- Eliminated duplicate `text-align` properties in inline styles mode
+- Example:
+  ```markdown
+  | Left | Center | Right |
+  |:-----|:------:|------:|
+  | L    |   C    |     R |
+  ```
+  Now correctly renders with proper text alignment in all cells
+
 ### 🛠️ Technical Improvements
 - **Module imports**: Converted all tests from CommonJS to ESM imports
 - **Dead code elimination**: Removed unreachable code paths identified through coverage analysis
@@ -121,7 +136,7 @@
 - **Round-trip preservation**: Maintains original markdown formatting through conversion cycles
 - **Smart source tracking**: Uses `data-qd` attributes to preserve original markdown syntax
 - **DOM-based conversion**: Walks the DOM tree for accurate HTML-to-Markdown transformation
-- **Bundle size**: 10KB minified (compared to 7.4KB for core quikdown)
+- **Bundle size**: 12.5KB minified (compared to 8.5KB for core quikdown)
 
 #### Bidirectional API
 - `quikdown_bd(markdown, options)` - Markdown to HTML with source tracking
@@ -220,8 +235,8 @@
 - Handles nested structures and special cases
 
 #### Bundle Sizes
-- `quikdown.min.js`: 7.4KB (core parser)
-- `quikdown_bd.min.js`: 10KB (bidirectional)
+- `quikdown.min.js`: 8.5KB (core parser)
+- `quikdown_bd.min.js`: 12.5KB (bidirectional)
 - Both maintain zero dependencies
 
 ### 🚀 Migration Guide

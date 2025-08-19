@@ -4,7 +4,7 @@
 
 quikdown is designed with these core principles:
 
-1. **Small & Fast** - Optimized for size (~3KB minified) and performance
+1. **Small & Fast** - Optimized for size (~8.5KB minified) and performance
 2. **Secure by Default** - All HTML is escaped unless explicitly trusted
 3. **Zero Dependencies** - No external libraries required
 4. **Extensible** - Plugin system for custom rendering

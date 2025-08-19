@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.0.5dev2",
+  "version": "1.0.5",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
   "author": "deftio (https://github.com/deftio",
   "license": "BSD-2-Clause",
@@ -60,6 +60,12 @@
       "require": "./dist/quikdown_bd.cjs",
       "browser": "./dist/quikdown_bd.umd.min.js",
       "types": "./dist/quikdown_bd.d.ts"
+    },
+    "./edit": {
+      "import": "./dist/quikdown_edit.esm.js",
+      "require": "./dist/quikdown_edit.cjs",
+      "browser": "./dist/quikdown_edit.umd.min.js",
+      "types": "./dist/quikdown_edit.d.ts"
     },
     "./package.json": "./package.json"
   },

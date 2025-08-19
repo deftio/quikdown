@@ -147,7 +147,7 @@ The version of quikdown.
 #### Example
 
 ```javascript
-console.log(quikdown.version); // "2.0"
+console.log(quikdown.version); // "1.0.5"
 ```
 
 ## Fence Plugin API
@@ -451,7 +451,7 @@ container.innerHTML = quikdown(combined);
 |---------|------------|---------------|
 | Markdown to HTML | ✅ Yes | ✅ Yes |
 | HTML to Markdown | ❌ No | ✅ Yes |
-| Size (minified) | 7.4KB | 10KB |
+| Size (minified) | 8.5KB | 12.5KB |
 | `toMarkdown()` method | ❌ No | ✅ Yes |
 | data-qd attributes | ❌ No | ✅ Yes |
 | Use case | Standard parsing | WYSIWYG editors |

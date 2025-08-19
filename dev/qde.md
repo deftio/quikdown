@@ -1,5 +1,5 @@
 # Quikdown Editor (QDE) Development Tasks
-
+v1.0.5
 ## Overview
 Create a standalone JavaScript editor control that can be dropped into any div, providing a full markdown editing experience with source, preview, and split modes.
 
@@ -39,7 +39,7 @@ Create a standalone JavaScript editor control that can be dropped into any div, 
 - [x] Update README.md with QDE section
 - [x] Create docs/quikdown-editor.md API reference
 - [x] Update docs/release-notes.md for v1.0.5
-- [ ] Add TypeScript definitions for QuikdownEditor
+- [x] Add TypeScript definitions for QuikdownEditor
 
 ## Architecture Notes
 
