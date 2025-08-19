@@ -225,55 +225,33 @@ function quikdown(markdown, options = {}) {
     // Line breaks
     if (lazy_linefeeds) {
         // Lazy linefeeds: single newline becomes <br> (except between paragraphs and after/before block elements)
+        const blocks = [];
+        let bi = 0;
         
-        // First, protect complete block structures (tables and lists with their internal newlines)
-        const protectedBlocks = [];
-        let blockIndex = 0;
-        
-        // Protect complete table structures
-        html = html.replace(/<table[^>]*>[\s\S]*?<\/table>/g, (match) => {
-            const placeholder = `§PROTECTED_BLOCK_${blockIndex}§`;
-            protectedBlocks[blockIndex] = match;
-            blockIndex++;
-            return placeholder;
+        // Protect tables and lists  
+        html = html.replace(/<(table|[uo]l)[^>]*>[\s\S]*?<\/\1>/g, m => {
+            blocks[bi] = m;
+            return `§B${bi++}§`;
         });
         
-        // Protect complete list structures
-        html = html.replace(/<[uo]l[^>]*>[\s\S]*?<\/[uo]l>/g, (match) => {
-            const placeholder = `§PROTECTED_BLOCK_${blockIndex}§`;
-            protectedBlocks[blockIndex] = match;
-            blockIndex++;
-            return placeholder;
-        });
-        
-        // Handle double newlines for paragraphs
-        html = html.replace(/\n\n+/g, '§PARAGRAPH§');
-        
-        // Don't add <br> after block elements
-        html = html.replace(/(<\/(?:h[1-6]|blockquote|pre)>)\n/g, '$1§BLOCKBREAK§');
-        html = html.replace(/(<(?:h[1-6]|blockquote|pre)[^>]*>)\n/g, '$1§BLOCKBREAK§');
-        html = html.replace(/(<hr[^>]*>)\n/g, '$1§BLOCKBREAK§');
-        
-        // Don't add <br> before block elements
-        html = html.replace(/\n(<(?:h[1-6]|blockquote|pre|hr)[^>]*>)/g, '§BLOCKBREAK§$1');
-        html = html.replace(/\n(§PROTECTED_BLOCK_\d+§)/g, '§BLOCKBREAK§$1');
-        html = html.replace(/(§PROTECTED_BLOCK_\d+§)\n/g, '$1§BLOCKBREAK§');
-        
-        // Convert remaining single newlines to <br>
-        html = html.replace(/\n/g, `<br${getAttr('br')}>`);
-        
-        // Restore block breaks as simple newlines
-        html = html.replace(/§BLOCKBREAK§/g, '\n');
-        
-        // Restore paragraph breaks
-        html = html.replace(/§PARAGRAPH§/g, '</p><p>');
+        // Handle paragraphs and block elements
+        html = html.replace(/\n\n+/g, '§P§')
+            // After block elements
+            .replace(/(<\/(?:h[1-6]|blockquote|pre)>)\n/g, '$1§N§')
+            .replace(/(<(?:h[1-6]|blockquote|pre|hr)[^>]*>)\n/g, '$1§N§')
+            // Before block elements  
+            .replace(/\n(<(?:h[1-6]|blockquote|pre|hr)[^>]*>)/g, '§N§$1')
+            .replace(/\n(§B\d+§)/g, '§N§$1')
+            .replace(/(§B\d+§)\n/g, '$1§N§')
+            // Convert remaining newlines
+            .replace(/\n/g, `<br${getAttr('br')}>`)
+            // Restore
+            .replace(/§N§/g, '\n')
+            .replace(/§P§/g, '</p><p>');
         
         // Restore protected blocks
-        protectedBlocks.forEach((block, i) => {
-            html = html.replace(`§PROTECTED_BLOCK_${i}§`, block);
-        });
+        blocks.forEach((b, i) => html = html.replace(`§B${i}§`, b));
         
-        // Wrap in paragraph tags
         html = '<p>' + html + '</p>';
     } else {
         // Standard: two spaces at end of line for line breaks

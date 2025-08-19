@@ -491,6 +491,42 @@ End of document.`;
     });
   });
   
+  describe('Lazy linefeeds support', () => {
+    test('should handle lazy linefeeds with bidirectional conversion', () => {
+      const markdown = 'Line 1\nLine 2\n\nPara 2';
+      const html = quikdown_bd(markdown, { lazy_linefeeds: true });
+      
+      // Check HTML has breaks
+      expect(html).toContain('Line 1<br');
+      expect(html).toContain('Line 2');
+      expect(html).toContain('Para 2');
+      
+      // Convert back should work
+      const recovered = quikdown_bd.toMarkdown(html);
+      expect(recovered).toContain('Line 1');
+      expect(recovered).toContain('Line 2');
+    });
+    
+    test('should not add breaks after block elements with lazy linefeeds', () => {
+      const markdown = '# Heading\nText after\n\n- List item\nText after list';
+      const html = quikdown_bd(markdown, { lazy_linefeeds: true });
+      
+      // No breaks after blocks
+      expect(html).not.toContain('</h1><br');
+      expect(html).not.toContain('</ul><br');
+    });
+    
+    test('should protect tables and lists with lazy linefeeds', () => {
+      const markdown = '| Col1 | Col2 |\n|------|------|\n| A    | B    |\nText after';
+      const html = quikdown_bd(markdown, { lazy_linefeeds: true });
+      
+      // Table should not have internal breaks
+      expect(html).toContain('<table');
+      expect(html).toContain('</table>');
+      expect(html).not.toContain('<th>Col1</th><br');
+    });
+  });
+  
   describe('Error Handling', () => {
     test('should handle empty input', () => {
       expect(quikdown_bd('')).toBe('');
