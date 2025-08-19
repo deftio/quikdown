@@ -48,6 +48,33 @@ This file contains all completed tasks moved from todo.md to reduce clutter.
 * ✅ Added URL sanitization to prevent XSS attacks
   - Blocks javascript:, data: (except data:image/*), vbscript: URLs
   - Added `allow_unsafe_urls` option for opt-in when needed
+
+## ✅ v1.0.5 Features (2025-08-19)
+
+### QuikdownEditor Implementation
+* ✅ Created standalone drop-in editor control (quikdown_edit.js)
+* ✅ Three view modes: source, split, preview
+* ✅ Bidirectional editing with real-time sync
+* ✅ Built-in toolbar with mode switching and copy functions
+* ✅ Plugin support for Highlight.js and Mermaid
+* ✅ Custom fence plugin support via customFences option
+* ✅ Keyboard shortcuts (Ctrl/Cmd+1/2/3)
+* ✅ Theme support (light/dark/auto)
+* ✅ Mobile responsive design
+* ✅ Full API with methods and events
+* ✅ Bundle size: 24.4KB minified
+
+### Core Features
+* ✅ Lazy linefeeds support - single \n becomes <br> for chat/LLM apps
+* ✅ Fixed table alignment in CSS class mode
+* ✅ Added keywords to package.json for NPM discoverability
+* ✅ Created pure CDN examples with plugins
+
+### Architecture Refactor
+* ✅ Refactored quikdown_bd to import and extend core module
+* ✅ Eliminated ~800 lines of duplicate code
+* ✅ Core module now supports bidirectional option
+* ✅ Achieved 98%+ test coverage (391 tests passing)
   - Added rel="noopener noreferrer" to all external links
 
 ## ✅ Parser Improvements  
