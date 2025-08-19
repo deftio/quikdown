@@ -12,10 +12,10 @@
 - Maintains 100% backward compatibility with existing API
 
 ### 📊 Test Coverage Achievements
-- **Achieved 99.5%+ overall test coverage**
+- **Achieved 98%+ overall test coverage**
 - **`quikdown.esm.js`**: 100% line coverage, 100% branch coverage
-- **`quikdown_bd.esm.js`**: 99.47% line coverage (remaining are build artifacts)
-- **353 tests** all passing
+- **`quikdown_bd.esm.js`**: 97.97% line coverage, 89.36% function coverage
+- **377 tests** all passing (including comprehensive lazy linefeeds tests)
 - Added comprehensive test suites for:
   - Bidirectional conversion round-trips
   - Edge cases and malformed inputs
@@ -31,9 +31,9 @@
 - **Fixed CSS regeneration issue**: CSS files now use version number instead of timestamp
   - Prevents CSS files from appearing modified on every build
   - CSS only regenerates when version changes
-- **Improved bundle sizes**:
-  - QuikDown Core: 8.0 KB minified
-  - QuikDown BD: 11.7 KB minified (includes core)
+- **Bundle sizes** (with lazy_linefeeds feature):
+  - QuikDown Core: 8.5 KB minified (was 7.4KB in v1.0.4)
+  - QuikDown BD: 12.5 KB minified (includes core)
 
 ### 🎯 New Features
 

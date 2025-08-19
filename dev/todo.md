@@ -38,7 +38,7 @@ A small markdown to html parser with fence plugin support
 ### Nice to Have:
 * [ ] Heading IDs/slugification for in-page linking (behind option)
 * [ ] Support for definition lists (maybe)
-* [ ] Lazy line break option (treat single \n as <br> in certain contexts)
+* [x] Lazy line break option (treat single \n as <br> in certain contexts)
 
 
 ## 🤔 Under Consideration
@@ -51,6 +51,8 @@ These items need more thought before implementation:
   * has option to load hljs,mermaid,etc dynmacally in constructor
   * has setters/getters for source content 
   * copy buttons for source, editor content
+  * onChange() for either source or html
+  * all controls have an api so editor can be programmatically controlled
 
 * HTML passthrough option - Currently using fence plugins for this (safer)
 * Complex emphasis (`***bold+italic***`) - May add too much complexity
