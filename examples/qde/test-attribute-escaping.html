@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attribute Escaping Test</title>
+    <style>
+        .test { margin: 20px; padding: 10px; border: 1px solid #ccc; }
+        pre { background: #f0f0f0; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Attribute Escaping Test</h1>
+    
+    <div class="test">
+        <h3>Test 1: Create element with quotes in attribute</h3>
+        <div id="test1"></div>
+        <pre id="result1"></pre>
+    </div>
+    
+    <div class="test">
+        <h3>Test 2: Set attribute with quotes programmatically</h3>
+        <div id="test2"></div>
+        <pre id="result2"></pre>
+    </div>
+    
+    <div class="test">
+        <h3>Test 3: Clone element with complex attributes</h3>
+        <div id="test3"></div>
+        <pre id="result3"></pre>
+    </div>
+    
+    <script>
+        // Test 1: Template literal with escaped quotes
+        const svgCode = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <text x="9.25" y="19.5" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">q</text>
+</svg>`;
+        
+        // Escape function similar to quikdown
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        
+        // Test 1: Using template literal
+        const escaped = escapeHtml(svgCode);
+        const html1 = `<div data-source="${escaped}">Test 1</div>`;
+        document.getElementById('test1').innerHTML = html1;
+        const elem1 = document.getElementById('test1').firstChild;
+        const retrieved1 = elem1.getAttribute('data-source');
+        document.getElementById('result1').textContent = 
+            'Escaped length: ' + escaped.length + '\n' +
+            'Retrieved length: ' + (retrieved1 ? retrieved1.length : 'null') + '\n' +
+            'Retrieved starts with: ' + (retrieved1 ? retrieved1.substring(0, 100) : 'null');
+        
+        // Test 2: Set attribute programmatically
+        const elem2 = document.createElement('div');
+        elem2.setAttribute('data-source', svgCode);  // No escaping needed!
+        elem2.textContent = 'Test 2';
+        document.getElementById('test2').appendChild(elem2);
+        const retrieved2 = elem2.getAttribute('data-source');
+        document.getElementById('result2').textContent = 
+            'Original length: ' + svgCode.length + '\n' +
+            'Retrieved length: ' + retrieved2.length + '\n' +
+            'Match: ' + (retrieved2 === svgCode);
+        
+        // Test 3: Clone test
+        const elem3 = elem2.cloneNode(true);
+        elem3.textContent = 'Test 3 (cloned)';
+        document.getElementById('test3').appendChild(elem3);
+        const retrieved3 = elem3.getAttribute('data-source');
+        document.getElementById('result3').textContent = 
+            'Cloned retrieved length: ' + retrieved3.length + '\n' +
+            'Match with original: ' + (retrieved3 === svgCode);
+    </script>
+</body>
+</html>

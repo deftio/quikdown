@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>SVG Debug Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        #editor {
+            height: 500px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+        }
+        
+        .debug-output {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>SVG Round-Trip Debug Test</h1>
+    
+    <div id="editor"></div>
+    <div id="debug" class="debug-output"></div>
+    
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.min.js';
+        
+        const editor = new QuikdownEditor('#editor', { 
+            mode: 'split',
+            plugins: { 
+                highlightjs: true
+            }
+        });
+        
+        const testContent = `# SVG Test
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Test SVG -->
+  <rect width="32" height="32" rx="4" fill="#9550bb"/>
+  <text x="16" y="20" font-family="Arial" font-size="18" fill="white">Q</text>
+</svg>
+\`\`\`
+
+Regular paragraph to edit.`;
+        
+        editor.setMarkdown(testContent);
+        
+        const debug = document.getElementById('debug');
+        
+        // Hook into the editor to debug
+        const originalPreprocess = editor.preprocessSpecialElements.bind(editor);
+        editor.preprocessSpecialElements = function(panel) {
+            debug.textContent = 'Before preprocessing:\n';
+            
+            // Check for SVG containers
+            const svgContainers = panel.querySelectorAll('.qde-svg-container');
+            debug.textContent += `Found ${svgContainers.length} SVG containers\n`;
+            
+            svgContainers.forEach((container, i) => {
+                debug.textContent += `\nSVG Container ${i}:\n`;
+                debug.textContent += `  contenteditable: ${container.getAttribute('contenteditable')}\n`;
+                debug.textContent += `  data-qd-source: ${container.getAttribute('data-qd-source')?.substring(0, 50)}...\n`;
+                debug.textContent += `  data-qd-fence: ${container.getAttribute('data-qd-fence')}\n`;
+                debug.textContent += `  data-qd-lang: ${container.getAttribute('data-qd-lang')}\n`;
+            });
+            
+            // Check what elements match the selector
+            const complexFences = panel.querySelectorAll('[contenteditable="false"][data-qd-source]');
+            debug.textContent += `\nFound ${complexFences.length} complex fences to restore\n`;
+            
+            // Call original
+            originalPreprocess(panel);
+            
+            // Check result
+            const afterPres = panel.querySelectorAll('pre[data-qd-fence]');
+            debug.textContent += `\nAfter preprocessing: ${afterPres.length} pre elements with fence data\n`;
+            afterPres.forEach((pre, i) => {
+                const code = pre.querySelector('code');
+                debug.textContent += `  Pre ${i}: lang=${pre.getAttribute('data-qd-lang')}, content length=${code?.textContent.length || 0}\n`;
+            });
+        };
+        
+        // Log changes
+        editor.options.onChange = (markdown, html) => {
+            console.log('Markdown changed:', markdown);
+            if (markdown.includes('```svg\n\n```')) {
+                debug.textContent += '\n⚠️ WARNING: Empty SVG fence detected in markdown!\n';
+            }
+        };
+    </script>
+</body>
+</html>

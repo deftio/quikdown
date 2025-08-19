@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Quikdown Editor - Advanced Fence Plugins Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        #editor {
+            height: 600px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: Monaco, 'Courier New', monospace;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .feature-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .feature-item strong {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Quikdown Editor - Advanced Fence Plugins Demo</h1>
+    
+    <div class="info">
+        <strong>🚀 New Fence Types with Lazy Loading!</strong><br>
+        This demo showcases the new built-in fence handlers that automatically load required libraries on-demand.
+        Custom fences always take precedence over built-in handlers.
+    </div>
+    
+    <div class="feature-list">
+        <div class="feature-item">
+            <strong>SVG</strong><br>
+            Inline SVG rendering with XSS protection
+        </div>
+        <div class="feature-item">
+            <strong>HTML</strong><br>
+            Safe HTML with DOMPurify (lazy-loaded)
+        </div>
+        <div class="feature-item">
+            <strong>Math/KaTeX</strong><br>
+            LaTeX math rendering (lazy-loaded)
+        </div>
+        <div class="feature-item">
+            <strong>CSV/PSV/TSV</strong><br>
+            Table rendering from data
+        </div>
+        <div class="feature-item">
+            <strong>JSON</strong><br>
+            Syntax highlighted JSON
+        </div>
+        <div class="feature-item">
+            <strong>Mermaid</strong><br>
+            Diagrams (lazy-loaded)
+        </div>
+    </div>
+    
+    <div id="editor"></div>
+    
+    <script type="module">
+        import QuikdownEditor from '../../src/quikdown_edit.js';
+        
+        // Example of custom fence that overrides built-in
+        const customFences = {
+            // This will override the built-in JSON handler
+            'json-custom': (code, lang) => {
+                return `<div style="background: #ffe; padding: 10px; border: 2px dashed #fa0;">
+                    <strong>Custom JSON Handler:</strong>
+                    <pre>${code}</pre>
+                </div>`;
+            }
+        };
+        
+        const editor = new QuikdownEditor('#editor', { 
+            mode: 'split',
+            plugins: { 
+                highlightjs: true, 
+                mermaid: true 
+            },
+            customFences: customFences,
+            onChange: (markdown, html) => {
+                console.log('Content changed', { 
+                    markdownLength: markdown.length,
+                    htmlLength: html.length 
+                });
+            }
+        });
+        
+        const initialContent = `# Advanced Fence Plugins Demo
+
+## 1. SVG Rendering (Safe)
+
+\`\`\`svg
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="100" cy="100" r="80" fill="#007bff" opacity="0.8"/>
+    <rect x="50" y="50" width="100" height="100" fill="#28a745" opacity="0.6"/>
+    <text x="100" y="105" text-anchor="middle" fill="white" font-size="20" font-weight="bold">
+        QuikDown
+    </text>
+</svg>
+\`\`\`
+
+## 2. HTML Content (with DOMPurify)
+
+\`\`\`html
+<div style="padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 8px;">
+    <h3>Safe HTML Rendering</h3>
+    <p>This HTML is sanitized with <strong>DOMPurify</strong> (lazy-loaded on first use).</p>
+    <button onclick="alert('This will be removed!')">Unsafe button (removed)</button>
+    <ul>
+        <li>Scripts are removed</li>
+        <li>Event handlers stripped</li>
+        <li>Safe HTML preserved</li>
+    </ul>
+</div>
+\`\`\`
+
+## 3. Math Equations (KaTeX)
+
+\`\`\`math
+\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
+\`\`\`
+
+Another math example:
+
+\`\`\`katex
+\\begin{aligned}
+   a^2 + b^2 &= c^2 \\\\
+   E &= mc^2 \\\\
+   \\nabla \\cdot \\vec{E} &= \\frac{\\rho}{\\epsilon_0}
+\\end{aligned}
+\`\`\`
+
+## 4. CSV Data Table
+
+\`\`\`csv
+Product,Price,Stock,Category
+"MacBook Pro",2499.99,15,Electronics
+"iPhone 15",999.00,45,Electronics
+"AirPods Pro",249.99,120,Audio
+"Magic Mouse",79.99,200,Accessories
+"USB-C Cable",19.99,500,Accessories
+\`\`\`
+
+## 5. Pipe-Separated Values
+
+\`\`\`psv
+Name|Age|City|Country
+Alice Johnson|28|New York|USA
+Bob Smith|35|London|UK
+Charlie Brown|42|Sydney|Australia
+Diana Prince|31|Paris|France
+\`\`\`
+
+## 6. JSON with Syntax Highlighting
+
+\`\`\`json
+{
+  "name": "QuikDown Editor",
+  "version": "1.0.5",
+  "features": [
+    "Markdown editing",
+    "Live preview",
+    "Bidirectional sync",
+    "Lazy loading plugins"
+  ],
+  "stats": {
+    "size": "24.4KB",
+    "dependencies": 0,
+    "tests": 391
+  },
+  "supported": true,
+  "rating": 5.0
+}
+\`\`\`
+
+## 7. Mermaid Diagram
+
+\`\`\`mermaid
+graph TB
+    A[User writes Markdown] --> B{Custom Fence?}
+    B -->|Yes| C[Custom Handler]
+    B -->|No| D{Built-in Fence?}
+    D -->|SVG| E[Render & Sanitize]
+    D -->|HTML| F[Load DOMPurify]
+    D -->|Math| G[Load KaTeX]
+    D -->|CSV| H[Parse to Table]
+    D -->|JSON| I[Syntax Highlight]
+    D -->|Other| J[Default Code Block]
+    
+    F --> K[Sanitize HTML]
+    G --> L[Render Math]
+    
+    C --> M[Render Output]
+    E --> M
+    K --> M
+    L --> M
+    H --> M
+    I --> M
+    J --> M
+\`\`\`
+
+## 8. Custom Fence Override Example
+
+\`\`\`json-custom
+{
+  "message": "This uses the custom JSON handler instead of the built-in one!",
+  "customFences": "always take precedence"
+}
+\`\`\`
+
+## 9. Regular Code Blocks Still Work
+
+\`\`\`javascript
+// Regular syntax highlighting with highlight.js
+class QuikdownEditor {
+    constructor(container, options = {}) {
+        this.container = container;
+        this.options = options;
+        
+        // Custom fences take precedence
+        if (options.customFences) {
+            this.customHandlers = options.customFences;
+        }
+        
+        this.init();
+    }
+    
+    async lazyLoad(library) {
+        // Only load if not already present
+        if (!window[library]) {
+            await this.loadScript(libraryUrl);
+        }
+    }
+}
+\`\`\`
+
+## Notes
+
+- **Lazy Loading**: Libraries are loaded only when needed
+- **Multiple Instances**: Libraries are loaded once, shared between editors
+- **Custom Priority**: Your custom fences always override built-in handlers
+- **Fallback**: If a library fails to load, content is shown as plain text
+- **Security**: SVG and HTML are sanitized to prevent XSS attacks`;
+        
+        editor.setMarkdown(initialContent);
+    </script>
+    
+    <div class="warning">
+        <strong>⚡ Performance Note:</strong><br>
+        Libraries are loaded from CDN on first use. Initial renders may show placeholders briefly while loading.
+        Once loaded, libraries are cached for all editor instances on the page.
+    </div>
+    
+    <div class="info">
+        <strong>Try editing the examples above!</strong><br>
+        - Custom fences (like <code>json-custom</code>) override built-in handlers<br>
+        - Libraries load automatically when needed<br>
+        - Switch between Source/Split/Preview modes with Ctrl/Cmd + 1/2/3<br>
+        - All fence types support bidirectional editing
+    </div>
+</body>
+</html>

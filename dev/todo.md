@@ -72,6 +72,20 @@ These items go against the design philosophy:
 ## 🔮 Future Enhancements
 
 * [ ] Allow custom color palettes to be passed to emitStyles()
+* [ ] **Bidirectional Fence Plugin Architecture** - Allow fence plugins to define reverse handlers for HTML→Markdown conversion
+  ```javascript
+  // Proposed API for v2.0
+  customFences: {
+    'svg': {
+      render: (code, lang) => { /* markdown → HTML */ },
+      reverse: (element) => { /* HTML → markdown, returns {fence, lang, content} */ }
+    }
+  }
+  ```
+  - Would eliminate need for preprocessSpecialElements() function
+  - Each fence type self-contained with forward and reverse logic
+  - Cleaner architecture for QuikdownEditor bidirectional support
+  - Fallback to data-qd-source if no reverse handler defined
 * Bidirectional text support
 * Streaming parser mode (if needed)
 * Plugin marketplace/registry

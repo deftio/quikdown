@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bidirectional Fence Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        #editor {
+            height: 600px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bidirectional Fence Test</h1>
+    
+    <div class="test-info">
+        <strong>Test Instructions:</strong><br>
+        1. Try editing the code blocks, CSV tables, and other content in the preview pane<br>
+        2. Switch to source mode to verify the markdown is correctly reconstructed<br>
+        3. Edit in source mode and verify it renders correctly in preview<br>
+        4. All fence types should maintain proper round-trip conversion
+    </div>
+    
+    <div id="editor"></div>
+    
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.min.js';
+        
+        const editor = new QuikdownEditor('#editor', { 
+            mode: 'split',
+            plugins: { 
+                highlightjs: true
+            }
+        });
+        
+        const testContent = `# Bidirectional Fence Test
+
+## JavaScript Code
+\`\`\`javascript
+// javascript is fenced
+x = 3;
+console.log("Hello World");
+\`\`\`
+
+## CSV Table
+\`\`\`csv
+a,b,c,d
+1,2,3,4
+3,4,5,6
+\`\`\`
+
+## Math Equation
+\`\`\`math
+f(x) = \\sin(x)/x + \\pi
+\`\`\`
+
+## SVG Graphics
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- (c) deftio 2025 & M. A. Chatterjee -->
+  <!-- Background -->
+  <rect width="32" height="32" rx="4" fill="#9550bb"/>
+  
+  <!-- Scale q + arrow around the center -->
+  <g transform="translate(16,16) scale(1.45) translate(-18.5,-17)">
+    <!-- Letter 'q' -->
+    <text x="9.25" y="19.5" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">q</text>
+    
+    <!-- Down arrow -->
+    <path d="M 22.5 10.25 L 22.5 20 L 19.5 20 L 24 25 L 28 20 L 25 20 L 25 10.25 Z" fill="white"/>
+  </g>
+</svg>
+\`\`\`
+
+## JSON Data
+\`\`\`json
+{
+  "name": "Test",
+  "version": "1.0.0",
+  "features": ["bidirectional", "fences"]
+}
+\`\`\`
+
+## Regular Paragraph
+This is a regular paragraph that should also be editable in preview mode.`;
+        
+        editor.setMarkdown(testContent);
+        
+        // Log changes to console for debugging
+        editor.options.onChange = (markdown, html) => {
+            console.log('Content changed:', {
+                markdownLength: markdown.length,
+                htmlLength: html.length
+            });
+        };
+    </script>
+</body>
+</html>

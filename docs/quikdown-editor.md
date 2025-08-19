@@ -252,6 +252,21 @@ const editor = new QuikdownEditor('#editor', {
 
 ## Plugin Integration
 
+### Built-in Fence Types (Lazy Loaded)
+
+The editor includes built-in handlers for common fence types that automatically load required libraries:
+
+| Fence Type | Description | Library | Auto-Loaded |
+|------------|-------------|---------|-------------|
+| `svg` | Inline SVG rendering | None | N/A |
+| `html` | Safe HTML rendering | DOMPurify | Yes |
+| `math`, `katex`, `tex`, `latex` | Math equations | KaTeX | Yes |
+| `csv` | Comma-separated values table | None | N/A |
+| `psv` | Pipe-separated values table | None | N/A |
+| `tsv` | Tab-separated values table | None | N/A |
+| `json`, `json5` | Syntax highlighted JSON | None/Highlight.js | Optional |
+| `mermaid` | Diagrams | Mermaid | Yes |
+
 ### Highlight.js
 
 Enable syntax highlighting for code blocks:
@@ -285,6 +300,69 @@ Use in markdown:
 graph LR
     A[Start] --> B[Process]
     B --> C[End]
+```
+````
+
+### Built-in Fence Examples
+
+#### SVG Rendering
+
+````markdown
+```svg
+<svg width="100" height="100">
+    <circle cx="50" cy="50" r="40" fill="blue"/>
+</svg>
+```
+````
+
+#### Safe HTML (with DOMPurify)
+
+````markdown
+```html
+<div style="color: blue;">
+    <h3>Safe HTML</h3>
+    <p>Scripts and event handlers are removed</p>
+</div>
+```
+````
+
+#### Math Equations (KaTeX)
+
+````markdown
+```math
+E = mc^2
+```
+
+```katex
+\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+```
+````
+
+#### Data Tables
+
+````markdown
+```csv
+Name,Age,City
+Alice,30,New York
+Bob,25,London
+```
+
+```psv
+Name|Age|City
+Alice|30|New York
+Bob|25|London
+```
+````
+
+#### JSON with Syntax Highlighting
+
+````markdown
+```json
+{
+  "name": "QuikDown",
+  "version": "1.0.5",
+  "features": ["markdown", "preview", "plugins"]
+}
 ```
 ````
 

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>All Fences Bidirectional Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        #editor {
+            height: 600px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-info {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .test-results {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .test-results h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        
+        .test-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        
+        .test-pass {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .test-fail {
+            background: #ffccbc;
+            color: #d32f2f;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>All Fences Bidirectional Test</h1>
+    
+    <div class="test-info">
+        <strong>Test Instructions:</strong><br>
+        1. Click "Run All Tests" to test each fence type<br>
+        2. Each test will modify content in the preview and verify the markdown is preserved<br>
+        3. Check that all fence types maintain proper round-trip conversion<br>
+        4. Editable fences (code, CSV) should allow editing<br>
+        5. Non-editable fences (SVG, Math, HTML) should preserve content when other elements are edited
+    </div>
+    
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="resetEditor()">Reset Content</button>
+    
+    <div id="results" class="test-results" style="display:none;">
+        <h3>Test Results</h3>
+        <div id="test-output"></div>
+    </div>
+    
+    <div id="editor"></div>
+    
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.min.js';
+        
+        window.editor = new QuikdownEditor('#editor', { 
+            mode: 'split',
+            plugins: { 
+                highlightjs: true
+            }
+        });
+        
+        const testContent = `# All Fence Types Test
+
+## JavaScript Code (Editable)
+\`\`\`javascript
+// This should remain editable with syntax highlighting
+function hello() {
+    console.log("Hello World");
+}
+\`\`\`
+
+## CSV Table (Editable, converts to HTML table)
+\`\`\`csv
+Name,Age,City
+Alice,30,New York
+Bob,25,London
+Charlie,35,Paris
+\`\`\`
+
+## SVG Graphics (Non-editable, preserved)
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect width="100" height="100" fill="#f0f0f0"/>
+  <circle cx="50" cy="50" r="40" fill="#007bff"/>
+  <text x="50" y="55" text-anchor="middle" fill="white" font-size="20">SVG</text>
+</svg>
+\`\`\`
+
+## Math Equation (Non-editable, preserved)
+\`\`\`math
+E = mc^2 + \\\\int_{0}^{\\\\infty} e^{-x^2} dx
+\`\`\`
+
+## HTML Content (Non-editable, preserved)
+\`\`\`html
+<div style="background: linear-gradient(45deg, #667eea, #764ba2); padding: 20px; border-radius: 8px;">
+    <h3 style="color: white; margin: 0;">Custom HTML</h3>
+    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">This is safely rendered HTML content</p>
+</div>
+\`\`\`
+
+## JSON Data (Syntax highlighted if possible)
+\`\`\`json
+{
+  "name": "Test Suite",
+  "version": "1.0.0",
+  "tests": ["svg", "math", "csv", "html", "json"],
+  "status": "active"
+}
+\`\`\`
+
+## Regular Markdown
+This is a **regular paragraph** that should remain *editable* in preview mode.
+
+### Regular Table
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | Cell 2   | Cell 3   |
+| Cell 4   | Cell 5   | Cell 6   |
+`;
+        
+        window.resetEditor = async function() {
+            await editor.setMarkdown(testContent);
+            document.getElementById('results').style.display = 'none';
+        };
+        
+        window.runAllTests = async function() {
+            const results = document.getElementById('results');
+            const output = document.getElementById('test-output');
+            results.style.display = 'block';
+            output.innerHTML = '';
+            
+            // Reset to known state
+            await editor.setMarkdown(testContent);
+            
+            const tests = [];
+            
+            // Test 1: Edit regular paragraph
+            tests.push(await testEditParagraph());
+            
+            // Test 2: Check SVG preservation
+            tests.push(await testSVGPreservation());
+            
+            // Test 3: Check Math preservation  
+            tests.push(await testMathPreservation());
+            
+            // Test 4: Check HTML preservation
+            tests.push(await testHTMLPreservation());
+            
+            // Test 5: Check CSV table editing
+            tests.push(await testCSVEditing());
+            
+            // Test 6: Check code block editing
+            tests.push(await testCodeEditing());
+            
+            // Display results
+            tests.forEach(test => {
+                const div = document.createElement('div');
+                div.className = 'test-item ' + (test.passed ? 'test-pass' : 'test-fail');
+                div.innerHTML = `<strong>${test.name}:</strong> ${test.message}`;
+                output.appendChild(div);
+            });
+            
+            const passCount = tests.filter(t => t.passed).length;
+            const summary = document.createElement('div');
+            summary.style.marginTop = '20px';
+            summary.innerHTML = `<strong>Summary:</strong> ${passCount}/${tests.length} tests passed`;
+            output.appendChild(summary);
+        };
+        
+        async function testEditParagraph() {
+            const p = editor.previewPanel.querySelector('p');
+            if (!p) return { name: 'Edit Paragraph', passed: false, message: 'No paragraph found' };
+            
+            p.textContent = 'Modified text for testing.';
+            editor.previewPanel.dispatchEvent(new Event('input'));
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const markdown = editor.getMarkdown();
+            const passed = markdown.includes('Modified text for testing');
+            
+            return {
+                name: 'Edit Paragraph',
+                passed,
+                message: passed ? 'Paragraph edit preserved' : 'Paragraph edit failed'
+            };
+        }
+        
+        async function testSVGPreservation() {
+            // Edit something else and check SVG is preserved
+            const p = editor.previewPanel.querySelector('p');
+            p.textContent = 'Testing SVG preservation.';
+            editor.previewPanel.dispatchEvent(new Event('input'));
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const markdown = editor.getMarkdown();
+            const hasSVG = markdown.includes('<svg xmlns="http://www.w3.org/2000/svg"');
+            const hasCircle = markdown.includes('<circle cx="50"');
+            const notEmpty = !markdown.includes('```svg\n\n```');
+            
+            const passed = hasSVG && hasCircle && notEmpty;
+            
+            return {
+                name: 'SVG Preservation',
+                passed,
+                message: passed ? 'SVG content preserved' : 'SVG content lost'
+            };
+        }
+        
+        async function testMathPreservation() {
+            const markdown = editor.getMarkdown();
+            const hasMath = markdown.includes('E = mc^2');
+            const hasIntegral = markdown.includes('\\int_{0}');
+            
+            return {
+                name: 'Math Preservation',
+                passed: hasMath && hasIntegral,
+                message: hasMath && hasIntegral ? 'Math equations preserved' : 'Math content lost'
+            };
+        }
+        
+        async function testHTMLPreservation() {
+            const markdown = editor.getMarkdown();
+            const hasHTML = markdown.includes('<div style="background: linear-gradient');
+            const hasH3 = markdown.includes('<h3 style="color: white');
+            
+            return {
+                name: 'HTML Preservation',
+                passed: hasHTML && hasH3,
+                message: hasHTML && hasH3 ? 'HTML content preserved' : 'HTML content lost'
+            };
+        }
+        
+        async function testCSVEditing() {
+            // CSV tables should be editable
+            const csvTable = editor.previewPanel.querySelector('.qde-csv-table');
+            if (!csvTable) return { name: 'CSV Editing', passed: false, message: 'CSV table not found' };
+            
+            const firstCell = csvTable.querySelector('td');
+            if (firstCell) {
+                firstCell.textContent = 'Modified';
+                editor.previewPanel.dispatchEvent(new Event('input'));
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const markdown = editor.getMarkdown();
+                const hasCSV = markdown.includes('```csv');
+                const hasModified = markdown.includes('Modified');
+                
+                return {
+                    name: 'CSV Editing',
+                    passed: hasCSV && hasModified,
+                    message: hasCSV && hasModified ? 'CSV table edit preserved' : 'CSV edit failed'
+                };
+            }
+            
+            return { name: 'CSV Editing', passed: false, message: 'No CSV cells found' };
+        }
+        
+        async function testCodeEditing() {
+            // Code blocks should be editable
+            const codeBlock = editor.previewPanel.querySelector('pre[data-qd-lang="javascript"] code');
+            if (!codeBlock) return { name: 'Code Editing', passed: false, message: 'Code block not found' };
+            
+            // For highlighted code, we need to get the text content
+            const originalText = codeBlock.textContent;
+            const modifiedText = originalText.replace('Hello World', 'Hello QuikDown');
+            codeBlock.textContent = modifiedText;
+            editor.previewPanel.dispatchEvent(new Event('input'));
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const markdown = editor.getMarkdown();
+            const hasCode = markdown.includes('```javascript');
+            const hasModified = markdown.includes('Hello QuikDown');
+            
+            return {
+                name: 'Code Editing',
+                passed: hasCode && hasModified,
+                message: hasCode && hasModified ? 'Code block edit preserved' : 'Code edit failed'
+            };
+        }
+        
+        // Initialize with test content
+        resetEditor();
+    </script>
+</body>
+</html>

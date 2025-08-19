@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Sample Fences Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        #editor {
+            height: 600px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+        }
+        
+        .debug {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow: auto;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sample Fences Test</h1>
+    
+    <button onclick="loadSampleFile()">Load sample-many-fences.md</button>
+    <button onclick="testTableEdit()">Edit Table & Check SVG</button>
+    <button onclick="inspectSVGAttributes()">Inspect SVG Attributes</button>
+    
+    <div id="debug" class="debug"></div>
+    <div id="editor"></div>
+    
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.min.js';
+        
+        window.editor = new QuikdownEditor('#editor', { 
+            mode: 'split',
+            plugins: { 
+                highlightjs: true
+            }
+        });
+        
+        const debug = document.getElementById('debug');
+        
+        window.loadSampleFile = async function() {
+            const response = await fetch('../../examples/sample-many-fences.md');
+            const content = await response.text();
+            await editor.setMarkdown(content);
+            debug.textContent = 'Loaded sample-many-fences.md';
+        };
+        
+        window.testTableEdit = async function() {
+            debug.textContent = 'Testing table edit...\n';
+            
+            // Get initial markdown
+            const before = editor.getMarkdown();
+            const svgBefore = before.match(/```svg[\s\S]*?```/)?.[0] || 'NO SVG FOUND';
+            debug.textContent += 'SVG before (length: ' + svgBefore.length + ')\n';
+            
+            // Find and edit a table cell
+            const tableCell = editor.previewPanel.querySelector('table td');
+            if (tableCell) {
+                debug.textContent += 'Editing table cell...\n';
+                tableCell.textContent = 'EDITED';
+                editor.previewPanel.dispatchEvent(new Event('input'));
+                
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                // Check SVG after
+                const after = editor.getMarkdown();
+                const svgAfter = after.match(/```svg[\s\S]*?```/)?.[0] || 'NO SVG FOUND';
+                debug.textContent += 'SVG after (length: ' + svgAfter.length + ')\n';
+                
+                if (svgAfter === '```svg\n\n```') {
+                    debug.textContent += '❌ ERROR: SVG was destroyed!\n';
+                } else if (svgAfter === svgBefore) {
+                    debug.textContent += '✅ SUCCESS: SVG preserved perfectly\n';
+                } else {
+                    debug.textContent += '⚠️ WARNING: SVG changed\n';
+                    debug.textContent += 'Difference in length: ' + (svgAfter.length - svgBefore.length) + '\n';
+                }
+            } else {
+                debug.textContent += 'No table cell found\n';
+            }
+        };
+        
+        window.inspectSVGAttributes = function() {
+            debug.textContent = 'Inspecting SVG container...\n';
+            
+            const svgContainer = editor.previewPanel.querySelector('.qde-svg-container');
+            if (svgContainer) {
+                const attrs = svgContainer.attributes;
+                for (let i = 0; i < attrs.length; i++) {
+                    const attr = attrs[i];
+                    if (attr.name === 'data-qd-source') {
+                        debug.textContent += `${attr.name}: [${attr.value.length} chars]\n`;
+                        
+                        // Check for problematic characters
+                        const hasUnescapedQuotes = attr.value.includes('"') && !attr.value.includes('&quot;');
+                        const hasUnescapedApos = attr.value.includes("'") && !attr.value.includes('&#39;');
+                        
+                        if (hasUnescapedQuotes) {
+                            debug.textContent += '  ⚠️ Contains unescaped double quotes!\n';
+                        }
+                        if (hasUnescapedApos) {
+                            debug.textContent += '  ⚠️ Contains unescaped single quotes!\n';
+                        }
+                        
+                        // Show first 200 chars of the value
+                        debug.textContent += '  First 200 chars: ' + attr.value.substring(0, 200) + '...\n';
+                        
+                        // Try to parse it back
+                        const div = document.createElement('div');
+                        div.innerHTML = attr.value;
+                        const decoded = div.textContent;
+                        debug.textContent += '  Decoded length: ' + decoded.length + ' chars\n';
+                        debug.textContent += '  Decoded starts with: ' + decoded.substring(0, 50) + '...\n';
+                    } else {
+                        debug.textContent += `${attr.name}: ${attr.value}\n`;
+                    }
+                }
+            } else {
+                debug.textContent += 'No SVG container found\n';
+            }
+        };
+        
+        // Auto-load the sample file
+        loadSampleFile();
+    </script>
+</body>
+</html>
