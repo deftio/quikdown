@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown Editor - quikdown Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1>Quikdown Editor Documentation</h1>
+<p>Quikdown Editor is a drop-in markdown editor control that provides a complete editing experience with live preview, bidirectional editing, and plugin support.</p>
+<h2>Table of Contents</h2>
+<ul>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#basic-usage">Basic Usage</a></li>
+<li><a href="#configuration-options">Configuration Options</a></li>
+<li><a href="#api-reference">API Reference</a></li>
+<li><a href="#view-modes">View Modes</a></li>
+<li><a href="#themes">Themes</a></li>
+<li><a href="#plugin-integration">Plugin Integration</a></li>
+<li><a href="#events-and-callbacks">Events and Callbacks</a></li>
+<li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
+<li><a href="#examples">Examples</a></li>
+<li><a href="#browser-support">Browser Support</a></li>
+</ul>
+<h2>Installation</h2>
+<h3>CDN</h3>
+<pre><code class="language-html">&lt;!-- ES Module --&gt;
+&lt;script type=&quot;module&quot;&gt;
+  import QuikdownEditor from &#39;https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js&#39;;
+&lt;/script&gt;
+
+&lt;!-- UMD --&gt;
+&lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown_edit.umd.min.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h3>NPM</h3>
+<pre><code class="language-bash">npm install quikdown
+</code></pre>
+<pre><code class="language-javascript">// ES Module
+import QuikdownEditor from &#39;quikdown/edit&#39;;
+
+// CommonJS
+const QuikdownEditor = require(&#39;quikdown/edit&#39;);
+</code></pre>
+<h2>Basic Usage</h2>
+<h3>Minimal Setup</h3>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;Quikdown Editor&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id=&quot;editor&quot; style=&quot;height: 400px;&quot;&gt;&lt;/div&gt;
+    
+    &lt;script type=&quot;module&quot;&gt;
+        import QuikdownEditor from &#39;https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js&#39;;
+        
+        const editor = new QuikdownEditor(&#39;#editor&#39;);
+        editor.setMarkdown(&#39;# Hello World\n\nStart editing!&#39;);
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h3>With Options</h3>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    mode: &#39;split&#39;,           // View mode
+    theme: &#39;dark&#39;,           // Theme
+    showToolbar: true,       // Show toolbar
+    lazy_linefeeds: false,   // Lazy linefeeds
+    debounceDelay: 300,      // Debounce delay
+    placeholder: &#39;Type here...&#39;,
+    plugins: {
+        highlightjs: true,   // Enable syntax highlighting
+        mermaid: true        // Enable Mermaid diagrams
+    }
+});
+</code></pre>
+<h2>Configuration Options</h2>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mode</code></td>
+<td>string</td>
+<td><code>&#39;split&#39;</code></td>
+<td>Initial view mode: <code>&#39;source&#39;</code>, <code>&#39;split&#39;</code>, or <code>&#39;preview&#39;</code></td>
+</tr>
+<tr>
+<td><code>theme</code></td>
+<td>string</td>
+<td><code>&#39;auto&#39;</code></td>
+<td>Theme: <code>&#39;light&#39;</code>, <code>&#39;dark&#39;</code>, or <code>&#39;auto&#39;</code> (follows system)</td>
+</tr>
+<tr>
+<td><code>showToolbar</code></td>
+<td>boolean</td>
+<td><code>true</code></td>
+<td>Show/hide the toolbar</td>
+</tr>
+<tr>
+<td><code>lazy_linefeeds</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>Enable lazy linefeeds (single \n becomes <code>&lt;br&gt;</code>)</td>
+</tr>
+<tr>
+<td><code>debounceDelay</code></td>
+<td>number</td>
+<td><code>300</code></td>
+<td>Debounce delay in milliseconds for updates</td>
+</tr>
+<tr>
+<td><code>placeholder</code></td>
+<td>string</td>
+<td><code>&#39;Start typing markdown...&#39;</code></td>
+<td>Placeholder text for empty editor</td>
+</tr>
+<tr>
+<td><code>initialContent</code></td>
+<td>string</td>
+<td><code>&#39;&#39;</code></td>
+<td>Initial markdown content</td>
+</tr>
+<tr>
+<td><code>plugins</code></td>
+<td>object</td>
+<td><code>{}</code></td>
+<td>Built-in plugin configuration</td>
+</tr>
+<tr>
+<td><code>customFences</code></td>
+<td>object</td>
+<td><code>{}</code></td>
+<td>Custom fence plugin handlers</td>
+</tr>
+<tr>
+<td><code>onChange</code></td>
+<td>function</td>
+<td><code>null</code></td>
+<td>Callback when content changes</td>
+</tr>
+<tr>
+<td><code>onModeChange</code></td>
+<td>function</td>
+<td><code>null</code></td>
+<td>Callback when mode changes</td>
+</tr>
+</tbody></table>
+<h3>Plugin Options</h3>
+<pre><code class="language-javascript">plugins: {
+    highlightjs: boolean,  // Enable Highlight.js for syntax highlighting
+    mermaid: boolean      // Enable Mermaid for diagrams
+}
+</code></pre>
+<h2>API Reference</h2>
+<h3>Constructor</h3>
+<pre><code class="language-javascript">new QuikdownEditor(container, options?)
+</code></pre>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>container</code> (string | HTMLElement): CSS selector or DOM element</li>
+<li><code>options</code> (object): Configuration options</li>
+</ul>
+<p><strong>Returns:</strong> QuikdownEditor instance</p>
+<h3>Methods</h3>
+<h4><code>setMarkdown(markdown)</code></h4>
+<p>Sets the markdown content.</p>
+<pre><code class="language-javascript">editor.setMarkdown(&#39;# New Content&#39;);
+</code></pre>
+<h4><code>getMarkdown()</code></h4>
+<p>Returns the current markdown content.</p>
+<pre><code class="language-javascript">const markdown = editor.getMarkdown();
+</code></pre>
+<h4><code>getHTML()</code></h4>
+<p>Returns the rendered HTML.</p>
+<pre><code class="language-javascript">const html = editor.getHTML();
+</code></pre>
+<h4><code>setMode(mode)</code></h4>
+<p>Changes the view mode.</p>
+<pre><code class="language-javascript">editor.setMode(&#39;preview&#39;); // &#39;source&#39;, &#39;split&#39;, or &#39;preview&#39;
+</code></pre>
+<h4><code>destroy()</code></h4>
+<p>Cleans up the editor and removes event listeners.</p>
+<pre><code class="language-javascript">editor.destroy();
+</code></pre>
+<h3>Properties</h3>
+<h4><code>markdown</code></h4>
+<p>Get or set markdown content.</p>
+<pre><code class="language-javascript">// Get
+const content = editor.markdown;
+
+// Set
+editor.markdown = &#39;# New Content&#39;;
+</code></pre>
+<h4><code>html</code> (read-only)</h4>
+<p>Get the rendered HTML.</p>
+<pre><code class="language-javascript">const html = editor.html;
+</code></pre>
+<h4><code>mode</code> (read-only)</h4>
+<p>Get the current view mode.</p>
+<pre><code class="language-javascript">const currentMode = editor.mode; // &#39;source&#39;, &#39;split&#39;, or &#39;preview&#39;
+</code></pre>
+<h2>View Modes</h2>
+<h3>Source Mode</h3>
+<p>Shows only the markdown source editor.</p>
+<pre><code class="language-javascript">editor.setMode(&#39;source&#39;);
+</code></pre>
+<h3>Split Mode</h3>
+<p>Shows markdown source and preview side-by-side.</p>
+<pre><code class="language-javascript">editor.setMode(&#39;split&#39;);
+</code></pre>
+<h3>Preview Mode</h3>
+<p>Shows only the rendered preview (still editable).</p>
+<pre><code class="language-javascript">editor.setMode(&#39;preview&#39;);
+</code></pre>
+<h2>Themes</h2>
+<h3>Light Theme</h3>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    theme: &#39;light&#39;
+});
+</code></pre>
+<h3>Dark Theme</h3>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    theme: &#39;dark&#39;
+});
+</code></pre>
+<h3>Auto Theme</h3>
+<p>Follows system preference.</p>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    theme: &#39;auto&#39;  // Default
+});
+</code></pre>
+<h2>Plugin Integration</h2>
+<h3>Built-in Fence Types (Lazy Loaded)</h3>
+<p>The editor includes built-in handlers for common fence types that automatically load required libraries:</p>
+<table>
+<thead>
+<tr>
+<th>Fence Type</th>
+<th>Description</th>
+<th>Library</th>
+<th>Auto-Loaded</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>svg</code></td>
+<td>Inline SVG rendering</td>
+<td>None</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><code>html</code></td>
+<td>Safe HTML rendering</td>
+<td>DOMPurify</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>math</code>, <code>katex</code>, <code>tex</code>, <code>latex</code></td>
+<td>Math equations</td>
+<td>KaTeX</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>csv</code></td>
+<td>Comma-separated values table</td>
+<td>None</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><code>psv</code></td>
+<td>Pipe-separated values table</td>
+<td>None</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><code>tsv</code></td>
+<td>Tab-separated values table</td>
+<td>None</td>
+<td>N/A</td>
+</tr>
+<tr>
+<td><code>json</code>, <code>json5</code></td>
+<td>Syntax highlighted JSON</td>
+<td>None/Highlight.js</td>
+<td>Optional</td>
+</tr>
+<tr>
+<td><code>mermaid</code></td>
+<td>Diagrams</td>
+<td>Mermaid</td>
+<td>Yes</td>
+</tr>
+</tbody></table>
+<h3>Highlight.js</h3>
+<p>Enable syntax highlighting for code blocks:</p>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    plugins: {
+        highlightjs: true
+    }
+});
+</code></pre>
+<p>The editor will automatically load Highlight.js from CDN if not already present.</p>
+<h3>Mermaid</h3>
+<p>Enable Mermaid diagram rendering:</p>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    plugins: {
+        mermaid: true
+    }
+});
+</code></pre>
+<p>Use in markdown:</p>
+<pre><code class="language-markdown">```mermaid
+graph LR
+    A[Start] --&gt; B[Process]
+    B --&gt; C[End]
+```
+</code></pre>
+<h3>Built-in Fence Examples</h3>
+<h4>SVG Rendering</h4>
+<pre><code class="language-markdown">```svg
+&lt;svg width=&quot;100&quot; height=&quot;100&quot;&gt;
+    &lt;circle cx=&quot;50&quot; cy=&quot;50&quot; r=&quot;40&quot; fill=&quot;blue&quot;/&gt;
+&lt;/svg&gt;
+```
+</code></pre>
+<h4>Safe HTML (with DOMPurify)</h4>
+<pre><code class="language-markdown">```html
+&lt;div style=&quot;color: blue;&quot;&gt;
+    &lt;h3&gt;Safe HTML&lt;/h3&gt;
+    &lt;p&gt;Scripts and event handlers are removed&lt;/p&gt;
+&lt;/div&gt;
+```
+</code></pre>
+<h4>Math Equations (KaTeX)</h4>
+<pre><code class="language-markdown">```math
+E = mc^2
+```
+
+```katex
+\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+```
+</code></pre>
+<h4>Data Tables</h4>
+<pre><code class="language-markdown">```csv
+Name,Age,City
+Alice,30,New York
+Bob,25,London
+```
+
+```psv
+Name|Age|City
+Alice|30|New York
+Bob|25|London
+```
+</code></pre>
+<h4>JSON with Syntax Highlighting</h4>
+<pre><code class="language-markdown">```json
+{
+  &quot;name&quot;: &quot;QuikDown&quot;,
+  &quot;version&quot;: &quot;1.0.5&quot;,
+  &quot;features&quot;: [&quot;markdown&quot;, &quot;preview&quot;, &quot;plugins&quot;]
+}
+```
+</code></pre>
+<h3>Custom Fence Plugins</h3>
+<p>Provide custom handlers for specific fence languages using the <code>customFences</code> option:</p>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    customFences: {
+        // Each key is a language identifier
+        &#39;custom&#39;: (code, language) =&gt; {
+            return `&lt;div class=&quot;custom&quot;&gt;${code}&lt;/div&gt;`;
+        },
+        &#39;math&#39;: (code, language) =&gt; {
+            // Handle math blocks
+            return `&lt;div class=&quot;math&quot;&gt;$$${code}$$&lt;/div&gt;`;
+        }
+    }
+});
+</code></pre>
+<h4>MathJax Integration</h4>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    customFences: {
+        &#39;math&#39;: (code, lang) =&gt; {
+            if (window.MathJax) {
+                const id = `math-${Date.now()}`;
+                const html = `&lt;div id=&quot;${id}&quot; class=&quot;math-block&quot;&gt;\\[${code}\\]&lt;/div&gt;`;
+                
+                // Tell MathJax to render after DOM insertion
+                setTimeout(() =&gt; {
+                    MathJax.typesetPromise([document.getElementById(id)]);
+                }, 0);
+                
+                return html;
+            }
+            return `&lt;pre class=&quot;math-source&quot;&gt;${code}&lt;/pre&gt;`;
+        }
+    }
+});
+</code></pre>
+<h4>KaTeX Integration</h4>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    customFences: {
+        &#39;math&#39;: (code, lang) =&gt; {
+            if (window.katex) {
+                try {
+                    return katex.renderToString(code, {
+                        displayMode: true,
+                        throwOnError: false
+                    });
+                } catch (err) {
+                    return `&lt;div class=&quot;math-error&quot;&gt;Error: ${err.message}&lt;/div&gt;`;
+                }
+            }
+            return `&lt;pre&gt;${code}&lt;/pre&gt;`;
+        }
+    }
+});
+</code></pre>
+<h4>Multiple Custom Plugins</h4>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    customFences: {
+        // Math rendering
+        &#39;math&#39;: (code, lang) =&gt; {
+            // Your math rendering logic
+        },
+        
+        // PlantUML diagrams
+        &#39;plantuml&#39;: (code, lang) =&gt; {
+            const encoded = plantumlEncoder.encode(code);
+            return `&lt;img src=&quot;http://www.plantuml.com/plantuml/svg/${encoded}&quot; alt=&quot;PlantUML&quot;&gt;`;
+        },
+        
+        // JSON visualization
+        &#39;json&#39;: (code, lang) =&gt; {
+            try {
+                const data = JSON.parse(code);
+                return `&lt;pre class=&quot;json&quot;&gt;${JSON.stringify(data, null, 2)}&lt;/pre&gt;`;
+            } catch (err) {
+                return `&lt;pre class=&quot;error&quot;&gt;Invalid JSON: ${err.message}&lt;/pre&gt;`;
+            }
+        },
+        
+        // Chart rendering
+        &#39;chart&#39;: (code, lang) =&gt; {
+            try {
+                const config = JSON.parse(code);
+                return renderChart(config); // Your chart rendering function
+            } catch (err) {
+                return `&lt;pre&gt;Invalid chart config: ${err.message}&lt;/pre&gt;`;
+            }
+        }
+    },
+    
+    // You can still use built-in plugins alongside custom ones
+    plugins: {
+        highlightjs: true,  // For other code blocks
+        mermaid: true      // Built-in mermaid support
+    }
+});
+</code></pre>
+<p><strong>Note:</strong> Custom fences are checked first, before built-in plugins. If a custom fence returns <code>undefined</code>, it falls back to built-in behavior.</p>
+<h2>Events and Callbacks</h2>
+<h3>onChange</h3>
+<p>Called when content changes:</p>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    onChange: (markdown, html) =&gt; {
+        console.log(&#39;Markdown:&#39;, markdown);
+        console.log(&#39;HTML:&#39;, html);
+    }
+});
+</code></pre>
+<h3>onModeChange</h3>
+<p>Called when view mode changes:</p>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    onModeChange: (mode) =&gt; {
+        console.log(&#39;Mode changed to:&#39;, mode);
+    }
+});
+</code></pre>
+<h2>Keyboard Shortcuts</h2>
+<table>
+<thead>
+<tr>
+<th>Shortcut</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Ctrl/Cmd + 1</code></td>
+<td>Switch to source mode</td>
+</tr>
+<tr>
+<td><code>Ctrl/Cmd + 2</code></td>
+<td>Switch to split mode</td>
+</tr>
+<tr>
+<td><code>Ctrl/Cmd + 3</code></td>
+<td>Switch to preview mode</td>
+</tr>
+</tbody></table>
+<h2>Examples</h2>
+<h3>Complete Example with All Features</h3>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;Quikdown Editor - Full Example&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id=&quot;editor&quot; style=&quot;height: 500px;&quot;&gt;&lt;/div&gt;
+    &lt;div id=&quot;status&quot;&gt;&lt;/div&gt;
+    
+    &lt;script type=&quot;module&quot;&gt;
+        import QuikdownEditor from &#39;https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js&#39;;
+        
+        const editor = new QuikdownEditor(&#39;#editor&#39;, {
+            mode: &#39;split&#39;,
+            theme: &#39;auto&#39;,
+            showToolbar: true,
+            lazy_linefeeds: false,
+            debounceDelay: 300,
+            placeholder: &#39;Start typing markdown...&#39;,
+            initialContent: &#39;# Welcome to Quikdown Editor\n\n&#39; +
+                          &#39;## Features\n\n&#39; +
+                          &#39;- **Bold** and *italic* text\n&#39; +
+                          &#39;- [Links](https://example.com)\n&#39; +
+                          &#39;- `Code blocks`\n\n&#39; +
+                          &#39;```javascript\n&#39; +
+                          &#39;console.log(&quot;Hello World&quot;);\n&#39; +
+                          &#39;```\n&#39;,
+            plugins: {
+                highlightjs: true,
+                mermaid: true
+            },
+            onChange: (markdown, html) =&gt; {
+                document.getElementById(&#39;status&#39;).textContent = 
+                    `Characters: ${markdown.length}`;
+            },
+            onModeChange: (mode) =&gt; {
+                console.log(&#39;Mode changed to:&#39;, mode);
+            }
+        });
+        
+        // Programmatic control
+        document.addEventListener(&#39;keydown&#39;, (e) =&gt; {
+            if (e.ctrlKey &amp;&amp; e.key === &#39;s&#39;) {
+                e.preventDefault();
+                const content = editor.getMarkdown();
+                console.log(&#39;Saving:&#39;, content);
+                // Save to server or localStorage
+            }
+        });
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h3>Integration with Form</h3>
+<pre><code class="language-javascript">const form = document.getElementById(&#39;myForm&#39;);
+const editor = new QuikdownEditor(&#39;#editor&#39;);
+
+form.addEventListener(&#39;submit&#39;, (e) =&gt; {
+    e.preventDefault();
+    
+    const formData = new FormData(form);
+    formData.append(&#39;content&#39;, editor.getMarkdown());
+    
+    fetch(&#39;/api/save&#39;, {
+        method: &#39;POST&#39;,
+        body: formData
+    });
+});
+</code></pre>
+<h3>Multiple Editors</h3>
+<pre><code class="language-javascript">const editor1 = new QuikdownEditor(&#39;#editor1&#39;, {
+    mode: &#39;source&#39;,
+    theme: &#39;light&#39;
+});
+
+const editor2 = new QuikdownEditor(&#39;#editor2&#39;, {
+    mode: &#39;preview&#39;,
+    theme: &#39;dark&#39;
+});
+
+// Sync content between editors
+editor1.onChange = (markdown) =&gt; {
+    editor2.setMarkdown(markdown);
+};
+</code></pre>
+<h3>With Custom Styling</h3>
+<pre><code class="language-html">&lt;style&gt;
+    #custom-editor {
+        border: 2px solid #007bff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    #custom-editor .qde-toolbar {
+        background: linear-gradient(to right, #007bff, #0056b3);
+    }
+    
+    #custom-editor .qde-btn {
+        background: white;
+        color: #007bff;
+    }
+&lt;/style&gt;
+
+&lt;div id=&quot;custom-editor&quot; style=&quot;height: 400px;&quot;&gt;&lt;/div&gt;
+
+&lt;script type=&quot;module&quot;&gt;
+    import QuikdownEditor from &#39;https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js&#39;;
+    
+    const editor = new QuikdownEditor(&#39;#custom-editor&#39;, {
+        mode: &#39;split&#39;,
+        theme: &#39;light&#39;
+    });
+&lt;/script&gt;
+</code></pre>
+<h3>Complete Example with MathJax</h3>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;Quikdown Editor with MathJax&lt;/title&gt;
+    &lt;!-- Load MathJax --&gt;
+    &lt;script src=&quot;https://polyfill.io/v3/polyfill.min.js?features=es6&quot;&gt;&lt;/script&gt;
+    &lt;script id=&quot;MathJax-script&quot; async src=&quot;https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js&quot;&gt;&lt;/script&gt;
+    &lt;style&gt;
+        body { margin: 20px; font-family: Arial, sans-serif; }
+        #editor { height: 500px; border: 1px solid #ddd; }
+        .math-block { margin: 1em 0; }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;Quikdown Editor with Math Support&lt;/h1&gt;
+    &lt;div id=&quot;editor&quot;&gt;&lt;/div&gt;
+    
+    &lt;script type=&quot;module&quot;&gt;
+        import QuikdownEditor from &#39;https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js&#39;;
+        
+        // Wait for MathJax to load
+        window.MathJax = {
+            tex: {
+                inlineMath: [[&#39;$&#39;, &#39;$&#39;], [&#39;\\(&#39;, &#39;\\)&#39;]],
+                displayMath: [[&#39;$$&#39;, &#39;$$&#39;], [&#39;\\[&#39;, &#39;\\]&#39;]]
+            }
+        };
+        
+        const editor = new QuikdownEditor(&#39;#editor&#39;, {
+            mode: &#39;split&#39;,
+            showToolbar: true,
+            customFences: {
+                // Handle ```math blocks
+                &#39;math&#39;: (code, lang) =&gt; {
+                    const id = `math-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    // Schedule MathJax rendering
+                    setTimeout(() =&gt; {
+                        const element = document.getElementById(id);
+                        if (element &amp;&amp; window.MathJax) {
+                            MathJax.typesetPromise([element]).catch(err =&gt; {
+                                console.error(&#39;MathJax error:&#39;, err);
+                            });
+                        }
+                    }, 10);
+                    
+                    return `&lt;div id=&quot;${id}&quot; class=&quot;math-block&quot;&gt;\\[${code}\\]&lt;/div&gt;`;
+                },
+                
+                // Handle ```latex blocks
+                &#39;latex&#39;: (code, lang) =&gt; {
+                    const id = `latex-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    
+                    setTimeout(() =&gt; {
+                        const element = document.getElementById(id);
+                        if (element &amp;&amp; window.MathJax) {
+                            MathJax.typesetPromise([element]);
+                        }
+                    }, 10);
+                    
+                    return `&lt;div id=&quot;${id}&quot; class=&quot;latex-block&quot;&gt;$$${code}$$&lt;/div&gt;`;
+                }
+            },
+            
+            // Still use highlight.js for other code blocks
+            plugins: {
+                highlightjs: true
+            },
+            
+            initialContent: `# Math Examples
+
+## Inline Math
+
+This is inline math: $E = mc^2$ (requires inline math processing in your markdown)
+
+## Math Blocks
+
+\`\`\`math
+\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+\`\`\`
+
+## LaTeX Block
+
+\`\`\`latex
+\\begin{align}
+\\nabla \\times \\vec{\\mathbf{B}} -\\, \\frac1c\\, \\frac{\\partial\\vec{\\mathbf{E}}}{\\partial t} &amp;= \\frac{4\\pi}{c}\\vec{\\mathbf{j}} \\\\
+\\nabla \\cdot \\vec{\\mathbf{E}} &amp;= 4 \\pi \\rho \\\\
+\\nabla \\times \\vec{\\mathbf{E}}\\, +\\, \\frac1c\\, \\frac{\\partial\\vec{\\mathbf{B}}}{\\partial t} &amp;= \\vec{\\mathbf{0}} \\\\
+\\nabla \\cdot \\vec{\\mathbf{B}} &amp;= 0
+\\end{align}
+\`\`\`
+
+## Regular Code Block
+
+\`\`\`javascript
+// This still gets syntax highlighted
+function fibonacci(n) {
+    if (n &lt;= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+\`\`\`
+`
+        });
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre>
+<h2>Browser Support</h2>
+<p>Quikdown Editor supports all modern browsers:</p>
+<ul>
+<li>Chrome/Edge 88+</li>
+<li>Firefox 78+</li>
+<li>Safari 14+</li>
+<li>iOS Safari 14+</li>
+<li>Chrome for Android 88+</li>
+</ul>
+<p>For older browsers, use the UMD build which includes necessary polyfills.</p>
+<h2>Troubleshooting</h2>
+<h3>Editor not appearing</h3>
+<p>Ensure the container element has a defined height:</p>
+<pre><code class="language-css">#editor {
+    height: 400px; /* or min-height */
+}
+</code></pre>
+<h3>Plugins not loading</h3>
+<p>The editor automatically loads plugins from CDN. If you&#39;re behind a firewall or offline, load them manually:</p>
+<pre><code class="language-html">&lt;!-- Load before creating editor --&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;path/to/highlight.css&quot;&gt;
+&lt;script src=&quot;path/to/highlight.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;path/to/mermaid.js&quot;&gt;&lt;/script&gt;
+</code></pre>
+<h3>Content not syncing</h3>
+<p>Ensure you&#39;re using the bidirectional build of quikdown:</p>
+<pre><code class="language-javascript">// The editor automatically uses quikdown_bd for bidirectional support
+// This is built into quikdown_edit.js
+</code></pre>
+<h2>Advanced Usage</h2>
+<h3>Custom Toolbar Actions</h3>
+<pre><code class="language-javascript">// After editor creation
+const toolbar = editor.container.querySelector(&#39;.qde-toolbar&#39;);
+
+const customBtn = document.createElement(&#39;button&#39;);
+customBtn.className = &#39;qde-btn&#39;;
+customBtn.textContent = &#39;Export&#39;;
+customBtn.onclick = () =&gt; {
+    const blob = new Blob([editor.getMarkdown()], { type: &#39;text/markdown&#39; });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement(&#39;a&#39;);
+    a.href = url;
+    a.download = &#39;document.md&#39;;
+    a.click();
+};
+
+toolbar.appendChild(customBtn);
+</code></pre>
+<h3>Programmatic Content Manipulation</h3>
+<pre><code class="language-javascript">// Insert at cursor position
+const insertAtCursor = (text) =&gt; {
+    const textarea = editor.sourceTextarea;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const value = textarea.value;
+    
+    textarea.value = value.substring(0, start) + text + value.substring(end);
+    textarea.selectionStart = textarea.selectionEnd = start + text.length;
+    
+    // Trigger update
+    textarea.dispatchEvent(new Event(&#39;input&#39;));
+};
+
+// Usage
+insertAtCursor(&#39;**bold text**&#39;);
+</code></pre>
+<h2>Performance Tips</h2>
+<ol>
+<li><strong>Debouncing</strong>: Adjust <code>debounceDelay</code> for large documents</li>
+<li><strong>Lazy Loading</strong>: Plugins are loaded on-demand</li>
+<li><strong>Mode Selection</strong>: Use source mode for large documents to improve performance</li>
+<li><strong>Memory Management</strong>: Call <code>destroy()</code> when removing editors</li>
+</ol>
+<h2>License</h2>
+<p>BSD 2-Clause License - see <a href="../LICENSE.txt">LICENSE.txt</a> for details.</p>
+
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>

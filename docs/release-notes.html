@@ -65,6 +65,162 @@
 <body>
     <article class="markdown-body">
         <h1>Release Notes</h1>
+<h2>v1.0.5 (2025-08-19)</h2>
+<h3>🚀 New: Quikdown Editor</h3>
+<h4>Drop-in Markdown Editor Control</h4>
+<ul>
+<li><strong>New <code>QuikdownEditor</code> class</strong>: Complete markdown editor that can be embedded in any webpage</li>
+<li><strong>Three view modes</strong>: Source-only, Split view, and Preview-only modes</li>
+<li><strong>Bidirectional editing</strong>: Edit markdown or preview and see changes sync in real-time</li>
+<li><strong>Plugin support</strong>: Built-in integration with Highlight.js and Mermaid</li>
+<li><strong>Theme support</strong>: Light, dark, and auto themes that follow system preferences</li>
+<li><strong>Keyboard shortcuts</strong>: Quick mode switching with Ctrl/Cmd+1/2/3</li>
+<li><strong>Toolbar actions</strong>: Copy markdown or HTML to clipboard with one click</li>
+<li><strong>Mobile responsive</strong>: Automatically adapts layout for mobile devices</li>
+<li><strong>Bundle size</strong>: 35.8KB minified (includes embedded quikdown_bd and fence plugins)</li>
+</ul>
+<h4>Editor API</h4>
+<ul>
+<li>Simple constructor: <code>new QuikdownEditor(container, options)</code></li>
+<li>Methods: <code>setMarkdown()</code>, <code>getMarkdown()</code>, <code>getHTML()</code>, <code>setMode()</code>, <code>setLazyLinefeeds()</code>, <code>destroy()</code></li>
+<li>Properties: <code>markdown</code>, <code>html</code>, <code>mode</code></li>
+<li>Callbacks: <code>onChange</code>, <code>onModeChange</code></li>
+<li><strong>Custom fence plugins</strong>: Support for custom fence renderers via <code>customFences</code> option</li>
+<li>Full documentation in <code>docs/quikdown-editor.md</code></li>
+</ul>
+<h4>Built-in Lazy-Loading Fence Plugins</h4>
+<ul>
+<li><strong>SVG</strong>: Inline SVG rendering with XSS sanitization</li>
+<li><strong>HTML</strong>: Safe HTML rendering with DOMPurify (auto-loaded from CDN)</li>
+<li><strong>Math/KaTeX</strong>: Mathematical equations with KaTeX (auto-loaded from CDN)</li>
+<li><strong>CSV/PSV/TSV</strong>: Data tables with bidirectional editing support</li>
+<li><strong>JSON</strong>: Syntax-highlighted JSON with validation</li>
+<li><strong>Mermaid</strong>: Diagram rendering (when plugin enabled)</li>
+<li>All fence types properly preserve content during bidirectional editing</li>
+</ul>
+<h4>Editor Examples</h4>
+<ul>
+<li><strong>Full-featured demo</strong>: <code>examples/qde/index.html</code></li>
+<li><strong>CDN usage example</strong>: <code>examples/quikdown-editor-cdn.html</code></li>
+<li><strong>Simple 5-line setup</strong>: <code>examples/quikdown-editor-simple.html</code></li>
+<li>Multiple integration examples in documentation</li>
+</ul>
+<h4>Recent Improvements (Post-v1.0.5)</h4>
+<ul>
+<li><strong>Fixed bidirectional editing</strong>: Complex fence content (SVG, Math, HTML) now properly preserved during round-trip conversions</li>
+<li><strong>Improved attribute escaping</strong>: Fixed quote escaping issues that broke SVG with complex attributes</li>
+<li><strong>Async initialization</strong>: Editor properly waits for initialization before accepting content</li>
+<li><strong>Code cleanup</strong>: Reduced size from 37.9KB to 35.8KB by removing redundant code</li>
+<li><strong>Cursor behavior</strong>: Fixed cursor styling to use standard text cursor instead of circle</li>
+</ul>
+<h3>🎉 Major Architecture Refactor</h3>
+<h4>Complete Bidirectional Module Refactoring</h4>
+<ul>
+<li><strong>Successfully refactored <code>quikdown_bd</code></strong> to import and extend core <code>quikdown</code> module</li>
+<li><strong>Eliminated ~800 lines of duplicate code</strong> by using core module as base</li>
+<li><strong>Core <code>quikdown</code> module</strong> now includes <code>bidirectional</code> option to emit <code>data-qd</code> attributes</li>
+<li><strong><code>quikdown_bd</code> module</strong> simplified to ~300 lines (from ~1100 lines)</li>
+<li>Maintains 100% backward compatibility with existing API</li>
+</ul>
+<h3>📊 Test Coverage Achievements</h3>
+<ul>
+<li><strong>Achieved 98%+ overall test coverage</strong></li>
+<li><strong><code>quikdown.esm.js</code></strong>: 100% line coverage, 100% branch coverage</li>
+<li><strong><code>quikdown_bd.esm.js</code></strong>: 97.97% line coverage, 89.36% function coverage</li>
+<li><strong><code>quikdown_edit</code></strong>: 14 build verification tests all passing</li>
+<li><strong>391 tests</strong> all passing (including comprehensive lazy linefeeds tests)</li>
+<li>Added comprehensive test suites for:<ul>
+<li>Bidirectional conversion round-trips</li>
+<li>Edge cases and malformed inputs</li>
+<li>URL sanitization with various protocols</li>
+<li>Fence plugin behaviors with custom renderers</li>
+<li>Table alignment with inline styles</li>
+<li>Nested list structures</li>
+<li>Task list checkbox states</li>
+<li>Empty and null inputs</li>
+<li>DOM element conversions</li>
+<li>QuikdownEditor build verification (14 tests)</li>
+</ul>
+</li>
+</ul>
+<h3>🔧 Build System Improvements</h3>
+<ul>
+<li><strong>Fixed CSS regeneration issue</strong>: CSS files now use version number instead of timestamp<ul>
+<li>Prevents CSS files from appearing modified on every build</li>
+<li>CSS only regenerates when version changes</li>
+</ul>
+</li>
+<li><strong>Bundle sizes</strong> (with lazy_linefeeds feature):<ul>
+<li>Quikdown Core: 8.5 KB minified (was 7.4KB in v1.0.4)</li>
+<li>Quikdown BD: 12.5 KB minified (includes core)</li>
+<li>Quikdown Editor: 24.3 KB minified (includes quikdown_bd)</li>
+</ul>
+</li>
+</ul>
+<h3>🎯 New Features</h3>
+<h4>NPM Discoverability</h4>
+<ul>
+<li><strong>Added comprehensive keywords</strong> to package.json for better NPM search visibility</li>
+<li>Keywords cover: markdown parsing, chat/LLM use cases, bidirectional editing, and more</li>
+</ul>
+<h4>Lazy Linefeeds Support</h4>
+<ul>
+<li><strong>Added <code>lazy_linefeeds</code> option</strong> for chat/LLM applications</li>
+<li>When enabled, single newlines (<code>\n</code>) automatically become <code>&lt;br&gt;</code> tags</li>
+<li>Perfect for chat interfaces where users expect Enter to create a new line</li>
+<li>Preserves double newlines for paragraph breaks</li>
+<li>Code blocks and lists maintain proper formatting</li>
+<li>Example:<pre><code class="language-javascript">quikdown(&#39;Line 1\nLine 2&#39;, { lazy_linefeeds: true });
+// Output: &lt;p&gt;Line 1&lt;br&gt;Line 2&lt;/p&gt;
+</code></pre>
+</li>
+</ul>
+<h3>📚 Documentation Updates</h3>
+<h4>API Documentation</h4>
+<ul>
+<li>Added <code>bidirectional</code> option to core quikdown API reference</li>
+<li>Added <code>lazy_linefeeds</code> option documentation with examples</li>
+<li>Added <code>allow_unsafe_urls</code> option documentation</li>
+<li>Clarified that <code>quikdown_bd</code> automatically sets <code>bidirectional: true</code></li>
+<li>Updated TypeScript definitions with new options</li>
+<li>Updated examples to reflect new architecture</li>
+</ul>
+<h4>Bidirectional Documentation</h4>
+<ul>
+<li>Explained new <code>bidirectional</code> option in core module</li>
+<li>Clarified differences between <code>quikdown</code> and <code>quikdown_bd</code></li>
+<li>Updated usage examples</li>
+</ul>
+<h3>🐛 Bug Fixes</h3>
+<h4>Table Alignment Fix</h4>
+<ul>
+<li><strong>Fixed table alignment in CSS class mode</strong>: Table column alignment (left, center, right) now works correctly in both CSS class and inline styles modes</li>
+<li>Previously, alignment only worked with <code>inline_styles: true</code> option</li>
+<li>Now applies alignment as inline style attribute even when using CSS classes</li>
+<li>Eliminated duplicate <code>text-align</code> properties in inline styles mode</li>
+<li>Example:<pre><code class="language-markdown">| Left | Center | Right |
+|:-----|:------:|------:|
+| L    |   C    |     R |
+</code></pre>
+Now correctly renders with proper text alignment in all cells</li>
+</ul>
+<h3>🛠️ Technical Improvements</h3>
+<ul>
+<li><strong>Module imports</strong>: Converted all tests from CommonJS to ESM imports</li>
+<li><strong>Dead code elimination</strong>: Removed unreachable code paths identified through coverage analysis</li>
+<li><strong>Logic simplification</strong>: Fixed redundant conditions in strong/em/del element processing</li>
+<li><strong>Istanbul pragmas</strong>: Added appropriate coverage pragmas for defensive code and build artifacts</li>
+<li><strong>Performance</strong>: Maintained same performance characteristics despite architectural changes</li>
+</ul>
+<h3>🧹 Code Organization</h3>
+<ul>
+<li>Moved experimental lexer files from <code>src/exp-lexer/</code> to <code>dev/exp-lexer/</code></li>
+<li>Kept <code>src/</code> directory for production code only</li>
+<li>Added file size reporting tool (<code>tools/printSizes.cjs</code>)</li>
+<li>Updated bidir-fixes.md documentation with completion status</li>
+<li>Reorganized examples index page with clear sections for each module</li>
+<li>Added individual size badges for all three modules in README</li>
+</ul>
 <h2>v1.0.4 (2025-08-18)</h2>
 <h3>🎉 Major Feature: Bidirectional Conversion Support</h3>
 <h4>New <code>quikdown_bd</code> Module</h4>
@@ -73,7 +229,7 @@
 <li><strong>Round-trip preservation</strong>: Maintains original markdown formatting through conversion cycles</li>
 <li><strong>Smart source tracking</strong>: Uses <code>data-qd</code> attributes to preserve original markdown syntax</li>
 <li><strong>DOM-based conversion</strong>: Walks the DOM tree for accurate HTML-to-Markdown transformation</li>
-<li><strong>Bundle size</strong>: 10KB minified (compared to 7.4KB for core quikdown)</li>
+<li><strong>Bundle size</strong>: 12.5KB minified (compared to 8.5KB for core quikdown)</li>
 </ul>
 <h4>Bidirectional API</h4>
 <ul>
@@ -187,8 +343,8 @@ import quikdown_bd from &#39;quikdown/bd&#39;;  // Bidirectional parser
 </ul>
 <h4>Bundle Sizes</h4>
 <ul>
-<li><code>quikdown.min.js</code>: 7.4KB (core parser)</li>
-<li><code>quikdown_bd.min.js</code>: 10KB (bidirectional)</li>
+<li><code>quikdown.min.js</code>: 8.5KB (core parser)</li>
+<li><code>quikdown_bd.min.js</code>: 12.5KB (bidirectional)</li>
 <li>Both maintain zero dependencies</li>
 </ul>
 <h3>🚀 Migration Guide</h3>

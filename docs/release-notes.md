@@ -13,20 +13,37 @@
 - **Keyboard shortcuts**: Quick mode switching with Ctrl/Cmd+1/2/3
 - **Toolbar actions**: Copy markdown or HTML to clipboard with one click
 - **Mobile responsive**: Automatically adapts layout for mobile devices
-- **Bundle size**: 24.3KB minified (includes embedded quikdown_bd)
+- **Bundle size**: 35.8KB minified (includes embedded quikdown_bd and fence plugins)
 
 #### Editor API
 - Simple constructor: `new QuikdownEditor(container, options)`
 - Methods: `setMarkdown()`, `getMarkdown()`, `getHTML()`, `setMode()`, `setLazyLinefeeds()`, `destroy()`
 - Properties: `markdown`, `html`, `mode`
 - Callbacks: `onChange`, `onModeChange`
+- **Custom fence plugins**: Support for custom fence renderers via `customFences` option
 - Full documentation in `docs/quikdown-editor.md`
+
+#### Built-in Lazy-Loading Fence Plugins
+- **SVG**: Inline SVG rendering with XSS sanitization
+- **HTML**: Safe HTML rendering with DOMPurify (auto-loaded from CDN)
+- **Math/KaTeX**: Mathematical equations with KaTeX (auto-loaded from CDN)
+- **CSV/PSV/TSV**: Data tables with bidirectional editing support
+- **JSON**: Syntax-highlighted JSON with validation
+- **Mermaid**: Diagram rendering (when plugin enabled)
+- All fence types properly preserve content during bidirectional editing
 
 #### Editor Examples
 - **Full-featured demo**: `examples/qde/index.html`
 - **CDN usage example**: `examples/quikdown-editor-cdn.html`
 - **Simple 5-line setup**: `examples/quikdown-editor-simple.html`
 - Multiple integration examples in documentation
+
+#### Recent Improvements (Post-v1.0.5)
+- **Fixed bidirectional editing**: Complex fence content (SVG, Math, HTML) now properly preserved during round-trip conversions
+- **Improved attribute escaping**: Fixed quote escaping issues that broke SVG with complex attributes
+- **Async initialization**: Editor properly waits for initialization before accepting content
+- **Code cleanup**: Reduced size from 37.9KB to 35.8KB by removing redundant code
+- **Cursor behavior**: Fixed cursor styling to use standard text cursor instead of circle
 
 ### 🎉 Major Architecture Refactor
 

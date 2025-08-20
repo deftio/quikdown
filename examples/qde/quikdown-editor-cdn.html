@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quikdown Editor - CDN Example</title>
+    <title>Quikdown Editor v1.0.5 - CDN Example</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -46,11 +46,12 @@
     </style>
 </head>
 <body>
-    <h1>🚀 Quikdown Editor - CDN Example</h1>
+    <h1>🚀 Quikdown Editor v1.0.5 - CDN Example</h1>
     
     <div class="info">
         <strong>This page demonstrates loading Quikdown Editor from CDN.</strong><br>
-        No build tools needed - just include the script and go!
+        No build tools needed - just include the script and go!<br>
+        <em>Version 1.0.5 | Bundle size: 36KB minified (ESM), includes quikdown_bd for bidirectional editing</em>
     </div>
 
     <h2>Live Demo</h2>
@@ -69,22 +70,25 @@
     
     &lt;!-- Load and initialize (that's it!) --&gt;
     &lt;script type="module"&gt;
-        import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
+        import QuikdownEditor from 'https://unpkg.com/quikdown@1.0.5/dist/quikdown_edit.esm.min.js';
         new QuikdownEditor('#editor');
     &lt;/script&gt;
 &lt;/body&gt;
 &lt;/html&gt;</code></pre>
     </div>
 
-    <h2>With Options</h2>
+    <h2>With Options & Custom Fences</h2>
     <div class="code-block">
         <pre><code>const editor = new QuikdownEditor('#editor', {
-    mode: 'split',                               // View mode
-    lazy_linefeeds: false,                       // Single \n becomes &lt;br&gt;
-    plugins: { highlightjs: true, mermaid: true }, // Plugins
-    customFences: {
+    mode: 'split',                    // 'source', 'split', or 'preview'
+    lazy_linefeeds: false,            // Single \n becomes &lt;br&gt;
+    debounceDelay: 150,               // Milliseconds to wait before updating
+    customFences: {                   // Custom fence handlers (override built-ins)
         'graph': (code) => `&lt;div class="graph"&gt;${code}&lt;/div&gt;`,
-        'math': (code) => `&lt;div class="math"&gt;${code}&lt;/div&gt;`
+        'custom': (code) => `&lt;div class="custom"&gt;${code}&lt;/div&gt;`
+    },
+    onChange: (markdown, html) => {  // Callback on content change
+        console.log('Content changed');
     }
 });
 
@@ -97,9 +101,10 @@ const isLazy = editor.getLazyLinefeeds(); // true</code></pre>
     <ul>
         <li>✅ <strong>Zero dependencies</strong> - Everything included</li>
         <li>✅ <strong>No build step</strong> - Works directly in browser</li>
-        <li>✅ <strong>~23KB minified</strong> - Includes everything</li>
+        <li>✅ <strong>36KB minified</strong> - Includes bidirectional editing & fence plugins</li>
         <li>✅ <strong>Bidirectional editing</strong> - Edit markdown or preview</li>
-        <li>✅ <strong>Plugin support</strong> - Highlight.js and Mermaid built-in</li>
+        <li>✅ <strong>Fence plugins</strong> - SVG, Math/KaTeX, CSV tables, JSON, Mermaid, HTML</li>
+        <li>✅ <strong>Lazy-loading libraries</strong> - KaTeX, Highlight.js, Mermaid, DOMPurify load on-demand</li>
     </ul>
 
     <h2>Try Different Modes</h2>
@@ -110,13 +115,13 @@ const isLazy = editor.getLazyLinefeeds(); // true</code></pre>
     
     <script type="module">
         // Using relative path for local testing, use CDN URL in production:
-        // import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
-        import QuikdownEditor from '../dist/quikdown_edit.esm.min.js';
+        // import QuikdownEditor from 'https://unpkg.com/quikdown@1.0.5/dist/quikdown_edit.esm.min.js';
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.min.js';
         
         // Create editor with just one line (options are optional)
         window.editor = new QuikdownEditor('#my-editor', {
             mode: 'split',
-            plugins: { highlightjs: true, mermaid: true }
+            lazy_linefeeds: false
         });
         
         // Load some sample content
@@ -126,19 +131,34 @@ This editor was loaded directly from CDN with **no build tools**!
 
 ## Features Demo
 
-### Code Highlighting
+### Built-in Fence Plugins
+
+#### SVG Rendering
+\`\`\`svg
+<svg width="100" height="100">
+    <circle cx="50" cy="50" r="30" fill="#007bff"/>
+</svg>
+\`\`\`
+
+#### Math with KaTeX
+\`\`\`math
+x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}
+\`\`\`
+
+#### CSV Tables (editable!)
+\`\`\`csv
+Name,Language,Version
+Quikdown,JavaScript,1.0.5
+React,JavaScript,18.2
+Vue,JavaScript,3.3
+\`\`\`
+
+#### Code with Syntax Highlighting
 \`\`\`javascript
 function hello(name) {
     console.log(\`Hello, \${name}!\`);
 }
 hello('World');
-\`\`\`
-
-### Mermaid Diagrams
-\`\`\`mermaid
-graph LR
-    A[CDN] --> B[Browser]
-    B --> C[Editor Ready!]
 \`\`\`
 
 ### Lists and Tasks

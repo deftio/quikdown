@@ -76,6 +76,7 @@ import quikdown from &#39;quikdown&#39;;
 </code></pre>
 <h2>Overview</h2>
 <p><code>quikdown_bd</code> is a separate build of quikdown that provides bidirectional conversion between Markdown and HTML. It includes all the features of regular quikdown PLUS the ability to convert HTML back to Markdown, preserving the original structure and formatting.</p>
+<p><strong>New in v1.0.5:</strong> The core <code>quikdown</code> module now supports emitting <code>data-qd</code> attributes via the <code>bidirectional</code> option, though it doesn&#39;t include the <code>toMarkdown</code> function. The <code>quikdown_bd</code> module automatically enables this option and adds the HTML-to-Markdown conversion capability.</p>
 <h2>Installation</h2>
 <pre><code class="language-bash">npm install quikdown
 </code></pre>
@@ -148,10 +149,13 @@ const html = quikdown_bd(md);
 <li><code>fence_plugin</code> (function): Custom renderer for fenced code blocks</li>
 <li><code>inline_styles</code> (boolean): Use inline styles instead of CSS classes</li>
 <li><code>allow_unsafe_urls</code> (boolean): Allow potentially unsafe URLs</li>
+<li><code>bidirectional</code> (boolean): Always <code>true</code> for quikdown_bd (automatically set)</li>
+<li><code>lazy_linefeeds</code> (boolean): Single newlines become <code>&lt;br&gt;</code> tags (v1.0.5+)</li>
 </ul>
 </li>
 </ul>
 <p><strong>Returns:</strong> HTML string with data-qd attributes</p>
+<p><strong>Note:</strong> The <code>quikdown_bd</code> function automatically sets <code>bidirectional: true</code> internally, which adds the <code>data-qd</code> attributes needed for reverse conversion.</p>
 <h3>quikdown_bd.toMarkdown(htmlOrElement)</h3>
 <p>Convert HTML back to Markdown.</p>
 <p><strong>Parameters:</strong></p>
@@ -213,7 +217,7 @@ const markdown = quikdown_bd.toMarkdown(html);
 </ul>
 <h2>Performance</h2>
 <ul>
-<li><strong>Bundle Size</strong>: &lt;11KB minified</li>
+<li><strong>Bundle Size</strong>: 12.5KB minified</li>
 <li><strong>Speed</strong>: ~1000 documents/second on modern hardware</li>
 <li><strong>Memory</strong>: Minimal overhead with DOM walking approach</li>
 <li><strong>Round-trip</strong>: &lt;5ms for typical documents</li>
@@ -283,7 +287,7 @@ const html: string = quikdown_bd(markdown, options);
 const md: string = quikdown_bd.toMarkdown(html);
 </code></pre>
 <h2>Version</h2>
-<p>quikdown_bd uses the same version as core quikdown: <strong>1.0.4</strong></p>
+<p>quikdown_bd uses the same version as core quikdown: <strong>1.0.5</strong></p>
 <h2>License</h2>
 <p>BSD-2-Clause - Same as quikdown core</p>
 

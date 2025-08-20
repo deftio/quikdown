@@ -2306,6 +2306,11 @@ class QuikdownEditor {
     }
 }
 
+// Export for CommonJS (needed for bundled ESM to work with Jest)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = QuikdownEditor;
+}
+
 // Also export for UMD builds
 if (typeof window !== 'undefined') {
     window.QuikdownEditor = QuikdownEditor;

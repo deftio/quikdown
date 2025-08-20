@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Playwright Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        #editor {
+            height: 500px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>QuikdownEditor Test Page</h1>
+    <div id="editor"></div>
+    
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.min.js';
+        
+        // Make editor available globally for testing
+        window.editor = new QuikdownEditor('#editor', { 
+            mode: 'split',
+            plugins: { 
+                highlightjs: true
+            }
+        });
+        
+        // Set initial content
+        window.editor.setMarkdown('# Welcome\n\nThis is the test editor.');
+    </script>
+</body>
+</html>

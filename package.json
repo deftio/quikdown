@@ -78,9 +78,14 @@
   },
   "scripts": {
     "test": "NODE_NO_WARNINGS=1 jest --coverage",
-    "test:quikdown": "jest tests/quikdown.test.js",
+    "test:quikdown": "NODE_NO_WARNINGS=1 jest tests/quikdown.test.js --coverage",
+    "test:bd": "NODE_NO_WARNINGS=1 jest tests/quikdown_bd.test.js --coverage",
+    "test:editor": "NODE_NO_WARNINGS=1 jest tests/quikdown_edit_esm.test.js --coverage",
+    "test:all": "NODE_NO_WARNINGS=1 jest tests/quikdown.test.js tests/quikdown_bd.test.js tests/quikdown_edit_esm.test.js --coverage",
+    "test:coverage": "NODE_NO_WARNINGS=1 jest tests/quikdown.test.js tests/quikdown_bd.test.js tests/quikdown_edit_esm.test.js --coverage --coverageReporters=text-summary",
     "test:unit": "jest --coverage",
     "test:e2e": "npx playwright test --config=playwright.config.cjs",
+    "test:editor:e2e": "npx playwright test tests/quikdown-editor.spec.js",
     "minifyCSS": "node ./tools/minifyCSS.cjs",
     "updateVersion": "node ./tools/updateVersion",
     "updateBadges": "node ./tools/updateBadges.js",
@@ -104,13 +109,18 @@
   "jest": {
     "testEnvironment": "jsdom",
     "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/tests/.*\\.spec\\.js$"
+    ],
     "transform": {
       "^.+\\.js$": "babel-jest"
     },
     "collectCoverage": true,
     "collectCoverageFrom": [
       "dist/quikdown.esm.js",
-      "dist/quikdown_bd.esm.js"
+      "dist/quikdown_bd.esm.js",
+      "dist/quikdown_edit.esm.js"
     ],
     "coverageDirectory": "coverage",
     "coverageReporters": [
@@ -139,6 +149,12 @@
         "functions": 86,
         "branches": 64,
         "statements": 83
+      },
+      "./dist/quikdown_edit.esm.js": {
+        "lines": 60,
+        "functions": 70,
+        "branches": 40,
+        "statements": 60
       }
     }
   },

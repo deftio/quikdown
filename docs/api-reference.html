@@ -113,6 +113,24 @@
 <td><code>undefined</code></td>
 <td>Custom handler for fenced code blocks</td>
 </tr>
+<tr>
+<td><code>bidirectional</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Add data-qd attributes for source tracking (v1.0.5+)</td>
+</tr>
+<tr>
+<td><code>lazy_linefeeds</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Single newlines become <code>&lt;br&gt;</code> tags (v1.0.5+)</td>
+</tr>
+<tr>
+<td><code>allow_unsafe_urls</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Allow javascript: and other potentially unsafe URLs</td>
+</tr>
 </tbody></table>
 <h4>Returns</h4>
 <p><code>string</code> - The converted HTML</p>
@@ -218,7 +236,7 @@ document.head.appendChild(styleElement);
 <h4>Type</h4>
 <p><code>string</code></p>
 <h4>Example</h4>
-<pre><code class="language-javascript">console.log(quikdown.version); // &quot;2.0&quot;
+<pre><code class="language-javascript">console.log(quikdown.version); // &quot;1.0.5&quot;
 </code></pre>
 <h2>Fence Plugin API</h2>
 <h3>Plugin Function Signature</h3>
@@ -312,6 +330,54 @@ const html = quikdown(markdown, {
 }
 </code></pre>
 <h2>Options Deep Dive</h2>
+<h3><code>bidirectional</code> Option</h3>
+<p>Enables preservation of original markdown syntax for HTML→Markdown conversion.</p>
+<h4><code>bidirectional: false</code> (Default)</h4>
+<p>Standard HTML output without preservation attributes:</p>
+<pre><code class="language-javascript">quikdown(&#39;**bold**&#39;, { bidirectional: false });
+// Output: &lt;strong class=&quot;quikdown-strong&quot;&gt;bold&lt;/strong&gt;
+</code></pre>
+<h4><code>bidirectional: true</code></h4>
+<p>Adds <code>data-qd</code> attributes to preserve original markdown:</p>
+<pre><code class="language-javascript">quikdown(&#39;**bold**&#39;, { bidirectional: true });
+// Output: &lt;strong class=&quot;quikdown-strong&quot; data-qd=&quot;**&quot;&gt;bold&lt;/strong&gt;
+</code></pre>
+<p><strong>Use when:</strong></p>
+<ul>
+<li>Building a markdown editor</li>
+<li>Need HTML→Markdown conversion</li>
+<li>Want to preserve exact markdown syntax</li>
+<li>Using with <code>quikdown_bd</code> module</li>
+</ul>
+<h3><code>lazy_linefeeds</code> Option</h3>
+<p>Enables lazy line break handling where single newlines become <code>&lt;br&gt;</code> tags.</p>
+<h4><code>lazy_linefeeds: false</code> (Default)</h4>
+<p>Standard markdown behavior - only double spaces before newline create breaks:</p>
+<pre><code class="language-javascript">quikdown(&#39;Line 1\nLine 2&#39;);
+// Output: &lt;p&gt;Line 1\nLine 2&lt;/p&gt;
+
+quikdown(&#39;Line 1  \nLine 2&#39;);  // Two spaces before \n
+// Output: &lt;p&gt;Line 1&lt;br class=&quot;quikdown-br&quot;&gt;Line 2&lt;/p&gt;
+</code></pre>
+<h4><code>lazy_linefeeds: true</code></h4>
+<p>Single newlines automatically become line breaks:</p>
+<pre><code class="language-javascript">quikdown(&#39;Line 1\nLine 2&#39;, { lazy_linefeeds: true });
+// Output: &lt;p&gt;Line 1&lt;br class=&quot;quikdown-br&quot;&gt;Line 2&lt;/p&gt;
+</code></pre>
+<p><strong>Perfect for:</strong></p>
+<ul>
+<li>Chat applications</li>
+<li>LLM/AI output formatting</li>
+<li>User-generated content where users expect Enter to create a new line</li>
+<li>Converting informal text to HTML</li>
+</ul>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>Single <code>\n</code> → <code>&lt;br&gt;</code> tag</li>
+<li>Double <code>\n\n</code> → Paragraph break (unchanged)</li>
+<li>Code blocks preserve newlines (no <code>&lt;br&gt;</code> conversion)</li>
+<li>Lists maintain proper structure</li>
+</ul>
 <h3><code>inline_styles</code> Option</h3>
 <p>Controls how styling is applied to generated HTML.</p>
 <h4><code>inline_styles: false</code> (Default)</h4>
@@ -584,8 +650,8 @@ container.innerHTML = quikdown(combined);
 </tr>
 <tr>
 <td>Size (minified)</td>
-<td>7.4KB</td>
-<td>10KB</td>
+<td>8.5KB</td>
+<td>12.5KB</td>
 </tr>
 <tr>
 <td><code>toMarkdown()</code> method</td>
@@ -657,6 +723,12 @@ container.innerHTML = quikdown(combined);
 <td><code>boolean</code></td>
 <td><code>true</code></td>
 <td>Add data-qd attributes for source tracking</td>
+</tr>
+<tr>
+<td><code>lazy_linefeeds</code></td>
+<td><code>boolean</code></td>
+<td><code>false</code></td>
+<td>Single newlines become <code>&lt;br&gt;</code> tags (v1.0.5+)</td>
 </tr>
 </tbody></table>
 <h4>Returns</h4>
