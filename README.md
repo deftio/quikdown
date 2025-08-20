@@ -6,9 +6,9 @@
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
 ### Bundle Sizes
-[![quikdown](https://img.shields.io/badge/quikdown-8.5KB-green.svg)](https://github.com/deftio/quikdown/tree/main/dist)
-[![quikdown_bd](https://img.shields.io/badge/quikdown__bd-12.5KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
-[![quikdown_edit](https://img.shields.io/badge/quikdown__edit-24.3KB-purple.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![quikdown](https://img.shields.io/badge/quikdown-8.7KB-green.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![quikdown_bd](https://img.shields.io/badge/quikdown__bd-13KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![quikdown_edit](https://img.shields.io/badge/quikdown__edit-36KB-purple.svg)](https://github.com/deftio/quikdown/tree/main/dist)
 
 A lightweight, fast markdown parser with built-in XSS protection and optional bidirectional conversion support. Quikdown works in both browser and Node.js environments. Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.  
 
@@ -39,7 +39,7 @@ A separate quikdown-editor based on the quikdown parser is also provided as a si
 
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js
-- 🚀 **Lightweight** - 8.5KB minified (quikdown), 12.5KB (quikdown_bd), 36KB (quikdown_edit)
+- 🚀 **Lightweight** - 8.7KB minified (quikdown), 13KB (quikdown_bd), 36KB (quikdown_edit)
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
 - 🎨 **Flexible styling** - Use inline styles or CSS including light / dark mode or custom themes
 - 🔌 **Plugin system** - Extensible fence block handlers
