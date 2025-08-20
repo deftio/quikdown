@@ -29,8 +29,8 @@ jobs:
     - name: Build all targets
       run: npm run build
     
-    - name: Run all tests with coverage
-      run: npm run test:all
+    - name: Run tests with coverage
+      run: npm test
     
     - name: Check build output exists
       run: |

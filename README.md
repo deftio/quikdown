@@ -14,11 +14,11 @@ A lightweight, fast markdown parser with built-in XSS protection and optional bi
 
 A separate quikdown-editor based on the quikdown parser is also provided as a simple drop-in editor control that should work in any div.  
 
-🚀 **[Try Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** - Interactive markdown to HTML parser with real-time preview 
-🚀 **[Bidirectional Parser Demo](https://deftio.github.io/quikdown/examples/quikdown-bd-parser-demo.html)** - Bidirectional parser demo with custom editor (edit markdown or HTML and see updates)
-🚀 **[Quikdown Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** - Standalone drop-in editor control with source/split/preview modes
+🚀 **[Try Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** - Interactive markdown to HTML parser with real-time preview  
+🚀 **[Bidirectional Parser Demo](https://deftio.github.io/quikdown/examples/quikdown-bd-parser-demo.html)** - Bidirectional parser demo with custom editor (edit markdown or HTML and see updates)  
+🚀 **[Quikdown Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** - Standalone drop-in editor control with source/split/preview modes  
 📚 **[View Examples](examples/)** - Additional demos and test pages  
-📖 **[Read Documentation](docs/)** - Architecture, security, API reference, and plugin guide
+📖 **[Read Documentation](docs/)** - Architecture, security, API reference, and plugin guide  
 
 ## Table of Contents
 
@@ -39,9 +39,9 @@ A separate quikdown-editor based on the quikdown parser is also provided as a si
 
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js
-- 🚀 **Lightweight** - 8.5KB minified (quikdown), 12.5KB (quikdown_bd), 24.3KB (quikdown_edit)
+- 🚀 **Lightweight** - 8.5KB minified (quikdown), 12.5KB (quikdown_bd), 36KB (quikdown_edit)
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
-- 🎨 **Flexible styling** - Inline styles or CSS classes including light and dark mode generation, custom themes
+- 🎨 **Flexible styling** - Use inline styles or CSS including light / dark mode or custom themes
 - 🔌 **Plugin system** - Extensible fence block handlers
 - ⚡ **Fast** - Optimized regex-based parsing
 - 📝 **CommonMark subset** - Supports essential markdown features

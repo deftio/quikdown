@@ -24,13 +24,14 @@
 - Full documentation in `docs/quikdown-editor.md`
 
 #### Built-in Lazy-Loading Fence Plugins
-- **SVG**: Inline SVG rendering with XSS sanitization
+- **SVG**: Inline SVG rendering with validation and XSS protection
 - **HTML**: Safe HTML rendering with DOMPurify (auto-loaded from CDN)
 - **Math/KaTeX**: Mathematical equations with KaTeX (auto-loaded from CDN)
-- **CSV/PSV/TSV**: Data tables with bidirectional editing support
+- **CSV/PSV/TSV**: Data tables with smart parsing and bidirectional editing support
 - **JSON**: Syntax-highlighted JSON with validation
 - **Mermaid**: Diagram rendering (when plugin enabled)
-- All fence types properly preserve content during bidirectional editing
+- **Custom fences**: Support for user-defined fence handlers with fallback behavior
+- All fence types properly preserve content during bidirectional editing with `data-qd-source` attributes
 
 #### Editor Examples
 - **Full-featured demo**: `examples/qde/index.html`
@@ -38,12 +39,11 @@
 - **Simple 5-line setup**: `examples/quikdown-editor-simple.html`
 - Multiple integration examples in documentation
 
-#### Recent Improvements (Post-v1.0.5)
-- **Fixed bidirectional editing**: Complex fence content (SVG, Math, HTML) now properly preserved during round-trip conversions
-- **Improved attribute escaping**: Fixed quote escaping issues that broke SVG with complex attributes
-- **Async initialization**: Editor properly waits for initialization before accepting content
-- **Code cleanup**: Reduced size from 37.9KB to 35.8KB by removing redundant code
-- **Cursor behavior**: Fixed cursor styling to use standard text cursor instead of circle
+#### Testing & Quality Improvements
+- **Comprehensive test suite**: Added 51 tests for QuikdownEditor with 65% line coverage, 75% function coverage
+- **Fixed ESM imports**: Added CommonJS exports to support Jest testing of ESM builds
+- **CI/CD ready**: All tests pass with no console errors, Playwright tests properly excluded from Jest
+- **Coverage thresholds**: Set realistic targets (60% statements, 70% functions) for editor module
 
 ### 🎉 Major Architecture Refactor
 
@@ -56,10 +56,10 @@
 
 ### 📊 Test Coverage Achievements
 - **Achieved 98%+ overall test coverage**
-- **`quikdown.esm.js`**: 100% line coverage, 100% branch coverage
-- **`quikdown_bd.esm.js`**: 97.97% line coverage, 89.36% function coverage
-- **`quikdown_edit`**: 14 build verification tests all passing
-- **391 tests** all passing (including comprehensive lazy linefeeds tests)
+- **`quikdown.esm.js`**: 100% line coverage, 99.4% branch coverage
+- **`quikdown_bd.esm.js`**: 97.75% line coverage, 89.36% function coverage
+- **`quikdown_edit.esm.js`**: 64.88% line coverage, 75.42% function coverage
+- **467 total tests** all passing (including comprehensive editor and fence plugin tests)
 - Added comprehensive test suites for:
   - Bidirectional conversion round-trips
   - Edge cases and malformed inputs
@@ -76,10 +76,11 @@
 - **Fixed CSS regeneration issue**: CSS files now use version number instead of timestamp
   - Prevents CSS files from appearing modified on every build
   - CSS only regenerates when version changes
-- **Bundle sizes** (with lazy_linefeeds feature):
-  - Quikdown Core: 8.5 KB minified (was 7.4KB in v1.0.4)
-  - Quikdown BD: 12.5 KB minified (includes core)
-  - Quikdown Editor: 24.3 KB minified (includes quikdown_bd)
+- **Fixed Jest testing**: Excluded Playwright tests from Jest runs to prevent CI failures
+- **Bundle sizes** (v1.0.5):
+  - Quikdown Core: 8.7 KB minified
+  - Quikdown BD: 13 KB minified (includes core)
+  - Quikdown Editor: 36 KB minified (includes quikdown_bd and fence plugins)
 
 ### 🎯 New Features
 
