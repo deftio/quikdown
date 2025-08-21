@@ -7,19 +7,19 @@ A small markdown to html parser with fence plugin support
 ## 📋 Active Todo Items
 
 ### High Priority - Missing Features:
-* [x] quikdown should have a render option to support lazy linefeeds (some content emitters don't have 2 spaces before previous carriage return)
-* [x] Add keywords to package.json for better NPM discoverability
+* [ ] quikdown should have a render option to support lazy linefeeds (some content emitters don't have 2 spaces before previous carriage return)
 * [ ] Add a quikdown-cli.js standalone tool that converts markdown to html. Should support all quikdown features like inline styles or passing in your own css (assumes quikdown classes)
-
-### Reduce Code Size (no feature changes)
-* [ ] Investigate further size optimizations (current: 8.7KB, was 7.4KB before lazy linefeeds)
+* [ ] Add reverse fence call back (when toMarkdown() encounters a fence for which it can't parse, have option for callback.  This can be useful for mermaid and svg constructs for example
+* [ ] Move to quikdown_lex as main build (move away from regex)
+  - allows broader range of grammers
+  - allows full spec compliance
+  - easier to debug
 
 ### List Improvements
 * [ ] Treat tabs as 4 spaces for indentation
 * [ ] Better handling of mixed indentation
 
 ### Table Improvements
-* [x] Fix table alignment with CSS classes - now works in both modes (fixed in v1.0.5)
 * [ ] Better handling of malformed tables
 * [ ] More robust table parsing edge cases
 
@@ -37,22 +37,11 @@ A small markdown to html parser with fence plugin support
 ### Nice to Have
 * [ ] Heading IDs/slugification for in-page linking (behind option)
 * [ ] Support for definition lists (maybe)
-* [x] Lazy line break option (treat single \n as <br> in certain contexts)
 
 
 ## 🤔 Under Consideration
 
 These items need more thought before implementation:
-
-* [x] QuikdownEditor - Full HTML drop-in control (COMPLETED in v1.0.5)
-  * ✅ Pulls in quikdown_bd and has source/split/preview views
-  * ✅ Manages all deps and uses built-in styles
-  * ✅ Loads hljs/mermaid dynamically
-  * ✅ Has setters/getters for content
-  * ✅ Copy buttons for markdown and HTML
-  * ✅ onChange() and onModeChange() callbacks
-  * ✅ Full API for programmatic control
-  * ✅ Support for custom fence plugins via customFences option
 
 * HTML passthrough option - Currently using fence plugins for this (safer)
 * Complex emphasis (`***bold+italic***`) - May add too much complexity
@@ -86,15 +75,8 @@ These items go against the design philosophy:
   - Each fence type self-contained with forward and reverse logic
   - Cleaner architecture for QuikdownEditor bidirectional support
   - Fallback to data-qd-source if no reverse handler defined
-* Bidirectional text support
-* Streaming parser mode (if needed)
-* Plugin marketplace/registry
-* Official plugins for common use cases:
-  - Syntax highlighting (highlight.js integration)
-  - Mermaid diagrams
-  - Math (KaTeX/MathJax)
-  - Social media embeds
 
+* Streaming parser mode (if needed
 ## 📝 Notes
 
 ### Design Principles to Maintain
@@ -104,25 +86,3 @@ These items go against the design philosophy:
 4. Fast parsing - single pass where possible
 5. Browser-first - but Node.js compatible
 
-### Current Stats (v1.0.5)
-
-* Core Size: **8.7KB minified** (was 7.4KB, increased due to lazy linefeeds & table alignment fix)
-* Bidirectional Size: **12.5KB minified** (includes core)
-* Editor Size: **24.4KB minified** (includes quikdown_bd)
-* Test Coverage: 97.83% statements, 92.85% functions, 98.61% lines, 92.18% branches
-* Tests: 391 passing
-* Dependencies: 0
-* Browser Support: Modern browsers (2017+)
-* Key Features Implemented: 
-  * ✅ Task lists
-  * ✅ URL sanitization
-  * ✅ Autolinks
-  * ✅ ~~~ fences (with proper line-start matching)
-  * ✅ Flexible tables
-  * ✅ Trailing # support
-  * ✅ Light/Dark themes
-  * ✅ Lazy linefeeds
-  * ✅ Table alignment (all modes)
-  * ✅ QuikdownEditor control
-* CI/CD: GitHub Actions ready
-* Documentation: Complete with API reference, security guide, plugin guide, editor guide

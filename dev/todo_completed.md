@@ -2,15 +2,17 @@
 
 This file contains all completed tasks moved from todo.md to reduce clutter.
 
-## ✅ Documentation & Architecture
+## Documentation & Architecture
 * ✅ Created comprehensive documentation in docs/ folder
 * ✅ Documented security model and HTML handling via fence plugins
 * ✅ Created API reference with all methods and options
 * ✅ Created plugin development guide with examples
 * ✅ Linked all documentation from README
 * ✅ Created release-notes.md (serves as CHANGELOG)
+* [x] Add keywords to package.json for better NPM discoverability
 
-## ✅ Build & Testing
+
+## Build & Testing
 * ✅ Fixed npm run build process
 * ✅ Added version property to quikdown
 * ✅ Achieved 100% test coverage (statements, functions, lines)
@@ -64,11 +66,13 @@ This file contains all completed tasks moved from todo.md to reduce clutter.
 * ✅ Full API with methods and events
 * ✅ Bundle size: 24.4KB minified
 
+
 ### Core Features
 * ✅ Lazy linefeeds support - single \n becomes <br> for chat/LLM apps
 * ✅ Fixed table alignment in CSS class mode
 * ✅ Added keywords to package.json for NPM discoverability
 * ✅ Created pure CDN examples with plugins
+* [x] Fix table alignment with CSS classes - now works in both modes (fixed in v1.0.5)
 
 ### Architecture Refactor
 * ✅ Refactored quikdown_bd to import and extend core module
@@ -105,6 +109,17 @@ This file contains all completed tasks moved from todo.md to reduce clutter.
   - Coverage percentage badge
   - Bundle size badge
   - License badge
+
+* [x] QuikdownEditor - Full HTML drop-in control (COMPLETED in v1.0.5)
+  * ✅ Pulls in quikdown_bd and has source/split/preview views
+  * ✅ Manages all deps and uses built-in styles
+  * ✅ Loads hljs/mermaid dynamically
+  * ✅ Has setters/getters for content
+  * ✅ Copy buttons for markdown and HTML
+  * ✅ onChange() and onModeChange() callbacks
+  * ✅ Full API for programmatic control
+  * ✅ Support for custom fence plugins via customFences option
+
 
 ## ✅ Recent UI/UX Improvements
 * ✅ Fixed size reference in README (removed hardcoded 8.7kb)
