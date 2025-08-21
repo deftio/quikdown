@@ -1,0 +1,14 @@
+{
+  "name": "quikdown-lex-dev",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Development environment for quikdown lexer version",
+  "scripts": {
+    "build": "node build-lex.js",
+    "test": "node test_lex.js",
+    "clean": "rm -f *.min.js *.versioned.js *.umd.js"
+  },
+  "author": "DeftIO",
+  "license": "BSD-2-Clause"
+}
