@@ -90,13 +90,14 @@
 </ul>
 <h4>Built-in Lazy-Loading Fence Plugins</h4>
 <ul>
-<li><strong>SVG</strong>: Inline SVG rendering with XSS sanitization</li>
+<li><strong>SVG</strong>: Inline SVG rendering with validation and XSS protection</li>
 <li><strong>HTML</strong>: Safe HTML rendering with DOMPurify (auto-loaded from CDN)</li>
 <li><strong>Math/KaTeX</strong>: Mathematical equations with KaTeX (auto-loaded from CDN)</li>
-<li><strong>CSV/PSV/TSV</strong>: Data tables with bidirectional editing support</li>
+<li><strong>CSV/PSV/TSV</strong>: Data tables with smart parsing and bidirectional editing support</li>
 <li><strong>JSON</strong>: Syntax-highlighted JSON with validation</li>
 <li><strong>Mermaid</strong>: Diagram rendering (when plugin enabled)</li>
-<li>All fence types properly preserve content during bidirectional editing</li>
+<li><strong>Custom fences</strong>: Support for user-defined fence handlers with fallback behavior</li>
+<li>All fence types properly preserve content during bidirectional editing with <code>data-qd-source</code> attributes</li>
 </ul>
 <h4>Editor Examples</h4>
 <ul>
@@ -105,13 +106,12 @@
 <li><strong>Simple 5-line setup</strong>: <code>examples/quikdown-editor-simple.html</code></li>
 <li>Multiple integration examples in documentation</li>
 </ul>
-<h4>Recent Improvements (Post-v1.0.5)</h4>
+<h4>Testing &amp; Quality Improvements</h4>
 <ul>
-<li><strong>Fixed bidirectional editing</strong>: Complex fence content (SVG, Math, HTML) now properly preserved during round-trip conversions</li>
-<li><strong>Improved attribute escaping</strong>: Fixed quote escaping issues that broke SVG with complex attributes</li>
-<li><strong>Async initialization</strong>: Editor properly waits for initialization before accepting content</li>
-<li><strong>Code cleanup</strong>: Reduced size from 37.9KB to 35.8KB by removing redundant code</li>
-<li><strong>Cursor behavior</strong>: Fixed cursor styling to use standard text cursor instead of circle</li>
+<li><strong>Comprehensive test suite</strong>: Added 51 tests for QuikdownEditor with 65% line coverage, 75% function coverage</li>
+<li><strong>Fixed ESM imports</strong>: Added CommonJS exports to support Jest testing of ESM builds</li>
+<li><strong>CI/CD ready</strong>: All tests pass with no console errors, Playwright tests properly excluded from Jest</li>
+<li><strong>Coverage thresholds</strong>: Set realistic targets (60% statements, 70% functions) for editor module</li>
 </ul>
 <h3>🎉 Major Architecture Refactor</h3>
 <h4>Complete Bidirectional Module Refactoring</h4>
@@ -125,10 +125,10 @@
 <h3>📊 Test Coverage Achievements</h3>
 <ul>
 <li><strong>Achieved 98%+ overall test coverage</strong></li>
-<li><strong><code>quikdown.esm.js</code></strong>: 100% line coverage, 100% branch coverage</li>
-<li><strong><code>quikdown_bd.esm.js</code></strong>: 97.97% line coverage, 89.36% function coverage</li>
-<li><strong><code>quikdown_edit</code></strong>: 14 build verification tests all passing</li>
-<li><strong>391 tests</strong> all passing (including comprehensive lazy linefeeds tests)</li>
+<li><strong><code>quikdown.esm.js</code></strong>: 100% line coverage, 99.4% branch coverage</li>
+<li><strong><code>quikdown_bd.esm.js</code></strong>: 97.75% line coverage, 89.36% function coverage</li>
+<li><strong><code>quikdown_edit.esm.js</code></strong>: 64.88% line coverage, 75.42% function coverage</li>
+<li><strong>467 total tests</strong> all passing (including comprehensive editor and fence plugin tests)</li>
 <li>Added comprehensive test suites for:<ul>
 <li>Bidirectional conversion round-trips</li>
 <li>Edge cases and malformed inputs</li>
@@ -150,10 +150,11 @@
 <li>CSS only regenerates when version changes</li>
 </ul>
 </li>
-<li><strong>Bundle sizes</strong> (with lazy_linefeeds feature):<ul>
-<li>Quikdown Core: 8.5 KB minified (was 7.4KB in v1.0.4)</li>
-<li>Quikdown BD: 12.5 KB minified (includes core)</li>
-<li>Quikdown Editor: 24.3 KB minified (includes quikdown_bd)</li>
+<li><strong>Fixed Jest testing</strong>: Excluded Playwright tests from Jest runs to prevent CI failures</li>
+<li><strong>Bundle sizes</strong> (v1.0.5):<ul>
+<li>Quikdown Core: 8.7 KB minified</li>
+<li>Quikdown BD: 13 KB minified (includes core)</li>
+<li>Quikdown Editor: 36 KB minified (includes quikdown_bd and fence plugins)</li>
 </ul>
 </li>
 </ul>
