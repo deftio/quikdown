@@ -5,130 +5,158 @@
 [![Coverage Status](https://img.shields.io/badge/coverage-99%25-blue.svg)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 
-### Bundle Sizes
-[![quikdown](https://img.shields.io/badge/quikdown-8.7KB-green.svg)](https://github.com/deftio/quikdown/tree/main/dist)
-[![quikdown_bd](https://img.shields.io/badge/quikdown__bd-13KB-blue.svg)](https://github.com/deftio/quikdown/tree/main/dist)
-[![quikdown_edit](https://img.shields.io/badge/quikdown__edit-36KB-purple.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+Quikdown is a small, secure markdown parser with bidirectional conversion. Zero dependencies, XSS protection built-in, extensible via plugins for code highlighting and diagrams, and works in browser and Node.js.
 
-A lightweight, fast markdown parser with built-in XSS protection and optional bidirectional conversion support. Quikdown works in both browser and Node.js environments. Via its fenced plug-in support it can support highlighted code blocks, diagrams, and other custom fenced content.  
+For small and fast projects quikdown includes built-in inline styles for a "batteries included" rendering experience, but these can be overridden with themed css (see light and dark examples).
 
-A separate quikdown-editor based on the quikdown parser is also provided as a simple drop-in editor control that should work in any div.  
+- **quikdown.js** (8.7KB) - Markdown to HTML Parser
+- **quikdown_bd.js** (13KB) - Bidirectional (HTML ↔ Markdown) Parser
+- **quikdown_edit.js** (36KB) - Drop-in editor component (HTML ↔ Markdown) with md/split/html views
 
-🚀 **[Try Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** - Interactive markdown to HTML parser with real-time preview  
-🚀 **[Bidirectional Parser Demo](https://deftio.github.io/quikdown/examples/quikdown-bd-parser-demo.html)** - Bidirectional parser demo with custom editor (edit markdown or HTML and see updates)  
-🚀 **[Quikdown Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** - Standalone drop-in editor control with source/split/preview modes  
-📚 **[View Examples](examples/)** - Additional demos and test pages  
-📖 **[Read Documentation](docs/)** - Architecture, security, API reference, and plugin guide  
+🚀 **[Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** | **[Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** | **[Documentation](docs/)**
 
-## Table of Contents
-
-- [Features](#features)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Bidirectional Conversion](#bidirectional-conversion)
-- [Quikdown Editor](#quikdown-editor)
-- [Supported Markdown](#supported-markdown)
-- [Configuration Options](#configuration-options)
-- [Plugin System](#plugin-system)
-- [Framework Integration](#framework-integration)
-- [API Reference](#api-reference)
-- [Security](#security)
-- [Contributing](#contributing)
+📍 **Quick Links:** [Installation](#installation) • [Quick Start](#quick-start) • [API](#api-reference) • [TypeScript](#typescript-support) • [Plugins](#fence-plugins) • [Examples](examples/)
 
 ## Features
 
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js
-- 🚀 **Lightweight** - 8.7KB minified (quikdown), 13KB (quikdown_bd), 36KB (quikdown_edit)
+- 🚀 **Lightweight** - 8.7KB (core), 13KB (bidirectional), 36KB (editor)
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
-- 🎨 **Flexible styling** - Use inline styles or CSS including light / dark mode or custom themes
+- 🎨 **Flexible styling** - Inline styles or CSS classes with theme support
 - 🔌 **Plugin system** - Extensible fence block handlers
 - ⚡ **Fast** - Optimized regex-based parsing
-- 📝 **CommonMark subset** - Supports essential markdown features
+- 📝 **CommonMark subset** - Essential markdown features
 - ✅ **Task Lists** - GitHub-style checkboxes
 - 🔗 **Autolinks** - Automatic URL detection
-- 🔄 **Bidirectional** - Convert HTML back to Markdown (requires `quikdown_bd` module)
-- 💬 **Lazy Linefeeds** - Single newlines become line breaks (for chat/LLM output), api controllable
+- 🔄 **Bidirectional** - Convert HTML back to Markdown (quikdown_bd)
+- 💬 **Lazy linefeeds** - Single newlines become line breaks (configurable)
+- 📱 **Editor component** - Drop-in markdown editor with live preview
 
 ## Installation
 
+Quikdown is available via [NPM](https://www.npmjs.com/package/quikdown) and related [unpkg](https://unpkg.com/quikdown) and [jsdelivr](https://cdn.jsdelivr.net/npm/quikdown)
+
+### NPM package
 ```bash
 npm install quikdown
 ```
 
-Or via CDN:
+### CDN using UNPKG  
 
-**ES Modules (recommended for modern applications):**
+**CDN (ES Modules):**
 ```html
 <script type="module">
   import quikdown from 'https://unpkg.com/quikdown/dist/quikdown.esm.min.js';
-  
-  const html = quikdown('# Hello World');
-  document.body.innerHTML = html;
+  document.body.innerHTML = quikdown('# Hello World');
 </script>
 ```
 
-**UMD (for legacy browser support):**
+**CDN (UMD):**
 ```html
 <script src="https://unpkg.com/quikdown/dist/quikdown.umd.min.js"></script>
 <script>
-  // Available as window.quikdown
-  const html = quikdown('# Hello World');
+  document.body.innerHTML = quikdown('# Hello World');
 </script>
 ```
 
-> **Production tip:** Pin to a specific version for stability (e.g., `https://unpkg.com/quikdown@1.0.4/dist/quikdown.esm.min.js`)
-
-### Complete CDN Example
-
-See our [complete CDN demo](examples/quikdown-cdn-demo.html) that includes QuikDown with Highlight.js and Mermaid - all loaded from CDN. Perfect for copying as a starting template!
-
 ## Quick Start
 
-### Basic Usage (Standard - One-way conversion)
+Quikdown is built in 3 versions. The smallest (quikdown) provides markdown to html conversion only.  The next (quikdown_bd) provides markdown to html and html to markdown support.  The lightweight editor quikdown_edit allows a bidirectional editor with lazy loading for common fences such as codeblocks, svg, and mermaid diagrams is also provided.
+
+### Markdown → HTML (quikdown.js)
 
 ```javascript
-import quikdown from 'quikdown';
+// Basic conversion
+const html = quikdown('# Hello World',
+    {inline_styles: true}  // Use inline styles,  more options in API docs
+);
 
-const markdown = '# Hello World\n\nThis is **bold** text.';
-const html = quikdown(markdown);
-console.log(html);
-// Output: <h1>Hello World</h1><p>This is <strong>bold</strong> text.</p>
+document.body.innerHTML = html;
 
-// Note: Regular quikdown does NOT support HTML to Markdown conversion
 ```
 
-### Bidirectional Usage (Two-way conversion)
+### Bidirectional Markdown ↔  HTML (quikdown_bd.js)
 
 ```javascript
-// Use quikdown_bd for bidirectional support
-import quikdown_bd from 'quikdown/bd';
+// Convert with source tracking
+const htmlString = quikdown_bd(markdown, options);
 
-const markdown = '# Hello World\n\nThis is **bold** text.';
-
-// Markdown to HTML
-const html = quikdown_bd(markdown);
-
-// HTML back to Markdown (only available in quikdown_bd)
-const recoveredMarkdown = quikdown_bd.toMarkdown(html);
-console.log(recoveredMarkdown);
-// Output: # Hello World\n\nThis is **bold** text.
+// Convert HTML back to Markdown
+const markdown = quikdown_bd.toMarkdown(htmlString);
 ```
 
-### With Options
+Note: quikdown does not provide a *generic* html to markdown conversion but uses special tags and limited DOM parsing for HTML to markdown conversion.  Standard markdown components such as headings, text styles, tables, quotes, etc are supported.  For custom fences quikdown relies on its tag system or 3rd party handlers to provide reverse (html to md) conversion.
+
+### Editor (quikdown_edit.js)
+
+```javascript
+const editor = new QuikdownEditor('#container', {
+  mode: 'split',           // 'source', 'split', 'preview' 
+  theme: 'auto',           // 'light', 'dark', 'auto'
+  plugins: { highlightjs: true, mermaid: true } // built-in fence handlers, see API docs for custom plugins
+});
+
+editor.setMarkdown('# Content  \nTo be quik or not to be.');  // provide default content
+const content = editor.getMarkdown(); // get source content, see APIs for getting / setting HTML 
+```
+
+## Other Configuration Options
+quikdown supports built-in styles for a "batteries included" experience or you can bring your own CSS themes.  Example css files are provided for basic light and dark themes to get started.
 
 ```javascript
 const html = quikdown(markdown, {
-    inline_styles: true,  // Use inline styles instead of classes
-    fence_plugin: myFenceHandler  // Custom code fence handler
+  lazy_linefeeds: true,    // Single newlines become <br>
+  inline_styles: false,    // Use class based CSS instead of inline styles
+  fence_plugin: myHandler  // Custom code block processor
 });
 ```
 
-### TypeScript Support
+### Styling Options
+
+**Inline styles:** All formatting uses inline CSS
+```javascript
+quikdown('**bold**', { inline_styles: true });
+// <strong style="font-weight: bold;">bold</strong>
+```
+
+**Class-based styling:** Uses CSS classes (default)
+```javascript
+quikdown('**bold**');
+// <strong>bold</strong>
+// Requires CSS: .quikdown strong { font-weight: bold; }
+// see included dist/quikdown.light.css or quikdown.dark.css
+```
+
+### Fence Plugins
+
+Quikdown provides a callback for all fenced text such as code blocks, math, svg etc.
+
+Handle code blocks with custom languages:
+
+```javascript
+function fencePlugin(code, language) {
+  if (language === 'mermaid') {
+    // Process with mermaid library and return rendered diagram
+    const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+    setTimeout(() => mermaid.render(id + '-svg', code).then(result => {
+      document.getElementById(id).innerHTML = result.svg;
+    }), 0);
+    return `<div id="${id}" class="mermaid">Loading diagram...</div>`;
+  }
+  return `<pre>${code}</pre>`;
+  // Return undefined for default handling
+}
+
+const html = quikdown(markdown, { fence_plugin: fencePlugin });
+```
+
+
+## TypeScript Support
 
 quikdown includes TypeScript definitions for better IDE support and type safety:
 
-```typescript
+``` javascript
 import quikdown, { QuikdownOptions } from 'quikdown';
 
 const options: QuikdownOptions = {
@@ -139,568 +167,66 @@ const options: QuikdownOptions = {
 };
 
 const html: string = quikdown(markdown, options);
+
 ```
 
 ## Supported Markdown
 
-quikdown supports a practical subset of CommonMark:
+**Text formatting:** `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``
 
-### Text Formatting
-- **Bold**: `**text**` or `__text__`
-- *Italic*: `*text*` or `_text_`
-- ~~Strikethrough~~: `~~text~~`
-- `Code`: `` `code` ``
+**Headings:** `# H1` through `###### H6`
 
-### Headings
-```markdown
-# H1 Heading
-## H2 Heading
-### H3 Heading
-#### H4 Heading
-##### H5 Heading
-###### H6 Heading
-```
+**Lists:**
 
-### Lists
+- Unordered lists  
+1. Ordered lists  
+- [x] Task lists  
 
-Unordered:
-```markdown
-- Item 1
-- Item 2
-  - Nested item
-* Also works with asterisks
-```
+**Links:** `[text](url)` and automatic URL detection
 
-Ordered:
-```markdown
-1. First item
-2. Second item
-   1. Nested item
-```
-
-Task Lists:
-```markdown
-- [x] Completed task
-- [ ] Pending task
-- [ ] Another todo
-```
-
-### Links and Images
-```markdown
-[Link text](https://example.com)
-![Alt text](image.jpg)
-
-// Autolinks - URLs are automatically linked
-Visit https://github.com for more info
-```
-
-### Code Blocks
-````markdown
-```javascript
-console.log('Hello, world!');
-```
-
-// Also supports ~~~ fences
-~~~python
-print("Hello, world!")
-~~~
-````
-
-### Tables
-```markdown
-| Header 1 | Header 2 |
-|----------|----------|
-| Cell 1   | Cell 2   |
-| Cell 3   | Cell 4   |
-```
-
-### Other Elements
-- **Blockquotes**: `> Quote text`
-- **Horizontal rules**: `---` or `***` or `___`
-- **Line breaks**: Two spaces at end of line or `<br>`
-
-## Configuration Options
-
-### `lazy_linefeeds` (boolean) 
-When `true`, single newlines become `<br>` tags. Perfect for chat/LLM applications.
+**Code blocks:**  
 
 ```javascript
-// With lazy_linefeeds: false (default)
-quikdown('Line 1\nLine 2');
-// Output: <p>Line 1\nLine 2</p>
-
-// With lazy_linefeeds: true
-quikdown('Line 1\nLine 2', { lazy_linefeeds: true });
-// Output: <p>Line 1<br>Line 2</p>
+console.log('syntax highlighting support via plugins');
 ```
 
-### `inline_styles` (boolean)
-When `true`, uses inline styles for formatting. When `false`, uses CSS classes.
-
-```javascript
-// With inline_styles: true
-quikdown('**bold**', { inline_styles: true });
-// Output: <strong style="font-weight: bold;">bold</strong>
-
-// With inline_styles: false (default)
-quikdown('**bold**', { inline_styles: false });
-// Output: <strong>bold</strong>
-```
-
-### `fence_plugin` (function)
-Custom handler for fenced code blocks. Useful for syntax highlighting or diagrams.
-
-```javascript
-function fencePlugin(code, language) {
-    if (language === 'mermaid') {
-        return `<div class="mermaid">${code}</div>`;
-    }
-    // Return undefined to use default handling
-}
-
-const html = quikdown(markdown, { fence_plugin: fencePlugin });
-```
-
-## Plugin System
-
-For a complete plugin development guide, see [docs/plugin-guide.md](docs/plugin-guide.md)
-
-### Creating a Fence Plugin
-
-Fence plugins allow you to customize how code blocks are rendered:
-
-```javascript
-function myFencePlugin(code, language) {
-    // Handle specific languages
-    if (language === 'graph') {
-        return renderGraph(code);
-    }
-    
-    // Add syntax highlighting
-    if (language && hljs.getLanguage(language)) {
-        const highlighted = hljs.highlight(code, { language }).value;
-        return `<pre><code class="language-${language}">${highlighted}</code></pre>`;
-    }
-    
-    // Return undefined for default handling
-    return undefined;
-}
-```
-
-### Example: Mermaid Diagrams
-
-```javascript
-function mermaidPlugin(code, language) {
-    if (language === 'mermaid') {
-        const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-        // Render with mermaid.js after DOM update
-        setTimeout(() => {
-            mermaid.render(id + '-svg', code).then(result => {
-                document.getElementById(id).innerHTML = result.svg;
-            });
-        }, 0);
-        return `<div id="${id}" class="mermaid">Loading diagram...</div>`;
-    }
-}
-
-const html = quikdown(markdownWithMermaid, { 
-    fence_plugin: mermaidPlugin 
-});
-```
-
-## Security
-
-For detailed security information, see [docs/security.md](docs/security.md)
-
-quikdown includes built-in XSS protection:
-
-- All HTML tags in markdown are escaped by default
-- Attributes are sanitized
-- JavaScript URLs are blocked
-- Only safe markdown constructs are converted to HTML
-
-```javascript
-const unsafe = '<script>alert("XSS")</script> **bold**';
-const safe = quikdown(unsafe);
-// Output: &lt;script&gt;alert("XSS")&lt;/script&gt; <strong>bold</strong>
-```
-
-## Bidirectional Conversion
-
-**⚠️ Important:** Full bidirectional conversion (including HTML-to-Markdown) requires the `quikdown_bd` module, not the regular `quikdown` module.
-
-The `quikdown_bd` module is a separate build that includes both markdown-to-HTML and HTML-to-markdown conversion capabilities. It's perfect for WYSIWYG editors and round-trip conversion scenarios.
-
-**Note:** As of v1.0.5, the core `quikdown` module supports the `bidirectional` option to emit `data-qd` attributes, but only `quikdown_bd` includes the `toMarkdown()` function for converting HTML back to Markdown.
-
-### Installation
-
-```javascript
-// ES Modules - Use quikdown_bd, NOT quikdown
-import quikdown_bd from 'quikdown/bd';
-
-// CommonJS - Use quikdown_bd, NOT quikdown
-const quikdown_bd = require('quikdown/bd');
-
-// Browser - Load the quikdown_bd script, NOT the regular quikdown
-<script src="https://unpkg.com/quikdown/dist/quikdown_bd.umd.min.js"></script>
-<script>
-  // Available as window.quikdown_bd
-  const html = quikdown_bd(markdown);
-</script>
-```
-
-### Basic Usage
-
-```javascript
-// IMPORTANT: Use quikdown_bd for bidirectional support
-import quikdown_bd from 'quikdown/bd';
-
-// Markdown to HTML with source tracking (bidirectional is automatic)
-const html = quikdown_bd('**Hello** world');
-console.log(html);
-// <strong data-qd="**">Hello</strong> world
-
-// HTML back to Markdown (only available in quikdown_bd)
-const markdown = quikdown_bd.toMarkdown(html);
-console.log(markdown);
-// **Hello** world
-
-// Note: Regular quikdown does NOT have toMarkdown method
-// This will fail: quikdown.toMarkdown(html) // ❌ Error
-```
-
-### Use Cases
-
-- **Live Editors**: Build WYSIWYG markdown editors where users can edit in either view
-- **Content Migration**: Convert existing HTML content to Markdown
-- **Round-trip Preservation**: Maintain markdown source formatting through HTML conversion
-- **Collaborative Editing**: Enable rich-text editing while storing content as Markdown
-
-### Browser Example
-
-```html
-<div id="editor" contenteditable="true"></div>
-<script type="module">
-  import quikdown_bd from 'https://unpkg.com/quikdown/dist/quikdown_bd.esm.min.js';
-  
-  const editor = document.getElementById('editor');
-  const markdown = '# Edit me\n\n**Bold** and *italic*';
-  
-  // Convert to HTML and display
-  editor.innerHTML = quikdown_bd(markdown, { bidirectional: true });
-  
-  // Convert back to Markdown when needed
-  editor.addEventListener('blur', () => {
-    const updatedMarkdown = quikdown_bd.toMarkdown(editor);
-    console.log('Updated markdown:', updatedMarkdown);
-  });
-</script>
-```
-
-For complete documentation, see [Bidirectional Documentation](docs/quikdown-bidirectional.md).
-
-## Quikdown Editor
-
-Quikdown Editor is a drop-in markdown editor control that can be embedded in any webpage. It provides a complete editing experience with live preview, bidirectional editing, and plugin support.
-
-🚀 **[Try Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** - Full-featured editor demonstration
-
-### Features
-
-- 📝 **Three view modes**: Source, Split, and Preview
-- 🔄 **Bidirectional editing**: Edit markdown or preview and see changes sync
-- 🎨 **Theme support**: Light, dark, and auto themes
-- 🔌 **Plugin integration**: Built-in support for Highlight.js and Mermaid
-- ⌨️ **Keyboard shortcuts**: Quick mode switching with Ctrl+1/2/3
-- 📋 **Copy functions**: Copy markdown or HTML to clipboard
-- 📱 **Responsive**: Mobile-friendly interface
-
-### Quick Start (Just 3 Lines!)
-
-```html
-<div id="editor" style="height: 400px;"></div>
-<script type="module">
-  import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
-  new QuikdownEditor('#editor');
-</script>
-```
-
-That's it! For more options:
-
-```javascript
-const editor = new QuikdownEditor('#editor', {
-  mode: 'split',                              // 'source', 'split', or 'preview'
-  plugins: { highlightjs: true, mermaid: true } // Enable plugins
-});
-
-editor.setMarkdown('# Hello World');          // Set content
-const markdown = editor.getMarkdown();        // Get content
-```
-
-### API
-
-```javascript
-// Create editor
-const editor = new QuikdownEditor(container, options);
-
-// Methods
-editor.setMarkdown(markdown);  // Set markdown content
-editor.getMarkdown();          // Get current markdown
-editor.getHTML();              // Get rendered HTML
-editor.setMode('split');       // Change view mode
-editor.destroy();              // Clean up editor
-
-// Properties
-editor.markdown;               // Get/set markdown
-editor.html;                   // Get HTML (read-only)
-editor.mode;                   // Get current mode
-```
-
-### Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `mode` | string | 'split' | View mode: 'source', 'split', or 'preview' |
-| `theme` | string | 'auto' | Theme: 'light', 'dark', or 'auto' |
-| `showToolbar` | boolean | true | Show/hide toolbar |
-| `lazy_linefeeds` | boolean | false | Enable lazy linefeeds |
-| `debounceDelay` | number | 300 | Debounce delay in ms |
-| `placeholder` | string | 'Start typing...' | Placeholder text |
-| `plugins` | object | {} | Plugin configuration |
-
-For complete documentation, see [Quikdown Editor Documentation](docs/quikdown-editor.md).
-
-## Quikdown Lexer Version
-
-An experimental lexer-based implementation is available for testing. See [docs/lexer-implementation.md](docs/lexer-implementation.md) for details.
-
-
-## Framework Integration
-
-quikdown integrates seamlessly with modern JavaScript frameworks:
-
-- **React** - Hooks, components, and Next.js support
-- **Vue** - Composition API, Options API, and Nuxt support  
-- **Svelte** - Reactive statements and stores
-- **Angular** - Components, services, and pipes
-
-See the [Framework Integration Guide](docs/framework-integration.md) for detailed examples and best practices.
+**Tables, blockquotes, horizontal rules** - See [documentation](docs/) for complete syntax reference
 
 ## API Reference
 
 For complete API documentation, see [docs/api-reference.md](docs/api-reference.md)
 
-### Core API
+## Security
 
-#### `quikdown(markdown, options?)`
-
-Main function to convert markdown to HTML.
-
-**Parameters:**
-- `markdown` (string): The markdown text to convert
-- `options` (object, optional):
-  - `inline_styles` (boolean): Use inline styles instead of classes
-  - `fence_plugin` (function): Custom fence block handler
-
-**Returns:** HTML string
-
-#### `quikdown.configure(options)`
-
-Creates a configured instance of the parser.
+All HTML is escaped by default. Only safe markdown constructs become HTML:
 
 ```javascript
-const myParser = quikdown.configure({
-    inline_styles: true,
-    fence_plugin: myPlugin
-});
-
-// Use the configured parser
-const html = myParser(markdown);
+const unsafe = '<script>alert("XSS")</script> **bold**';
+const safe = quikdown(unsafe);
+// &lt;script&gt;alert("XSS")&lt;/script&gt; <strong>bold</strong>
 ```
 
-#### `quikdown.emitStyles(prefix?, theme?)`
+## Framework Integration
 
-Returns CSS styles for quikdown HTML output when not using inline styles.
-
-```javascript
-// Get light theme CSS
-const lightStyles = quikdown.emitStyles();
-
-// Get dark theme CSS  
-const darkStyles = quikdown.emitStyles('quikdown-', 'dark');
-```
-
-### Bidirectional API
-
-**⚠️ These methods are only available in `quikdown_bd`, not in regular `quikdown`:**
-
-#### `quikdown_bd(markdown, options?)`
-
-Converts markdown to HTML with source tracking for bidirectional conversion.
-
-#### `quikdown_bd.toMarkdown(htmlOrElement)`
-
-Converts HTML back to Markdown. **This method only exists in `quikdown_bd`.**
-
-**Parameters:**
-- `htmlOrElement` (string | HTMLElement): HTML string or DOM element
-
-**Returns:** Markdown string
-
-```javascript
-// ✅ Correct - using quikdown_bd
-import quikdown_bd from 'quikdown/bd';
-const markdown = quikdown_bd.toMarkdown(html);
-
-// ❌ Wrong - regular quikdown doesn't have toMarkdown
-import quikdown from 'quikdown';
-const markdown = quikdown.toMarkdown(html); // Error: toMarkdown is not a function
-```
-
-See [API Reference](docs/api-reference.md) for complete documentation.
-
-## Theming
-
-QuikDown supports flexible theming through container-based CSS scoping:
-
-### Using Pre-built Themes
-
-```html
-<!-- Load theme CSS files -->
-<link rel="stylesheet" href="quikdown.light.css">
-<link rel="stylesheet" href="quikdown.dark.css">
-
-<!-- Apply themes via container classes -->
-<div class="quikdown-light">
-  <!-- Light themed content -->
-</div>
-
-<div class="quikdown-dark">
-  <!-- Dark themed content -->
-</div>
-```
-
-### Theme Architecture
-
-- **Structural styles**: Shared across all themes (margins, padding, font-sizes)
-- **Theme colors**: Scoped to container classes (`.quikdown-light`, `.quikdown-dark`)
-- **No conflicts**: Multiple themes can coexist on the same page
-- **No default theme**: Without a container class, only structural styles apply
-
-### Inline Styles
-
-For a batteries-included approach without CSS files:
-
-```javascript
-// Use inline styles (always light theme currently)
-const html = quikdown(markdown, { inline_styles: true });
-```
-
-## Browser Usage
-
-### ES Modules (Recommended)
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-</head>
-<body>
-    <div id="output"></div>
-    <script type="module">
-        import quikdown from 'https://unpkg.com/quikdown/dist/quikdown.esm.min.js';
-        
-        const markdown = '# Hello quikdown!\n\nSupports **bold** and *italic* text.';
-        const html = quikdown(markdown, { inline_styles: true });
-        document.getElementById('output').innerHTML = html;
-    </script>
-</body>
-</html>
-```
-
-### UMD Script Tag (Legacy)
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="https://unpkg.com/quikdown/dist/quikdown.umd.min.js"></script>
-</head>
-<body>
-    <div id="output"></div>
-    <script>
-        const markdown = '# Hello quikdown!';
-        const html = quikdown(markdown, { inline_styles: true });
-        document.getElementById('output').innerHTML = html;
-    </script>
-</body>
-</html>
-```
-
-## Node.js Usage
-
-```javascript
-const quikdown = require('quikdown');
-
-const markdown = '# Server-side Markdown';
-const html = quikdown(markdown);
-
-// Use in Express, etc.
-res.send(html);
-```
-
-## Performance
-
-quikdown is optimized for speed:
-
-- Single-pass regex parsing
-- Minimal memory allocation
-- No AST generation
-- Efficient string operations
-
-Benchmarks show quikdown performs comparably to larger markdown parsers while maintaining a much smaller footprint.
+Works with React, Vue, Svelte, Angular. See [Framework Integration Guide](docs/framework-integration.md) for examples.
 
 ## Limitations
 
-quikdown intentionally doesn't support:
-
-- HTML blocks (for security)
-- Reference-style links
+For size and security, quikdown doesn't support:
+- Reference-style links  
 - Footnotes
 - Definition lists
-- Complex table alignment
-- Nested blockquotes with different markers
 
-These omissions keep the parser small, fast, and secure.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## Testing
-
-```bash
-# Run tests
-npm test
-
-# Watch mode
-npm run test:watch
-
-# Coverage report
-npm run test:coverage
+Note that raw html, svg, etc can be rendered using appropriate fences
+```html
+<h1>My HTML Content</h1>
+<p>Some HTML</p>
 ```
+as long as an appropriate fence plugin is provided.  See API docs for example or try out in quikdown_edit.js which has built-in support for HTML with XSS prevention.
 
 ## License
 
-BSD 2-Clause License - see [LICENSE.txt](LICENSE.txt) file for details.
+BSD 2-Clause - see [LICENSE.txt](LICENSE.txt)
 
 ## Acknowledgments
 
@@ -709,14 +235,9 @@ BSD 2-Clause License - see [LICENSE.txt](LICENSE.txt) file for details.
 - CommonMark spec for markdown standardization
 
 
-Choose quikdown when you need:
-- A lightweight solution
-- Built-in security
-- Simple plugin system
-- Zero dependencies
-
-
 ## Support
 
-- 🐛 Issues: [GitHub Issues](https://github.com/deftio/quikdown/issues)
+- 📖 [Documentation](docs/)
+- 🐛 [Issues](https://github.com/deftio/quikdown/issues)
+- 📦 [Examples](examples/)  
 
