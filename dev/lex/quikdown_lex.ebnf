@@ -1,0 +1,307 @@
+/**
+ * QuikDown EBNF Grammar Definition
+ * =================================
+ * 
+ * EBNF Notation:
+ * - ::=        defines a production rule
+ * - |          alternatives (OR)
+ * - []         optional (0 or 1)
+ * - {}         repetition (0 or more)
+ * - ()         grouping
+ * - ''         literal strings
+ * - <>         semantic hints for compiler
+ * 
+ * Special Tokens:
+ * - @regex     indicates a regex pattern should be used in state machine
+ * - @builtin   leverage JavaScript built-in string method
+ * - @helper    use helper method from parser
+ * 
+ * The compiler will transform this grammar into:
+ * 1. Token definitions with regex patterns
+ * 2. State machine transitions
+ * 3. Action functions that emit HTML
+ * 4. Optimization hints for using JS string methods
+ */
+
+// ============================================================================
+// Document Structure
+// ============================================================================
+
+document ::= { block }
+
+block ::= 
+    heading
+  | code_fence
+  | horizontal_rule  
+  | blockquote
+  | list
+  | table
+  | paragraph
+  | blank_line
+
+blank_line ::= '\n' { '\n' }
+
+// ============================================================================
+// Block Elements
+// ============================================================================
+
+// Headings - ATX style only for simplicity
+heading ::= 
+    heading_marker <@builtin:trim> inline_content [trailing_hashes] '\n'
+
+heading_marker ::= 
+    '######' <emit:h6>
+  | '#####'  <emit:h5>
+  | '####'   <emit:h4>
+  | '###'    <emit:h3>
+  | '##'     <emit:h2>
+  | '#'      <emit:h1>
+
+trailing_hashes ::= @regex /\s*#+\s*$/
+
+// Code Fences - Support both ``` and ~~~
+code_fence ::= 
+    fence_marker [language_spec] '\n' 
+    fence_content 
+    fence_marker [non_newline_chars] '\n'
+
+fence_marker ::= '```' | '~~~'
+language_spec ::= @regex /[^\n]+/
+fence_content ::= @helper scanUntilFence  // Uses helper to scan until matching fence
+non_newline_chars ::= @regex /[^\n]*/
+
+// Horizontal Rule
+horizontal_rule ::= 
+    '---' { '-' } @regex /\s*$/ '\n'
+
+// Blockquote
+blockquote ::= 
+    '>' [' '] line_content '\n'
+
+// Lists - Both ordered and unordered
+list ::= ordered_list | unordered_list
+
+ordered_list ::= 
+    ordered_item { ordered_item | continuation_line }
+
+unordered_list ::= 
+    unordered_item { unordered_item | continuation_line }
+
+ordered_item ::= 
+    @regex /\d+/ '.' ' ' line_content '\n'
+
+unordered_item ::= 
+    ( '*' | '-' | '+' ) ' ' [task_checkbox] line_content '\n'
+
+task_checkbox ::= 
+    '[' ( ' ' <unchecked> | 'x' <checked> | 'X' <checked> ) ']' ' '
+
+continuation_line ::= 
+    '  ' @regex /[^\n]+/ '\n'  // Indented continuation
+
+// Tables
+table ::= 
+    table_header_row 
+    table_divider_row 
+    { table_data_row }
+
+table_header_row ::= 
+    [' '] ['|'] table_cell { '|' table_cell } ['|'] [' '] '\n'
+
+table_divider_row ::= 
+    [' '] ['|'] alignment_spec { '|' alignment_spec } ['|'] [' '] '\n'
+
+alignment_spec ::= 
+    ':' { '-' } ':' <center>
+  | { '-' } ':'     <right>
+  | ':' { '-' }     <left>
+  | { '-' }         <left>
+
+table_data_row ::= 
+    [' '] ['|'] table_cell { '|' table_cell } ['|'] [' '] '\n'
+
+table_cell ::= 
+    @regex /[^|\n]*/  <@builtin:trim>
+
+// Paragraph - Default block type
+paragraph ::= 
+    line_content { '\n' line_content } '\n'
+
+// ============================================================================
+// Inline Elements
+// ============================================================================
+
+line_content ::= { inline_element }
+
+inline_element ::=
+    escaped_char
+  | strong_emphasis
+  | emphasis  
+  | strikethrough
+  | inline_code
+  | image_link
+  | link
+  | inline_heading      // For headings inside paragraphs
+  | inline_blockquote   // For blockquotes inside paragraphs
+  | line_break
+  | text
+
+// Inline heading (when at start of line in paragraph)
+inline_heading ::=
+    <@position:line_start> heading
+
+// Inline blockquote (when at start of line in paragraph)  
+inline_blockquote ::=
+    <@position:line_start> blockquote
+
+// Escaped characters
+escaped_char ::= 
+    '\\' @regex /[\\`*_{}[\]()#+\-.!|]/
+
+// Strong emphasis (bold)
+strong_emphasis ::=
+    '**' inline_content '**'
+  | '__' inline_content '__'
+
+// Emphasis (italic)
+emphasis ::=
+    '*' inline_content '*'
+  | '_' inline_content '_'
+
+// Strikethrough
+strikethrough ::=
+    '~~' inline_content '~~'
+
+// Inline code
+inline_code ::=
+    '`' @regex /[^`]+/ '`'
+
+// Links and Images
+image_link ::=
+    '!' '[' link_text ']' '(' url [' ' title] ')'
+
+link ::=
+    '[' link_text ']' '(' url [' ' title] ')'
+
+link_text ::= 
+    @regex /[^\]]+/  // Everything except closing bracket
+
+url ::= 
+    @regex /[^)\s]+/ <@helper:sanitizeUrl>
+
+title ::= 
+    '"' @regex /[^"]*/ '"'
+
+// Line break
+line_break ::=
+    '  \n'  <emit:br>
+
+// Plain text
+text ::= 
+    @regex /[^\\`*_{}[\]()#+\-.!|~\n]+/  <@helper:escapeHtml>
+
+// ============================================================================
+// Compiler Directives
+// ============================================================================
+
+/**
+ * @compiler-options {
+ *   // Optimization hints for the compiler
+ *   "use_string_methods": true,      // Use JS string methods where efficient
+ *   "inline_small_patterns": true,   // Inline patterns < 10 chars
+ *   "merge_adjacent_literals": true, // Combine adjacent literal matches
+ *   "use_charmap": true,            // Use character lookup for first char
+ *   
+ *   // State machine generation
+ *   "state_type": "hierarchical",    // nested states for blocks/inline
+ *   "lookahead": 2,                  // Max lookahead for disambiguation
+ *   
+ *   // Output control
+ *   "emit_helpers": true,            // Generate helper method calls
+ *   "emit_actions": true,            // Generate HTML emission actions
+ *   
+ *   // Bug compatibility mode
+ *   "bug_compat": {
+ *     "missing_p_after_heading": true,
+ *     "missing_p_after_list_with_spaces": true
+ *   }
+ * }
+ */
+
+// ============================================================================
+// Lexical Tokens (for reference by compiler)
+// ============================================================================
+
+/**
+ * @tokens {
+ *   // Single character tokens for fast lookup
+ *   HASH: '#',
+ *   STAR: '*',
+ *   UNDERSCORE: '_',
+ *   BACKTICK: '`',
+ *   TILDE: '~',
+ *   BRACKET_OPEN: '[',
+ *   BRACKET_CLOSE: ']',
+ *   PAREN_OPEN: '(',
+ *   PAREN_CLOSE: ')',
+ *   PIPE: '|',
+ *   GREATER: '>',
+ *   MINUS: '-',
+ *   PLUS: '+',
+ *   BACKSLASH: '\\',
+ *   NEWLINE: '\n',
+ *   SPACE: ' ',
+ *   EXCLAIM: '!',
+ *   COLON: ':',
+ *   
+ *   // Multi-character tokens
+ *   DOUBLE_STAR: '**',
+ *   DOUBLE_UNDERSCORE: '__',
+ *   DOUBLE_TILDE: '~~',
+ *   TRIPLE_BACKTICK: '```',
+ *   TRIPLE_TILDE: '~~~',
+ *   TRIPLE_MINUS: '---',
+ *   DOUBLE_SPACE: '  ',
+ *   
+ *   // Regex patterns
+ *   DIGIT: /\d/,
+ *   WORD: /\w+/,
+ *   WHITESPACE: /\s+/
+ * }
+ */
+
+// ============================================================================
+// HTML Emission Templates (for compiler to use)
+// ============================================================================
+
+/**
+ * @templates {
+ *   h1: '<h1{attr}>{content}</h1>',
+ *   h2: '<h2{attr}>{content}</h2>',
+ *   h3: '<h3{attr}>{content}</h3>',
+ *   h4: '<h4{attr}>{content}</h4>',
+ *   h5: '<h5{attr}>{content}</h5>',
+ *   h6: '<h6{attr}>{content}</h6>',
+ *   p: '<p{attr}>{content}</p>',
+ *   blockquote: '<blockquote{attr}>{content}</blockquote>',
+ *   pre: '<pre{attr}><code{codeattr}>{content}</code></pre>',
+ *   hr: '<hr{attr}>',
+ *   br: '<br{attr}>',
+ *   ul: '<ul{attr}>{content}</ul>',
+ *   ol: '<ol{attr}>{content}</ol>',
+ *   li: '<li{attr}>{content}</li>',
+ *   table: '<table{attr}>{content}</table>',
+ *   thead: '<thead{attr}>{content}</thead>',
+ *   tbody: '<tbody{attr}>{content}</tbody>',
+ *   tr: '<tr{attr}>{content}</tr>',
+ *   th: '<th{attr}{align}>{content}</th>',
+ *   td: '<td{attr}{align}>{content}</td>',
+ *   strong: '<strong{attr}>{content}</strong>',
+ *   em: '<em{attr}>{content}</em>',
+ *   del: '<del{attr}>{content}</del>',
+ *   code: '<code{attr}>{content}</code>',
+ *   a: '<a{attr} href="{url}"{rel}>{content}</a>',
+ *   img: '<img{attr} src="{url}" alt="{alt}">',
+ *   task_li: '<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox"{checked} disabled> {content}</li>'
+ * }
+ */
