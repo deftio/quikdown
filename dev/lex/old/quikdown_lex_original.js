@@ -107,43 +107,116 @@ class Tokenizer {
     const char = this.peek();
     const startLine = this.line;
     const startCol = this.col;
-    const makeToken = (type, value) => ({ type, value, line: startLine, col: startCol });
 
-    // Map characters to token types
-    const charMap = {
-      '*': TOKEN.STAR, '_': TOKEN.UNDERSCORE, '`': TOKEN.BACKTICK,
-      '~': TOKEN.TILDE, '#': TOKEN.HASH, '|': TOKEN.PIPE,
-      '-': TOKEN.MINUS, '+': TOKEN.PLUS, '=': TOKEN.EQUALS,
-      '>': TOKEN.GT, '<': TOKEN.LT, '!': TOKEN.BANG,
-      '[': TOKEN.LBRACKET, ']': TOKEN.RBRACKET, '(': TOKEN.LPAREN,
-      ')': TOKEN.RPAREN, ':': TOKEN.COLON, ' ': TOKEN.SPACE,
-      '\t': TOKEN.TAB, '\n': TOKEN.NEWLINE, '.': TOKEN.DOT
-    };
-
-    if (charMap[char]) {
-      this.advance();
-      return makeToken(charMap[char], char);
+    switch (char) {
+      case '*': 
+        this.advance();
+        return { type: TOKEN.STAR, value: '*', line: startLine, col: startCol };
+      
+      case '_':
+        this.advance();
+        return { type: TOKEN.UNDERSCORE, value: '_', line: startLine, col: startCol };
+      
+      case '`':
+        this.advance();
+        return { type: TOKEN.BACKTICK, value: '`', line: startLine, col: startCol };
+      
+      case '~':
+        this.advance();
+        return { type: TOKEN.TILDE, value: '~', line: startLine, col: startCol };
+      
+      case '#':
+        this.advance();
+        return { type: TOKEN.HASH, value: '#', line: startLine, col: startCol };
+      
+      case '|':
+        this.advance();
+        return { type: TOKEN.PIPE, value: '|', line: startLine, col: startCol };
+      
+      case '-':
+        this.advance();
+        return { type: TOKEN.MINUS, value: '-', line: startLine, col: startCol };
+      
+      case '+':
+        this.advance();
+        return { type: TOKEN.PLUS, value: '+', line: startLine, col: startCol };
+      
+      case '=':
+        this.advance();
+        return { type: TOKEN.EQUALS, value: '=', line: startLine, col: startCol };
+      
+      case '>':
+        this.advance();
+        return { type: TOKEN.GT, value: '>', line: startLine, col: startCol };
+      
+      case '<':
+        this.advance();
+        return { type: TOKEN.LT, value: '<', line: startLine, col: startCol };
+      
+      case '!':
+        this.advance();
+        return { type: TOKEN.BANG, value: '!', line: startLine, col: startCol };
+      
+      case '[':
+        this.advance();
+        return { type: TOKEN.LBRACKET, value: '[', line: startLine, col: startCol };
+      
+      case ']':
+        this.advance();
+        return { type: TOKEN.RBRACKET, value: ']', line: startLine, col: startCol };
+      
+      case '(':
+        this.advance();
+        return { type: TOKEN.LPAREN, value: '(', line: startLine, col: startCol };
+      
+      case ')':
+        this.advance();
+        return { type: TOKEN.RPAREN, value: ')', line: startLine, col: startCol };
+      
+      case ':':
+        this.advance();
+        return { type: TOKEN.COLON, value: ':', line: startLine, col: startCol };
+      
+      case ' ':
+        this.advance();
+        return { type: TOKEN.SPACE, value: ' ', line: startLine, col: startCol };
+      
+      case '\t':
+        this.advance();
+        return { type: TOKEN.TAB, value: '\t', line: startLine, col: startCol };
+      
+      case '\n':
+        this.advance();
+        return { type: TOKEN.NEWLINE, value: '\n', line: startLine, col: startCol };
+      
+      case '.':
+        this.advance();
+        return { type: TOKEN.DOT, value: '.', line: startLine, col: startCol };
+      
+      default:
+        if (char >= '0' && char <= '9') {
+          this.advance();
+          return { type: TOKEN.DIGIT, value: char, line: startLine, col: startCol };
+        }
+        
+        // Collect text until next special character
+        let text = '';
+        while (this.pos < this.input.length) {
+          const c = this.peek();
+          if ('*_`~#|-+=><![](): \t\n.'.includes(c) || (c >= '0' && c <= '9')) {
+            break;
+          }
+          text += this.advance();
+        }
+        
+        if (text) {
+          return { type: TOKEN.TEXT, value: text, line: startLine, col: startCol };
+        }
+        
+        // Unknown character, skip it
+        this.advance();
+        return null;
     }
-
-    if (char >= '0' && char <= '9') {
-      this.advance();
-      return makeToken(TOKEN.DIGIT, char);
-    }
-    
-    // Collect text until next special character
-    let text = '';
-    const specialChars = '*_`~#|-+=><![](): \t\n.';
-    while (this.pos < this.input.length) {
-      const c = this.peek();
-      if (specialChars.includes(c) || (c >= '0' && c <= '9')) break;
-      text += this.advance();
-    }
-    
-    if (text) return makeToken(TOKEN.TEXT, text);
-    
-    // Unknown character, skip it
-    this.advance();
-    return null;
   }
 }
 
@@ -174,30 +247,22 @@ class Parser {
   }
 
   consume(type) {
-    return this.peek().type === type ? this.advance() : null;
-  }
-
-  consumeWhile(type, max = Infinity) {
-    let count = 0;
-    while (this.peek().type === type && count < max) {
-      this.advance();
-      count++;
+    if (this.peek().type === type) {
+      return this.advance();
     }
-    return count;
-  }
-
-  collectUntil(...stopTypes) {
-    let result = '';
-    while (this.peek().type !== TOKEN.EOF && !stopTypes.includes(this.peek().type)) {
-      result += this.advance().value;
-    }
-    return result;
+    return null;
   }
 
   consumeSequence(...types) {
-    const matches = types.every((t, i) => this.peek(i).type === t);
-    if (matches) types.forEach(() => this.advance());
-    return matches;
+    for (let i = 0; i < types.length; i++) {
+      if (this.peek(i).type !== types[i]) {
+        return false;
+      }
+    }
+    for (let i = 0; i < types.length; i++) {
+      this.advance();
+    }
+    return true;
   }
 
   getAttr(tag, style = '') {
@@ -216,10 +281,17 @@ class Parser {
   }
 
   escapeHtml(text) {
-    const map = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'};
+    const escapeMap = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    };
     let result = '';
     for (let i = 0; i < text.length; i++) {
-      result += map[text[i]] || text[i];
+      const char = text[i];
+      result += escapeMap[char] || char;
     }
     return result;
   }

@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.0.5",
+  "version": "1.0.6dev1",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
   "author": "deftio (https://github.com/deftio",
   "license": "BSD-2-Clause",
