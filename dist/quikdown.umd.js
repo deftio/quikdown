@@ -195,8 +195,8 @@
         // Merge consecutive blockquotes
         html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
         
-        // Process horizontal rules
-        html = html.replace(/^---+$/gm, `<hr${getAttr('hr')}>`);
+        // Process horizontal rules (allow trailing spaces)
+        html = html.replace(/^---+\s*$/gm, `<hr${getAttr('hr')}>`);
         
         // Process lists
         html = processLists(html, getAttr, inline_styles, bidirectional);
@@ -276,7 +276,15 @@
             html = html.replace(/  $/gm, `<br${getAttr('br')}>`);
             
             // Paragraphs (double newlines)
-            html = html.replace(/\n\n+/g, '</p><p>');
+            // Don't add </p> after block elements (they're not in paragraphs)
+            html = html.replace(/\n\n+/g, (match, offset) => {
+                // Check if we're after a block element closing tag
+                const before = html.substring(0, offset);
+                if (before.match(/<\/(h[1-6]|blockquote|ul|ol|table|pre|hr)>$/)) {
+                    return '<p>';  // Just open a new paragraph
+                }
+                return '</p><p>';  // Normal paragraph break
+            });
             html = '<p>' + html + '</p>';
         }
         
@@ -300,6 +308,10 @@
         cleanupPatterns.forEach(([pattern, replacement]) => {
             html = html.replace(pattern, replacement);
         });
+        
+        // Fix orphaned closing </p> tags after block elements
+        // When a paragraph follows a block element, ensure it has opening <p>
+        html = html.replace(/(<\/(?:h[1-6]|blockquote|ul|ol|table|pre|hr)>)\n([^<])/g, '$1\n<p>$2');
         
         // Phase 4: Restore code blocks and inline code
         

@@ -14,34 +14,26 @@
   "homepage": "https://github.com/deftio/quikdown",
   "keywords": [
     "markdown",
-    "html",
-    "parser",
     "markdown-parser",
     "markdown-to-html",
-    "lightweight",
-    "fast",
-    "small",
-    "zero-dependency",
-    "bidirectional",
-    "markdown-editor",
-    "xss-protection",
-    "fence-plugin",
-    "code-highlighting",
-    "mermaid",
-    "gfm",
-    "github-flavored-markdown",
+    "markdown-bidirectional",
+    "markdown-mermaid",
+    "markdown-code",
+    "md",
+    "parser",
+    "html",
     "commonmark",
-    "converter",
-    "renderer",
-    "chat",
-    "llm",
-    "ai-chat",
-    "markdown-renderer",
+    "gfm",
+    "task-lists",
+    "xss-protection",
+    "lightweight",
+    "zero-dependencies",
     "browser",
     "nodejs",
-    "esm",
-    "umd",
-    "typescript"
+    "plugin",
+    "fence",
+    "autolink",
+    "sanitization"
   ],
   "main": "dist/quikdown.cjs",
   "module": "dist/quikdown.esm.js",
@@ -108,10 +100,13 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/tests/.*\\.spec\\.js$"
+      "/tests/.*\\.spec\\.js$",
+      "/dev/lex-old-dev/"
     ],
     "transform": {
       "^.+\\.js$": "babel-jest"
@@ -158,29 +153,6 @@
       }
     }
   },
-  "keywords": [
-    "markdown",
-    "markdown-parser",
-    "markdown-to-html",
-    "markdown-bidirectional",
-    "markdown-mermaid",
-    "markdown-code",
-    "md",
-    "parser",
-    "html",
-    "commonmark",
-    "gfm",
-    "task-lists",
-    "xss-protection",
-    "lightweight",
-    "zero-dependencies",
-    "browser",
-    "nodejs",
-    "plugin",
-    "fence",
-    "autolink",
-    "sanitization"
-  ],
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/preset-env": "^7.25.3",

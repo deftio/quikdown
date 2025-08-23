@@ -1,5 +1,42 @@
 # Release Notes
 
+## v1.0.6 (In Development)
+
+### 🔬 Experimental Features
+
+#### Lexer/Grammar-Based Parser Achievement
+- **100% Test Parity**: The experimental trie-based lexer parser in `dev/lex/` now passes all 20 core tests
+- **Compact Implementation**: Achieved 9.9KB minified size using a compiled trie/DFA structure
+- **Grammar-Driven Architecture**: Formal EBNF grammar compiled to efficient state machine
+- **Future Foundation**: Provides basis for future extensibility and custom grammar rules
+
+### 🐛 Bug Fixes
+
+#### HTML-to-Markdown Roundtrip Conversion
+- **Fixed missing `<p>` tags**: Paragraphs following headings were missing opening `<p>` tags, causing invalid HTML
+- **Preserved blank lines**: Fixed issue where blank lines between paragraphs and headings were lost during roundtrip conversion
+- **Improved paragraph handling**: Added proper detection of trailing whitespace lines within paragraphs to maintain formatting intent
+- **Perfect roundtrip fidelity**: The bidirectional module now maintains exact markdown formatting through HTML and back
+
+### 🔧 QuikdownEditor Improvements
+
+#### Performance and Responsiveness
+- **Reduced debounce delay**: Changed default from 100ms to 20ms for much snappier editor response
+- **Configurable debounce**: Added `setDebounceDelay()` and `getDebounceDelay()` API methods
+- **Zero-delay option**: Support for instant updates with `debounceDelay: 0`
+
+#### Styling Flexibility
+- **Inline styles support**: Added `inline_styles` option pass-through to quikdown_bd
+- **Parent div styling**: Enables CSS cascade from parent containers when using class-based styles
+- **Choice of styling**: Users can now choose between CSS classes (default) or inline styles
+
+### 🧪 Testing Improvements
+
+#### Dynamic Version Testing
+- **Package.json integration**: Version tests now dynamically check against `package.json` instead of hardcoded values
+- **Automated compatibility**: Tests automatically work with any version number without manual updates
+- **Excluded old tests**: Properly excluded deprecated lexer tests from test suite
+
 ## v1.0.5 (2025-08-19)
 
 ### 🚀 New: Quikdown Editor

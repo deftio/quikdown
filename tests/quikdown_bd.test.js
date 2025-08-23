@@ -6,6 +6,11 @@
 import { JSDOM } from 'jsdom';
 import quikdown_bd from '../dist/quikdown_bd.esm.js';
 import quikdown from '../dist/quikdown.esm.js';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Load package.json to get the current version
+const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
 
 // Import the base tests to ensure feature parity
 import fs from 'fs';
@@ -460,8 +465,8 @@ End of document.`;
   });
   
   describe('API Methods', () => {
-    test('should have version property', () => {
-      expect(quikdown_bd.version).toBe('1.0.5');
+    test('should have version property matching package.json', () => {
+      expect(quikdown_bd.version).toBe(packageJson.version);
     });
     
     test('should have emitStyles method', () => {

@@ -143,7 +143,31 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
             case 'p':
                 // Check if it's actually a paragraph or just a wrapper
                 if (childContent.trim()) {
-                    return childContent.trim() + '\n\n';
+                    // Check if paragraph ends with a line that's just whitespace
+                    // This indicates an intentional blank line before the next element
+                    const lines = childContent.split('\n');
+                    let content = childContent.trim();
+                    
+                    // If the last line(s) are just whitespace, preserve one blank line
+                    if (lines.length > 1) {
+                        let trailingBlankLines = 0;
+                        for (let i = lines.length - 1; i >= 0; i--) {
+                            if (lines[i].trim() === '') {
+                                trailingBlankLines++;
+                            } else {
+                                break;
+                            }
+                        }
+                        if (trailingBlankLines > 0) {
+                            // Add a line with just a space, followed by single newline
+                            // The \n\n will be added below for paragraph separation
+                            content = content + '\n ';
+                            // Only add one newline since we're preserving the space line
+                            return content + '\n';
+                        }
+                    }
+                    
+                    return content + '\n\n';
                 }
                 return '';
                 

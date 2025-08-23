@@ -195,8 +195,8 @@
         // Merge consecutive blockquotes
         html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
         
-        // Process horizontal rules
-        html = html.replace(/^---+$/gm, `<hr${getAttr('hr')}>`);
+        // Process horizontal rules (allow trailing spaces)
+        html = html.replace(/^---+\s*$/gm, `<hr${getAttr('hr')}>`);
         
         // Process lists
         html = processLists(html, getAttr, inline_styles, bidirectional);
@@ -276,7 +276,15 @@
             html = html.replace(/  $/gm, `<br${getAttr('br')}>`);
             
             // Paragraphs (double newlines)
-            html = html.replace(/\n\n+/g, '</p><p>');
+            // Don't add </p> after block elements (they're not in paragraphs)
+            html = html.replace(/\n\n+/g, (match, offset) => {
+                // Check if we're after a block element closing tag
+                const before = html.substring(0, offset);
+                if (before.match(/<\/(h[1-6]|blockquote|ul|ol|table|pre|hr)>$/)) {
+                    return '<p>';  // Just open a new paragraph
+                }
+                return '</p><p>';  // Normal paragraph break
+            });
             html = '<p>' + html + '</p>';
         }
         
@@ -300,6 +308,10 @@
         cleanupPatterns.forEach(([pattern, replacement]) => {
             html = html.replace(pattern, replacement);
         });
+        
+        // Fix orphaned closing </p> tags after block elements
+        // When a paragraph follows a block element, ensure it has opening <p>
+        html = html.replace(/(<\/(?:h[1-6]|blockquote|ul|ol|table|pre|hr)>)\n([^<])/g, '$1\n<p>$2');
         
         // Phase 4: Restore code blocks and inline code
         
@@ -792,7 +804,31 @@
                 case 'p':
                     // Check if it's actually a paragraph or just a wrapper
                     if (childContent.trim()) {
-                        return childContent.trim() + '\n\n';
+                        // Check if paragraph ends with a line that's just whitespace
+                        // This indicates an intentional blank line before the next element
+                        const lines = childContent.split('\n');
+                        let content = childContent.trim();
+                        
+                        // If the last line(s) are just whitespace, preserve one blank line
+                        if (lines.length > 1) {
+                            let trailingBlankLines = 0;
+                            for (let i = lines.length - 1; i >= 0; i--) {
+                                if (lines[i].trim() === '') {
+                                    trailingBlankLines++;
+                                } else {
+                                    break;
+                                }
+                            }
+                            if (trailingBlankLines > 0) {
+                                // Add a line with just a space, followed by single newline
+                                // The \n\n will be added below for paragraph separation
+                                content = content + '\n ';
+                                // Only add one newline since we're preserving the space line
+                                return content + '\n';
+                            }
+                        }
+                        
+                        return content + '\n\n';
                     }
                     return '';
                     
@@ -993,9 +1029,11 @@
     const DEFAULT_OPTIONS = {
         mode: 'split',          // 'source' | 'preview' | 'split'
         showToolbar: true,
+        showRemoveHR: false,    // Show button to remove horizontal rules (---) 
         theme: 'auto',          // 'light' | 'dark' | 'auto'
         lazy_linefeeds: false,
-        debounceDelay: 100,
+        inline_styles: false,   // Use CSS classes (false) or inline styles (true)
+        debounceDelay: 20,      // Reduced from 100ms for better responsiveness
         placeholder: 'Start typing markdown...',
         plugins: {
             highlightjs: false,
@@ -1138,6 +1176,16 @@
                 btn.title = title;
                 toolbar.appendChild(btn);
             });
+            
+            // Remove HR button (if enabled)
+            if (this.options.showRemoveHR) {
+                const removeHRBtn = document.createElement('button');
+                removeHRBtn.className = 'qde-btn';
+                removeHRBtn.dataset.action = 'remove-hr';
+                removeHRBtn.textContent = 'Remove HR';
+                removeHRBtn.title = 'Remove all horizontal rules (---) from markdown';
+                toolbar.appendChild(removeHRBtn);
+            }
             
             return toolbar;
         }
@@ -1514,7 +1562,8 @@
             } else {
                 this._html = quikdown_bd(markdown, {
                     fence_plugin: this.createFencePlugin(),
-                    lazy_linefeeds: this.options.lazy_linefeeds
+                    lazy_linefeeds: this.options.lazy_linefeeds,
+                    inline_styles: this.options.inline_styles
                 });
                 
                 // Update preview if visible
@@ -2162,6 +2211,22 @@
         }
         
         /**
+         * Set debounce delay for input updates
+         * @param {number} delay - Delay in milliseconds (0 for instant)
+         */
+        setDebounceDelay(delay) {
+            this.options.debounceDelay = Math.max(0, delay);
+        }
+        
+        /**
+         * Get current debounce delay
+         * @returns {number} Delay in milliseconds
+         */
+        getDebounceDelay() {
+            return this.options.debounceDelay;
+        }
+        
+        /**
          * Set editor mode
          */
         setMode(mode) {
@@ -2203,6 +2268,9 @@
                     break;
                 case 'copy-html':
                     this.copy('html');
+                    break;
+                case 'remove-hr':
+                    this.removeHR();
                     break;
             }
         }
@@ -2288,6 +2356,36 @@
          */
         getHTML() {
             return this._html;
+        }
+        
+        /**
+         * Remove all horizontal rules (---) from markdown
+         */
+        async removeHR() {
+            // Remove standalone HR lines (3 or more dashes/underscores/asterisks)
+            // Matches: ---, ___, ***, ----, etc. with optional spaces
+            const cleaned = this._markdown
+                .split('\n')
+                .filter(line => {
+                    // Keep lines that aren't just HR patterns
+                    const trimmed = line.trim();
+                    // Match HR patterns: 3+ of -, _, or * with optional spaces between
+                    return !(/^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed));
+                })
+                .join('\n');
+            
+            // Update the markdown
+            await this.setMarkdown(cleaned);
+            
+            // Visual feedback if toolbar button exists
+            const btn = this.toolbar?.querySelector('[data-action="remove-hr"]');
+            if (btn) {
+                const originalText = btn.textContent;
+                btn.textContent = 'Removed!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 1500);
+            }
         }
         
         /**

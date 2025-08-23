@@ -1,4 +1,9 @@
 import quikdown from '../dist/quikdown.esm.js';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Load package.json to get the current version
+const packageJson = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
 
 describe('quikdown markdown parser', () => {
     
@@ -176,6 +181,12 @@ describe('quikdown markdown parser', () => {
             expect(quikdown('---')).toBe('<hr class="quikdown-hr">');
             expect(quikdown('----')).toBe('<hr class="quikdown-hr">');
             expect(quikdown('----------')).toBe('<hr class="quikdown-hr">');
+        });
+        
+        test('should parse horizontal rules with trailing spaces', () => {
+            expect(quikdown('---  ')).toBe('<hr class="quikdown-hr">');
+            expect(quikdown('--- ')).toBe('<hr class="quikdown-hr">');
+            expect(quikdown('---\t')).toBe('<hr class="quikdown-hr">');
         });
     });
     
@@ -873,9 +884,10 @@ def analyze():
     });
 
     describe('Version Property', () => {
-        test('should have a version property', () => {
+        test('should have a version property matching package.json', () => {
             expect(quikdown.version).toBeDefined();
             expect(typeof quikdown.version).toBe('string');
+            expect(quikdown.version).toBe(packageJson.version);
             expect(quikdown.version).toMatch(/^\d+\.\d+(\.\d+)?(dev\d+)?$/); // Matches format like "1.0", "1.0.1", or "1.0.3dev2"
         });
     });

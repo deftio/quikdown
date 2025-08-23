@@ -163,7 +163,8 @@ describe('QuikdownEditor ESM', () => {
                 theme: 'dark',
                 showToolbar: false,
                 lazy_linefeeds: true,
-                debounceDelay: 500,
+                inline_styles: true,
+                debounceDelay: 50,
                 placeholder: 'Custom placeholder'
             });
             await editor.initPromise;
@@ -172,7 +173,8 @@ describe('QuikdownEditor ESM', () => {
             expect(editor.options.theme).toBe('dark');
             expect(editor.options.showToolbar).toBe(false);
             expect(editor.options.lazy_linefeeds).toBe(true);
-            expect(editor.options.debounceDelay).toBe(500);
+            expect(editor.options.inline_styles).toBe(true);
+            expect(editor.options.debounceDelay).toBe(50);
             expect(editor.options.placeholder).toBe('Custom placeholder');
         });
 
@@ -247,6 +249,90 @@ describe('QuikdownEditor ESM', () => {
             
             editor.setLazyLinefeeds(false);
             expect(editor.getLazyLinefeeds()).toBe(false);
+        });
+
+        test('should get/set debounce delay', () => {
+            // Default should be 20ms
+            expect(editor.getDebounceDelay()).toBe(20);
+            
+            // Set to custom value
+            editor.setDebounceDelay(100);
+            expect(editor.getDebounceDelay()).toBe(100);
+            
+            // Zero delay for instant updates
+            editor.setDebounceDelay(0);
+            expect(editor.getDebounceDelay()).toBe(0);
+            
+            // Negative values should be clamped to 0
+            editor.setDebounceDelay(-50);
+            expect(editor.getDebounceDelay()).toBe(0);
+        });
+
+        test('should remove horizontal rules with removeHR', async () => {
+            const markdownWithHR = `# Title
+
+First paragraph
+
+---
+
+Second paragraph
+
+___
+
+Third paragraph
+
+* * *
+
+Fourth paragraph`;
+            
+            await editor.setMarkdown(markdownWithHR);
+            expect(editor.getMarkdown()).toContain('---');
+            expect(editor.getMarkdown()).toContain('___');
+            expect(editor.getMarkdown()).toContain('* * *');
+            
+            // Remove all HRs
+            await editor.removeHR();
+            
+            const cleaned = editor.getMarkdown();
+            expect(cleaned).not.toContain('---');
+            expect(cleaned).not.toContain('___');
+            expect(cleaned).not.toContain('* * *');
+            expect(cleaned).toContain('# Title');
+            expect(cleaned).toContain('First paragraph');
+            expect(cleaned).toContain('Second paragraph');
+            expect(cleaned).toContain('Third paragraph');
+            expect(cleaned).toContain('Fourth paragraph');
+        });
+
+        test('should pass inline_styles to quikdown_bd', async () => {
+            // Create editor with inline_styles
+            const inlineEditor = new QuikdownEditor('#test-editor', {
+                inline_styles: true
+            });
+            await inlineEditor.initPromise;
+            
+            await inlineEditor.setMarkdown('**bold** and *italic*');
+            const html = inlineEditor.getHTML();
+            
+            // With inline_styles: true, should have style attributes
+            expect(html).toContain('style=');
+            
+            inlineEditor.destroy();
+            
+            // Create editor without inline_styles
+            const classEditor = new QuikdownEditor('#test-editor', {
+                inline_styles: false
+            });
+            await classEditor.initPromise;
+            
+            await classEditor.setMarkdown('**bold** and *italic*');
+            const classHtml = classEditor.getHTML();
+            
+            // With inline_styles: false, should have class attributes
+            expect(classHtml).toContain('class="quikdown-');
+            expect(classHtml).not.toContain('style=');
+            
+            classEditor.destroy();
         });
 
         test('should handle destroy()', async () => {

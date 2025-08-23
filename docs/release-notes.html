@@ -65,6 +65,43 @@
 <body>
     <article class="markdown-body">
         <h1>Release Notes</h1>
+<h2>v1.0.6 (In Development)</h2>
+<h3>🔬 Experimental Features</h3>
+<h4>Lexer/Grammar-Based Parser Achievement</h4>
+<ul>
+<li><strong>100% Test Parity</strong>: The experimental trie-based lexer parser in <code>dev/lex/</code> now passes all 20 core tests</li>
+<li><strong>Compact Implementation</strong>: Achieved 9.9KB minified size using a compiled trie/DFA structure</li>
+<li><strong>Grammar-Driven Architecture</strong>: Formal EBNF grammar compiled to efficient state machine</li>
+<li><strong>Future Foundation</strong>: Provides basis for future extensibility and custom grammar rules</li>
+</ul>
+<h3>🐛 Bug Fixes</h3>
+<h4>HTML-to-Markdown Roundtrip Conversion</h4>
+<ul>
+<li><strong>Fixed missing <code>&lt;p&gt;</code> tags</strong>: Paragraphs following headings were missing opening <code>&lt;p&gt;</code> tags, causing invalid HTML</li>
+<li><strong>Preserved blank lines</strong>: Fixed issue where blank lines between paragraphs and headings were lost during roundtrip conversion</li>
+<li><strong>Improved paragraph handling</strong>: Added proper detection of trailing whitespace lines within paragraphs to maintain formatting intent</li>
+<li><strong>Perfect roundtrip fidelity</strong>: The bidirectional module now maintains exact markdown formatting through HTML and back</li>
+</ul>
+<h3>🔧 QuikdownEditor Improvements</h3>
+<h4>Performance and Responsiveness</h4>
+<ul>
+<li><strong>Reduced debounce delay</strong>: Changed default from 100ms to 20ms for much snappier editor response</li>
+<li><strong>Configurable debounce</strong>: Added <code>setDebounceDelay()</code> and <code>getDebounceDelay()</code> API methods</li>
+<li><strong>Zero-delay option</strong>: Support for instant updates with <code>debounceDelay: 0</code></li>
+</ul>
+<h4>Styling Flexibility</h4>
+<ul>
+<li><strong>Inline styles support</strong>: Added <code>inline_styles</code> option pass-through to quikdown_bd</li>
+<li><strong>Parent div styling</strong>: Enables CSS cascade from parent containers when using class-based styles</li>
+<li><strong>Choice of styling</strong>: Users can now choose between CSS classes (default) or inline styles</li>
+</ul>
+<h3>🧪 Testing Improvements</h3>
+<h4>Dynamic Version Testing</h4>
+<ul>
+<li><strong>Package.json integration</strong>: Version tests now dynamically check against <code>package.json</code> instead of hardcoded values</li>
+<li><strong>Automated compatibility</strong>: Tests automatically work with any version number without manual updates</li>
+<li><strong>Excluded old tests</strong>: Properly excluded deprecated lexer tests from test suite</li>
+</ul>
 <h2>v1.0.5 (2025-08-19)</h2>
 <h3>🚀 New: Quikdown Editor</h3>
 <h4>Drop-in Markdown Editor Control</h4>

@@ -299,6 +299,7 @@ editor.destroy();</code></pre>
         // Create the editor - that's it!
         const editor = new QuikdownEditor('#editor-container', {
             mode: 'split',
+            showRemoveHR: true,  // Show the Remove --- button
             plugins: { highlightjs: true, mermaid: true }
         });
         

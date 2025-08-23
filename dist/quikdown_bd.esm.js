@@ -189,8 +189,8 @@ function quikdown(markdown, options = {}) {
     // Merge consecutive blockquotes
     html = html.replace(/<\/blockquote>\n<blockquote>/g, '\n');
     
-    // Process horizontal rules
-    html = html.replace(/^---+$/gm, `<hr${getAttr('hr')}>`);
+    // Process horizontal rules (allow trailing spaces)
+    html = html.replace(/^---+\s*$/gm, `<hr${getAttr('hr')}>`);
     
     // Process lists
     html = processLists(html, getAttr, inline_styles, bidirectional);
@@ -270,7 +270,15 @@ function quikdown(markdown, options = {}) {
         html = html.replace(/  $/gm, `<br${getAttr('br')}>`);
         
         // Paragraphs (double newlines)
-        html = html.replace(/\n\n+/g, '</p><p>');
+        // Don't add </p> after block elements (they're not in paragraphs)
+        html = html.replace(/\n\n+/g, (match, offset) => {
+            // Check if we're after a block element closing tag
+            const before = html.substring(0, offset);
+            if (before.match(/<\/(h[1-6]|blockquote|ul|ol|table|pre|hr)>$/)) {
+                return '<p>';  // Just open a new paragraph
+            }
+            return '</p><p>';  // Normal paragraph break
+        });
         html = '<p>' + html + '</p>';
     }
     
@@ -294,6 +302,10 @@ function quikdown(markdown, options = {}) {
     cleanupPatterns.forEach(([pattern, replacement]) => {
         html = html.replace(pattern, replacement);
     });
+    
+    // Fix orphaned closing </p> tags after block elements
+    // When a paragraph follows a block element, ensure it has opening <p>
+    html = html.replace(/(<\/(?:h[1-6]|blockquote|ul|ol|table|pre|hr)>)\n([^<])/g, '$1\n<p>$2');
     
     // Phase 4: Restore code blocks and inline code
     
@@ -786,7 +798,31 @@ quikdown_bd.toMarkdown = function(htmlOrElement) {
             case 'p':
                 // Check if it's actually a paragraph or just a wrapper
                 if (childContent.trim()) {
-                    return childContent.trim() + '\n\n';
+                    // Check if paragraph ends with a line that's just whitespace
+                    // This indicates an intentional blank line before the next element
+                    const lines = childContent.split('\n');
+                    let content = childContent.trim();
+                    
+                    // If the last line(s) are just whitespace, preserve one blank line
+                    if (lines.length > 1) {
+                        let trailingBlankLines = 0;
+                        for (let i = lines.length - 1; i >= 0; i--) {
+                            if (lines[i].trim() === '') {
+                                trailingBlankLines++;
+                            } else {
+                                break;
+                            }
+                        }
+                        if (trailingBlankLines > 0) {
+                            // Add a line with just a space, followed by single newline
+                            // The \n\n will be added below for paragraph separation
+                            content = content + '\n ';
+                            // Only add one newline since we're preserving the space line
+                            return content + '\n';
+                        }
+                    }
+                    
+                    return content + '\n\n';
                 }
                 return '';
                 
