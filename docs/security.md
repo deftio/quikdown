@@ -191,9 +191,11 @@ function renderAdminContent(markdown, isAdmin) {
   const options = {};
   
   if (isAdmin) {
-    options.fence_plugin = (content, lang) => {
-      if (lang === 'widget') {
-        return renderWidget(JSON.parse(content));
+    options.fence_plugin = {
+      render: (content, lang) => {
+        if (lang === 'widget') {
+          return renderWidget(JSON.parse(content));
+        }
       }
     };
   }
@@ -208,14 +210,16 @@ function renderAdminContent(markdown, isAdmin) {
 // Different trust for different parts
 function renderMixedContent(markdown, trustMap) {
   return quikdown(markdown, {
-    fence_plugin: (content, lang) => {
-      const trust = trustMap[lang];
-      if (trust === 'full') {
-        return content; // Full trust
-      } else if (trust === 'sanitized') {
-        return DOMPurify.sanitize(content);
+    fence_plugin: {
+      render: (content, lang) => {
+        const trust = trustMap[lang];
+        if (trust === 'full') {
+          return content; // Full trust
+        } else if (trust === 'sanitized') {
+          return DOMPurify.sanitize(content);
+        }
+        return undefined; // Default escaping
       }
-      return undefined; // Default escaping
     }
   });
 }

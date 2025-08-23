@@ -84,13 +84,15 @@ This is a **CDN ESM** example showing how to use quikdown in modern browsers.
 ### Code Block with Syntax Highlighting
 
 ```javascript
-// quikdown with fence plugin
+// quikdown with fence plugin (v1.1.0+ API)
 const html = quikdown(markdown, {
-    fence_plugin: (code, lang) => {
-        if (lang && hljs.getLanguage(lang)) {
-            return hljs.highlight(code, { language: lang }).value;
+    fence_plugin: {
+        render: (code, lang) => {
+            if (lang && hljs.getLanguage(lang)) {
+                return hljs.highlight(code, { language: lang }).value;
+            }
+            return code;
         }
-        return code;
     }
 });
 ```
@@ -138,21 +140,23 @@ const html = quikdown(markdown, {
             const markdown = document.getElementById('markdown-input').value;
             const output = document.getElementById('output');
             
-            // Configure options
+            // Configure options (v1.1.0+ API)
             const options = {
                 inline_styles: useInlineStyles,
-                fence_plugin: (code, lang) => {
-                    // Custom fence plugin for syntax highlighting
-                    if (lang && hljs.getLanguage(lang)) {
-                        try {
-                            const highlighted = hljs.highlight(code, { language: lang }).value;
-                            return `<pre class="hljs"><code class="language-${lang}">${highlighted}</code></pre>`;
-                        } catch (err) {
-                            console.error('Highlight error:', err);
+                fence_plugin: {
+                    render: (code, lang) => {
+                        // Custom fence plugin for syntax highlighting
+                        if (lang && hljs.getLanguage(lang)) {
+                            try {
+                                const highlighted = hljs.highlight(code, { language: lang }).value;
+                                return `<pre class="hljs"><code class="language-${lang}">${highlighted}</code></pre>`;
+                            } catch (err) {
+                                console.error('Highlight error:', err);
+                            }
                         }
+                        // Fall back to default rendering
+                        return undefined;
                     }
-                    // Fall back to default rendering
-                    return undefined;
                 }
             };
             

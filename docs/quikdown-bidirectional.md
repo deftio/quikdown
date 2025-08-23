@@ -117,7 +117,7 @@ Convert Markdown to HTML with bidirectional support.
 **Parameters:**
 - `markdown` (string): The Markdown source text
 - `options` (object): Optional configuration
-  - `fence_plugin` (function): Custom renderer for fenced code blocks
+  - `fence_plugin` (FencePlugin): Custom renderer for fenced code blocks (object with `render` function)
   - `inline_styles` (boolean): Use inline styles instead of CSS classes
   - `allow_unsafe_urls` (boolean): Allow potentially unsafe URLs
   - `bidirectional` (boolean): Always `true` for quikdown_bd (automatically set)

@@ -65,7 +65,7 @@
 <body>
     <article class="markdown-body">
         <h1>Release Notes</h1>
-<h2>v1.1.0 (In Development)</h2>
+<h2>v1.1.0 (2025-08-23)</h2>
 <h3>💥 Breaking Changes</h3>
 <h4>Fence Plugin API Redesign</h4>
 <ul>
@@ -103,6 +103,13 @@ const plugin = {
 <li><strong>Configurable display</strong>: <code>showRemoveHR</code> option (default: false) to show/hide button</li>
 <li><strong>LLM-friendly</strong>: Helps clean up markdown from AI-generated content</li>
 </ul>
+<h3>📦 Bundle Sizes</h3>
+<ul>
+<li><strong>QuikDown Core</strong>: 9.0 KB minified (from 9.1 KB in v1.0.6)</li>
+<li><strong>QuikDown Bidirectional</strong>: 13.8 KB minified</li>
+<li><strong>QuikDown Editor</strong>: 37.8 KB minified</li>
+<li><strong>CSS Themes</strong>: Light 1.9 KB, Dark 2.6 KB minified</li>
+</ul>
 <h3>🔬 Experimental Features</h3>
 <h4>Lexer/Grammar-Based Parser Achievement</h4>
 <ul>
@@ -138,12 +145,42 @@ const plugin = {
 <li><strong>Parent div styling</strong>: Enables CSS cascade from parent containers when using class-based styles</li>
 <li><strong>Choice of styling</strong>: Users can now choose between CSS classes (default) or inline styles</li>
 </ul>
-<h3>🧪 Testing Improvements</h3>
-<h4>Dynamic Version Testing</h4>
+<h3>🧪 Testing &amp; Quality Improvements</h3>
+<h4>Comprehensive Test Coverage Boost</h4>
 <ul>
-<li><strong>Package.json integration</strong>: Version tests now dynamically check against <code>package.json</code> instead of hardcoded values</li>
+<li><strong>QuikDown Core</strong>: Achieved <strong>100% line coverage</strong>, 99.26% statement coverage, 99.42% branch coverage</li>
+<li><strong>QuikDown Editor</strong>: Improved from 47% to <strong>62% statement coverage</strong>, 75.8% function coverage</li>
+<li><strong>Test Suite</strong>: 512 total tests (507 passing, 5 skipped due to jsdom limitations)</li>
+<li><strong>Added 38 new editor tests</strong>: Covering toolbar actions, plugin loading, advanced features, and edge cases</li>
+</ul>
+<h4>Coverage Achievements</h4>
+<ul>
+<li><strong>Core module (quikdown.esm.js)</strong>: <ul>
+<li>Lines: 100% ✅</li>
+<li>Statements: 99.26% ✅</li>
+<li>Branches: 99.42% ✅</li>
+<li>Functions: 97.36% ✅</li>
+</ul>
+</li>
+<li><strong>Bidirectional module (quikdown_bd.esm.js)</strong>:<ul>
+<li>Lines: 94.35%</li>
+<li>Statements: 93.82%</li>
+<li>Functions: 89.58%</li>
+</ul>
+</li>
+<li><strong>Editor module (quikdown_edit.esm.js)</strong>:<ul>
+<li>Lines: 63.17% (up from 48.23%)</li>
+<li>Statements: 61.98% (up from 47.46%)</li>
+<li>Functions: 75.8% (up from 62.9%)</li>
+</ul>
+</li>
+</ul>
+<h4>Testing Infrastructure</h4>
+<ul>
+<li><strong>Dynamic Version Testing</strong>: Version tests now dynamically check against <code>package.json</code> instead of hardcoded values</li>
 <li><strong>Automated compatibility</strong>: Tests automatically work with any version number without manual updates</li>
-<li><strong>Excluded old tests</strong>: Properly excluded deprecated lexer tests from test suite</li>
+<li><strong>Fence plugin test migration</strong>: All tests updated to use new v1.1.0 object format</li>
+<li><strong>Bidirectional coverage</strong>: Added tests for fence plugins with and without reverse handlers</li>
 </ul>
 <h2>v1.0.5 (2025-08-19)</h2>
 <h3>🚀 New: Quikdown Editor</h3>

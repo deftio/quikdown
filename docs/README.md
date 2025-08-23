@@ -55,9 +55,11 @@ const html = quikdown(userInput);
 
 // Trusted HTML requires explicit plugin
 const html = quikdown(markdown, {
-  fence_plugin: (content, lang) => {
-    if (lang === 'trusted-html' && isAdmin()) {
-      return content; // Only for trusted sources
+  fence_plugin: {
+    render: (content, lang) => {
+      if (lang === 'trusted-html' && isAdmin()) {
+        return content; // Only for trusted sources
+      }
     }
   }
 });

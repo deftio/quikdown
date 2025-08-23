@@ -10,12 +10,9 @@ declare module 'quikdown/bd' {
   export interface QuikdownBdOptions {
     /**
      * Custom renderer for fenced code blocks.
-     * Return undefined to use default rendering.
-     * @param content - The code block content (unescaped)
-     * @param language - The language identifier (or empty string)
-     * @returns HTML string or undefined for default rendering
+     * Uses the FencePlugin interface from quikdown module.
      */
-    fence_plugin?: (content: string, language: string) => string | undefined;
+    fence_plugin?: import('./quikdown').FencePlugin;
     
     /**
      * If true, uses inline styles instead of CSS classes.
@@ -107,7 +104,7 @@ declare namespace quikdown_bd {
 }
 
 export interface QuikdownBdOptions {
-  fence_plugin?: (content: string, language: string) => string | undefined;
+  fence_plugin?: import('./quikdown').FencePlugin;
   inline_styles?: boolean;
   allow_unsafe_urls?: boolean;
   bidirectional?: boolean;

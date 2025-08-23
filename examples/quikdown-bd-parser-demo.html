@@ -421,7 +421,8 @@
                 const html = quikdownBD(markdown, { 
                     bidirectional: true,
                     inline_styles: false,
-                    fence_plugin: function(code, lang) {
+                    fence_plugin: {
+                        render: function(code, lang) {
                         if (lang === 'mermaid') {
                             // Create a unique ID for this diagram
                             const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
@@ -445,7 +446,8 @@
                         }
                         
                         // Default: let quikdown handle fence blocks without hljs
-                        return null;
+                            return null;
+                        }
                     }
                 });
                 

@@ -69,7 +69,7 @@
 <p>Quikdown is a small, secure markdown parser with bidirectional conversion. Zero dependencies, XSS protection built-in, extensible via plugins for code highlighting and diagrams, and works in browser and Node.js.</p>
 <p>For small and fast projects quikdown includes built-in inline styles for a &quot;batteries included&quot; rendering experience, but these can be overridden with themed css (see light and dark examples).</p>
 <ul>
-<li><strong>quikdown.js</strong> (9.1KB) - Markdown to HTML Parser</li>
+<li><strong>quikdown.js</strong> (9.0KB) - Markdown to HTML Parser</li>
 <li><strong>quikdown_bd.js</strong> (13.8KB) - Bidirectional (HTML ↔ Markdown) Parser</li>
 <li><strong>quikdown_edit.js</strong> (37.8KB) - Drop-in editor component (HTML ↔ Markdown) with md/split/html views</li>
 </ul>
@@ -79,7 +79,7 @@
 <ul>
 <li>📦 <strong>Zero dependencies</strong> - No external libraries required</li>
 <li>🌐 <strong>Universal</strong> - Works in browsers and Node.js</li>
-<li>🚀 <strong>Lightweight</strong> - 9.1KB (core), 13.8KB (bidirectional), 37.8KB (editor)</li>
+<li>🚀 <strong>Lightweight</strong> - 9.0KB (core), 13.8KB (bidirectional), 37.8KB (editor)</li>
 <li>🔒 <strong>Secure by default</strong> - Built-in XSS protection with URL sanitization</li>
 <li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes with theme support</li>
 <li>🔌 <strong>Plugin system</strong> - Extensible fence block handlers</li>
@@ -142,7 +142,9 @@ const content = editor.getMarkdown(); // get source content, see APIs for gettin
 <pre><code class="language-javascript">const html = quikdown(markdown, {
   lazy_linefeeds: true,    // Single newlines become &lt;br&gt;
   inline_styles: false,    // Use class based CSS instead of inline styles
-  fence_plugin: myHandler  // Custom code block processor
+  fence_plugin: {          // Custom code block processor (v1.1.0+ API)
+    render: myHandler      // Function to render fence blocks
+  }
 });
 </code></pre>
 <h3>Styling Options</h3>
@@ -159,30 +161,35 @@ const content = editor.getMarkdown(); // get source content, see APIs for gettin
 <h3>Fence Plugins</h3>
 <p>Quikdown provides a callback for all fenced text such as code blocks, math, svg etc.</p>
 <p>Handle code blocks with custom languages:</p>
-<pre><code class="language-javascript">function fencePlugin(code, language) {
-  if (language === &#39;mermaid&#39;) {
-    // Process with mermaid library and return rendered diagram
-    const id = &#39;mermaid-&#39; + Math.random().toString(36).substr(2, 9);
-    setTimeout(() =&gt; mermaid.render(id + &#39;-svg&#39;, code).then(result =&gt; {
-      document.getElementById(id).innerHTML = result.svg;
-    }), 0);
-    return `&lt;div id=&quot;${id}&quot; class=&quot;mermaid&quot;&gt;Loading diagram...&lt;/div&gt;`;
+<pre><code class="language-javascript">const fencePlugin = {
+  render: (code, language) =&gt; {
+    if (language === &#39;mermaid&#39;) {
+      // Process with mermaid library and return rendered diagram
+      const id = &#39;mermaid-&#39; + Math.random().toString(36).substr(2, 9);
+      setTimeout(() =&gt; mermaid.render(id + &#39;-svg&#39;, code).then(result =&gt; {
+        document.getElementById(id).innerHTML = result.svg;
+      }), 0);
+      return `&lt;div id=&quot;${id}&quot; class=&quot;mermaid&quot;&gt;Loading diagram...&lt;/div&gt;`;
+    }
+    // Return undefined for default handling
   }
-  return `&lt;pre&gt;${code}&lt;/pre&gt;`;
-  // Return undefined for default handling
-}
+};
 
 const html = quikdown(markdown, { fence_plugin: fencePlugin });
 </code></pre>
 <h2>TypeScript Support</h2>
 <p>quikdown includes TypeScript definitions for better IDE support and type safety:</p>
-<pre><code class="language-javascript">import quikdown, { QuikdownOptions } from &#39;quikdown&#39;;
+<pre><code class="language-typescript">import quikdown, { QuikdownOptions, FencePlugin } from &#39;quikdown&#39;;
+
+const fencePlugin: FencePlugin = {
+  render: (content: string, language: string) =&gt; {
+    return `&lt;pre class=&quot;hljs ${language}&quot;&gt;${content}&lt;/pre&gt;`;
+  }
+};
 
 const options: QuikdownOptions = {
-    inline_styles: true,
-    fence_plugin: (content: string, language: string) =&gt; {
-        return `&lt;pre class=&quot;hljs ${language}&quot;&gt;${content}&lt;/pre&gt;`;
-    }
+  inline_styles: true,
+  fence_plugin: fencePlugin
 };
 
 const html: string = quikdown(markdown, options);

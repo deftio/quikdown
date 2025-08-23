@@ -539,16 +539,18 @@ Markdown | **Bold** in cells | ✅
 ## 🎨 Code with Syntax Highlighting
 
 \`\`\`javascript
-// quikdown with plugin support
+// quikdown with plugin support (v1.1.0+ API)
 import quikdown from 'quikdown';
 
 const html = quikdown(markdown, {
-    fence_plugin: (code, language) => {
-        // Custom rendering for fence blocks
-        if (language === 'mermaid') {
-            return renderMermaid(code);
+    fence_plugin: {
+        render: (code, language) => {
+            // Custom rendering for fence blocks
+            if (language === 'mermaid') {
+                return renderMermaid(code);
+            }
+            return hljs.highlight(code, {language}).value;
         }
-        return hljs.highlight(code, {language}).value;
     }
 });
 \`\`\`

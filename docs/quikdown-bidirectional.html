@@ -146,7 +146,7 @@ const html = quikdown_bd(md);
 <ul>
 <li><code>markdown</code> (string): The Markdown source text</li>
 <li><code>options</code> (object): Optional configuration<ul>
-<li><code>fence_plugin</code> (function): Custom renderer for fenced code blocks</li>
+<li><code>fence_plugin</code> (FencePlugin): Custom renderer for fenced code blocks (object with <code>render</code> function)</li>
 <li><code>inline_styles</code> (boolean): Use inline styles instead of CSS classes</li>
 <li><code>allow_unsafe_urls</code> (boolean): Allow potentially unsafe URLs</li>
 <li><code>bidirectional</code> (boolean): Always <code>true</code> for quikdown_bd (automatically set)</li>

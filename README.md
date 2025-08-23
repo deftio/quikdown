@@ -9,7 +9,7 @@ Quikdown is a small, secure markdown parser with bidirectional conversion. Zero 
 
 For small and fast projects quikdown includes built-in inline styles for a "batteries included" rendering experience, but these can be overridden with themed css (see light and dark examples).
 
-- **quikdown.js** (9.1KB) - Markdown to HTML Parser
+- **quikdown.js** (9.0KB) - Markdown to HTML Parser
 - **quikdown_bd.js** (13.8KB) - Bidirectional (HTML ↔ Markdown) Parser
 - **quikdown_edit.js** (37.8KB) - Drop-in editor component (HTML ↔ Markdown) with md/split/html views
 
@@ -21,7 +21,7 @@ For small and fast projects quikdown includes built-in inline styles for a "batt
 
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js
-- 🚀 **Lightweight** - 9.1KB (core), 13.8KB (bidirectional), 37.8KB (editor)
+- 🚀 **Lightweight** - 9.0KB (core), 13.8KB (bidirectional), 37.8KB (editor)
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
 - 🎨 **Flexible styling** - Inline styles or CSS classes with theme support
 - 🔌 **Plugin system** - Extensible fence block handlers
@@ -108,7 +108,9 @@ quikdown supports built-in styles for a "batteries included" experience or you c
 const html = quikdown(markdown, {
   lazy_linefeeds: true,    // Single newlines become <br>
   inline_styles: false,    // Use class based CSS instead of inline styles
-  fence_plugin: myHandler  // Custom code block processor
+  fence_plugin: {          // Custom code block processor (v1.1.0+ API)
+    render: myHandler      // Function to render fence blocks
+  }
 });
 ```
 
@@ -135,18 +137,19 @@ Quikdown provides a callback for all fenced text such as code blocks, math, svg 
 Handle code blocks with custom languages:
 
 ```javascript
-function fencePlugin(code, language) {
-  if (language === 'mermaid') {
-    // Process with mermaid library and return rendered diagram
-    const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-    setTimeout(() => mermaid.render(id + '-svg', code).then(result => {
-      document.getElementById(id).innerHTML = result.svg;
-    }), 0);
-    return `<div id="${id}" class="mermaid">Loading diagram...</div>`;
+const fencePlugin = {
+  render: (code, language) => {
+    if (language === 'mermaid') {
+      // Process with mermaid library and return rendered diagram
+      const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+      setTimeout(() => mermaid.render(id + '-svg', code).then(result => {
+        document.getElementById(id).innerHTML = result.svg;
+      }), 0);
+      return `<div id="${id}" class="mermaid">Loading diagram...</div>`;
+    }
+    // Return undefined for default handling
   }
-  return `<pre>${code}</pre>`;
-  // Return undefined for default handling
-}
+};
 
 const html = quikdown(markdown, { fence_plugin: fencePlugin });
 ```
@@ -156,18 +159,21 @@ const html = quikdown(markdown, { fence_plugin: fencePlugin });
 
 quikdown includes TypeScript definitions for better IDE support and type safety:
 
-``` javascript
-import quikdown, { QuikdownOptions } from 'quikdown';
+```typescript
+import quikdown, { QuikdownOptions, FencePlugin } from 'quikdown';
+
+const fencePlugin: FencePlugin = {
+  render: (content: string, language: string) => {
+    return `<pre class="hljs ${language}">${content}</pre>`;
+  }
+};
 
 const options: QuikdownOptions = {
-    inline_styles: true,
-    fence_plugin: (content: string, language: string) => {
-        return `<pre class="hljs ${language}">${content}</pre>`;
-    }
+  inline_styles: true,
+  fence_plugin: fencePlugin
 };
 
 const html: string = quikdown(markdown, options);
-
 ```
 
 ## Supported Markdown

@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.1.0 (In Development)
+## v1.1.0 (2025-08-23)
 
 ### 💥 Breaking Changes
 
@@ -40,6 +40,12 @@ const plugin = {
 - **Configurable display**: `showRemoveHR` option (default: false) to show/hide button
 - **LLM-friendly**: Helps clean up markdown from AI-generated content
 
+### 📦 Bundle Sizes
+- **QuikDown Core**: 9.0 KB minified (from 9.1 KB in v1.0.6)
+- **QuikDown Bidirectional**: 13.8 KB minified
+- **QuikDown Editor**: 37.8 KB minified
+- **CSS Themes**: Light 1.9 KB, Dark 2.6 KB minified
+
 ### 🔬 Experimental Features
 
 #### Lexer/Grammar-Based Parser Achievement
@@ -73,12 +79,34 @@ const plugin = {
 - **Parent div styling**: Enables CSS cascade from parent containers when using class-based styles
 - **Choice of styling**: Users can now choose between CSS classes (default) or inline styles
 
-### 🧪 Testing Improvements
+### 🧪 Testing & Quality Improvements
 
-#### Dynamic Version Testing
-- **Package.json integration**: Version tests now dynamically check against `package.json` instead of hardcoded values
+#### Comprehensive Test Coverage Boost
+- **QuikDown Core**: Achieved **100% line coverage**, 99.26% statement coverage, 99.42% branch coverage
+- **QuikDown Editor**: Improved from 47% to **62% statement coverage**, 75.8% function coverage
+- **Test Suite**: 512 total tests (507 passing, 5 skipped due to jsdom limitations)
+- **Added 38 new editor tests**: Covering toolbar actions, plugin loading, advanced features, and edge cases
+
+#### Coverage Achievements
+- **Core module (quikdown.esm.js)**: 
+  - Lines: 100% ✅
+  - Statements: 99.26% ✅
+  - Branches: 99.42% ✅
+  - Functions: 97.36% ✅
+- **Bidirectional module (quikdown_bd.esm.js)**:
+  - Lines: 94.35%
+  - Statements: 93.82%
+  - Functions: 89.58%
+- **Editor module (quikdown_edit.esm.js)**:
+  - Lines: 63.17% (up from 48.23%)
+  - Statements: 61.98% (up from 47.46%)
+  - Functions: 75.8% (up from 62.9%)
+
+#### Testing Infrastructure
+- **Dynamic Version Testing**: Version tests now dynamically check against `package.json` instead of hardcoded values
 - **Automated compatibility**: Tests automatically work with any version number without manual updates
-- **Excluded old tests**: Properly excluded deprecated lexer tests from test suite
+- **Fence plugin test migration**: All tests updated to use new v1.1.0 object format
+- **Bidirectional coverage**: Added tests for fence plugins with and without reverse handlers
 
 ## v1.0.5 (2025-08-19)
 

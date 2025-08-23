@@ -586,9 +586,21 @@ TypeScript definitions are included for both modules:
 
 ```typescript
 declare module 'quikdown' {
+  interface FencePlugin {
+    render: (content: string, language: string) => string | undefined;
+    reverse?: (element: HTMLElement) => {
+      fence: string;
+      lang: string;
+      content: string;
+    } | null;
+  }
+
   interface QuikdownOptions {
     inline_styles?: boolean;
-    fence_plugin?: (content: string, language: string) => string | undefined;
+    fence_plugin?: FencePlugin;
+    bidirectional?: boolean;
+    lazy_linefeeds?: boolean;
+    allow_unsafe_urls?: boolean;
   }
   
   interface QuikdownFunction {

@@ -628,9 +628,11 @@ import quikdown_bd from &#39;quikdown/bd&#39;;
 
 const options: QuikdownOptions = {
   inline_styles: true,
-  fence_plugin: (code: string, lang: string) =&gt; {
-    // Custom plugin logic
-    return `&lt;pre class=&quot;${lang}&quot;&gt;${code}&lt;/pre&gt;`;
+  fence_plugin: {
+    render: (code: string, lang: string) =&gt; {
+      // Custom plugin logic
+      return `&lt;pre class=&quot;${lang}&quot;&gt;${code}&lt;/pre&gt;`;
+    }
   }
 };
 

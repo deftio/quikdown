@@ -868,9 +868,21 @@ const html = myParser(markdown);
 <h2>TypeScript</h2>
 <p>TypeScript definitions are included for both modules:</p>
 <pre><code class="language-typescript">declare module &#39;quikdown&#39; {
+  interface FencePlugin {
+    render: (content: string, language: string) =&gt; string | undefined;
+    reverse?: (element: HTMLElement) =&gt; {
+      fence: string;
+      lang: string;
+      content: string;
+    } | null;
+  }
+
   interface QuikdownOptions {
     inline_styles?: boolean;
-    fence_plugin?: (content: string, language: string) =&gt; string | undefined;
+    fence_plugin?: FencePlugin;
+    bidirectional?: boolean;
+    lazy_linefeeds?: boolean;
+    allow_unsafe_urls?: boolean;
   }
   
   interface QuikdownFunction {

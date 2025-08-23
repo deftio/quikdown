@@ -151,7 +151,8 @@ Just include the script tag:
             // Configure options
             const options = {
                 inline_styles: useInlineStyles,
-                fence_plugin: function(code, lang) {
+                fence_plugin: {
+                    render: function(code, lang) {
                     // Custom fence plugin for syntax highlighting
                     if (lang && typeof hljs !== 'undefined' && hljs.getLanguage(lang)) {
                         try {
@@ -162,7 +163,8 @@ Just include the script tag:
                         }
                     }
                     // Fall back to default rendering
-                    return undefined;
+                        return undefined;
+                    }
                 }
             };
             
