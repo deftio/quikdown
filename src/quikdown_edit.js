@@ -572,7 +572,9 @@ class QuikdownEditor {
         this.preprocessSpecialElements(clonedPanel);
         
         this._html = this.previewPanel.innerHTML;
-        this._markdown = quikdown_bd.toMarkdown(clonedPanel);
+        this._markdown = quikdown_bd.toMarkdown(clonedPanel, {
+            fence_plugin: this.options.fence_plugin
+        });
         
         // Update source if visible
         if (this.currentMode !== 'preview') {
@@ -664,7 +666,7 @@ class QuikdownEditor {
      * Create fence plugin for syntax highlighting
      */
     createFencePlugin() {
-        return (code, lang) => {
+        const render = (code, lang) => {
             // Check custom fences first (they take precedence)
             if (this.options.customFences && this.options.customFences[lang]) {
                 try {
@@ -721,6 +723,9 @@ class QuikdownEditor {
             // Default: let quikdown handle it
             return undefined;
         };
+        
+        // Return object format for v1.1.0 API
+        return { render };
     }
     
     /**

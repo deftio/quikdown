@@ -1,113 +1,56 @@
-# Bidirectional Fence Plugin API Proposal
+# Bidirectional Fence Plugin API - v1.1.0
 
-## Design Goals
-1. **100% Backwards Compatible** - Existing fence plugins continue to work unchanged
-2. **Progressive Enhancement** - Developers can opt-in to bidirectional support
-3. **Flexible** - Support both simple functions and object-based plugins
-4. **Predictable** - Clear fallback behavior when reverse handler not provided
+## Breaking Change
+Starting with v1.1.0, fence plugins MUST use the object format with a `render` function. This is a breaking change from v1.0.x where plugins could be simple functions.
 
-## Proposed API
+## API Design
 
-### Option 1: Extended Object Format (Recommended)
+### Required Object Format
 
 ```javascript
-// Backwards compatible - still works
-const simpleFencePlugin = (content, lang) => {
-  return `<pre class="custom">${content}</pre>`;
-};
-
-// New extended format with reverse handler
-const bidirectionalFencePlugin = {
-  // Forward: markdown -> HTML (required)
+const fencePlugin = {
+  // Required: markdown -> HTML
   render: (content, lang) => {
-    return `<div class="svg-container">${content}</div>`;
+    return `<pre class="custom">${content}</pre>`;
   },
   
-  // Reverse: HTML element -> markdown (optional)
+  // Optional: HTML element -> markdown  
   reverse: (element) => {
-    // Return object with fence details
     return {
       fence: '```',     // or '~~~'
       lang: 'svg',      // language identifier
-      content: element.textContent || element.getAttribute('data-content')
+      content: element.textContent
     };
   }
 };
 
-// API accepts both formats
-quikdown(markdown, {
-  fence_plugin: simpleFencePlugin  // Works
-});
-
-quikdown(markdown, {
-  fence_plugin: bidirectionalFencePlugin  // Also works
-});
-```
-
-### Option 2: Function with Properties
-
-```javascript
-// Attach reverse handler as a property
-const fencePlugin = (content, lang) => {
-  return `<div class="custom">${content}</div>`;
-};
-
-fencePlugin.reverse = (element) => {
-  return {
-    fence: '```',
-    lang: 'custom',
-    content: element.textContent
-  };
-};
-
+// Usage
 quikdown(markdown, {
   fence_plugin: fencePlugin
 });
 ```
 
-## Implementation Strategy
+## Implementation
 
-### 1. Detection Logic
-
-```javascript
-function isExtendedFencePlugin(plugin) {
-  return plugin && typeof plugin === 'object' && typeof plugin.render === 'function';
-}
-
-function getFenceRenderer(plugin) {
-  if (!plugin) return null;
-  if (typeof plugin === 'function') return plugin;
-  if (isExtendedFencePlugin(plugin)) return plugin.render;
-  return null;
-}
-
-function getFenceReverser(plugin) {
-  if (!plugin) return null;
-  if (typeof plugin === 'function' && plugin.reverse) return plugin.reverse;
-  if (isExtendedFencePlugin(plugin)) return plugin.reverse;
-  return null;
-}
-```
-
-### 2. Forward Conversion (markdown -> HTML)
+### 1. Forward Conversion (markdown -> HTML)
 
 ```javascript
 // In quikdown.js
-const renderer = getFenceRenderer(fence_plugin);
-if (renderer) {
-  const html = renderer(code, lang);
+if (fence_plugin && fence_plugin.render) {
+  const html = fence_plugin.render(code, lang);
   
-  // If plugin supports reverse, add data attribute for roundtrip
-  if (getFenceReverser(fence_plugin) && bidirectional) {
+  // If plugin supports reverse, add data attributes for roundtrip
+  if (fence_plugin.reverse && bidirectional) {
     // Store original for fallback
-    html = html.replace(/^<(\w+)/, `<$1 data-qd-source="${escapeHtml(code)}" data-qd-lang="${lang}" data-qd-fence="${fence}"`);
+    return html.replace(/^<(\w+)/, 
+      `<$1 data-qd-fence="${fence}" data-qd-lang="${lang}" data-qd-source="${escapeHtml(code)}"`);
   }
   
   return html;
 }
 ```
 
-### 3. Reverse Conversion (HTML -> markdown)
+### 2. Reverse Conversion (HTML -> markdown)
 
 ```javascript
 // In quikdown_bd.js toMarkdown()
@@ -115,29 +58,26 @@ case 'pre':
 case 'div':
   // Check if this was created by a fence plugin
   const lang = node.getAttribute('data-qd-lang');
-  if (lang && fence_plugin) {
-    const reverser = getFenceReverser(fence_plugin);
-    
-    if (reverser) {
-      try {
-        const result = reverser(node);
-        if (result && result.content) {
-          const fence = result.fence || '```';
-          const langStr = result.lang || lang;
-          return `${fence}${langStr}\n${result.content}\n${fence}\n\n`;
-        }
-      } catch (err) {
-        console.warn('Fence reverse handler error:', err);
-        // Fall through to default handling
+  const fence = node.getAttribute('data-qd-fence');
+  
+  if (lang && fence_plugin && fence_plugin.reverse) {
+    try {
+      const result = fence_plugin.reverse(node);
+      if (result && result.content) {
+        const fenceMarker = result.fence || fence || '```';
+        const langStr = result.lang || lang || '';
+        return `${fenceMarker}${langStr}\n${result.content}\n${fenceMarker}\n\n`;
       }
+    } catch (err) {
+      console.warn('Fence reverse handler error:', err);
+      // Fall through to default handling
     }
   }
   
   // Fallback: use data-qd-source if available
   const source = node.getAttribute('data-qd-source');
-  if (source) {
-    const fence = node.getAttribute('data-qd-fence') || '```';
-    return `${fence}${lang}\n${source}\n${fence}\n\n`;
+  if (source && fence) {
+    return `${fence}${lang || ''}\n${source}\n${fence}\n\n`;
   }
   
   // Final fallback: extract text content
@@ -146,117 +86,139 @@ case 'div':
 
 ## Usage Examples
 
-### Example 1: SVG Fence Plugin
+### Example 1: Simple Syntax Highlighting
 
 ```javascript
-const svgFencePlugin = {
+const highlightPlugin = {
+  render: (content, lang) => {
+    const highlighted = hljs.highlight(content, { language: lang }).value;
+    return `<pre><code class="language-${lang}">${highlighted}</code></pre>`;
+  }
+  // No reverse needed - will use data-qd-source fallback
+};
+```
+
+### Example 2: Mermaid Diagrams (Bidirectional)
+
+```javascript
+const mermaidPlugin = {
+  render: (content, lang) => {
+    return `<div class="mermaid" data-mermaid-source="${escapeHtml(content)}">${content}</div>`;
+  },
+  
+  reverse: (element) => {
+    // Try to get original source, fall back to text content
+    const source = element.getAttribute('data-mermaid-source') || element.textContent;
+    return {
+      fence: '```',
+      lang: 'mermaid',
+      content: source
+    };
+  }
+};
+```
+
+### Example 3: SVG Rendering (Bidirectional)
+
+```javascript
+const svgPlugin = {
   render: (content, lang) => {
     // Validate and sanitize SVG
     const sanitized = DOMPurify.sanitize(content, {
       USE_PROFILES: { svg: true }
     });
-    return `<div class="svg-fence">${sanitized}</div>`;
+    return `<div class="svg-container">${sanitized}</div>`;
   },
   
   reverse: (element) => {
     // Extract SVG from container
-    const svg = element.querySelector('svg') || element;
+    const svg = element.querySelector('svg');
     return {
       fence: '```',
       lang: 'svg',
-      content: svg.outerHTML || svg.textContent
+      content: svg ? svg.outerHTML : element.textContent
     };
   }
 };
 ```
 
-### Example 2: Mermaid Diagram Plugin
-
-```javascript
-const mermaidPlugin = {
-  render: (content, lang) => {
-    return `<div class="mermaid">${content}</div>`;
-  },
-  
-  reverse: (element) => {
-    // Mermaid stores original in data attribute
-    const original = element.getAttribute('data-mermaid-source');
-    return {
-      fence: '```',
-      lang: 'mermaid',
-      content: original || element.textContent
-    };
-  }
-};
-```
-
-### Example 3: Mathematical Equations
+### Example 4: Math with KaTeX (Bidirectional)
 
 ```javascript
 const mathPlugin = {
   render: (content, lang) => {
-    const html = katex.renderToString(content, {
-      throwOnError: false,
-      displayMode: lang === 'math-display'
-    });
-    return `<div class="math-block" data-math="${escapeHtml(content)}">${html}</div>`;
+    try {
+      const html = katex.renderToString(content, {
+        throwOnError: false,
+        displayMode: lang === 'math-display'
+      });
+      return `<div class="math-block" data-math-source="${escapeHtml(content)}">${html}</div>`;
+    } catch (e) {
+      return `<pre class="math-error">${escapeHtml(content)}</pre>`;
+    }
   },
   
   reverse: (element) => {
+    // Prefer original LaTeX source over rendered HTML
+    const source = element.getAttribute('data-math-source') || element.textContent;
     return {
       fence: '```',
       lang: 'math',
-      content: element.getAttribute('data-math') || element.textContent
+      content: source
     };
   }
 };
 ```
 
-## Compatibility Matrix
+## TypeScript Definitions
 
-| Plugin Format | Forward Rendering | Reverse Conversion | Notes |
-|--------------|------------------|-------------------|--------|
-| Simple function | ✅ Works | ❌ Uses fallback | 100% backwards compatible |
-| Function with .reverse | ✅ Works | ✅ Works | Minimal change required |
-| Object with render/reverse | ✅ Works | ✅ Works | Cleanest API |
-| No plugin | ✅ Default | ✅ Default | Standard behavior |
+```typescript
+interface FencePlugin {
+  render: (content: string, lang: string) => string;
+  reverse?: (element: HTMLElement) => {
+    fence: string;
+    lang: string;
+    content: string;
+  } | null;
+}
 
-## Migration Path
-
-```javascript
-// Step 1: Existing code continues to work
-const plugin = (content, lang) => { /* ... */ };
-
-// Step 2: Add reverse handler when ready
-const plugin = {
-  render: (content, lang) => { /* same code */ },
-  reverse: (element) => { /* new code */ }
-};
-
-// Step 3: Enhanced bidirectional editing
-editor = new QuikdownEditor(container, {
-  customFences: {
-    'svg': plugin,  // Now supports full roundtrip
-    'math': mathPlugin
-  }
-});
+interface QuikdownOptions {
+  fence_plugin?: FencePlugin;
+  // ... other options
+}
 ```
 
-## Benefits
+## Migration from v1.0.x
 
-1. **No Breaking Changes** - All existing code continues to work
-2. **Gradual Adoption** - Add reverse handlers as needed
-3. **Better User Experience** - Custom content preserves through edit cycles
-4. **Plugin Ecosystem** - Enables rich bidirectional plugins
-5. **Clean Separation** - Forward and reverse logic clearly separated
+```javascript
+// OLD (v1.0.x) - No longer supported
+const oldPlugin = (content, lang) => {
+  return `<pre>${content}</pre>`;
+};
+
+// NEW (v1.1.0) - Required object format
+const newPlugin = {
+  render: (content, lang) => {
+    return `<pre>${content}</pre>`;
+  }
+};
+```
 
 ## Implementation Checklist
 
-- [ ] Add detection functions to quikdown.js
-- [ ] Update fence processing to use new API
+- [ ] Update quikdown.js to only accept object format
 - [ ] Add reverse handler support to quikdown_bd.js
-- [ ] Update QuikdownEditor to pass through extended plugins
-- [ ] Add tests for both formats
+- [ ] Update QuikdownEditor to pass through fence plugins
+- [ ] Update all tests to use object format
 - [ ] Update TypeScript definitions
-- [ ] Document in API reference
-- [ ] Create example plugins
+- [ ] Update API documentation
+- [ ] Update examples to show object format
+- [ ] Update release notes for v1.1.0 breaking change
+
+## Benefits of Clean Break
+
+1. **Simpler Codebase** - No dual-format detection logic
+2. **Clear API** - One way to define plugins
+3. **Better TypeScript** - Clean interface definition
+4. **Future-Ready** - Easy to extend with new properties
+5. **Explicit Intent** - Object format makes plugin capabilities obvious

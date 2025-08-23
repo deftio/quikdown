@@ -529,8 +529,10 @@ def analyze():
     describe('Fence Plugin', () => {
         test('should use custom fence plugin when provided', () => {
             const input = '```javascript\nconst x = 1;\n```';
-            const customPlugin = (content, lang) => {
-                return `<div class="custom-code" data-lang="${lang}">${content}</div>`;
+            const customPlugin = {
+                render: (content, lang) => {
+                    return `<div class="custom-code" data-lang="${lang}">${content}</div>`;
+                }
             };
             
             const result = quikdown(input, { fence_plugin: customPlugin });
@@ -539,8 +541,10 @@ def analyze():
         
         test('should pass empty string for fence without language', () => {
             const input = '```\nplain code\n```';
-            const customPlugin = (content, lang) => {
-                return `<div class="code" data-lang="${lang || 'none'}">${content}</div>`;
+            const customPlugin = {
+                render: (content, lang) => {
+                    return `<div class="code" data-lang="${lang || 'none'}">${content}</div>`;
+                }
             };
             
             const result = quikdown(input, { fence_plugin: customPlugin });
@@ -678,23 +682,29 @@ def analyze():
     describe('Fence Plugin Edge Cases', () => {
         test('should handle fence plugin that returns empty string', () => {
             const input = '```test\ncontent\n```';
-            const plugin = () => '';
+            const plugin = {
+                render: () => ''
+            };
             const result = quikdown(input, { fence_plugin: plugin });
             expect(result).toBe('');
         });
         
         test('should handle fence plugin that throws error', () => {
             const input = '```test\ncontent\n```';
-            const plugin = () => { throw new Error('Plugin error'); };
+            const plugin = {
+                render: () => { throw new Error('Plugin error'); }
+            };
             expect(() => quikdown(input, { fence_plugin: plugin })).toThrow('Plugin error');
         });
         
         test('should pass raw content to fence plugin (no escaping)', () => {
             const input = '```\n<script>alert("test")</script>\n```';
             let capturedContent = '';
-            const plugin = (content) => {
-                capturedContent = content;
-                return 'CUSTOM';
+            const plugin = {
+                render: (content) => {
+                    capturedContent = content;
+                    return 'CUSTOM';
+                }
             };
             quikdown(input, { fence_plugin: plugin });
             expect(capturedContent).toBe('<script>alert("test")</script>');
@@ -702,7 +712,9 @@ def analyze():
         
         test('should handle multiple code blocks with fence plugin', () => {
             const input = '```a\nfirst\n```\n\n```b\nsecond\n```';
-            const plugin = (content, lang) => `[${lang}:${content}]`;
+            const plugin = {
+                render: (content, lang) => `[${lang}:${content}]`
+            };
             const result = quikdown(input, { fence_plugin: plugin });
             expect(result).toContain('[a:first]');
             expect(result).toContain('[b:second]');
@@ -952,8 +964,10 @@ def analyze():
         
         test('configured parser should work with multiple options', () => {
             // Test with fence_plugin option
-            const customPlugin = (content, lang) => {
-                return `<div class="custom-${lang}">${content}</div>`;
+            const customPlugin = {
+                render: (content, lang) => {
+                    return `<div class="custom-${lang}">${content}</div>`;
+                }
             };
             
             const parser = quikdown.configure({ 
@@ -1186,11 +1200,13 @@ code3
         });
         
         test('fence plugin should work with ~~~ fences', () => {
-            const customPlugin = (content, lang) => {
-                if (lang === 'custom') {
-                    return `<div class="custom">${content}</div>`;
+            const customPlugin = {
+                render: (content, lang) => {
+                    if (lang === 'custom') {
+                        return `<div class="custom">${content}</div>`;
+                    }
+                    return undefined;
                 }
-                return undefined;
             };
             
             const tilde = '~~~custom\nTest content\n~~~';
@@ -1318,13 +1334,15 @@ code3
         });
         
         test('should handle fence plugin returning undefined properly', () => {
-            const plugin = (content, lang) => {
-                // Only handle 'special' language
-                if (lang === 'special') {
-                    return '<div>special</div>';
+            const plugin = {
+                render: (content, lang) => {
+                    // Only handle 'special' language
+                    if (lang === 'special') {
+                        return '<div>special</div>';
+                    }
+                    // Return undefined for everything else
+                    return undefined;
                 }
-                // Return undefined for everything else
-                return undefined;
             };
             
             // Should fall back to default rendering when plugin returns undefined

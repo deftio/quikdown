@@ -58,7 +58,9 @@ describe('quikdown_bd edge cases and full coverage', () => {
 
   describe('Fence Plugin with Bidirectional', () => {
     test('should handle fence plugin returning undefined with bidirectional', () => {
-      const plugin = () => undefined;
+      const plugin = {
+        render: () => undefined
+      };
       const html = quikdown_bd('```js\nconst x = 1;\n```', { 
         fence_plugin: plugin,
         bidirectional: true 
@@ -70,15 +72,20 @@ describe('quikdown_bd edge cases and full coverage', () => {
     });
     
     test('should handle fence plugin with language and bidirectional', () => {
-      const plugin = (code, lang) => `<div class="highlight-${lang}">${code}</div>`;
+      const plugin = {
+        render: (code, lang) => `<div class="highlight-${lang}">${code}</div>`
+      };
       const html = quikdown_bd('```python\nprint("hello")\n```', { 
         fence_plugin: plugin
       });
-      expect(html).toContain('<div class="highlight-python">print("hello")</div>');
+      expect(html).toContain('class="highlight-python"');
+      expect(html).toContain('print("hello")</div>');
     });
     
     test('should handle fence plugin with inline styles', () => {
-      const plugin = () => undefined;
+      const plugin = {
+        render: () => undefined
+      };
       const html = quikdown_bd('```\ncode\n```', { 
         fence_plugin: plugin,
         inline_styles: true
@@ -317,12 +324,15 @@ describe('quikdown_bd edge cases and full coverage', () => {
     });
     
     test('should handle configure with fence plugin', () => {
-      const fencePlugin = (code, lang) => `<div class="custom">${code}</div>`;
+      const fencePlugin = {
+        render: (code, lang) => `<div class="custom">${code}</div>`
+      };
       const configured = quikdown_bd.configure({ 
         fence_plugin: fencePlugin
       });
       const html = configured('```js\ncode\n```');
-      expect(html).toContain('<div class="custom">code</div>');
+      expect(html).toContain('class="custom"');
+      expect(html).toContain('>code</div>');
     });
     
     test('should execute configured function multiple times', () => {
@@ -622,12 +632,12 @@ describe('quikdown_bd edge cases and full coverage', () => {
       // This test ensures all paths in configure are covered
       const conf1 = quikdown_bd.configure({});
       const conf2 = quikdown_bd.configure({ inline_styles: true });
-      const conf3 = quikdown_bd.configure({ fence_plugin: (c) => `<pre>${c}</pre>` });
+      const conf3 = quikdown_bd.configure({ fence_plugin: { render: (c) => `<pre>${c}</pre>` } });
       
       // Execute each configured function
       expect(conf1('test')).toContain('test');
       expect(conf2('**bold**')).toContain('style=');
-      expect(conf3('```\ncode\n```')).toContain('<pre>code</pre>');
+      expect(conf3('```\ncode\n```')).toContain('>code</pre>');
     });
   });
   
@@ -736,7 +746,7 @@ describe('quikdown_bd edge cases and full coverage', () => {
   describe('Specific Line Coverage Tests', () => {
     test('should cover configure internals by calling returned function', () => {
       // Lines 577-578: The actual execution of the configured function
-      const customPlugin = (code) => `<div class="highlight">${code}</div>`;
+      const customPlugin = { render: (code) => `<div class="highlight">${code}</div>` };
       const configured = quikdown_bd.configure({ 
         fence_plugin: customPlugin,
         inline_styles: true,
@@ -745,7 +755,8 @@ describe('quikdown_bd edge cases and full coverage', () => {
       
       // Execute the configured function to cover line 578
       const result = configured('```\ntest code\n```');
-      expect(result).toContain('<div class="highlight">test code</div>');
+      expect(result).toContain('class="highlight"');
+      expect(result).toContain('test code</div>');
     });
     
     test('should pass Element directly to toMarkdown covering line 631', () => {

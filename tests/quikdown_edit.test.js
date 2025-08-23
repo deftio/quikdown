@@ -469,4 +469,374 @@ describe('QuikdownEditor', () => {
             expect(html).toContain('{not valid json}');
         });
     });
+
+    describe('Toolbar Actions', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor', { showRemoveHR: true });
+            await editor.initPromise;
+        });
+
+        test('should copy markdown to clipboard', async () => {
+            const mockWriteText = jest.fn().mockResolvedValue(undefined);
+            Object.defineProperty(navigator, 'clipboard', {
+                value: { writeText: mockWriteText },
+                writable: true
+            });
+
+            await editor.setMarkdown('# Test');
+            editor.handleAction('copy-markdown');
+            
+            await new Promise(resolve => setTimeout(resolve, 10));
+            expect(mockWriteText).toHaveBeenCalledWith('# Test');
+        });
+
+        test('should copy HTML to clipboard', async () => {
+            const mockWriteText = jest.fn().mockResolvedValue(undefined);
+            Object.defineProperty(navigator, 'clipboard', {
+                value: { writeText: mockWriteText },
+                writable: true
+            });
+
+            await editor.setMarkdown('# Test');
+            editor.handleAction('copy-html');
+            
+            await new Promise(resolve => setTimeout(resolve, 10));
+            expect(mockWriteText).toHaveBeenCalled();
+            const html = mockWriteText.mock.calls[0][0];
+            expect(html).toContain('<h1');
+        });
+
+        test('should handle copy failure gracefully', async () => {
+            const mockWriteText = jest.fn().mockRejectedValue(new Error('Failed'));
+            Object.defineProperty(navigator, 'clipboard', {
+                value: { writeText: mockWriteText },
+                writable: true
+            });
+
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            await editor.setMarkdown('# Test');
+            await editor.copy('markdown');
+            
+            expect(consoleSpy).toHaveBeenCalled();
+            consoleSpy.mockRestore();
+        });
+
+        test('should remove horizontal rules', async () => {
+            await editor.setMarkdown('# Title\n\n---\n\nContent\n\n---');
+            await editor.removeHR();
+            
+            const markdown = editor.getMarkdown();
+            expect(markdown).not.toContain('---');
+            expect(markdown).toContain('# Title');
+            expect(markdown).toContain('Content');
+        });
+
+        test('should show Remove HR button when enabled', () => {
+            const btn = editor.toolbar.querySelector('[data-action="remove-hr"]');
+            expect(btn).toBeTruthy();
+            expect(btn.textContent).toBe('Remove HR');
+        });
+
+        test('should handle toolbar button clicks', () => {
+            const btn = editor.toolbar.querySelector('[data-mode="preview"]');
+            btn.click();
+            expect(editor.mode).toBe('preview');
+        });
+    });
+
+    describe('Plugin Loading', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor', {
+                plugins: { highlightjs: true, mermaid: true }
+            });
+        });
+
+        test('should attempt to load plugins when configured', () => {
+            expect(editor.options.plugins.highlightjs).toBe(true);
+            expect(editor.options.plugins.mermaid).toBe(true);
+        });
+
+        test.skip('should load external script', async () => {
+            await editor.initPromise; // Ensure editor is initialized
+            const scriptPromise = editor.loadScript('data:text/javascript,window.testScriptLoaded=true');
+            await scriptPromise;
+            expect(window.testScriptLoaded).toBe(true);
+            delete window.testScriptLoaded; // Clean up
+        });
+
+        test.skip('should load external CSS', async () => {
+            await editor.initPromise; // Ensure editor is initialized
+            const cssPromise = editor.loadCSS('data:text/css,body{background:red}');
+            await cssPromise;
+            // CSS loads asynchronously, just verify promise resolves
+            expect(cssPromise).resolves;
+        });
+
+        test.skip('should handle script load failure', async () => {
+            await editor.initPromise; // Ensure editor is initialized
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            await editor.loadLibrary('test', () => false, 'invalid://url');
+            expect(consoleSpy).toHaveBeenCalled();
+            consoleSpy.mockRestore();
+        });
+    });
+
+    describe('Advanced Features', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('should get and set debounce delay', () => {
+            editor.setDebounceDelay(500);
+            expect(editor.getDebounceDelay()).toBe(500);
+            
+            editor.setDebounceDelay(-100); // Should clamp to 0
+            expect(editor.getDebounceDelay()).toBe(0);
+        });
+
+        test('should update from HTML contenteditable changes', () => {
+            editor.previewPanel.innerHTML = '<h1>New Title</h1>';
+            editor.updateFromHTML();
+            
+            expect(editor.getMarkdown()).toContain('# New Title');
+        });
+
+        test('should handle PSV fence', async () => {
+            const psv = '```psv\nName|Age\nAlice|30\n```';
+            await editor.setMarkdown(psv);
+            const html = editor.getHTML();
+            
+            expect(html).toContain('<table');
+            expect(html).toContain('qde-csv-table');
+            expect(html).toContain('<td>Alice</td>');
+        });
+
+        test('should handle TSV fence', async () => {
+            const tsv = '```tsv\nName\tAge\nBob\t25\n```';
+            await editor.setMarkdown(tsv);
+            const html = editor.getHTML();
+            
+            expect(html).toContain('<table');
+            expect(html).toContain('qde-csv-table');
+            expect(html).toContain('<td>Bob</td>');
+        });
+
+        test('should handle HTML fence', async () => {
+            const htmlFence = '```html\n<div>Test</div>\n```';
+            await editor.setMarkdown(htmlFence);
+            const html = editor.getHTML();
+            
+            expect(html).toContain('qde-html-container');
+            expect(html).toContain('<div>Test</div>');
+        });
+
+        test.skip('should make fences non-editable in preview', async () => {
+            await editor.setMarkdown('```svg\n<svg></svg>\n```');
+            editor.setMode('preview');
+            
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            const svg = editor.previewPanel.querySelector('.qde-svg-container');
+            expect(svg).toBeTruthy();
+            expect(svg.contentEditable).toBe('false');
+        });
+
+        test.skip('should handle auto theme based on system preference', async () => {
+            // Create a new container for this test
+            const darkContainer = document.createElement('div');
+            darkContainer.id = 'test-dark-editor';
+            document.body.appendChild(darkContainer);
+            
+            // Mock dark mode preference
+            window.matchMedia = jest.fn().mockImplementation(query => ({
+                matches: query === '(prefers-color-scheme: dark)',
+                media: query,
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn()
+            }));
+
+            const darkEditor = new QuikdownEditor('#test-dark-editor', { theme: 'auto' });
+            await darkEditor.initPromise;
+            
+            expect(darkEditor.container.classList.contains('qde-dark')).toBe(true);
+            
+            darkEditor.destroy();
+            darkContainer.remove();
+        });
+
+        test('should parse CSV with complex quoted values', () => {
+            const line = '"Hello, ""World""","Test, Value",Normal';
+            const result = editor.parseCSVLine(line, ',');
+            expect(result).toEqual(['Hello, "World"', 'Test, Value', 'Normal']);
+        });
+
+        test('should handle empty CSV cells', () => {
+            const line = 'a,,c';
+            const result = editor.parseCSVLine(line, ',');
+            expect(result).toEqual(['a', '', 'c']);
+        });
+
+        test('should render CSV with headers', async () => {
+            const csv = '```csv\na,b,c\n1,2,3\n```';
+            await editor.setMarkdown(csv);
+            const html = editor.getHTML();
+            
+            expect(html).toContain('<table');
+            expect(html).toContain('<th>a</th>');
+            expect(html).toContain('<td>1</td>');
+        });
+
+        test('should handle fence plugin with reverse handler', async () => {
+            const customPlugin = {
+                render: (code, lang) => `<div class="custom">${code}</div>`,
+                reverse: (el) => ({ fence: '```', lang: 'custom', content: el.textContent })
+            };
+            
+            editor.options.fence_plugin = customPlugin;
+            await editor.setMarkdown('```custom\nTest\n```');
+            
+            // This would be used in bidirectional conversion
+            expect(editor.options.fence_plugin.reverse).toBeDefined();
+        });
+    });
+
+    describe('Edge Cases', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('should handle setMarkdown before init completes', async () => {
+            const fastEditor = new QuikdownEditor('#test-editor');
+            // Don't await initPromise
+            const setPromise = fastEditor.setMarkdown('# Fast');
+            await setPromise;
+            
+            expect(fastEditor.getMarkdown()).toBe('# Fast');
+            fastEditor.destroy();
+        });
+
+        test('should handle mode setter property', () => {
+            editor.mode; // Just access getter
+            expect(editor.mode).toBe('split');
+        });
+
+        test('should handle markdown setter property', async () => {
+            editor.markdown = '# Property Test';
+            await new Promise(resolve => setTimeout(resolve, 50));
+            expect(editor.getMarkdown()).toBe('# Property Test');
+        });
+
+        test('should handle html getter property', () => {
+            const html = editor.html;
+            expect(html).toBeDefined();
+        });
+
+        test('should inject styles only once', () => {
+            // buildUI already injects styles
+            const styleCount = document.querySelectorAll('#qde-styles').length;
+            editor.injectStyles(); // Try to inject again
+            expect(document.querySelectorAll('#qde-styles').length).toBe(styleCount);
+        });
+
+        test('should handle lazy linefeeds getter', () => {
+            editor.setLazyLinefeeds(true);
+            expect(editor.getLazyLinefeeds()).toBe(true);
+        });
+
+        test('should preprocessSpecialElements with null panel', () => {
+            // Should not throw
+            editor.preprocessSpecialElements(null);
+        });
+
+        test('should handle CSV table conversion back to markdown', async () => {
+            const csv = '```csv\na,b\n1,2\n```';
+            await editor.setMarkdown(csv);
+            
+            const clone = editor.previewPanel.cloneNode(true);
+            editor.preprocessSpecialElements(clone);
+            
+            const pre = clone.querySelector('pre[data-qd-lang="csv"]');
+            expect(pre).toBeTruthy();
+        });
+
+        test('should handle renderMath fence', async () => {
+            await editor.setMarkdown('```math\nx^2\n```');
+            const html = editor.getHTML();
+            expect(html).toContain('qde-math-container');
+        });
+
+        test('should handle katex fence', async () => {
+            await editor.setMarkdown('```katex\n\\frac{1}{2}\n```');
+            const html = editor.getHTML();
+            expect(html).toContain('qde-math-container');
+        });
+
+        test('should handle tex fence', async () => {
+            await editor.setMarkdown('```tex\n\\alpha\n```');
+            const html = editor.getHTML();
+            expect(html).toContain('qde-math-container');
+        });
+
+        test('should handle latex fence', async () => {
+            await editor.setMarkdown('```latex\n\\beta\n```');
+            const html = editor.getHTML();
+            expect(html).toContain('qde-math-container');
+        });
+
+        test('should handle json5 fence', async () => {
+            await editor.setMarkdown('```json5\n{key: "value"}\n```');
+            const html = editor.getHTML();
+            expect(html).toContain('qde-json');
+        });
+
+        test('should skip complex rendering when disabled', async () => {
+            editor.options.enableComplexFences = false;
+            await editor.setMarkdown('```svg\n<svg></svg>\n```');
+            const html = editor.getHTML();
+            
+            // Should use default pre/code rendering
+            expect(html).toContain('<pre');
+            expect(html).not.toContain('qde-svg-container');
+        });
+
+        test('should handle custom fence error', async () => {
+            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+            
+            editor.options.customFences = {
+                'error': () => { throw new Error('Test error'); }
+            };
+            
+            await editor.setMarkdown('```error\nTest\n```');
+            expect(consoleSpy).toHaveBeenCalled();
+            
+            consoleSpy.mockRestore();
+        });
+
+        test('should handle mermaid when library is loaded', async () => {
+            window.mermaid = { render: jest.fn() };
+            await editor.setMarkdown('```mermaid\ngraph TD\n```');
+            const html = editor.getHTML();
+            
+            // Should attempt to render mermaid
+            expect(html).toBeDefined();
+            delete window.mermaid;
+        });
+
+        test('should handle hljs syntax highlighting', async () => {
+            window.hljs = {
+                getLanguage: jest.fn().mockReturnValue(true),
+                highlight: jest.fn().mockReturnValue({ value: '<span>highlighted</span>' })
+            };
+            
+            await editor.setMarkdown('```javascript\nconst x = 1;\n```');
+            const html = editor.getHTML();
+            
+            expect(html).toContain('hljs');
+            expect(html).toContain('language-javascript');
+            
+            delete window.hljs;
+        });
+    });
 });

@@ -101,7 +101,9 @@ describe('quikdown edge cases and coverage', () => {
 
   describe('Fence plugin edge cases', () => {
     test('should handle fence plugin returning undefined', () => {
-      const plugin = () => undefined;
+      const plugin = {
+        render: () => undefined
+      };
       const html = quikdown('```js\ncode\n```', { fence_plugin: plugin });
       expect(html).toContain('<pre');
       expect(html).toContain('<code');
@@ -109,12 +111,28 @@ describe('quikdown edge cases and coverage', () => {
     });
 
     test('should handle fence plugin with bidirectional', () => {
-      const plugin = () => undefined;
+      const plugin = {
+        render: () => undefined
+      };
       const html = quikdown('```js\ncode\n```', { 
         fence_plugin: plugin,
         bidirectional: true 
       });
       expect(html).toContain('data-qd-fence="```"');
+    });
+
+    test('should handle fence plugin returning HTML with bidirectional', () => {
+      const plugin = {
+        render: (code, lang) => `<div class="custom-${lang}">${code}</div>`
+      };
+      const html = quikdown('```js\nconst x = 1;\n```', { 
+        fence_plugin: plugin,
+        bidirectional: true 
+      });
+      expect(html).toContain('data-qd-fence="```"');
+      expect(html).toContain('data-qd-lang="js"');
+      expect(html).toContain('data-qd-source="const x = 1;"');
+      expect(html).toContain('class="custom-js"');
     });
   });
 
@@ -259,13 +277,17 @@ describe('quikdown edge cases and coverage', () => {
     });
 
     test('should handle fence plugin that returns empty string', () => {
-      const plugin = () => '';
+      const plugin = {
+        render: () => ''
+      };
       const html = quikdown('```js\ncode\n```', { fence_plugin: plugin });
       expect(html).toBe('');
     });
 
     test('should handle fence plugin that returns HTML', () => {
-      const plugin = (code, lang) => `<div class="highlight-${lang}">${code}</div>`;
+      const plugin = {
+        render: (code, lang) => `<div class="highlight-${lang}">${code}</div>`
+      };
       const html = quikdown('```js\ncode\n```', { fence_plugin: plugin });
       expect(html).toContain('<div class="highlight-js">code</div>');
     });
@@ -498,7 +520,9 @@ describe('quikdown edge cases and coverage', () => {
     });
 
     test('should handle fence plugin with inline styles', () => {
-      const plugin = (code) => `<div>${code}</div>`;
+      const plugin = {
+        render: (code) => `<div>${code}</div>`
+      };
       const html = quikdown('```\ntest\n```', { 
         fence_plugin: plugin,
         inline_styles: true 
@@ -570,7 +594,9 @@ describe('quikdown edge cases and coverage', () => {
     });
 
     test('should handle fence with undefined plugin return and bidirectional', () => {
-      const plugin = () => undefined;
+      const plugin = {
+        render: () => undefined
+      };
       const html = quikdown('```\ncode\n```', { 
         fence_plugin: plugin,
         bidirectional: true,
@@ -581,7 +607,9 @@ describe('quikdown edge cases and coverage', () => {
     });
 
     test('should handle fence with undefined plugin return and language', () => {
-      const plugin = () => undefined;
+      const plugin = {
+        render: () => undefined
+      };
       const html = quikdown('```javascript\ncode\n```', { 
         fence_plugin: plugin,
         bidirectional: true,

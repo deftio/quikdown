@@ -57,9 +57,12 @@ declare module 'quikdown/bd' {
     /**
      * Convert HTML back to Markdown
      * @param htmlOrElement - HTML string or DOM element to convert
+     * @param options - Options including fence plugin with reverse handler
      * @returns The recovered markdown string
      */
-    export function toMarkdown(htmlOrElement: string | HTMLElement): string;
+    export function toMarkdown(htmlOrElement: string | HTMLElement, options?: {
+      fence_plugin?: import('quikdown').FencePlugin;
+    }): string;
     
     /**
      * Generate CSS styles for quikdown classes with theme support
@@ -95,7 +98,9 @@ export { QuikdownBdOptions };
 declare function quikdown_bd(markdown: string, options?: QuikdownBdOptions): string;
 
 declare namespace quikdown_bd {
-  export function toMarkdown(htmlOrElement: string | HTMLElement): string;
+  export function toMarkdown(htmlOrElement: string | HTMLElement, options?: {
+    fence_plugin?: import('quikdown').FencePlugin;
+  }): string;
   export function emitStyles(prefix?: string, theme?: 'light' | 'dark'): string;
   export function configure(options: QuikdownBdOptions): (markdown: string) => string;
   export const version: string;

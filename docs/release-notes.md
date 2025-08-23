@@ -1,6 +1,44 @@
 # Release Notes
 
-## v1.0.6 (In Development)
+## v1.1.0 (In Development)
+
+### 💥 Breaking Changes
+
+#### Fence Plugin API Redesign
+- **Object format required**: Fence plugins must now use object format with `render` function (breaking change from v1.0.x)
+- **Bidirectional support**: Added optional `reverse` handler for HTML-to-markdown conversion
+- **Data attributes**: Automatic data-qd-* attributes for roundtrip conversion
+- **Better TypeScript**: Clean interface definition with FencePlugin type
+
+**Migration:**
+```javascript
+// OLD (v1.0.x) - No longer supported
+const plugin = (content, lang) => '<pre>' + content + '</pre>';
+
+// NEW (v1.1.0) - Required format
+const plugin = {
+  render: (content, lang) => '<pre>' + content + '</pre>',
+  reverse: (element) => ({ // Optional
+    fence: '```',
+    lang: 'custom',
+    content: element.textContent
+  })
+};
+```
+
+### 🎯 New Features
+
+#### Bidirectional Fence Plugins
+- **Reverse handlers**: Custom fence plugins can now convert HTML back to markdown
+- **Perfect roundtrips**: Maintain custom content through edit cycles
+- **Fallback support**: Automatic data-qd-source preservation when no reverse handler
+- **Plugin ecosystem ready**: Enables rich bidirectional plugins for mermaid, math, etc.
+
+#### Editor Enhancements
+- **Remove HR button**: New toolbar button to remove horizontal rules (---) from markdown
+- **API method**: `removeHR()` method to programmatically remove all horizontal rules
+- **Configurable display**: `showRemoveHR` option (default: false) to show/hide button
+- **LLM-friendly**: Helps clean up markdown from AI-generated content
 
 ### 🔬 Experimental Features
 
@@ -11,6 +49,11 @@
 - **Future Foundation**: Provides basis for future extensibility and custom grammar rules
 
 ### 🐛 Bug Fixes
+
+#### Horizontal Rule Parsing
+- **Fixed HR with trailing spaces**: HR pattern now accepts trailing whitespace (e.g., `---  `)
+- **Prevents editor jumping**: Fixes cursor jumping when typing `---` in the editor
+- **More forgiving**: Matches common user input patterns
 
 #### HTML-to-Markdown Roundtrip Conversion
 - **Fixed missing `<p>` tags**: Paragraphs following headings were missing opening `<p>` tags, causing invalid HTML

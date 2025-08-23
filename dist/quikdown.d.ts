@@ -5,17 +5,38 @@
 
 declare module 'quikdown' {
   /**
-   * Options for configuring the quikdown parser
+   * Fence plugin for custom code block rendering (v1.1.0+)
    */
-  export interface QuikdownOptions {
+  export interface FencePlugin {
     /**
-     * Custom renderer for fenced code blocks.
-     * Return undefined to use default rendering.
+     * Render markdown fence to HTML
      * @param content - The code block content (unescaped)
      * @param language - The language identifier (or empty string)
      * @returns HTML string or undefined for default rendering
      */
-    fence_plugin?: (content: string, language: string) => string | undefined;
+    render: (content: string, language: string) => string | undefined;
+    
+    /**
+     * Convert HTML element back to markdown fence (optional)
+     * @param element - The HTML element to convert
+     * @returns Fence details or null to use default
+     */
+    reverse?: (element: HTMLElement) => {
+      fence: string;
+      lang: string;
+      content: string;
+    } | null;
+  }
+  
+  /**
+   * Options for configuring the quikdown parser
+   */
+  export interface QuikdownOptions {
+    /**
+     * Custom renderer for fenced code blocks (v1.1.0: object format required)
+     * @since 1.1.0 - Must be an object with render function
+     */
+    fence_plugin?: FencePlugin;
     
     /**
      * If true, uses inline styles instead of CSS classes.

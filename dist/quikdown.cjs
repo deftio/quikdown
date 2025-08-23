@@ -1,6 +1,6 @@
 /**
  * quikdown - Lightweight Markdown Parser
- * @version 1.0.6dev1
+ * @version 1.1.0
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -20,7 +20,7 @@
  */
 
 // Version will be injected at build time  
-const quikdownVersion = '1.0.6dev1';
+const quikdownVersion = '1.1.0';
 
 // Constants for reuse
 const CLASS_PREFIX = 'quikdown-';
@@ -146,13 +146,14 @@ function quikdown(markdown, options = {}) {
         // Trim the language specification
         const langTrimmed = lang ? lang.trim() : '';
         
-        // If custom fence plugin is provided, use it
-        if (fence_plugin && typeof fence_plugin === 'function') {
+        // If custom fence plugin is provided, use it (v1.1.0: object format required)
+        if (fence_plugin && fence_plugin.render && typeof fence_plugin.render === 'function') {
             codeBlocks.push({
                 lang: langTrimmed,
                 code: code.trimEnd(),
                 custom: true,
-                fence: fence
+                fence: fence,
+                hasReverse: !!fence_plugin.reverse
             });
         } else {
             codeBlocks.push({
@@ -315,9 +316,10 @@ function quikdown(markdown, options = {}) {
     codeBlocks.forEach((block, i) => {
         let replacement;
         
-        if (block.custom && fence_plugin) {
-            // Use custom fence plugin
-            replacement = fence_plugin(block.code, block.lang);
+        if (block.custom && fence_plugin && fence_plugin.render) {
+            // Use custom fence plugin (v1.1.0: object format with render function)
+            replacement = fence_plugin.render(block.code, block.lang);
+            
             // If plugin returns undefined, fall back to default rendering
             if (replacement === undefined) {
                 const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
@@ -325,6 +327,10 @@ function quikdown(markdown, options = {}) {
                 const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
                 const fenceAttr = bidirectional ? ` data-qd-fence="${escapeHtml(block.fence)}"` : '';
                 replacement = `<pre${getAttr('pre')}${fenceAttr}${langAttr}><code${codeAttr}>${escapeHtml(block.code)}</code></pre>`;
+            } else if (bidirectional) {
+                // If bidirectional and plugin provided HTML, add data attributes for roundtrip
+                replacement = replacement.replace(/^<(\w+)/, 
+                    `<$1 data-qd-fence="${escapeHtml(block.fence)}" data-qd-lang="${escapeHtml(block.lang)}" data-qd-source="${escapeHtml(block.code)}"`);
             }
         } else {
             // Default rendering

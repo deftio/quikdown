@@ -10,7 +10,7 @@ A small markdown to html parser with fence plugin support
 
 * [ ] Add a quikdown-cli.js standalone tool that converts markdown to html. Should support all quikdown features like inline styles or passing in your own css (assumes quikdown classes)
 * [ ] Add reverse fence call back (when toMarkdown() encounters a fence for which it can't parse, have option for callback.  This can be useful for mermaid and svg constructs for example
-* [ ] Move to quikdown_lex as main build (move away from regex)
+* [ ] FUTURE Move to quikdown_lex as main build (move away from regex)
   - allows broader range of grammers
   - allows full spec compliance
   - easier to debug

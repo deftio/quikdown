@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.0.6dev1
+ * @version 1.1.0
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -24,7 +24,7 @@
      */
 
     // Version will be injected at build time  
-    const quikdownVersion = '1.0.6dev1';
+    const quikdownVersion = '1.1.0';
 
     // Constants for reuse
     const CLASS_PREFIX = 'quikdown-';
@@ -150,13 +150,14 @@
             // Trim the language specification
             const langTrimmed = lang ? lang.trim() : '';
             
-            // If custom fence plugin is provided, use it
-            if (fence_plugin && typeof fence_plugin === 'function') {
+            // If custom fence plugin is provided, use it (v1.1.0: object format required)
+            if (fence_plugin && fence_plugin.render && typeof fence_plugin.render === 'function') {
                 codeBlocks.push({
                     lang: langTrimmed,
                     code: code.trimEnd(),
                     custom: true,
-                    fence: fence
+                    fence: fence,
+                    hasReverse: !!fence_plugin.reverse
                 });
             } else {
                 codeBlocks.push({
@@ -319,9 +320,10 @@
         codeBlocks.forEach((block, i) => {
             let replacement;
             
-            if (block.custom && fence_plugin) {
-                // Use custom fence plugin
-                replacement = fence_plugin(block.code, block.lang);
+            if (block.custom && fence_plugin && fence_plugin.render) {
+                // Use custom fence plugin (v1.1.0: object format with render function)
+                replacement = fence_plugin.render(block.code, block.lang);
+                
                 // If plugin returns undefined, fall back to default rendering
                 if (replacement === undefined) {
                     const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
@@ -329,6 +331,10 @@
                     const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
                     const fenceAttr = bidirectional ? ` data-qd-fence="${escapeHtml(block.fence)}"` : '';
                     replacement = `<pre${getAttr('pre')}${fenceAttr}${langAttr}><code${codeAttr}>${escapeHtml(block.code)}</code></pre>`;
+                } else if (bidirectional) {
+                    // If bidirectional and plugin provided HTML, add data attributes for roundtrip
+                    replacement = replacement.replace(/^<(\w+)/, 
+                        `<$1 data-qd-fence="${escapeHtml(block.fence)}" data-qd-lang="${escapeHtml(block.lang)}" data-qd-source="${escapeHtml(block.code)}"`);
                 }
             } else {
                 // Default rendering
@@ -684,7 +690,7 @@
     });
 
     // Add the toMarkdown method for HTML→Markdown conversion
-    quikdown_bd.toMarkdown = function(htmlOrElement) {
+    quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         // Accept either HTML string or DOM element
         let container;
         if (typeof htmlOrElement === 'string') {
@@ -757,7 +763,29 @@
                 case 'pre':
                     const fence = node.getAttribute('data-qd-fence') || dataQd || '```';
                     const lang = node.getAttribute('data-qd-lang') || '';
-                    // Look for code element child
+                    
+                    // Check if this was created by a fence plugin with reverse handler
+                    if (options.fence_plugin && options.fence_plugin.reverse && lang) {
+                        try {
+                            const result = options.fence_plugin.reverse(node);
+                            if (result && result.content) {
+                                const fenceMarker = result.fence || fence;
+                                const langStr = result.lang || lang;
+                                return `${fenceMarker}${langStr}\n${result.content}\n${fenceMarker}\n\n`;
+                            }
+                        } catch (err) {
+                            console.warn('Fence reverse handler error:', err);
+                            // Fall through to default handling
+                        }
+                    }
+                    
+                    // Fallback: use data-qd-source if available
+                    const source = node.getAttribute('data-qd-source');
+                    if (source) {
+                        return `${fence}${lang}\n${source}\n${fence}\n\n`;
+                    }
+                    
+                    // Final fallback: extract text content
                     const codeEl = node.querySelector('code');
                     const codeContent = codeEl ? codeEl.textContent : childContent;
                     return `${fence}${lang}\n${codeContent.trimEnd()}\n${fence}\n\n`;
@@ -833,6 +861,30 @@
                     return '';
                     
                 case 'div':
+                    // Check if this was created by a fence plugin with reverse handler
+                    const divLang = node.getAttribute('data-qd-lang');
+                    const divFence = node.getAttribute('data-qd-fence');
+                    
+                    if (divLang && options.fence_plugin && options.fence_plugin.reverse) {
+                        try {
+                            const result = options.fence_plugin.reverse(node);
+                            if (result && result.content) {
+                                const fenceMarker = result.fence || divFence || '```';
+                                const langStr = result.lang || divLang;
+                                return `${fenceMarker}${langStr}\n${result.content}\n${fenceMarker}\n\n`;
+                            }
+                        } catch (err) {
+                            console.warn('Fence reverse handler error:', err);
+                            // Fall through to default handling
+                        }
+                    }
+                    
+                    // Fallback: use data-qd-source if available
+                    const divSource = node.getAttribute('data-qd-source');
+                    if (divSource && divFence) {
+                        return `${divFence}${divLang || ''}\n${divSource}\n${divFence}\n\n`;
+                    }
+                    
                     // Check if it's a mermaid container
                     if (node.classList && node.classList.contains('mermaid-container')) {
                         const fence = node.getAttribute('data-qd-fence') || '```';

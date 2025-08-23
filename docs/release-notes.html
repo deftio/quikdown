@@ -65,7 +65,44 @@
 <body>
     <article class="markdown-body">
         <h1>Release Notes</h1>
-<h2>v1.0.6 (In Development)</h2>
+<h2>v1.1.0 (In Development)</h2>
+<h3>💥 Breaking Changes</h3>
+<h4>Fence Plugin API Redesign</h4>
+<ul>
+<li><strong>Object format required</strong>: Fence plugins must now use object format with <code>render</code> function (breaking change from v1.0.x)</li>
+<li><strong>Bidirectional support</strong>: Added optional <code>reverse</code> handler for HTML-to-markdown conversion</li>
+<li><strong>Data attributes</strong>: Automatic data-qd-* attributes for roundtrip conversion</li>
+<li><strong>Better TypeScript</strong>: Clean interface definition with FencePlugin type</li>
+</ul>
+<p><strong>Migration:</strong></p>
+<pre><code class="language-javascript">// OLD (v1.0.x) - No longer supported
+const plugin = (content, lang) =&gt; &#39;&lt;pre&gt;&#39; + content + &#39;&lt;/pre&gt;&#39;;
+
+// NEW (v1.1.0) - Required format
+const plugin = {
+  render: (content, lang) =&gt; &#39;&lt;pre&gt;&#39; + content + &#39;&lt;/pre&gt;&#39;,
+  reverse: (element) =&gt; ({ // Optional
+    fence: &#39;```&#39;,
+    lang: &#39;custom&#39;,
+    content: element.textContent
+  })
+};
+</code></pre>
+<h3>🎯 New Features</h3>
+<h4>Bidirectional Fence Plugins</h4>
+<ul>
+<li><strong>Reverse handlers</strong>: Custom fence plugins can now convert HTML back to markdown</li>
+<li><strong>Perfect roundtrips</strong>: Maintain custom content through edit cycles</li>
+<li><strong>Fallback support</strong>: Automatic data-qd-source preservation when no reverse handler</li>
+<li><strong>Plugin ecosystem ready</strong>: Enables rich bidirectional plugins for mermaid, math, etc.</li>
+</ul>
+<h4>Editor Enhancements</h4>
+<ul>
+<li><strong>Remove HR button</strong>: New toolbar button to remove horizontal rules (---) from markdown</li>
+<li><strong>API method</strong>: <code>removeHR()</code> method to programmatically remove all horizontal rules</li>
+<li><strong>Configurable display</strong>: <code>showRemoveHR</code> option (default: false) to show/hide button</li>
+<li><strong>LLM-friendly</strong>: Helps clean up markdown from AI-generated content</li>
+</ul>
 <h3>🔬 Experimental Features</h3>
 <h4>Lexer/Grammar-Based Parser Achievement</h4>
 <ul>
@@ -75,6 +112,12 @@
 <li><strong>Future Foundation</strong>: Provides basis for future extensibility and custom grammar rules</li>
 </ul>
 <h3>🐛 Bug Fixes</h3>
+<h4>Horizontal Rule Parsing</h4>
+<ul>
+<li><strong>Fixed HR with trailing spaces</strong>: HR pattern now accepts trailing whitespace (e.g., <code>---  </code>)</li>
+<li><strong>Prevents editor jumping</strong>: Fixes cursor jumping when typing <code>---</code> in the editor</li>
+<li><strong>More forgiving</strong>: Matches common user input patterns</li>
+</ul>
 <h4>HTML-to-Markdown Roundtrip Conversion</h4>
 <ul>
 <li><strong>Fixed missing <code>&lt;p&gt;</code> tags</strong>: Paragraphs following headings were missing opening <code>&lt;p&gt;</code> tags, causing invalid HTML</li>

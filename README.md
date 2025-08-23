@@ -9,9 +9,9 @@ Quikdown is a small, secure markdown parser with bidirectional conversion. Zero 
 
 For small and fast projects quikdown includes built-in inline styles for a "batteries included" rendering experience, but these can be overridden with themed css (see light and dark examples).
 
-- **quikdown.js** (8.7KB) - Markdown to HTML Parser
-- **quikdown_bd.js** (13KB) - Bidirectional (HTML ↔ Markdown) Parser
-- **quikdown_edit.js** (36KB) - Drop-in editor component (HTML ↔ Markdown) with md/split/html views
+- **quikdown.js** (9.1KB) - Markdown to HTML Parser
+- **quikdown_bd.js** (13.8KB) - Bidirectional (HTML ↔ Markdown) Parser
+- **quikdown_edit.js** (37.8KB) - Drop-in editor component (HTML ↔ Markdown) with md/split/html views
 
 🚀 **[Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** | **[Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** | **[Documentation](docs/)**
 
@@ -21,7 +21,7 @@ For small and fast projects quikdown includes built-in inline styles for a "batt
 
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js
-- 🚀 **Lightweight** - 8.7KB (core), 13KB (bidirectional), 36KB (editor)
+- 🚀 **Lightweight** - 9.1KB (core), 13.8KB (bidirectional), 37.8KB (editor)
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
 - 🎨 **Flexible styling** - Inline styles or CSS classes with theme support
 - 🔌 **Plugin system** - Extensible fence block handlers

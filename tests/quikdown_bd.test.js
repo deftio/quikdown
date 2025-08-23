@@ -399,6 +399,59 @@ End of document.`;
     });
   });
   
+  describe('Fence Plugin Bidirectional Support', () => {
+    test('should handle fence plugin with reverse handler', () => {
+      const plugin = {
+        render: (content, lang) => {
+          return `<div class="custom-${lang}" data-custom-lang="${lang}">${content.toUpperCase()}</div>`;
+        },
+        reverse: (element) => {
+          const lang = element.getAttribute('data-custom-lang') || 'custom';
+          const content = element.textContent.toLowerCase();
+          return {
+            fence: '```',
+            lang: lang,
+            content: content
+          };
+        }
+      };
+      
+      const markdown = '```test\nhello world\n```';
+      const html = quikdown_bd(markdown, { fence_plugin: plugin, bidirectional: true });
+      
+      // HTML should have custom rendering with data attributes
+      expect(html).toContain('data-qd-fence="```"');
+      expect(html).toContain('data-qd-lang="test"');
+      expect(html).toContain('data-qd-source="hello world"');
+      expect(html).toContain('HELLO WORLD');
+      
+      // Convert back to markdown using the reverse handler
+      const recovered = quikdown_bd.toMarkdown(html, { fence_plugin: plugin });
+      expect(recovered).toContain('```test');
+      expect(recovered).toContain('hello world');
+    });
+    
+    test('should fallback to data-qd-source when no reverse handler', () => {
+      const plugin = {
+        render: (content, lang) => {
+          return `<div class="custom">${content}</div>`;
+        }
+        // No reverse handler
+      };
+      
+      const markdown = '```javascript\nconst x = 1;\n```';
+      const html = quikdown_bd(markdown, { fence_plugin: plugin, bidirectional: true });
+      
+      // Should have data-qd-source for fallback
+      expect(html).toContain('data-qd-source="const x = 1;"');
+      
+      // Should recover using data-qd-source
+      const recovered = quikdown_bd.toMarkdown(html);
+      expect(recovered).toContain('```javascript');
+      expect(recovered).toContain('const x = 1;');
+    });
+  });
+  
   describe('Special Features', () => {
     test('should handle task lists with checkboxes', () => {
       const markdown = '- [ ] Unchecked\n- [x] Checked';
@@ -452,15 +505,17 @@ End of document.`;
     });
     
     test('should support fence_plugin option', () => {
-      const customRenderer = (code, lang) => {
-        return `<div class="custom-${lang}">${code}</div>`;
+      const customRenderer = {
+        render: (code, lang) => {
+          return `<div class="custom-${lang}">${code}</div>`;
+        }
       };
       
       const markdown = '```js\ncode\n```';
       const html = quikdown_bd(markdown, { fence_plugin: customRenderer });
       
-      expect(html).toContain('custom-js');
-      expect(html).toContain('<div class="custom-js">code</div>');
+      expect(html).toContain('class="custom-js"');
+      expect(html).toContain('>code</div>');
     });
   });
   

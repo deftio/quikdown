@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.0.6dev1",
+  "version": "1.1.0",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
   "author": "deftio (https://github.com/deftio",
   "license": "BSD-2-Clause",
@@ -136,7 +136,7 @@
       "./dist/quikdown.esm.js": {
         "lines": 100,
         "functions": 97,
-        "branches": 95,
+        "branches": 99,
         "statements": 99
       },
       "./dist/quikdown_bd.esm.js": {
@@ -147,7 +147,7 @@
       },
       "./dist/quikdown_edit.esm.js": {
         "lines": 60,
-        "functions": 70,
+        "functions": 74,
         "branches": 40,
         "statements": 60
       }
