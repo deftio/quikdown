@@ -9,7 +9,7 @@ Quikdown is a small, secure markdown parser with bidirectional conversion. Zero 
 
 For small and fast projects quikdown includes built-in inline styles for a "batteries included" rendering experience, but these can be overridden with themed css (see light and dark examples).
 
-- **quikdown.js** (9.0KB) - Markdown to HTML Parser
+- **quikdown.js** (9.0KB) - Markdown to HTML Parser with theme support, XSS protection, fence callbacks
 - **quikdown_bd.js** (13.8KB) - Bidirectional (HTML ↔ Markdown) Parser
 - **quikdown_edit.js** (37.8KB) - Drop-in editor component (HTML ↔ Markdown) with md/split/html views
 
