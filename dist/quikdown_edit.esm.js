@@ -1257,8 +1257,26 @@ async function getRenderedContent(previewPanel) {
                             const dataUrl = canvas.toDataURL('image/png', 1.0);
                             const img = document.createElement('img');
                             img.src = dataUrl;
-                            img.style.cssText = 'width: 100%; max-width: 600px; height: auto; border: 1px solid #ddd; border-radius: 4px; margin: 0.5em 0;';
+                            
+                            // Use canvas dimensions for the image
+                            const imgWidth = canvas.width / 2; // Divide by scale factor (2x for retina)
+                            const imgHeight = canvas.height / 2;
+                            
+                            // Set both HTML attributes and CSS properties for maximum compatibility
+                            img.width = imgWidth;
+                            img.height = imgHeight;
+                            img.setAttribute('width', imgWidth.toString());
+                            img.setAttribute('height', imgHeight.toString());
+                            img.style.width = imgWidth + 'px';
+                            img.style.height = imgHeight + 'px';
+                            img.style.maxWidth = 'none';
+                            img.style.maxHeight = 'none';
+                            img.style.border = '1px solid #ddd';
+                            img.style.borderRadius = '4px';
+                            img.style.margin = '0.5em 0';
+                            img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
                             img.alt = 'STL 3D Model';
+                            
                             container.parentNode.replaceChild(img, container);
                             continue;
                         } catch (canvasErr) {
@@ -1296,8 +1314,43 @@ async function getRenderedContent(previewPanel) {
                     
                     const img = document.createElement('img');
                     img.src = dataUrl;
-                    img.style.cssText = 'max-width: 100%; height: auto; margin: 0.5em 0;';
+                    
+                    // Use the exact same dimension calculation logic as svgToPng (like squibview)
+                    const isMermaidSvg = svg.closest('.mermaid') || svg.classList.contains('mermaid');
+                    const hasExplicitDimensions = svg.getAttribute('width') && svg.getAttribute('height');
+                    
+                    let imgWidth, imgHeight;
+                    
+                    if (isMermaidSvg || !hasExplicitDimensions) {
+                        // For Mermaid or other generated SVGs, prioritize computed dimensions
+                        imgWidth = svg.clientWidth || 
+                                   (svg.viewBox && svg.viewBox.baseVal.width) || 
+                                   parseFloat(svg.getAttribute('width')) || 400;
+                        imgHeight = svg.clientHeight || 
+                                    (svg.viewBox && svg.viewBox.baseVal.height) || 
+                                    parseFloat(svg.getAttribute('height')) || 300;
+                    } else {
+                        // For explicit SVGs (like fenced SVG blocks), prioritize explicit attributes
+                        imgWidth = parseFloat(svg.getAttribute('width')) || 
+                                   (svg.viewBox && svg.viewBox.baseVal.width) || 
+                                   svg.clientWidth || 400;
+                        imgHeight = parseFloat(svg.getAttribute('height')) || 
+                                    (svg.viewBox && svg.viewBox.baseVal.height) || 
+                                    svg.clientHeight || 300;
+                    }
+                    
+                    // Set both HTML attributes and CSS properties for maximum compatibility (like squibview)
+                    img.width = imgWidth;
+                    img.height = imgHeight;
+                    img.setAttribute('width', imgWidth.toString());
+                    img.setAttribute('height', imgHeight.toString());
+                    img.style.width = imgWidth + 'px';
+                    img.style.height = imgHeight + 'px';
+                    img.style.maxWidth = 'none';  // Prevent CSS from constraining the image
+                    img.style.maxHeight = 'none';
+                    img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
                     img.alt = 'Mermaid Diagram';
+                    
                     container.parentNode.replaceChild(img, container);
                 } catch (err) {
                     console.warn('Failed to convert Mermaid diagram:', err);
@@ -1320,8 +1373,24 @@ async function getRenderedContent(previewPanel) {
                             const dataUrl = canvas.toDataURL('image/png', 1.0);
                             const img = document.createElement('img');
                             img.src = dataUrl;
-                            img.style.cssText = 'max-width: 100%; height: auto; margin: 0.5em 0;';
+                            
+                            // Use canvas dimensions for the image
+                            const imgWidth = canvas.width;
+                            const imgHeight = canvas.height;
+                            
+                            // Set both HTML attributes and CSS properties for maximum compatibility
+                            img.width = imgWidth;
+                            img.height = imgHeight;
+                            img.setAttribute('width', imgWidth.toString());
+                            img.setAttribute('height', imgHeight.toString());
+                            img.style.width = imgWidth + 'px';
+                            img.style.height = imgHeight + 'px';
+                            img.style.maxWidth = 'none';
+                            img.style.maxHeight = 'none';
+                            img.style.margin = '0.5em 0';
+                            img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
                             img.alt = 'Chart';
+                            
                             container.parentNode.replaceChild(img, container);
                             continue;
                         } catch (canvasErr) {
@@ -1353,8 +1422,42 @@ async function getRenderedContent(previewPanel) {
                 
                 const img = document.createElement('img');
                 img.src = dataUrl;
-                img.style.cssText = 'max-width: 100%; height: auto; margin: 0.5em 0;';
+                
+                // Calculate dimensions for the SVG
+                const hasExplicitDimensions = svg.getAttribute('width') && svg.getAttribute('height');
+                
+                let imgWidth, imgHeight;
+                
+                if (hasExplicitDimensions) {
+                    // For explicit SVGs (like fenced SVG blocks), prioritize explicit attributes
+                    imgWidth = parseFloat(svg.getAttribute('width')) || 
+                               (svg.viewBox && svg.viewBox.baseVal.width) || 
+                               svg.clientWidth || 400;
+                    imgHeight = parseFloat(svg.getAttribute('height')) || 
+                                (svg.viewBox && svg.viewBox.baseVal.height) || 
+                                svg.clientHeight || 300;
+                } else {
+                    // For generated SVGs, prioritize computed dimensions
+                    imgWidth = svg.clientWidth || 
+                               (svg.viewBox && svg.viewBox.baseVal.width) || 
+                               parseFloat(svg.getAttribute('width')) || 400;
+                    imgHeight = svg.clientHeight || 
+                                (svg.viewBox && svg.viewBox.baseVal.height) || 
+                                parseFloat(svg.getAttribute('height')) || 300;
+                }
+                
+                // Set both HTML attributes and CSS properties for maximum compatibility
+                img.width = imgWidth;
+                img.height = imgHeight;
+                img.setAttribute('width', imgWidth.toString());
+                img.setAttribute('height', imgHeight.toString());
+                img.style.width = imgWidth + 'px';
+                img.style.height = imgHeight + 'px';
+                img.style.maxWidth = 'none';  // Prevent CSS from constraining the image
+                img.style.maxHeight = 'none';
+                img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
                 img.alt = 'SVG Image';
+                
                 svg.parentNode.replaceChild(img, svg);
             } catch (err) {
                 console.warn('Failed to convert SVG to image:', err);
