@@ -75,55 +75,77 @@ function copyToClipboard(html) {
 }
 
 /**
- * Convert SVG to PNG data URL
- * @param {SVGElement} svg - The SVG element to convert
- * @returns {Promise<string>} Data URL of the PNG image
+ * Convert SVG to PNG blob (based on squibview's implementation)
+ * @param {SVGElement} svgElement - The SVG element to convert
+ * @returns {Promise<Blob>} A promise that resolves with the PNG blob
  */
-async function svgToPng(svg) {
+async function svgToPng(svgElement) {
     return new Promise((resolve, reject) => {
-        try {
-            const svgData = new XMLSerializer().serializeToString(svg);
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
-            
-            // Get dimensions from SVG
-            const svgWidth = parseFloat(svg.getAttribute('width')) || 
-                            svg.viewBox?.baseVal?.width || 
-                            svg.clientWidth || 400;
-            const svgHeight = parseFloat(svg.getAttribute('height')) || 
-                             svg.viewBox?.baseVal?.height || 
-                             svg.clientHeight || 300;
-            
-            // Set canvas dimensions (2x for retina)
-            const scale = 2;
-            canvas.width = svgWidth * scale;
-            canvas.height = svgHeight * scale;
-            ctx.scale(scale, scale);
-            
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
-                resolve(canvas.toDataURL('image/png'));
-            };
-            
-            img.onerror = () => {
-                reject(new Error('Failed to load SVG as image'));
-            };
-            
-            // Create blob URL for the SVG
-            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-            const url = URL.createObjectURL(svgBlob);
-            img.src = url;
-            
-            // Clean up blob URL after loading
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
-                URL.revokeObjectURL(url);
-                resolve(canvas.toDataURL('image/png'));
-            };
-        } catch (err) {
-            reject(err);
+        const svgString = new XMLSerializer().serializeToString(svgElement);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        const scale = 2;
+        
+        // Check if this is a Mermaid-generated SVG (they don't have explicit width/height attributes)
+        const isMermaidSvg = svgElement.closest('.mermaid') || svgElement.classList.contains('mermaid');
+        const hasExplicitDimensions = svgElement.getAttribute('width') && svgElement.getAttribute('height');
+        
+        let svgWidth, svgHeight;
+        
+        if (isMermaidSvg || !hasExplicitDimensions) {
+            // For Mermaid or other generated SVGs, prioritize computed dimensions
+            svgWidth = svgElement.clientWidth || 
+                       (svgElement.viewBox && svgElement.viewBox.baseVal.width) || 
+                       parseFloat(svgElement.getAttribute('width')) || 400;
+            svgHeight = svgElement.clientHeight || 
+                        (svgElement.viewBox && svgElement.viewBox.baseVal.height) || 
+                        parseFloat(svgElement.getAttribute('height')) || 300;
+        } else {
+            // For explicit SVGs (like fenced SVG blocks), prioritize explicit attributes
+            svgWidth = parseFloat(svgElement.getAttribute('width')) || 
+                       (svgElement.viewBox && svgElement.viewBox.baseVal.width) || 
+                       svgElement.clientWidth || 400;
+            svgHeight = parseFloat(svgElement.getAttribute('height')) || 
+                        (svgElement.viewBox && svgElement.viewBox.baseVal.height) || 
+                        svgElement.clientHeight || 300;
         }
+        
+        // Ensure the SVG string has explicit dimensions by modifying it if necessary
+        let modifiedSvgString = svgString;
+        if (svgWidth && svgHeight) {
+            // Create a temporary SVG element to modify the serialized string
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = svgString;
+            const tempSvg = tempDiv.querySelector('svg');
+            if (tempSvg) {
+                tempSvg.setAttribute('width', svgWidth.toString());
+                tempSvg.setAttribute('height', svgHeight.toString());
+                modifiedSvgString = new XMLSerializer().serializeToString(tempSvg);
+            }
+        }
+        
+        canvas.width = svgWidth * scale;
+        canvas.height = svgHeight * scale;
+        ctx.scale(scale, scale);
+        
+        img.onload = () => {
+            try {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+                canvas.toBlob(blob => {
+                    resolve(blob);
+                }, 'image/png', 1.0);
+            } catch (err) {
+                reject(err);
+            }
+        };
+        
+        img.onerror = reject;
+        // Use data URI instead of blob URL to avoid tainting the canvas
+        const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(modifiedSvgString)}`;
+        img.src = svgDataUrl;
     });
 }
 
@@ -199,7 +221,13 @@ export async function getRenderedContent(previewPanel) {
             const svg = container.querySelector('svg');
             if (svg) {
                 try {
-                    const dataUrl = await svgToPng(svg);
+                    const pngBlob = await svgToPng(svg);
+                    const dataUrl = await new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(pngBlob);
+                    });
+                    
                     const img = document.createElement('img');
                     img.src = dataUrl;
                     img.style.cssText = 'max-width: 100%; height: auto; margin: 0.5em 0;';
@@ -250,7 +278,13 @@ export async function getRenderedContent(previewPanel) {
         const svgContainers = clone.querySelectorAll('.qde-svg-container svg');
         for (const svg of svgContainers) {
             try {
-                const dataUrl = await svgToPng(svg);
+                const pngBlob = await svgToPng(svg);
+                const dataUrl = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(pngBlob);
+                });
+                
                 const img = document.createElement('img');
                 img.src = dataUrl;
                 img.style.cssText = 'max-width: 100%; height: auto; margin: 0.5em 0;';
