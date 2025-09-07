@@ -873,80 +873,114 @@ class QuikdownEditor {
     }
     
     /**
-     * Render math with KaTeX if available
+     * Render math with MathJax (SVG output for better copy support)
      */
     renderMath(code, lang) {
         const id = `math-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
-        // If KaTeX is loaded, use it
-        if (window.katex) {
-            try {
-                const rendered = katex.renderToString(code, {
-                    displayMode: true,
-                    throwOnError: false
-                });
-                
-                // Create container programmatically
-                const container = document.createElement('div');
-                container.className = 'qde-math-container';
-                container.contentEditable = 'false';
-                container.setAttribute('data-qd-fence', '```');
-                container.setAttribute('data-qd-lang', lang);
-                container.setAttribute('data-qd-source', code);
-                container.innerHTML = rendered;
-                
-                return container.outerHTML;
-            } catch (err) {
-                const errorContainer = document.createElement('pre');
-                errorContainer.className = 'qde-error';
-                errorContainer.contentEditable = 'false';
-                errorContainer.setAttribute('data-qd-fence', '```');
-                errorContainer.setAttribute('data-qd-lang', lang);
-                errorContainer.setAttribute('data-qd-source', code);
-                errorContainer.textContent = `Math error: ${err.message}`;
-                return errorContainer.outerHTML;
-            }
+        // Check if MathJax is loaded
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            // Create container with MathJax delimiters
+            const container = document.createElement('div');
+            container.id = id;
+            container.className = 'qde-math-container math-display';
+            container.contentEditable = 'false';
+            container.setAttribute('data-qd-fence', '```');
+            container.setAttribute('data-qd-lang', lang);
+            container.setAttribute('data-qd-source', code);
+            
+            // Format content for MathJax (display mode with $$)
+            const singleLineContent = code.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+            container.textContent = `$$${singleLineContent}$$`;
+            
+            // Schedule MathJax to process after DOM update
+            setTimeout(() => {
+                const element = document.getElementById(id);
+                if (element && window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([element]).catch(err => {
+                        console.warn('MathJax rendering failed:', err);
+                        element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
+                    });
+                }
+            }, 0);
+            
+            return container.outerHTML;
         }
         
-        // Try to lazy load KaTeX
-        this.lazyLoadLibrary(
-            'KaTeX',
-            () => window.katex,
-            'https://unpkg.com/katex/dist/katex.min.js',
-            'https://unpkg.com/katex/dist/katex.min.css'
-        ).then(loaded => {
-            if (loaded) {
-                const element = document.getElementById(id);
-                if (element) {
-                    try {
-                        katex.render(code, element, {
-                            displayMode: true,
-                            throwOnError: false
-                        });
-                        // Update attributes after rendering
-                        element.setAttribute('data-qd-source', code);
-                        element.setAttribute('data-qd-fence', '```');
-                        element.setAttribute('data-qd-lang', lang);
-                    } catch (err) {
-                        element.innerHTML = `<pre class="qde-error">Math error: ${this.escapeHtml(err.message)}</pre>`;
-                    }
-                }
-            }
-        });
+        // Try to lazy load MathJax
+        this.ensureMathJaxAndTypeset(id, code, lang);
         
-        // Return placeholder with bidirectional attributes - non-editable
+        // Return placeholder that will be replaced
         const placeholder = document.createElement('div');
         placeholder.id = id;
-        placeholder.className = 'qde-math-container';
+        placeholder.className = 'qde-math-container math-display';
         placeholder.contentEditable = 'false';
         placeholder.setAttribute('data-qd-fence', '```');
         placeholder.setAttribute('data-qd-lang', lang);
         placeholder.setAttribute('data-qd-source', code);
-        const pre = document.createElement('pre');
-        pre.textContent = code;
-        placeholder.appendChild(pre);
+        
+        // Format content for MathJax (display mode with $$)
+        const singleLineContent = code.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+        placeholder.textContent = `$$${singleLineContent}$$`;
         
         return placeholder.outerHTML;
+    }
+    
+    /**
+     * Ensures MathJax is loaded and typesets the math element
+     */
+    async ensureMathJaxAndTypeset(id, code, lang) {
+        if (typeof window.MathJax === 'undefined') {
+            if (window.mathJaxLoading) return;
+            window.mathJaxLoading = true;
+            
+            // Configure MathJax before loading script to ensure SVG output
+            if (!window.MathJax) {
+                window.MathJax = {
+                    loader: { load: ['input/tex', 'output/svg'] },
+                    tex: { 
+                        packages: { '[+]': ['ams'] },
+                        inlineMath: [['$', '$'], ['\\(', '\\)']],
+                        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                        processEscapes: true
+                    },
+                    svg: {
+                        fontCache: 'global',
+                        scale: 1
+                    },
+                    startup: { typeset: false }
+                };
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
+            script.async = true;
+            script.onload = () => {
+                window.mathJaxLoading = false;
+                // Process the element
+                const element = document.getElementById(id);
+                if (element && window.MathJax && window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise([element]).catch(err => {
+                        console.warn('MathJax rendering failed:', err);
+                        element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
+                    });
+                }
+            };
+            script.onerror = () => {
+                window.mathJaxLoading = false;
+                console.error('Failed to load MathJax');
+            };
+            document.head.appendChild(script);
+        } else if (window.MathJax && window.MathJax.typesetPromise) {
+            // MathJax is loaded, process the element
+            const element = document.getElementById(id);
+            if (element) {
+                window.MathJax.typesetPromise([element]).catch(err => {
+                    console.warn('MathJax rendering failed:', err);
+                    element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
+                });
+            }
+        }
     }
     
     /**
