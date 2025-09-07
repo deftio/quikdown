@@ -50,7 +50,7 @@ Goal: Ensure all content types paste correctly into Google Docs, Word, and other
   - [ ] Preserve monospace font
   - [ ] Apply single background to whole block (not line-by-line)
 
-### 2.2 SVG Content
+### 2.2 SVG Content and SVG Block fences
 - [ ] **Inline SVG** - Convert to PNG using canvas
   - [ ] Create offscreen canvas
   - [ ] Draw SVG to canvas
@@ -72,34 +72,36 @@ Goal: Ensure all content types paste correctly into Google Docs, Word, and other
   - [ ] Scale oversized equations
   - [ ] Add white background
 
-### 2.5 GeoJSON Maps
-- [ ] **Leaflet maps** - Convert to static image
-  - [ ] Wait for map tiles to load
-  - [ ] Use leaflet-image or canvas capture
-  - [ ] Include attribution text
-  - [ ] Preserve zoom level and center
-
-### 2.6 STL 3D Models
-- [ ] **Three.js viewer** - Capture canvas as image
-  - [ ] Wait for model to render
-  - [ ] Use canvas.toDataURL()
-  - [ ] Handle WebGL context
-  - [ ] Provide fallback for WebGL errors
-
-### 2.7 Data Tables (CSV/TSV/PSV)
+### 2.5 Data Tables (CSV/TSV/PSV)
 - [ ] **Rendered tables** - Convert to HTML tables
   - [ ] Parse delimiter-separated values
   - [ ] Apply consistent styling
   - [ ] Handle header rows
   - [ ] Apply borders and padding
 
-### 2.8 HTML Blocks
+### 2.6 HTML Blocks 
 - [ ] **Raw HTML** - Preserve with sanitization
   - [ ] Keep safe HTML elements
   - [ ] Convert external resources to data URLs
   - [ ] Apply inline styles
 
+
+### 2.7 GeoJSON Maps
+- [ ] **Leaflet maps** - Convert to static image
+  - [ ] Wait for map tiles to load
+  - [ ] Use leaflet-image or canvas capture
+  - [ ] Include attribution text
+  - [ ] Preserve zoom level and center
+
+### 2.8 STL 3D Models
+- [ ] **Three.js viewer** - Capture canvas as image
+  - [ ] Wait for model to render
+  - [ ] Use canvas.toDataURL()
+  - [ ] Handle WebGL context
+  - [ ] Provide fallback for WebGL errors
+
 ## Phase 3: Technical Implementation
+Not sure about these below I think we should look at how squibview handeled each use case above and make sure we know what we are doing.
 
 ### 3.1 Core Copy Function
 ```javascript
@@ -204,6 +206,6 @@ async svgToPng(svg) {
 - Works across major browsers
 
 ## References
-- Squibview implementation: github.com/deftio/squibview
+- Squibview implementation: github.com/deftio/squibview 
 - Canvas API: https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API
 - Clipboard API: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API

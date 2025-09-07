@@ -1230,6 +1230,170 @@ async function getRenderedContent(previewPanel) {
     
     // Process different fence types for rich copy
     try {
+        // Phase 1: Process basic markdown elements with inline styles
+        
+        // 1.1 Text formatting - add inline styles
+        clone.querySelectorAll('strong, b').forEach(el => {
+            el.style.fontWeight = 'bold';
+        });
+        
+        clone.querySelectorAll('em, i').forEach(el => {
+            el.style.fontStyle = 'italic';
+        });
+        
+        clone.querySelectorAll('del, s, strike').forEach(el => {
+            el.style.textDecoration = 'line-through';
+        });
+        
+        clone.querySelectorAll('u').forEach(el => {
+            el.style.textDecoration = 'underline';
+        });
+        
+        clone.querySelectorAll('code:not(pre code)').forEach(el => {
+            el.style.backgroundColor = '#f4f4f4';
+            el.style.padding = '2px 4px';
+            el.style.borderRadius = '3px';
+            el.style.fontFamily = 'monospace';
+            el.style.fontSize = '0.9em';
+        });
+        
+        // 1.2 Block elements - add inline styles
+        clone.querySelectorAll('h1').forEach(el => {
+            el.style.fontSize = '2em';
+            el.style.fontWeight = 'bold';
+            el.style.marginTop = '0.67em';
+            el.style.marginBottom = '0.67em';
+        });
+        
+        clone.querySelectorAll('h2').forEach(el => {
+            el.style.fontSize = '1.5em';
+            el.style.fontWeight = 'bold';
+            el.style.marginTop = '0.83em';
+            el.style.marginBottom = '0.83em';
+        });
+        
+        clone.querySelectorAll('h3').forEach(el => {
+            el.style.fontSize = '1.17em';
+            el.style.fontWeight = 'bold';
+            el.style.marginTop = '1em';
+            el.style.marginBottom = '1em';
+        });
+        
+        clone.querySelectorAll('h4').forEach(el => {
+            el.style.fontSize = '1em';
+            el.style.fontWeight = 'bold';
+            el.style.marginTop = '1.33em';
+            el.style.marginBottom = '1.33em';
+        });
+        
+        clone.querySelectorAll('h5').forEach(el => {
+            el.style.fontSize = '0.83em';
+            el.style.fontWeight = 'bold';
+            el.style.marginTop = '1.67em';
+            el.style.marginBottom = '1.67em';
+        });
+        
+        clone.querySelectorAll('h6').forEach(el => {
+            el.style.fontSize = '0.67em';
+            el.style.fontWeight = 'bold';
+            el.style.marginTop = '2.33em';
+            el.style.marginBottom = '2.33em';
+        });
+        
+        clone.querySelectorAll('blockquote').forEach(el => {
+            el.style.borderLeft = '4px solid #ddd';
+            el.style.marginLeft = '0';
+            el.style.paddingLeft = '1em';
+            el.style.color = '#666';
+        });
+        
+        clone.querySelectorAll('hr').forEach(el => {
+            el.style.border = 'none';
+            el.style.borderTop = '1px solid #ccc';
+            el.style.margin = '1em 0';
+        });
+        
+        // 1.3 Tables - add inline styles
+        clone.querySelectorAll('table').forEach(table => {
+            table.style.borderCollapse = 'collapse';
+            table.style.width = '100%';
+            table.style.marginBottom = '1em';
+        });
+        
+        clone.querySelectorAll('th').forEach(th => {
+            th.style.border = '1px solid #ccc';
+            th.style.padding = '8px';
+            th.style.textAlign = 'left';
+            th.style.backgroundColor = '#f0f0f0';
+            th.style.fontWeight = 'bold';
+        });
+        
+        clone.querySelectorAll('td').forEach(td => {
+            td.style.border = '1px solid #ccc';
+            td.style.padding = '8px';
+            td.style.textAlign = 'left';
+        });
+        
+        // 1.4 Links - add inline styles
+        clone.querySelectorAll('a').forEach(a => {
+            a.style.color = '#0066cc';
+            a.style.textDecoration = 'underline';
+        });
+        
+        // Process code blocks - wrap in table like squibview
+        clone.querySelectorAll('pre code').forEach(block => {
+            const pre = block.parentElement;
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+            table.style.border = 'none';
+            table.style.marginBottom = '1em';
+            
+            const tr = document.createElement('tr');
+            const td = document.createElement('td');
+            td.style.backgroundColor = '#f7f7f7';
+            td.style.padding = '12px';
+            td.style.fontFamily = 'Consolas, Monaco, "Courier New", monospace';
+            td.style.fontSize = '14px';
+            td.style.lineHeight = '1.4';
+            td.style.whiteSpace = 'pre';
+            td.style.overflowX = 'auto';
+            td.style.border = '1px solid #ddd';
+            td.style.borderRadius = '4px';
+            
+            // Move the formatted code content
+            td.innerHTML = block.innerHTML;
+            
+            tr.appendChild(td);
+            table.appendChild(tr);
+            
+            // Replace the pre element with the table
+            pre.parentNode.replaceChild(table, pre);
+        });
+        
+        // Process images - convert to data URLs
+        const images = clone.querySelectorAll('img');
+        for (const img of images) {
+            // Skip if already a data URL
+            if (img.src && !img.src.startsWith('data:')) {
+                try {
+                    // Try to convert to data URL
+                    const response = await fetch(img.src);
+                    const blob = await response.blob();
+                    const dataUrl = await new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                    img.src = dataUrl;
+                } catch (err) {
+                    console.warn('Failed to convert image to data URL:', img.src, err);
+                    // Keep original src if conversion fails
+                }
+            }
+        }
+        
+        // Phase 2: Process fence block types
         // 1. Process STL 3D models - convert canvas to image or placeholder
         const stlContainers = clone.querySelectorAll('.qde-stl-container');
         for (const container of stlContainers) {
