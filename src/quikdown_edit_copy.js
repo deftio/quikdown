@@ -563,102 +563,108 @@ export async function getRenderedContent(previewPanel) {
             }
         }
         
-        // 5. Process Math equations - convert to PNG images (like squibview)
-        const mathElements = Array.from(clone.querySelectorAll('.qde-math-container, .math-display, .katex'));
+        // 5. Process Math equations - convert to PNG images
+        // KaTeX uses HTML+CSS, MathJax can use SVG
+        const mathElements = Array.from(clone.querySelectorAll('.qde-math-container'));
         for (const mathEl of mathElements) {
             try {
+                // Check if there's an SVG (MathJax uses SVG)
                 const svg = mathEl.querySelector('svg');
-                if (!svg) {
-                    console.warn('No SVG found in math element, skipping');
-                    continue;
-                }
                 
-                // Convert SVG to PNG data URL using squibview's approach
-                const serializer = new XMLSerializer();
-                const svgStr = serializer.serializeToString(svg);
-                const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-                const url = URL.createObjectURL(svgBlob);
-                
-                const img = new Image();
-                const dataUrl = await new Promise((resolve, reject) => {
-                    img.onload = function () {
-                        const canvas = document.createElement('canvas');
-                        
-                        // Try different approaches to get SVG dimensions
-                        let width, height;
-                        try {
-                            // First try baseVal.value (works for absolute units)
-                            width = svg.width.baseVal.value;
-                            height = svg.height.baseVal.value;
-                        } catch (e) {
-                            // Fallback for relative units - use viewBox or rendered size
-                            if (svg.viewBox && svg.viewBox.baseVal) {
-                                width = svg.viewBox.baseVal.width;
-                                height = svg.viewBox.baseVal.height;
-                            } else {
-                                // Use the natural size of the loaded image
-                                width = img.naturalWidth || img.width || 200;
-                                height = img.naturalHeight || img.height || 50;
+                if (svg) {
+                    // Handle SVG-based math (MathJax)
+                    const serializer = new XMLSerializer();
+                    const svgStr = serializer.serializeToString(svg);
+                    const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
+                    const url = URL.createObjectURL(svgBlob);
+                    
+                    const img = new Image();
+                    const dataUrl = await new Promise((resolve, reject) => {
+                        img.onload = function () {
+                            const canvas = document.createElement('canvas');
+                            
+                            // Try different approaches to get SVG dimensions
+                            let width, height;
+                            try {
+                                width = svg.width.baseVal.value;
+                                height = svg.height.baseVal.value;
+                            } catch (e) {
+                                if (svg.viewBox && svg.viewBox.baseVal) {
+                                    width = svg.viewBox.baseVal.width;
+                                    height = svg.viewBox.baseVal.height;
+                                } else {
+                                    width = img.naturalWidth || img.width || 200;
+                                    height = img.naturalHeight || img.height || 50;
+                                }
                             }
-                        }
+                            
+                            // Scale down math images
+                            const targetMaxWidth = 300;
+                            const targetMaxHeight = 100;
+                            let scaleFactor = 0.10;
+                            
+                            const scaledWidth = width * scaleFactor;
+                            const scaledHeight = height * scaleFactor;
+                            
+                            if (scaledWidth > targetMaxWidth || scaledHeight > targetMaxHeight) {
+                                const scaleX = targetMaxWidth / scaledWidth;
+                                const scaleY = targetMaxHeight / scaledHeight;
+                                scaleFactor *= Math.min(scaleX, scaleY);
+                            }
+                            
+                            width *= scaleFactor;
+                            height *= scaleFactor;
+                            
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            
+                            // White background
+                            ctx.fillStyle = "#FFFFFF";
+                            ctx.fillRect(0, 0, canvas.width, canvas.height);
+                            
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            URL.revokeObjectURL(url);
+                            resolve(canvas.toDataURL('image/png'));
+                        };
                         
-                        // Scale down math images to reasonable size for documents
-                        // MathJax/KaTeX SVGs often have large coordinate systems
-                        const targetMaxWidth = 300;   // Target max width for math images  
-                        const targetMaxHeight = 100;  // Target max height for math images
+                        img.onerror = () => {
+                            URL.revokeObjectURL(url);
+                            reject(new Error('Failed to load SVG image'));
+                        };
                         
-                        // Apply a base scale factor for math SVGs which tend to be oversized
-                        let scaleFactor = 0.10; // Start with a smaller base scale
-                        
-                        // If still too large after base scaling, scale down further
-                        const scaledWidth = width * scaleFactor;
-                        const scaledHeight = height * scaleFactor;
-                        
-                        if (scaledWidth > targetMaxWidth || scaledHeight > targetMaxHeight) {
-                            const scaleX = targetMaxWidth / scaledWidth;
-                            const scaleY = targetMaxHeight / scaledHeight;
-                            scaleFactor *= Math.min(scaleX, scaleY);
-                        }
-                        
-                        width *= scaleFactor;
-                        height *= scaleFactor;
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // White background for math
-                        ctx.fillStyle = "#FFFFFF";
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        
-                        // Draw the SVG image
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
-                        // Clean up URL
-                        URL.revokeObjectURL(url);
-                        
-                        // Return data URL
-                        resolve(canvas.toDataURL('image/png'));
-                    };
+                        img.src = url;
+                    });
                     
-                    img.onerror = () => {
-                        URL.revokeObjectURL(url);
-                        reject(new Error('Failed to load SVG image'));
-                    };
+                    const replacementImg = document.createElement('img');
+                    replacementImg.src = dataUrl;
+                    replacementImg.style.verticalAlign = 'middle';
+                    replacementImg.style.margin = '0.5em';
+                    replacementImg.alt = 'Math equation';
+                    replacementImg.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
                     
-                    img.src = url;
-                });
-                
-                // Create replacement image element
-                const replacementImg = document.createElement('img');
-                replacementImg.src = dataUrl;
-                replacementImg.style.verticalAlign = 'middle';
-                replacementImg.style.margin = '0.5em';
-                replacementImg.alt = 'Math equation';
-                replacementImg.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
-                
-                // Replace the math element with the image
-                mathEl.parentNode.replaceChild(replacementImg, mathEl);
+                    mathEl.parentNode.replaceChild(replacementImg, mathEl);
+                } else {
+                    // Handle HTML-based math (KaTeX) - use html2canvas approach
+                    // For now, add inline styles to make it copy better
+                    const katexEl = mathEl.querySelector('.katex');
+                    if (katexEl) {
+                        // Add inline styles for better copying
+                        katexEl.style.fontSize = '1.21em';
+                        katexEl.style.textAlign = 'center';
+                        katexEl.style.margin = '0.5em';
+                        katexEl.style.display = 'inline-block';
+                        
+                        // Make sure all child elements have proper styles
+                        katexEl.querySelectorAll('*').forEach(el => {
+                            const computed = window.getComputedStyle(el);
+                            if (computed.fontFamily) el.style.fontFamily = computed.fontFamily;
+                            if (computed.fontSize) el.style.fontSize = computed.fontSize;
+                            if (computed.fontStyle) el.style.fontStyle = computed.fontStyle;
+                            if (computed.fontWeight) el.style.fontWeight = computed.fontWeight;
+                        });
+                    }
+                }
                 
             } catch (error) {
                 console.error('Failed to convert math element:', error);
