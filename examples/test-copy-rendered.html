@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Copy Rendered Content</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        #editor {
+            height: 500px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .test-section {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .test-button {
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .test-button:hover {
+            background: #218838;
+        }
+        
+        #output {
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Copy Rendered Content</h1>
+    
+    <p>This tests the new copy functionality for rendered text content (plain text without HTML tags).</p>
+    
+    <div id="editor"></div>
+    
+    <div class="test-section">
+        <h3>Test Copy Functions</h3>
+        <p>Click these buttons to test the copy functionality programmatically:</p>
+        
+        <button class="test-button" onclick="testCopyMarkdown()">Copy Markdown (API)</button>
+        <button class="test-button" onclick="testCopyHTML()">Copy HTML (API)</button>
+        <button class="test-button" onclick="testCopyText()">Copy Rendered Text (API)</button>
+        <button class="test-button" onclick="testGetText()">Get Text (API)</button>
+        
+        <h4>Output:</h4>
+        <div id="output">Click a button to see the output...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>Toolbar Buttons</h3>
+        <p>The toolbar above should have three copy buttons:</p>
+        <ul>
+            <li><strong>Copy MD</strong> - Copies the markdown source</li>
+            <li><strong>Copy HTML</strong> - Copies the HTML output</li>
+            <li><strong>Copy Text</strong> - Copies the rendered text (NEW!)</li>
+        </ul>
+        <p>Try them and then paste somewhere to verify they work correctly.</p>
+    </div>
+    
+    <script type="module">
+        import QuikdownEditor from '../dist/quikdown_edit.esm.js';
+        
+        // Create editor instance
+        const editor = new QuikdownEditor('#editor', {
+            mode: 'split',
+            showRemoveHR: true,
+            plugins: { 
+                highlightjs: true 
+            }
+        });
+        
+        // Set sample content with various elements
+        const sampleContent = `# Test Document
+
+This is a **paragraph** with *various* formatting.
+
+## Code Example
+
+\`\`\`javascript
+function hello() {
+    console.log("Hello World!");
+}
+\`\`\`
+
+## List Example
+
+- Item 1
+- Item 2
+  - Nested item
+  
+## Table
+
+| Column 1 | Column 2 |
+|----------|----------|
+| Data 1   | Data 2   |
+
+## Links
+
+Check out [GitHub](https://github.com) for more.`;
+        
+        editor.setMarkdown(sampleContent);
+        
+        // Make functions available globally for onclick handlers
+        window.editor = editor;
+        
+        window.testCopyMarkdown = async function() {
+            const output = document.getElementById('output');
+            try {
+                const content = editor.getMarkdown();
+                const success = await editor.copyToClipboard('markdown');
+                output.textContent = `Copy Markdown: ${success ? 'SUCCESS ✓' : 'FAILED ✗'}\n\nContent (${content.length} chars):\n${content}`;
+                
+                if (success) {
+                    output.style.borderLeft = '4px solid #28a745';
+                    // Also try to paste to show it worked
+                    try {
+                        const clipboardText = await navigator.clipboard.readText();
+                        output.textContent += `\n\n--- FROM CLIPBOARD ---\n${clipboardText}`;
+                    } catch(e) {
+                        output.textContent += '\n\n(Clipboard read not allowed - but copy worked! Try pasting elsewhere)';
+                    }
+                } else {
+                    output.style.borderLeft = '4px solid #dc3545';
+                }
+            } catch(err) {
+                output.textContent = `Error: ${err.message}`;
+                output.style.borderLeft = '4px solid #dc3545';
+            }
+        };
+        
+        window.testCopyHTML = async function() {
+            const output = document.getElementById('output');
+            try {
+                const content = editor.getHTML();
+                const success = await editor.copyToClipboard('html');
+                output.textContent = `Copy HTML: ${success ? 'SUCCESS ✓' : 'FAILED ✗'}\n\nContent (${content.length} chars):\n${content.substring(0, 500)}${content.length > 500 ? '...' : ''}`;
+                
+                if (success) {
+                    output.style.borderLeft = '4px solid #28a745';
+                    output.textContent += '\n\n(HTML copied! Try pasting elsewhere to see it)';
+                } else {
+                    output.style.borderLeft = '4px solid #dc3545';
+                }
+            } catch(err) {
+                output.textContent = `Error: ${err.message}`;
+                output.style.borderLeft = '4px solid #dc3545';
+            }
+        };
+        
+        window.testCopyText = async function() {
+            const output = document.getElementById('output');
+            try {
+                const content = editor.getText();
+                const success = await editor.copyToClipboard('text');
+                output.textContent = `Copy Rendered Text: ${success ? 'SUCCESS ✓' : 'FAILED ✗'}\n\nContent (${content.length} chars):\n${content}`;
+                
+                if (success) {
+                    output.style.borderLeft = '4px solid #28a745';
+                    // Also try to paste to show it worked
+                    try {
+                        const clipboardText = await navigator.clipboard.readText();
+                        output.textContent += `\n\n--- FROM CLIPBOARD ---\n${clipboardText}`;
+                    } catch(e) {
+                        output.textContent += '\n\n(Clipboard read not allowed - but copy worked! Try pasting elsewhere)';
+                    }
+                } else {
+                    output.style.borderLeft = '4px solid #dc3545';
+                }
+            } catch(err) {
+                output.textContent = `Error: ${err.message}`;
+                output.style.borderLeft = '4px solid #dc3545';
+            }
+        };
+        
+        window.testGetText = function() {
+            const output = document.getElementById('output');
+            const content = editor.getText();
+            output.textContent = `Get Text (no copy):\n\nContent (${content.length} chars):\n${content}`;
+        };
+    </script>
+</body>
+</html>

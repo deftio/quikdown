@@ -3,20 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>quikdown - Live Demo</title>
-    <meta name="description" content="Try quikdown - A lightweight markdown parser with plugin support">
+    <title>quikdown Parser - Live Demo</title>
+    <meta name="description" content="Try quikdown parser - A lightweight markdown to HTML converter with plugin support">
     <link rel="icon" href="../favicon.svg" type="image/svg+xml">
     
     <!-- QuikDown theme CSS files -->
     <link rel="stylesheet" href="../dist/quikdown.light.css">
     <link rel="stylesheet" href="../dist/quikdown.dark.css">
     
-    <!-- Highlight.js for syntax highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    
-    <!-- Mermaid for diagrams -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <!-- Libraries will be lazy-loaded when needed -->
     
     <style>
         * {
@@ -403,6 +398,9 @@
         <div class="header-left">
             <h1 style="font-size: 34pt; color:#9550bb">quikdown</h1>
             <span class="version">v1.0.5dev1</span>
+            <div style="margin-left: 1rem; font-size: 0.9rem; color: #666;">
+                Parser Demo | <a href="./qde/" style="color: #9550bb; text-decoration: underline;">Try the Editor →</a>
+            </div>
         </div>
         <div class="header-links">
             <a href="https://github.com/deftio/quikdown" target="_blank">GitHub</a>
@@ -492,18 +490,131 @@
             return text.replace(/[&<>"']/g, m => map[m]);
         }
         
-        // Initialize Mermaid
-        mermaid.initialize({ 
-            startOnLoad: false,
-            theme: 'default',
-            flowchart: {
-                useMaxWidth: true,
-                htmlLabels: true
-            }
-        });
+        // Libraries state
+        let pluginsLoaded = {
+            hljs: false,
+            mermaid: false
+        };
         
-        // Example content
-        const examples = {
+        // Load script dynamically
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        
+        // Load CSS dynamically
+        function loadCSS(href) {
+            return new Promise((resolve) => {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = href;
+                link.onload = resolve;
+                document.head.appendChild(link);
+                // Resolve anyway after timeout
+                setTimeout(resolve, 1000);
+            });
+        }
+        
+        // Lazy load highlight.js
+        async function ensureHighlightJS() {
+            if (pluginsLoaded.hljs || window.hljs) {
+                pluginsLoaded.hljs = true;
+                return true;
+            }
+            
+            try {
+                await Promise.all([
+                    loadScript('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js'),
+                    loadCSS('https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css')
+                ]);
+                pluginsLoaded.hljs = true;
+                return true;
+            } catch (err) {
+                console.error('Failed to load highlight.js:', err);
+                return false;
+            }
+        }
+        
+        // Lazy load mermaid
+        async function ensureMermaid() {
+            if (pluginsLoaded.mermaid || window.mermaid) {
+                pluginsLoaded.mermaid = true;
+                if (window.mermaid && !window.mermaid.initialized) {
+                    mermaid.initialize({ 
+                        startOnLoad: false,
+                        theme: 'default',
+                        flowchart: {
+                            useMaxWidth: true,
+                            htmlLabels: true
+                        }
+                    });
+                    window.mermaid.initialized = true;
+                }
+                return true;
+            }
+            
+            try {
+                await loadScript('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js');
+                if (window.mermaid) {
+                    mermaid.initialize({ 
+                        startOnLoad: false,
+                        theme: 'default',
+                        flowchart: {
+                            useMaxWidth: true,
+                            htmlLabels: true
+                        }
+                    });
+                    window.mermaid.initialized = true;
+                }
+                pluginsLoaded.mermaid = true;
+                return true;
+            } catch (err) {
+                console.error('Failed to load mermaid:', err);
+                return false;
+            }
+        }
+        
+        // Example content loaded from files
+        const examples = {};
+        
+        // Load example files
+        async function loadExamples() {
+            const exampleFiles = {
+                comprehensive: 'sample-comprehensive.md',
+                basic: 'sample-basic.md',
+                fence: 'sample-fence.md',
+                tables: 'sample-tables.md',
+                tasks: 'sample-tasks.md',
+                lazy: 'sample-lazy.md',
+                bidirectional: 'sample-bidirectional.md',
+                security: 'sample-security.md'
+            };
+            
+            for (const [key, file] of Object.entries(exampleFiles)) {
+                try {
+                    const response = await fetch(file);
+                    if (response.ok) {
+                        examples[key] = await response.text();
+                    }
+                } catch (err) {
+                    console.error(`Failed to load ${file}:`, err);
+                }
+            }
+            
+            // If comprehensive example loaded, use it as default
+            if (examples.comprehensive) {
+                document.getElementById('markdown-input').value = examples.comprehensive;
+                render('markdown');
+            }
+        }
+        
+        // Fallback examples if files can't be loaded
+        const fallbackExamples = {
             comprehensive: `# Welcome to quikdown! 🚀
 
 A **lightweight**, *fast* markdown parser with plugin support and built-in XSS protection.
@@ -521,11 +632,12 @@ A **lightweight**, *fast* markdown parser with plugin support and built-in XSS p
 You can use **bold**, *italic*, ~~strikethrough~~, and \`inline code\`.
 Combine them for ***bold italic*** text!
 
-### Links and Autolinks
+### Links, Images and Autolinks
 
 - Regular link: [GitHub Repository](https://github.com/deftio/quikdown)
 - Autolink: https://npmjs.com/package/quikdown
-- Images: ![Badge](https://img.shields.io/badge/quikdown-awesome-aqua)  
+- Badge: ![Badge](https://img.shields.io/badge/quikdown-awesome-aqua)
+- Example Image: ![Palm Tree](https://deftio.github.io/squibview/examples/palm.png)  
 
 ## 📊 Tables Without Trailing Pipes
 
@@ -633,7 +745,8 @@ This is \`inline code\`.
 ## Links and Images
 
 [Visit GitHub](https://github.com)  
-![Placeholder Image](./palm.png)
+![Palm Tree](https://deftio.github.io/squibview/examples/palm.png)  
+![Badge Example](https://img.shields.io/badge/markdown-supported-green)
 
 ## Blockquotes
 
@@ -1013,62 +1126,121 @@ All the above are rendered as escaped text, not executable HTML.
 > Remember: Security by default, opt-in for trusted content!`
         };
         
-        // Fence plugin for syntax highlighting and mermaid
-        function fencePlugin(code, language) {
-            if (!document.getElementById('enable-plugins').checked) {
-                return undefined; // Use default rendering
-            }
-            
-            const bidirectional = document.getElementById('bidirectional').checked;
-            
-            if (language === 'mermaid') {
-                const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-                // Escape the code for the data attribute
-                const escapedCode = code.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                
-                // Store the content to render after DOM update
-                setTimeout(() => {
-                    const element = document.getElementById(id);
-                    if (element && element.parentElement) {
-                        mermaid.render(id + '-svg', code).then(result => {
-                            // Keep the pre element but update its content
-                            element.innerHTML = result.svg;
-                        }).catch(err => {
-                            console.error('Mermaid render error:', err);
-                            element.innerHTML = `<div class="error-badge">Mermaid error: ${err.message}</div>`;
-                        });
-                    }
-                }, 0);
-                
-                // For bidirectional, preserve the original markdown in data attributes
-                if (bidirectional) {
-                    return `<div class="mermaid-container" data-qd-fence="\`\`\`" data-qd-lang="mermaid">
-                        <pre class="mermaid" id="${id}" data-qd-source="${escapedCode}">Loading diagram...</pre>
-                    </div>`;
-                } else {
-                    return `<div class="mermaid" id="${id}">Loading diagram...</div>`;
+        // Fence plugin object for syntax highlighting and mermaid
+        const fencePlugin = {
+            render: function(code, language) {
+                if (!document.getElementById('enable-plugins').checked) {
+                    return undefined; // Use default rendering
                 }
-            }
-            
-            if (language && hljs.getLanguage(language)) {
-                try {
-                    const highlighted = hljs.highlight(code, { language }).value;
-                    // For bidirectional, let quikdown handle the attributes
+                
+                const bidirectional = document.getElementById('bidirectional').checked;
+                
+                if (language === 'mermaid') {
+                    const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+                    // Load mermaid if needed (async but we return placeholder)
+                    ensureMermaid().then(loaded => {
+                        if (!loaded) {
+                            const element = document.getElementById(id);
+                            if (element) {
+                                element.innerHTML = '<pre class="error">Failed to load Mermaid library</pre>';
+                            }
+                        }
+                    });
+                    // Escape the code for the data attribute
+                    const escapedCode = code.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    
+                    // Store the content to render after DOM update
+                    setTimeout(() => {
+                        const element = document.getElementById(id);
+                        if (element && element.parentElement && window.mermaid) {
+                            mermaid.render(id + '-svg', code).then(result => {
+                                // Keep the pre element but update its content
+                                element.innerHTML = result.svg;
+                            }).catch(err => {
+                                console.error('Mermaid render error:', err);
+                                element.innerHTML = `<div class="error-badge">Mermaid error: ${err.message}</div>`;
+                            });
+                        }
+                    }, 0);
+                    
+                    // For bidirectional, preserve the original markdown in data attributes
                     if (bidirectional) {
-                        // Return undefined to let quikdown handle it with proper data-qd attributes
-                        // but only if we want highlighting applied by quikdown's default
-                        // Instead, we'll apply highlighting but preserve structure
-                        return `<pre data-qd-fence="\`\`\`" data-qd-lang="${language}"><code class="hljs language-${language}">${highlighted}</code></pre>`;
+                        return `<div class="mermaid-container" data-qd-fence="\`\`\`" data-qd-lang="mermaid">
+                            <pre class="mermaid" id="${id}" data-qd-source="${escapedCode}">Loading diagram...</pre>
+                        </div>`;
                     } else {
-                        return `<pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>`;
+                        return `<div class="mermaid" id="${id}">Loading diagram...</div>`;
                     }
-                } catch (err) {
-                    // Fall back to default
                 }
-            }
+                
+                if (language) {
+                    // Try to use highlight.js if already loaded
+                    if (window.hljs && hljs.getLanguage(language)) {
+                        try {
+                            const highlighted = hljs.highlight(code, { language }).value;
+                            // For bidirectional, let quikdown handle the attributes
+                            if (bidirectional) {
+                                // For bidirectional, preserve the data-qd-source attribute
+                                const escapedCode = code.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${language}" data-qd-source="${escapedCode}"><code class="hljs language-${language}">${highlighted}</code></pre>`;
+                            } else {
+                                return `<pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>`;
+                            }
+                        } catch (err) {
+                            // Fall back to default
+                        }
+                    }
+                    
+                    // If not loaded, lazy load it and update later
+                    const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
+                    ensureHighlightJS().then(loaded => {
+                        if (loaded && window.hljs && hljs.getLanguage(language)) {
+                            const element = document.getElementById(codeId);
+                            if (element) {
+                                try {
+                                    const highlighted = hljs.highlight(code, { language }).value;
+                                    element.parentElement.innerHTML = `<code class="hljs language-${language}">${highlighted}</code>`;
+                                } catch (err) {
+                                    // Keep original
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Return placeholder with ID for later update
+                    if (bidirectional) {
+                        // For bidirectional, preserve data-qd-source even without highlighting
+                        const escapedCode = code.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        return `<pre data-qd-fence="\`\`\`" data-qd-lang="${language}" data-qd-source="${escapedCode}" id="${codeId}"><code class="language-${language}">${escapeHtml(code)}</code></pre>`;
+                    } else {
+                        return `<pre id="${codeId}"><code class="language-${language}">${escapeHtml(code)}</code></pre>`;
+                    }
+                }
+                
+                return undefined; // Use default rendering
+            },
             
-            return undefined; // Use default rendering
-        }
+            // Reverse handler for converting highlighted code back to markdown
+            reverse: function(node) {
+                // Check if this is a highlighted code block
+                const codeEl = node.querySelector('code.hljs');
+                if (codeEl) {
+                    // Get the actual text content (edited by user)
+                    const content = codeEl.textContent;
+                    const lang = node.getAttribute('data-qd-lang') || '';
+                    const fence = node.getAttribute('data-qd-fence') || '```';
+                    
+                    return {
+                        content: content,
+                        lang: lang,
+                        fence: fence
+                    };
+                }
+                
+                // Not a highlighted block, return null to use default handling
+                return null;
+            }
+        };
         
         // Track if we're updating to prevent infinite loops
         let isUpdating = false;
@@ -1207,9 +1379,11 @@ All the above are rendered as escaped text, not executable HTML.
             
             try {
                 isUpdating = true;
-                // Use quikdown_bd.toMarkdown to convert back
+                // Use quikdown_bd.toMarkdown to convert back with fence_plugin
                 if (typeof quikdown_bd !== 'undefined' && quikdown_bd.toMarkdown) {
-                    const markdown = quikdown_bd.toMarkdown(htmlOutput);
+                    const markdown = quikdown_bd.toMarkdown(htmlOutput, {
+                        fence_plugin: fencePlugin  // Use the same plugin with reverse handler
+                    });
                     document.getElementById('markdown-input').value = markdown;
                     
                     // Update raw HTML display
@@ -1236,27 +1410,50 @@ All the above are rendered as escaped text, not executable HTML.
             }
         });
         
-        // Initialize with comprehensive example
-        document.getElementById('markdown-input').value = examples.comprehensive;
-        
-        // Show version
-        if (typeof quikdown !== 'undefined' && quikdown.version) {
-            document.querySelector('.version').textContent = 'v' + quikdown.version;
-        }
-        
-        // Restore theme preference and set initial theme class
-        const savedTheme = localStorage.getItem('quikdown-theme');
-        const htmlOutput = document.getElementById('html-output');
-        
-        if (savedTheme === 'dark') {
-            document.getElementById('dark-mode').checked = true;
-            htmlOutput.classList.add('quikdown-dark');
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
         } else {
-            htmlOutput.classList.add('quikdown-light');
+            initialize();
         }
         
-        // Now render with the theme applied
-        render('markdown');
+        async function initialize() {
+            // Show version
+            if (typeof quikdown !== 'undefined' && quikdown.version) {
+                document.querySelector('.version').textContent = 'v' + quikdown.version;
+            }
+            
+            // Set initial theme class BEFORE rendering
+            const savedTheme = localStorage.getItem('quikdown-theme');
+            const htmlOutput = document.getElementById('html-output');
+            
+            if (savedTheme === 'dark') {
+                document.getElementById('dark-mode').checked = true;
+                htmlOutput.classList.add('quikdown-dark');
+            } else {
+                htmlOutput.classList.add('quikdown-light');
+            }
+            
+            // Load examples from files
+            await loadExamples();
+            
+            // If no examples loaded from files, use fallbacks
+            if (Object.keys(examples).length === 0) {
+                console.log('Using fallback examples');
+                Object.assign(examples, fallbackExamples);
+            }
+            
+            // Initialize with comprehensive example
+            if (examples.comprehensive) {
+                document.getElementById('markdown-input').value = examples.comprehensive;
+                // Small delay to ensure DOM and CSS are fully ready
+                setTimeout(() => {
+                    render('markdown');
+                }, 10);
+            } else {
+                console.error('No comprehensive example found');
+            }
+        }
     </script>
 </body>
 </html>

@@ -101,6 +101,14 @@ editor.setMarkdown('# Content  \nTo be quik or not to be.');  // provide default
 const content = editor.getMarkdown(); // get source content, see APIs for getting / setting HTML 
 ```
 
+**Note:** The editor automatically lazy-loads plugin libraries from CDNs when needed:
+- **highlight.js** - Loaded when code blocks are encountered and `highlightjs: true`
+- **mermaid** - Loaded when mermaid diagrams are found and `mermaid: true`
+- **DOMPurify** - Loaded when HTML fence blocks are rendered
+- **KaTeX** - Loaded when math/tex fence blocks are encountered
+
+This keeps the initial bundle small while providing rich functionality on-demand.
+
 ## Other Configuration Options
 quikdown supports built-in styles for a "batteries included" experience or you can bring your own CSS themes.  Example css files are provided for basic light and dark themes to get started.
 

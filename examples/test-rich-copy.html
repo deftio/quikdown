@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rich Copy Test - QuikDown</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            width: 100%;
+            height: 80vh;
+        }
+        #editor-container {
+            width: 100%;
+            height: 100%;
+        }
+        .instructions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .instructions h2 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .instructions ol {
+            margin: 15px 0;
+        }
+        .instructions li {
+            margin: 10px 0;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .test-buttons button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-buttons button:hover {
+            background: #0056b3;
+        }
+        .highlight {
+            background: #ffeb3b;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        /* QuikDown Editor Styles */
+        .quikdown-editor {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .qde-toolbar {
+            display: flex;
+            justify-content: space-between;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 8px;
+        }
+        
+        .qde-btn-group {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .qde-btn {
+            padding: 6px 12px;
+            background: white;
+            color: #212529;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .qde-btn:hover {
+            background: #e9ecef;
+        }
+        
+        .qde-btn.qde-active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        .qde-panels {
+            display: flex;
+            height: 500px;
+            background: white;
+        }
+        
+        .qde-source-panel,
+        .qde-preview-panel {
+            flex: 1;
+            overflow: auto;
+            padding: 16px;
+        }
+        
+        .qde-source-panel {
+            border-right: 1px solid #dee2e6;
+            background: #fafafa;
+        }
+        
+        .qde-source {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            background: transparent;
+            padding: 0;
+        }
+        
+        .qde-preview-panel {
+            background: white;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Mode-specific styles */
+        .qde-mode-source .qde-preview-panel {
+            display: none;
+        }
+        
+        .qde-mode-source .qde-source-panel {
+            border-right: none;
+        }
+        
+        .qde-mode-preview .qde-source-panel {
+            display: none;
+        }
+        
+        .qde-mode-split .qde-source-panel,
+        .qde-mode-split .qde-preview-panel {
+            display: block;
+            flex: 1;
+        }
+        
+        /* Preview content styles */
+        .qde-preview-panel h1 { font-size: 2em; margin: 0.67em 0; }
+        .qde-preview-panel h2 { font-size: 1.5em; margin: 0.75em 0; }
+        .qde-preview-panel h3 { font-size: 1.17em; margin: 0.83em 0; }
+        .qde-preview-panel p { margin: 1em 0; }
+        .qde-preview-panel pre { background: #f4f4f4; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .qde-preview-panel code { background: #f0f0f0; padding: 2px 4px; border-radius: 2px; }
+        .qde-preview-panel table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+        .qde-preview-panel th, .qde-preview-panel td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        .qde-preview-panel th { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>🎨 Rich Copy Test - QuikDown Editor</h1>
+    <div class="instructions">
+        <h2>Testing Rich Copy to Google Docs</h2>
+        <ol style="display:none;">
+            <li>Click one of the sample buttons below to load test content</li>
+            <li>Click <span class="highlight">Copy Rendered</span> button in the editor toolbar</li>
+            <li>Open Google Docs and paste (Ctrl/Cmd+V)</li>
+            <li>You should see:
+                <ul>
+                    <li>✅ Formatted tables with borders</li>
+                    <li>✅ Images and diagrams preserved</li>
+                    <li>✅ Code blocks with formatting</li>
+                    <li>✅ Proper headings and lists</li>
+                </ul>
+            </li>
+        </ol>
+        <div class="test-buttons">
+            <button onclick="loadSampleContent().then(c => editor.setMarkdown(c))">Reload sample-rich-content.md</button>
+            <button onclick="loadSample1()">Load Basic Sample</button>
+            <button onclick="loadSample2()">Load Mermaid Diagrams</button>
+            <button onclick="loadSample3()">Load Complex Document</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="editor-container"></div>
+    </div>
+
+    <script type="module">
+        import QuikdownEditor from '../dist/quikdown_edit.esm.js';
+        
+        // Load the sample content
+        async function loadSampleContent() {
+            try {
+                const response = await fetch('sample-rich-content.md');
+                const content = await response.text();
+                return content;
+            } catch (err) {
+                console.error('Failed to load sample content:', err);
+                return '# Failed to load sample-rich-content.md\n\nPlease check that the file exists.';
+            }
+        }
+        
+        // Initialize editor with ALL plugins enabled for testing
+        const editor = new QuikdownEditor('#editor-container', {
+            mode: 'split',
+            showToolbar: true,
+            enableComplexFences: true,  // Enable CSV, Math, SVG, etc.
+            plugins: {
+                highlightjs: true,  // Enable syntax highlighting
+                mermaid: true      // Enable Mermaid diagrams
+            }
+            /*customFences: {
+                'csv': (content) => {
+                    const lines = content.trim().split('\n');
+                    if (lines.length > 0) {
+                        let html = '<table class="qde-csv-table" data-qd-lang="csv" style="width: 100%; border-collapse: collapse; margin: 10px 0;">';
+                        lines.forEach((line, idx) => {
+                            const cells = line.split(',');
+                            const tag = idx === 0 ? 'th' : 'td';
+                            const style = idx === 0 ? 
+                                'style="background: #f0f0f0; font-weight: bold; padding: 8px; border: 1px solid #ddd;"' :
+                                'style="padding: 8px; border: 1px solid #ddd;"';
+                            html += '<tr>';
+                            cells.forEach(cell => {
+                                html += `<${tag} ${style}>${cell.trim()}</${tag}>`;
+                            });
+                            html += '</tr>';
+                        });
+                        html += '</table>';
+                        return html;
+                    }
+                    return `<pre><code>${content}</code></pre>`;
+                },
+                'tsv': (content) => {
+                    const lines = content.trim().split('\n');
+                    if (lines.length > 0) {
+                        let html = '<table class="qde-csv-table" data-qd-lang="tsv" style="width: 100%; border-collapse: collapse; margin: 10px 0;">';
+                        lines.forEach((line, idx) => {
+                            const cells = line.split('\t');
+                            const tag = idx === 0 ? 'th' : 'td';
+                            const style = idx === 0 ? 
+                                'style="background: #f0f0f0; font-weight: bold; padding: 8px; border: 1px solid #ddd;"' :
+                                'style="padding: 8px; border: 1px solid #ddd;"';
+                            html += '<tr>';
+                            cells.forEach(cell => {
+                                html += `<${tag} ${style}>${cell.trim()}</${tag}>`;
+                            });
+                            html += '</tr>';
+                        });
+                        html += '</table>';
+                        return html;
+                    }
+                    return `<pre><code>${content}</code></pre>`;
+                },
+                'psv': (content) => {
+                    const lines = content.trim().split('\n');
+                    if (lines.length > 0) {
+                        let html = '<table class="qde-csv-table" data-qd-lang="psv" style="width: 100%; border-collapse: collapse; margin: 10px 0;">';
+                        lines.forEach((line, idx) => {
+                            const cells = line.split('|');
+                            const tag = idx === 0 ? 'th' : 'td';
+                            const style = idx === 0 ? 
+                                'style="background: #f0f0f0; font-weight: bold; padding: 8px; border: 1px solid #ddd;"' :
+                                'style="padding: 8px; border: 1px solid #ddd;"';
+                            html += '<tr>';
+                            cells.forEach(cell => {
+                                html += `<${tag} ${style}>${cell.trim()}</${tag}>`;
+                            });
+                            html += '</tr>';
+                        });
+                        html += '</table>';
+                        return html;
+                    }
+                    return `<pre><code>${content}</code></pre>`;
+                }
+            }*/
+        });
+        
+        // Sample loaders
+        window.loadSample1 = function() {
+            editor.setMarkdown(`# Basic Document Test
+
+## Formatted Text
+This paragraph contains **bold text**, *italic text*, and \`inline code\`. We can also use ~~strikethrough~~ for deleted text.
+
+## Table Example
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| Markdown Parser | Fast, secure parser | ✅ Complete |
+| Rich Copy | Copy with formatting | ✅ Complete |
+| Image Support | Data URL conversion | ✅ Complete |
+| Table Formatting | Proper borders in paste | ✅ Complete |
+
+## Code Block
+
+\`\`\`javascript
+// Example code with syntax highlighting
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(10)); // Output: 55
+\`\`\`
+
+## Lists
+
+### Unordered List
+- First item
+- Second item with **bold**
+- Third item with *italic*
+
+### Ordered List
+1. Step one
+2. Step two
+3. Step three
+
+## Image Test
+![QuikDown Logo](https://via.placeholder.com/400x200/007bff/ffffff?text=QuikDown+Editor)
+
+> **Note:** This blockquote should appear with proper formatting when pasted.`);
+        };
+        
+        window.loadSample2 = function() {
+            editor.setMarkdown(`# Mermaid Diagram Test
+
+## Flow Chart
+
+\`\`\`mermaid
+graph TD
+    A[Start] --> B{Is it working?}
+    B -->|Yes| C[Great!]
+    B -->|No| D[Debug]
+    D --> E[Fix Issue]
+    E --> B
+    C --> F[End]
+\`\`\`
+
+## Sequence Diagram
+
+\`\`\`mermaid
+sequenceDiagram
+    participant User
+    participant Editor
+    participant Clipboard
+    participant GoogleDocs
+    
+    User->>Editor: Click Copy Rendered
+    Editor->>Editor: Convert images to data URLs
+    Editor->>Editor: Convert SVGs to PNGs
+    Editor->>Clipboard: Write HTML + Plain text
+    User->>GoogleDocs: Paste (Ctrl+V)
+    GoogleDocs->>Clipboard: Read content
+    Clipboard-->>GoogleDocs: Formatted HTML
+    GoogleDocs-->>User: Display formatted content
+\`\`\`
+
+## Gantt Chart
+
+\`\`\`mermaid
+gantt
+    title Project Timeline
+    dateFormat  YYYY-MM-DD
+    section Development
+    Parser Implementation    :done,    des1, 2024-01-01, 30d
+    Bidirectional Support   :done,    des2, after des1, 20d
+    Rich Copy Feature       :active,  des3, after des2, 15d
+    Documentation           :         des4, after des3, 10d
+\`\`\`
+
+## Regular Content
+
+| Component | Version | Status |
+|-----------|---------|--------|
+| Core Parser | 1.1.1 | 🟢 Stable |
+| Editor | 1.1.1 | 🟢 Stable |
+| Rich Copy | 1.0.0 | 🟡 Beta |`);
+        };
+        
+        window.loadSample3 = function() {
+            editor.setMarkdown(`# Comprehensive Test Document
+
+## 1. Project Overview
+
+This document demonstrates **all features** of the QuikDown rich copy functionality. When you copy and paste this into Google Docs, everything should be properly formatted.
+
+## 2. Feature Comparison Table
+
+| Feature | Basic | Pro | Enterprise | Notes |
+|---------|-------|-----|------------|-------|
+| Users | 1 | 5 | Unlimited | Per workspace |
+| Storage | 10GB | 100GB | 1TB+ | Expandable |
+| API Access | ❌ | ✅ | ✅ | REST & GraphQL |
+| Custom Domain | ❌ | ✅ | ✅ | SSL included |
+| Priority Support | ❌ | ✅ | ✅ | 24/7 for Enterprise |
+| SSO/SAML | ❌ | ❌ | ✅ | LDAP, OAuth |
+| Audit Logs | ❌ | Limited | Full | Compliance ready |
+
+## 3. Code Examples
+
+### JavaScript Implementation
+
+\`\`\`javascript
+class MarkdownEditor {
+    constructor(container, options = {}) {
+        this.container = container;
+        this.options = {
+            mode: 'split',
+            theme: 'light',
+            plugins: [],
+            ...options
+        };
+        this.init();
+    }
+    
+    async copyRich() {
+        // Convert content to rich HTML
+        const html = await this.prepareRichHTML();
+        
+        // Write to clipboard
+        await navigator.clipboard.write([
+            new ClipboardItem({
+                'text/html': new Blob([html], { type: 'text/html' }),
+                'text/plain': new Blob([this.plainText], { type: 'text/plain' })
+            })
+        ]);
+    }
+}
+\`\`\`
+
+### Python Example
+
+\`\`\`python
+import markdown
+from typing import Dict, Any
+
+class MarkdownProcessor:
+    def __init__(self, extensions: list = None):
+        self.extensions = extensions or ['tables', 'fenced_code']
+        self.md = markdown.Markdown(extensions=self.extensions)
+    
+    def convert(self, text: str) -> str:
+        """Convert markdown to HTML"""
+        return self.md.convert(text)
+    
+    def extract_metadata(self, text: str) -> Dict[str, Any]:
+        """Extract frontmatter metadata"""
+        # Implementation here
+        pass
+\`\`\`
+
+## 4. Process Flow Diagram
+
+\`\`\`mermaid
+graph LR
+    A[Markdown Input] --> B[Parse]
+    B --> C{Has Images?}
+    C -->|Yes| D[Convert to Data URLs]
+    C -->|No| E[Process Text]
+    D --> E
+    E --> F{Has Diagrams?}
+    F -->|Yes| G[Render as PNG]
+    F -->|No| H[Generate HTML]
+    G --> H
+    H --> I[Copy to Clipboard]
+    I --> J[Paste to Google Docs]
+\`\`\`
+
+## 5. Task List & Progress
+
+- [x] Implement markdown parser
+- [x] Add bidirectional editing
+- [x] Create editor component  
+- [x] Add syntax highlighting
+- [x] Implement rich copy
+- [ ] Add spell check
+- [ ] Implement collaborative editing
+- [ ] Add version history
+
+## 6. Image Gallery
+
+### Logo
+![QuikDown](https://via.placeholder.com/300x100/007bff/ffffff?text=QuikDown)
+
+### Architecture Diagram
+![Architecture](data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='200'%3E%3Crect width='400' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23333' font-size='16'%3EArchitecture Diagram%3C/text%3E%3C/svg%3E)
+
+## 7. Performance Metrics
+
+\`\`\`mermaid
+pie title Bundle Size Distribution
+    "Core Parser" : 9.0
+    "Bidirectional" : 13.8
+    "Editor" : 43.6
+    "CSS Themes" : 4.5
+\`\`\`
+
+## 8. Conclusion
+
+> **Success Criteria:** When you paste this document into Google Docs:
+> - Tables should have proper borders and formatting
+> - Images should be embedded (not links)
+> - Code blocks should have syntax highlighting
+> - Mermaid diagrams should appear as images
+> - Lists and headings should maintain structure
+
+---
+
+*Document generated with QuikDown Editor v1.1.1*`);
+        };
+        
+        // Load the sample-rich-content.md by default
+        loadSampleContent().then(content => {
+            editor.setMarkdown(content);
+        });
+    </script>
+</body>
+</html>

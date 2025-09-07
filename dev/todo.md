@@ -8,6 +8,12 @@ A small markdown to html parser with fence plugin support
 
 ### High Priority - Missing Features:
 
+* [ ] **Add CSS module for quikdown_edit.js** - Create default styles for editor components
+  - Create `quikdown_edit.css` with styles for toolbar, panels, buttons
+  - Support both light and dark themes
+  - Make it importable alongside the JS module
+  - Consider inline style injection option for zero-dependency usage
+  - Document usage patterns (built-in styles vs custom styles)
 * [ ] Add a quikdown-cli.js standalone tool that converts markdown to html. Should support all quikdown features like inline styles or passing in your own css (assumes quikdown classes)
 * [ ] Add reverse fence call back (when toMarkdown() encounters a fence for which it can't parse, have option for callback.  This can be useful for mermaid and svg constructs for example
 * [ ] FUTURE Move to quikdown_lex as main build (move away from regex)

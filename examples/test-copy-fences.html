@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Copy with Different Fence Types</title>
+    
+    <!-- QuikDown Editor Styles -->
+    <link rel="stylesheet" href="../dist/quikdown.light.min.css">
+    
+    <!-- Mermaid for diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    
+    <!-- KaTeX for math -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        #editor-container {
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        .instructions {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        #output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Copy with Different Fence Types</h1>
+    
+    <div class="instructions">
+        <p>This page tests copying different fence types. The editor below contains examples of:</p>
+        <ul>
+            <li>Mermaid diagrams</li>
+            <li>Math equations</li>
+            <li>CSV/TSV/PSV tables</li>
+            <li>Regular code blocks</li>
+        </ul>
+        <p>Click "Copy Rendered" to copy the rendered content to clipboard, then paste somewhere to verify.</p>
+    </div>
+    
+    <div id="editor-container"></div>
+    
+    <div>
+        <button onclick="testCopy()">Copy Rendered Content</button>
+        <button onclick="testCopyAsMarkdown()">Copy as Markdown</button>
+    </div>
+    
+    <div id="output"></div>
+    
+    <script type="module">
+        import QuikdownEditor from '../dist/quikdown_edit.esm.js';
+        
+        // Initialize mermaid
+        mermaid.initialize({ startOnLoad: false });
+        
+        // Create editor instance
+        const editor = new QuikdownEditor('editor-container', {
+            theme: 'light',
+            viewMode: 'split',
+            enableCopyButtons: true,
+            customFences: {
+                mermaid: async (content, language, element) => {
+                    const id = `mermaid-${Date.now()}`;
+                    try {
+                        const { svg } = await mermaid.render(id, content);
+                        element.innerHTML = `<div class="qde-mermaid-container">${svg}</div>`;
+                        element.setAttribute('data-qd-lang', 'mermaid');
+                        element.setAttribute('data-qd-source', content);
+                        return element.innerHTML;
+                    } catch (err) {
+                        console.error('Mermaid render error:', err);
+                        return `<pre>${content}</pre>`;
+                    }
+                },
+                math: async (content, language, element) => {
+                    try {
+                        const html = katex.renderToString(content, {
+                            throwOnError: false,
+                            displayMode: true
+                        });
+                        element.innerHTML = `<div class="qde-math-container">${html}</div>`;
+                        element.setAttribute('data-qd-lang', 'math');
+                        element.setAttribute('data-qd-source', content);
+                        return element.innerHTML;
+                    } catch (e) {
+                        console.error('Math render error:', e);
+                        return `<pre>${content}</pre>`;
+                    }
+                }
+            }
+        });
+        
+        // Make editor available globally for testing
+        window.editor = editor;
+        
+        // Set initial content with various fence types
+        const testContent = `# Test Different Fence Types
+
+## 1. Mermaid Diagram
+
+\`\`\`mermaid
+graph TD
+    A[Start] --> B{Is it working?}
+    B -->|Yes| C[Great!]
+    B -->|No| D[Debug]
+    D --> A
+\`\`\`
+
+## 2. Math Equation
+
+\`\`\`math
+\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
+\`\`\`
+
+## 3. CSV Table
+
+\`\`\`csv
+Name,Age,City
+Alice,30,New York
+Bob,25,San Francisco
+Charlie,35,London
+\`\`\`
+
+## 4. TSV Table
+
+\`\`\`tsv
+Product	Price	Stock
+Laptop	999	15
+Mouse	25	100
+Keyboard	75	50
+\`\`\`
+
+## 5. Regular Code
+
+\`\`\`javascript
+function hello() {
+    console.log("Hello, World!");
+}
+\`\`\`
+
+## 6. Another Math Example
+
+\`\`\`math
+E = mc^2
+\`\`\`
+
+## Regular Text
+
+This is just regular markdown text with **bold** and *italic* formatting.`;
+        
+        editor.setMarkdown(testContent);
+        
+        // Test copy function
+        window.testCopy = async function() {
+            const output = document.getElementById('output');
+            try {
+                await editor.copyRendered();
+                output.innerHTML = '<strong>✓ Content copied!</strong> Now paste it somewhere to verify. Check console for details.';
+                console.log('Copy succeeded!');
+            } catch (error) {
+                output.innerHTML = `<strong style="color: red;">✗ Copy failed:</strong> ${error.message}`;
+                console.error('Copy failed:', error);
+            }
+        };
+        
+        window.testCopyAsMarkdown = async function() {
+            const output = document.getElementById('output');
+            try {
+                await editor.copyAsMarkdown();
+                output.innerHTML = '<strong>✓ Markdown copied!</strong> Paste to see the markdown source.';
+            } catch (error) {
+                output.innerHTML = `<strong style="color: red;">✗ Copy failed:</strong> ${error.message}`;
+                console.error('Copy failed:', error);
+            }
+        };
+    </script>
+</body>
+</html>

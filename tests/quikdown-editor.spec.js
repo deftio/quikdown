@@ -178,6 +178,31 @@ test.describe('QuikdownEditor E2E Tests', () => {
             expect(sourceContent).toContain('**Bold text**');
             expect(sourceContent).toContain('and more');
         });
+
+        test('should handle syntax-highlighted code reverse editing', async () => {
+            const sourceTextarea = await page.locator('.qde-textarea');
+            const preview = await page.locator('.qde-preview');
+            
+            // Set initial code with syntax highlighting
+            const codeFence = '```javascript\nfunction hello() {\n  console.log("Hello");\n}\n```';
+            await sourceTextarea.fill(codeFence);
+            await page.waitForTimeout(400);
+            
+            // Edit the code in preview
+            const codeBlock = await preview.locator('pre[data-qd-lang="javascript"] code').first();
+            await codeBlock.click();
+            
+            // Select all and replace
+            await page.keyboard.press('Control+a');
+            await page.keyboard.type('const greeting = "Hi";');
+            await page.waitForTimeout(400);
+            
+            // Check source updated with new code
+            const sourceContent = await sourceTextarea.inputValue();
+            expect(sourceContent).toContain('```javascript');
+            expect(sourceContent).toContain('const greeting = "Hi";');
+            expect(sourceContent).not.toContain('function hello()');
+        });
     });
 
     test.describe('Fence Plugins', () => {
@@ -269,6 +294,89 @@ test.describe('QuikdownEditor E2E Tests', () => {
             // Check JSON rendered
             await expect(preview.locator('.qde-json')).toBeVisible();
             await expect(preview.locator('pre')).toContainText('"name"');
+        });
+
+        test('should render TSV fence as table', async () => {
+            const sourceTextarea = await page.locator('.qde-textarea');
+            const preview = await page.locator('.qde-preview');
+            
+            const tsvFence = '```tsv\nName\tAge\tCity\nAlice\t30\tNYC\nBob\t25\tLA\n```';
+            await sourceTextarea.fill(tsvFence);
+            await page.waitForTimeout(400);
+            
+            // Check table rendered with TSV data
+            await expect(preview.locator('table.qde-csv-table')).toBeVisible();
+            await expect(preview.locator('th')).toContainText('Name');
+            await expect(preview.locator('td')).toContainText('Alice');
+        });
+
+        test('should render PSV fence as table', async () => {
+            const sourceTextarea = await page.locator('.qde-textarea');
+            const preview = await page.locator('.qde-preview');
+            
+            const psvFence = '```psv\nName|Age|City\nAlice|30|NYC\nBob|25|LA\n```';
+            await sourceTextarea.fill(psvFence);
+            await page.waitForTimeout(400);
+            
+            // Check table rendered with PSV data
+            await expect(preview.locator('table.qde-csv-table')).toBeVisible();
+            await expect(preview.locator('th')).toContainText('Name');
+            await expect(preview.locator('td')).toContainText('Alice');
+        });
+
+        test('should render Mermaid diagrams', async () => {
+            const sourceTextarea = await page.locator('.qde-textarea');
+            const preview = await page.locator('.qde-preview');
+            
+            const mermaidFence = '```mermaid\ngraph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[End]\n  B -->|No| D[Continue]\n```';
+            await sourceTextarea.fill(mermaidFence);
+            await page.waitForTimeout(400);
+            
+            // Check Mermaid container rendered
+            await expect(preview.locator('.mermaid')).toBeVisible();
+            // Mermaid content should be preserved
+            const preElement = await preview.locator('pre[data-qd-lang="mermaid"]');
+            await expect(preElement).toBeVisible();
+        });
+
+        test('should render GeoJSON maps', async () => {
+            const sourceTextarea = await page.locator('.qde-textarea');
+            const preview = await page.locator('.qde-preview');
+            
+            const geojsonFence = '```geojson\n{\n  "type": "Point",\n  "coordinates": [-122.4, 37.8]\n}\n```';
+            await sourceTextarea.fill(geojsonFence);
+            await page.waitForTimeout(600); // Longer wait for library loading
+            
+            // Check GeoJSON container rendered
+            const mapContainer = await preview.locator('.qde-geojson-container, [id^="qde-geojson-map-"]');
+            await expect(mapContainer).toBeVisible();
+        });
+
+        test('should render STL 3D models', async () => {
+            const sourceTextarea = await page.locator('.qde-textarea');
+            const preview = await page.locator('.qde-preview');
+            
+            // Simple ASCII STL format
+            const stlFence = '```stl\nsolid cube\n  facet normal 0 0 1\n    outer loop\n      vertex 0 0 0\n      vertex 1 0 0\n      vertex 1 1 0\n    endloop\n  endfacet\nendsolid cube\n```';
+            await sourceTextarea.fill(stlFence);
+            await page.waitForTimeout(600); // Longer wait for Three.js loading
+            
+            // Check STL container rendered
+            const stlContainer = await preview.locator('.qde-stl-container, [id^="qde-stl-viewer-"]');
+            await expect(stlContainer).toBeVisible();
+        });
+
+        test('should render HTML fence', async () => {
+            const sourceTextarea = await page.locator('.qde-textarea');
+            const preview = await page.locator('.qde-preview');
+            
+            const htmlFence = '```html\n<div class="test-html">\n  <h2>HTML Content</h2>\n  <p>This is rendered HTML</p>\n</div>\n```';
+            await sourceTextarea.fill(htmlFence);
+            await page.waitForTimeout(400);
+            
+            // Check HTML is rendered (not escaped)
+            await expect(preview.locator('.test-html')).toBeVisible();
+            await expect(preview.locator('.test-html h2')).toContainText('HTML Content');
         });
     });
 

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Editable Code Blocks</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        #editor {
+            height: 600px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .instructions {
+            background: #e8f4fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background: #e8f5e9;
+            border-left-color: #4caf50;
+        }
+        
+        .warning {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+        }
+        
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test Editable Code Blocks with Syntax Highlighting</h1>
+    
+    <div class="instructions">
+        <strong>Test Instructions:</strong>
+        <ol>
+            <li>The code block below should have syntax highlighting (colored keywords)</li>
+            <li>Click in the code block on the RIGHT side (rendered view)</li>
+            <li>Edit the code - change "Hello World" to something else</li>
+            <li>The LEFT side (markdown source) should update automatically</li>
+            <li>The syntax highlighting should remain intact</li>
+        </ol>
+    </div>
+    
+    <div id="editor"></div>
+    
+    <div id="status">
+        <strong>Status Log:</strong><br>
+    </div>
+    
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+        
+        const statusEl = document.getElementById('status');
+        
+        function log(msg, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'success' ? 'green' : type === 'error' ? 'red' : 'blue';
+            statusEl.innerHTML += `<span style="color: ${color}">[${timestamp}] ${msg}</span><br>`;
+            statusEl.scrollTop = statusEl.scrollHeight;
+        }
+        
+        log('Initializing editor...');
+        
+        const editor = new QuikdownEditor('#editor', { 
+            mode: 'split',
+            plugins: { 
+                highlightjs: true
+            },
+            onChange: (markdown, html) => {
+                // Check if the markdown contains our test string
+                if (markdown.includes('console.log')) {
+                    const match = markdown.match(/console\.log\("(.+?)"\)/);
+                    if (match) {
+                        log(`Markdown updated: console.log("${match[1]}")`, 'success');
+                    }
+                }
+            }
+        });
+        
+        const testContent = `# Editable Code Block Test
+
+## JavaScript Code Block
+
+Edit the text inside the quotes below in the rendered view (right side):
+
+\`\`\`javascript
+function greet() {
+    // Try editing the text in quotes below
+    console.log("Hello World");
+    return 42;
+}
+
+greet();
+\`\`\`
+
+## Expected Behavior
+
+1. ✅ Code should be syntax highlighted (colored)
+2. ✅ Code should be editable in the rendered view
+3. ✅ Changes should sync to the markdown source
+4. ✅ Syntax highlighting should be preserved
+
+## Other Code Examples
+
+\`\`\`python
+def test():
+    print("Edit this too!")
+    return True
+\`\`\`
+
+\`\`\`json
+{
+    "message": "This should also be editable",
+    "success": true
+}
+\`\`\``;
+        
+        editor.setMarkdown(testContent);
+        log('Editor initialized with test content');
+        
+        // Check for highlight.js after a delay
+        setTimeout(() => {
+            if (window.hljs) {
+                log('✓ highlight.js loaded successfully', 'success');
+                
+                // Check if code blocks are properly set up
+                const codeBlocks = document.querySelectorAll('.qde-preview pre[data-qd-lang]');
+                log(`Found ${codeBlocks.length} code blocks with language info`);
+                
+                codeBlocks.forEach((pre, i) => {
+                    const lang = pre.getAttribute('data-qd-lang');
+                    const hasSource = pre.hasAttribute('data-qd-source');
+                    const isEditable = !pre.hasAttribute('contenteditable') || pre.getAttribute('contenteditable') !== 'false';
+                    const hasHighlight = pre.querySelector('.hljs') !== null;
+                    
+                    log(`Block ${i + 1}: lang=${lang}, editable=${isEditable}, highlighted=${hasHighlight}, has-source=${hasSource}`);
+                });
+                
+                // Simulate an edit programmatically to test
+                const firstCode = document.querySelector('.qde-preview code.hljs');
+                if (firstCode) {
+                    log('Simulating edit in first code block...');
+                    const originalText = firstCode.textContent;
+                    
+                    // Change the text
+                    const newText = originalText.replace('Hello World', 'Hello Quikdown!');
+                    firstCode.textContent = newText;
+                    
+                    // Trigger input event
+                    const inputEvent = new Event('input', { bubbles: true });
+                    document.querySelector('.qde-preview').dispatchEvent(inputEvent);
+                    
+                    setTimeout(() => {
+                        const currentMarkdown = editor.getMarkdown();
+                        if (currentMarkdown.includes('Hello Quikdown!')) {
+                            log('✅ SUCCESS: Edit synced to markdown!', 'success');
+                        } else {
+                            log('❌ FAILED: Edit did not sync to markdown', 'error');
+                        }
+                    }, 500);
+                }
+            } else {
+                log('⚠️ highlight.js not loaded', 'error');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

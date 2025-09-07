@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.1.0
+ * @version 1.1.1
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -20,7 +20,7 @@
  */
 
 // Version will be injected at build time  
-const quikdownVersion = '1.1.0';
+const quikdownVersion = '1.1.1';
 
 // Constants for reuse
 const CLASS_PREFIX = 'quikdown-';
@@ -1067,6 +1067,96 @@ if (typeof window !== 'undefined') {
 }
 
 /**
+ * Rich copy functionality for QuikdownEditor
+ * Handles copying rendered content with proper formatting for pasting into rich text editors
+ */
+
+/**
+ * Get rendered content as rich HTML suitable for clipboard
+ * @param {HTMLElement} previewPanel - The preview panel element to copy from
+ * @returns {Promise<{success: boolean, html?: string, text?: string}>}
+ */
+async function getRenderedContent(previewPanel) {
+    if (!previewPanel) {
+        throw new Error('No preview panel available');
+    }
+    
+    // Clone the preview panel to avoid modifying the actual DOM
+    const clone = previewPanel.cloneNode(true);
+    
+    // Process different fence types for rich copy
+    // The built-in renderers already create proper HTML tables for CSV/TSV/PSV
+    // Mermaid creates SVG diagrams that need to be converted to images
+    // Math equations also render as SVG that need conversion
+    
+    try {
+        // 1. Process Mermaid diagrams - convert SVG to images
+        const mermaidContainers = clone.querySelectorAll('.mermaid');
+        for (const container of mermaidContainers) {
+            const svg = container.querySelector('svg');
+            if (svg) {
+                try {
+                    // Convert SVG to data URL for better compatibility
+                    const svgData = new XMLSerializer().serializeToString(svg);
+                    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(svgBlob);
+                    
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.style.maxWidth = '100%';
+                    img.alt = 'Mermaid Diagram';
+                    
+                    container.parentNode.replaceChild(img, container);
+                    
+                    // Clean up
+                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                } catch (err) {
+                    console.warn('Failed to convert Mermaid diagram:', err);
+                }
+            }
+        }
+        
+        // 2. Process Math equations - KaTeX renders to HTML with SVG
+        const mathContainers = clone.querySelectorAll('.qde-math-container');
+        for (const container of mathContainers) {
+            // KaTeX already renders to HTML, but we might want to ensure it's copyable
+            // For now, leave as-is since KaTeX HTML copies well
+        }
+        
+        // 3. Tables are already HTML tables from the built-in renderer
+        // No processing needed
+        
+        // Get the final HTML
+        const html = clone.innerHTML;
+        
+        // Also get plain text version
+        const text = clone.textContent || clone.innerText || '';
+        
+        // Copy to clipboard with both HTML and plain text
+        if (navigator.clipboard && navigator.clipboard.write) {
+            const htmlBlob = new Blob([html], { type: 'text/html' });
+            const textBlob = new Blob([text], { type: 'text/plain' });
+            
+            await navigator.clipboard.write([
+                new ClipboardItem({
+                    'text/html': htmlBlob,
+                    'text/plain': textBlob
+                })
+            ]);
+            
+            return { success: true, html, text };
+        } else {
+            // Fallback to writeText
+            await navigator.clipboard.writeText(text);
+            return { success: true, text };
+        }
+    } catch (err) {
+        console.error('Failed to copy rendered content:', err);
+        throw err;
+    }
+}
+
+/**
  * Quikdown Editor - A drop-in markdown editor control
  * @version 1.0.5
  * @license BSD-2-Clause
@@ -1213,7 +1303,8 @@ class QuikdownEditor {
         // Copy buttons
         const copyButtons = [
             { action: 'copy-markdown', text: 'Copy MD', title: 'Copy markdown to clipboard' },
-            { action: 'copy-html', text: 'Copy HTML', title: 'Copy HTML to clipboard' }
+            { action: 'copy-html', text: 'Copy HTML', title: 'Copy HTML to clipboard' },
+            { action: 'copy-rendered', text: 'Copy Rendered', title: 'Copy rich text to clipboard' }
         ];
         
         copyButtons.forEach(({ action, text, title }) => {
@@ -1640,7 +1731,7 @@ class QuikdownEditor {
         
         this._html = this.previewPanel.innerHTML;
         this._markdown = quikdown_bd.toMarkdown(clonedPanel, {
-            fence_plugin: this.options.fence_plugin
+            fence_plugin: this.createFencePlugin()
         });
         
         // Update source if visible
@@ -1659,7 +1750,6 @@ class QuikdownEditor {
      */
     preprocessSpecialElements(panel) {
         if (!panel) return;
-        
         
         // Restore non-editable complex fences from their data attributes
         const complexFences = panel.querySelectorAll('[contenteditable="false"][data-qd-source]');
@@ -1777,6 +1867,12 @@ class QuikdownEditor {
                             return this.renderMermaid(code);
                         }
                         break;
+                        
+                    case 'geojson':
+                        return this.renderGeoJSON(code);
+                        
+                    case 'stl':
+                        return this.renderSTL(code);
                 }
             }
             
@@ -1791,8 +1887,37 @@ class QuikdownEditor {
             return undefined;
         };
         
-        // Return object format for v1.1.0 API
-        return { render };
+        // Reverse function to extract raw source from rendered HTML
+        const reverse = (element) => {
+            // Get the language from data attribute
+            const lang = element.getAttribute('data-qd-lang') || '';
+            let content = '';
+            
+            // For syntax-highlighted code, extract the raw text
+            if (element.querySelector('code.hljs')) {
+                const code = element.querySelector('code.hljs');
+                content = code.textContent || code.innerText || '';
+            }
+            // For other code blocks, just get the text content
+            else if (element.querySelector('code')) {
+                const codeEl = element.querySelector('code');
+                content = codeEl.textContent || codeEl.innerText || '';
+            }
+            // Fallback to element text
+            else {
+                content = element.textContent || element.innerText || '';
+            }
+            
+            // Return in the format quikdown_bd expects
+            return {
+                content: content,
+                lang: lang,
+                fence: '```'
+            };
+        };
+        
+        // Return object format for v1.1.0 API with both render and reverse
+        return { render, reverse };
     }
     
     /**
@@ -2085,6 +2210,196 @@ class QuikdownEditor {
     }
     
     /**
+     * Render GeoJSON map
+     */
+    renderGeoJSON(code) {
+        const id = `geojson-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Function to render the map
+        const renderMap = () => {
+            const element = document.getElementById(id);
+            if (element && window.L) {
+                try {
+                    const data = JSON.parse(code);
+                    const map = L.map(element).setView([0, 0], 2);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                    const geoJsonLayer = L.geoJSON(data).addTo(map);
+                    map.fitBounds(geoJsonLayer.getBounds());
+                } catch (err) {
+                    element.innerHTML = `<pre class="qde-error">GeoJSON error: ${this.escapeHtml(err.message)}</pre>`;
+                }
+            }
+        };
+        
+        // Check if Leaflet is already loaded
+        if (window.L) {
+            // Render after DOM update
+            setTimeout(renderMap, 0);
+        } else {
+            // Lazy load Leaflet only if not already loading
+            if (!window._qde_leaflet_loading) {
+                window._qde_leaflet_loading = this.lazyLoadLibrary(
+                    'Leaflet',
+                    () => window.L,
+                    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+                    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+                ).catch(err => {
+                    console.warn('Failed to load Leaflet:', err);
+                    // Clear the loading promise so it can be retried
+                    window._qde_leaflet_loading = null;
+                    return false;
+                });
+            }
+            
+            window._qde_leaflet_loading.then(loaded => {
+                if (loaded) {
+                    renderMap();
+                } else {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load map library</div>';
+                    }
+                }
+            }).catch(() => {
+                // Error already handled above
+            });
+        }
+        
+        // Return placeholder
+        const container = document.createElement('div');
+        container.id = id;
+        container.style.cssText = 'height: 400px; background: #f0f0f0;';
+        container.contentEditable = 'false';
+        container.setAttribute('data-qd-fence', '```');
+        container.setAttribute('data-qd-lang', 'geojson');
+        container.setAttribute('data-qd-source', code);
+        container.textContent = 'Loading map...';
+        
+        return container.outerHTML;
+    }
+    
+    /**
+     * Render STL 3D model
+     */
+    renderSTL(code) {
+        const id = `stl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Function to render the 3D model
+        const render3D = () => {
+            const element = document.getElementById(id);
+            if (element && window.THREE && window.THREE.STLLoader) {
+                try {
+                    // Create scene
+                    const scene = new THREE.Scene();
+                    scene.background = new THREE.Color(0xf0f0f0);
+                    
+                    // Create camera
+                    const camera = new THREE.PerspectiveCamera(75, element.clientWidth / 400, 0.1, 1000);
+                    camera.position.z = 100;
+                    
+                    // Create renderer
+                    const renderer = new THREE.WebGLRenderer();
+                    renderer.setSize(element.clientWidth, 400);
+                    element.innerHTML = '';
+                    element.appendChild(renderer.domElement);
+                    
+                    // Add lights
+                    const light1 = new THREE.DirectionalLight(0xffffff, 1);
+                    light1.position.set(1, 1, 1);
+                    scene.add(light1);
+                    
+                    const light2 = new THREE.AmbientLight(0x404040);
+                    scene.add(light2);
+                    
+                    // Load STL
+                    const loader = new THREE.STLLoader();
+                    const geometry = loader.parse(code);
+                    const material = new THREE.MeshPhongMaterial({ color: 0x0066ff });
+                    const mesh = new THREE.Mesh(geometry, material);
+                    scene.add(mesh);
+                    
+                    // Center and scale
+                    geometry.computeBoundingBox();
+                    const center = geometry.boundingBox.getCenter(new THREE.Vector3());
+                    mesh.position.sub(center);
+                    
+                    // Animate
+                    const animate = () => {
+                        requestAnimationFrame(animate);
+                        mesh.rotation.x += 0.01;
+                        mesh.rotation.y += 0.01;
+                        renderer.render(scene, camera);
+                    };
+                    animate();
+                } catch (err) {
+                    element.innerHTML = `<pre class="qde-error">STL error: ${this.escapeHtml(err.message)}</pre>`;
+                }
+            }
+        };
+        
+        // Check if Three.js is already loaded
+        if (window.THREE && (window.THREE.STLLoader || window.STLLoader)) {
+            // Make sure STLLoader is attached to THREE
+            if (!window.THREE.STLLoader && window.STLLoader) {
+                window.THREE.STLLoader = window.STLLoader;
+            }
+            // Render after DOM update
+            setTimeout(render3D, 0);
+        } else {
+            // Lazy load Three.js only if not already loading
+            if (!window._qde_three_loading) {
+                // Pin to version 0.150.0 which has the legacy js examples
+                window._qde_three_loading = this.loadScript('https://unpkg.com/three@0.150.0/build/three.min.js')
+                    .then(() => {
+                        // Load STLLoader after Three.js is loaded (legacy path for 0.150.0)
+                        return this.loadScript('https://unpkg.com/three@0.150.0/examples/js/loaders/STLLoader.js');
+                    })
+                    .then(() => {
+                        // Ensure STLLoader is attached to THREE
+                        if (window.STLLoader && !window.THREE.STLLoader) {
+                            window.THREE.STLLoader = window.STLLoader;
+                        }
+                    })
+                    .catch(err => {
+                        console.warn('Failed to load Three.js or STLLoader:', err);
+                        // Clear the loading promise so it can be retried
+                        window._qde_three_loading = null;
+                        // Update the placeholder to show error
+                        const element = document.getElementById(id);
+                        if (element) {
+                            element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load 3D libraries</div>';
+                        }
+                    });
+            }
+            
+            if (window._qde_three_loading) {
+                window._qde_three_loading.then(() => {
+                    if (window.THREE && (window.THREE.STLLoader || window.STLLoader)) {
+                        if (!window.THREE.STLLoader && window.STLLoader) {
+                            window.THREE.STLLoader = window.STLLoader;
+                        }
+                        render3D();
+                    }
+                }).catch(() => {
+                    // Error already handled above
+                });
+            }
+        }
+        
+        // Return placeholder
+        const container = document.createElement('div');
+        container.id = id;
+        container.style.cssText = 'height: 400px; background: #f0f0f0;';
+        container.contentEditable = 'false';
+        container.setAttribute('data-qd-fence', '```');
+        container.setAttribute('data-qd-lang', 'stl');
+        container.setAttribute('data-qd-source', code);
+        container.textContent = 'Loading 3D model...';
+        
+        return container.outerHTML;
+    }
+    
+    /**
      * Render Mermaid diagram
      */
     renderMermaid(code) {
@@ -2322,6 +2637,9 @@ class QuikdownEditor {
             case 'copy-html':
                 this.copy('html');
                 break;
+            case 'copy-rendered':
+                this.copyRendered();
+                break;
             case 'remove-hr':
                 this.removeHR();
                 break;
@@ -2438,6 +2756,28 @@ class QuikdownEditor {
             setTimeout(() => {
                 btn.textContent = originalText;
             }, 1500);
+        }
+    }
+    
+    /**
+     * Copy rendered content as rich text
+     */
+    async copyRendered() {
+        try {
+            const result = await getRenderedContent(this.previewPanel);
+            if (result.success) {
+                // Visual feedback
+                const btn = this.toolbar?.querySelector('[data-action="copy-rendered"]');
+                if (btn) {
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                    }, 1500);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to copy rendered content:', err);
         }
     }
     

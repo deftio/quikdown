@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.1.0
+ * @version 1.1.1
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -24,7 +24,7 @@
      */
 
     // Version will be injected at build time  
-    const quikdownVersion = '1.1.0';
+    const quikdownVersion = '1.1.1';
 
     // Constants for reuse
     const CLASS_PREFIX = 'quikdown-';
