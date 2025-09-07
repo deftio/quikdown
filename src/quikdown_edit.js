@@ -1194,8 +1194,8 @@ class QuikdownEditor {
         // Render after DOM update
         setTimeout(render3D, 0);
         
-        // Return placeholder
-        return `<div id="${id}" class="qde-stl-container" data-qd-fence="\`\`\`" data-qd-lang="stl" data-qd-source="${this.escapeHtml(code)}" contenteditable="false" style="height: 400px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">Loading 3D model...</div>`;
+        // Return placeholder with data-stl-id for copy functionality
+        return `<div id="${id}" class="qde-stl-container" data-stl-id="${id}" data-qd-fence="\`\`\`" data-qd-lang="stl" data-qd-source="${this.escapeHtml(code)}" contenteditable="false" style="height: 400px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">Loading 3D model...</div>`;
     }
     
     /**
