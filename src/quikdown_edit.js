@@ -1155,6 +1155,11 @@ class QuikdownEditor {
                 element.innerHTML = '';
                 element.appendChild(renderer.domElement);
                 
+                // Store Three.js references for copy functionality (like squibview)
+                element._threeScene = scene;
+                element._threeCamera = camera;
+                element._threeRenderer = renderer;
+                
                 // Parse STL data (ASCII format)
                 const geometry = this.parseSTL(code);
                 const material = new THREE.MeshLambertMaterial({ color: 0x0066ff });

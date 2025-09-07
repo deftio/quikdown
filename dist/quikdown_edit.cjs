@@ -1072,6 +1072,77 @@ if (typeof window !== 'undefined') {
  */
 
 /**
+ * Get platform information
+ * @returns {string} The detected platform: 'macos', 'windows', 'linux', or 'unknown'
+ */
+function getPlatform() {
+    const platform = navigator.platform?.toLowerCase() || '';
+    const userAgent = navigator.userAgent?.toLowerCase() || '';
+    
+    if (platform.includes('mac') || userAgent.includes('mac')) {
+        return 'macos';
+    } else if (userAgent.includes('windows')) {
+        return 'windows';
+    } else if (userAgent.includes('linux')) {
+        return 'linux';
+    }
+    return 'unknown';
+}
+
+/**
+ * Copy to clipboard using textarea fallback (for Safari)
+ * @param {string} html - HTML content to copy
+ * @returns {boolean} Success status
+ */
+function copyToClipboard(html) {
+    let textarea;
+    let result;
+    
+    try {
+        textarea = document.createElement('textarea');
+        textarea.setAttribute('readonly', true);
+        textarea.setAttribute('contenteditable', true);
+        textarea.style.position = 'fixed';
+        textarea.style.left = '0';
+        textarea.style.top = '0';
+        textarea.style.width = '1px';
+        textarea.style.height = '1px';
+        textarea.style.padding = '0';
+        textarea.style.border = 'none';
+        textarea.style.outline = 'none';
+        textarea.style.boxShadow = 'none';
+        textarea.style.background = 'transparent';
+        textarea.value = html;
+        
+        document.body.appendChild(textarea);
+        
+        // Select the text
+        textarea.focus();
+        textarea.select();
+        
+        // For iOS Safari
+        const range = document.createRange();
+        range.selectNodeContents(textarea);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        textarea.setSelectionRange(0, textarea.value.length);
+        
+        // Try to copy
+        result = document.execCommand('copy');
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+        result = false;
+    } finally {
+        if (textarea && textarea.parentNode) {
+            document.body.removeChild(textarea);
+        }
+    }
+    
+    return result;
+}
+
+/**
  * Convert SVG to PNG data URL
  * @param {SVGElement} svg - The SVG element to convert
  * @returns {Promise<string>} Data URL of the PNG image
@@ -1148,9 +1219,20 @@ async function getRenderedContent(previewPanel) {
                 const originalContainer = previewPanel.querySelector(`.qde-stl-container[data-stl-id="${containerId}"]`);
                 
                 if (originalContainer) {
+                    // Look for canvas element in the original container (Three.js WebGL canvas)
                     const canvas = originalContainer.querySelector('canvas');
                     if (canvas && canvas.width > 0 && canvas.height > 0) {
                         try {
+                            // Get Three.js references stored on the container (like squibview)
+                            const renderer = originalContainer._threeRenderer;
+                            const scene = originalContainer._threeScene;
+                            const camera = originalContainer._threeCamera;
+                            
+                            // If we have access to the Three.js objects, force render the scene
+                            if (renderer && scene && camera) {
+                                renderer.render(scene, camera);
+                            }
+                            
                             // Try to capture the canvas as an image
                             const dataUrl = canvas.toDataURL('image/png', 1.0);
                             const img = document.createElement('img');
@@ -1160,15 +1242,19 @@ async function getRenderedContent(previewPanel) {
                             container.parentNode.replaceChild(img, container);
                             continue;
                         } catch (canvasErr) {
-                            console.warn('Failed to convert STL canvas to image:', canvasErr);
+                            console.warn('Failed to convert STL canvas to image (likely WebGL context issue):', canvasErr);
                         }
+                    } else {
+                        console.warn('No valid canvas found in STL container');
                     }
+                } else {
+                    console.warn('Could not find original STL container');
                 }
             } catch (err) {
-                console.warn('Error processing STL container:', err);
+                console.error('Error processing STL container for copy:', err);
             }
             
-            // Fallback to placeholder
+            // Fallback to placeholder if canvas conversion fails
             const placeholder = document.createElement('div');
             placeholder.style.cssText = 'padding: 12px; background-color: #f0f0f0; border: 1px solid #ccc; text-align: center; margin: 0.5em 0; border-radius: 4px;';
             placeholder.textContent = '[STL 3D Model - Interactive content not available in copy]';
@@ -1282,11 +1368,11 @@ async function getRenderedContent(previewPanel) {
         // Get plain text version
         const text = clone.textContent || clone.innerText || '';
         
-        // Detect platform for clipboard strategy
-        const isMacOS = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+        // Get platform for clipboard strategy (like squibview)
+        const platform = getPlatform();
         
-        // Copy to clipboard with both HTML and plain text
-        if (navigator.clipboard && navigator.clipboard.write) {
+        if (platform === 'macos') {
+            // macOS approach (like squibview)
             try {
                 await navigator.clipboard.write([
                     new ClipboardItem({
@@ -1295,60 +1381,55 @@ async function getRenderedContent(previewPanel) {
                     })
                 ]);
                 return { success: true, html: htmlContent, text };
-            } catch (err) {
-                console.warn('Modern clipboard API failed, trying fallback:', err);
+            } catch (modernErr) {
+                console.warn('Modern clipboard API failed, trying Safari fallback:', modernErr);
+                // Safari fallback
+                if (copyToClipboard(htmlContent)) {
+                    return { success: true, html: htmlContent, text };
+                }
+                throw new Error('Fallback copy failed');
+            }
+        } else {
+            // Windows/Linux approach (like squibview)
+            const tempDiv = document.createElement('div');
+            tempDiv.style.position = 'fixed';
+            tempDiv.style.left = '-9999px';
+            tempDiv.style.top = '0';
+            tempDiv.innerHTML = htmlContent;
+            document.body.appendChild(tempDiv);
+            
+            try {
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/html': new Blob([htmlContent], { type: 'text/html' }),
+                        'text/plain': new Blob([text], { type: 'text/plain' })
+                    })
+                ]);
+                return { success: true, html: htmlContent, text };
+            } catch (modernErr) {
+                console.warn('Modern clipboard API failed, trying execCommand fallback:', modernErr);
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(tempDiv);
+                selection.removeAllRanges();
+                selection.addRange(range);
                 
-                // Fallback for Safari/older browsers
-                if (isMacOS) {
-                    // Try the textarea fallback method
-                    const result = await copyWithFallback(htmlContent, text);
-                    if (result) {
-                        return { success: true, html: htmlContent, text };
-                    }
+                const successful = document.execCommand('copy');
+                if (!successful) {
+                    throw new Error('Fallback copy failed');
+                }
+                return { success: true, html: htmlContent, text };
+            } finally {
+                if (tempDiv && tempDiv.parentNode) {
+                    document.body.removeChild(tempDiv);
                 }
             }
         }
-        
-        // Final fallback to plain text
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            await navigator.clipboard.writeText(text);
-            return { success: true, text };
-        }
-        
-        throw new Error('No clipboard API available');
         
     } catch (err) {
         console.error('Failed to copy rendered content:', err);
         throw err;
     }
-}
-
-/**
- * Fallback copy method using textarea
- * @param {string} html - HTML content to copy
- * @param {string} text - Plain text content to copy
- * @returns {Promise<boolean>} Success status
- */
-async function copyWithFallback(html, text) {
-    return new Promise((resolve) => {
-        try {
-            const textarea = document.createElement('textarea');
-            textarea.value = html;
-            textarea.style.position = 'fixed';
-            textarea.style.left = '-9999px';
-            textarea.style.top = '0';
-            document.body.appendChild(textarea);
-            
-            textarea.select();
-            const success = document.execCommand('copy');
-            document.body.removeChild(textarea);
-            
-            resolve(success);
-        } catch (err) {
-            console.error('Fallback copy failed:', err);
-            resolve(false);
-        }
-    });
 }
 
 /**
@@ -2505,6 +2586,11 @@ class QuikdownEditor {
                 renderer.setSize(element.clientWidth, 400);
                 element.innerHTML = '';
                 element.appendChild(renderer.domElement);
+                
+                // Store Three.js references for copy functionality (like squibview)
+                element._threeScene = scene;
+                element._threeCamera = camera;
+                element._threeRenderer = renderer;
                 
                 // Parse STL data (ASCII format)
                 const geometry = this.parseSTL(code);
