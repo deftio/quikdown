@@ -2280,121 +2280,111 @@ class QuikdownEditor {
      * Render STL 3D model
      */
     renderSTL(code) {
-        const id = `stl-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const id = `qde-stl-viewer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         // Function to render the 3D model
         const render3D = () => {
             const element = document.getElementById(id);
-            if (element && window.THREE && window.THREE.STLLoader) {
-                try {
-                    // Create scene
-                    const scene = new THREE.Scene();
-                    scene.background = new THREE.Color(0xf0f0f0);
-                    
-                    // Create camera
-                    const camera = new THREE.PerspectiveCamera(75, element.clientWidth / 400, 0.1, 1000);
-                    camera.position.z = 100;
-                    
-                    // Create renderer
-                    const renderer = new THREE.WebGLRenderer();
-                    renderer.setSize(element.clientWidth, 400);
-                    element.innerHTML = '';
-                    element.appendChild(renderer.domElement);
-                    
-                    // Add lights
-                    const light1 = new THREE.DirectionalLight(0xffffff, 1);
-                    light1.position.set(1, 1, 1);
-                    scene.add(light1);
-                    
-                    const light2 = new THREE.AmbientLight(0x404040);
-                    scene.add(light2);
-                    
-                    // Load STL
-                    const loader = new THREE.STLLoader();
-                    const geometry = loader.parse(code);
-                    const material = new THREE.MeshPhongMaterial({ color: 0x0066ff });
-                    const mesh = new THREE.Mesh(geometry, material);
-                    scene.add(mesh);
-                    
-                    // Center and scale
-                    geometry.computeBoundingBox();
-                    const center = geometry.boundingBox.getCenter(new THREE.Vector3());
-                    mesh.position.sub(center);
-                    
-                    // Animate
-                    const animate = () => {
-                        requestAnimationFrame(animate);
-                        mesh.rotation.x += 0.01;
-                        mesh.rotation.y += 0.01;
-                        renderer.render(scene, camera);
-                    };
-                    animate();
-                } catch (err) {
-                    element.innerHTML = `<pre class="qde-error">STL error: ${this.escapeHtml(err.message)}</pre>`;
-                }
+            if (!element) return;
+            
+            // Check if Three.js is available
+            if (typeof window.THREE === 'undefined') {
+                element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Three.js library not loaded. Add &lt;script src="https://unpkg.com/three@0.147.0/build/three.min.js"&gt;&lt;/script&gt; to your HTML.</div>';
+                return;
+            }
+            
+            try {
+                const THREE = window.THREE;
+                
+                // Create scene
+                const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0xf0f0f0);
+                
+                // Create camera
+                const camera = new THREE.PerspectiveCamera(75, element.clientWidth / 400, 0.1, 1000);
+                
+                // Create renderer
+                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(element.clientWidth, 400);
+                element.innerHTML = '';
+                element.appendChild(renderer.domElement);
+                
+                // Parse STL data (ASCII format)
+                const geometry = this.parseSTL(code);
+                const material = new THREE.MeshLambertMaterial({ color: 0x0066ff });
+                const mesh = new THREE.Mesh(geometry, material);
+                scene.add(mesh);
+                
+                // Add lighting
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(1, 1, 1).normalize();
+                scene.add(directionalLight);
+                
+                // Position camera based on object bounds
+                const box = new THREE.Box3().setFromObject(mesh);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z);
+                
+                camera.position.set(center.x + maxDim, center.y + maxDim, center.z + maxDim);
+                camera.lookAt(center);
+                
+                // Animate
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    mesh.rotation.y += 0.01;
+                    renderer.render(scene, camera);
+                };
+                animate();
+            } catch (err) {
+                console.error('STL rendering error:', err);
+                element.innerHTML = `<pre class="qde-error">STL error: ${this.escapeHtml(err.message)}</pre>`;
             }
         };
         
-        // Check if Three.js is already loaded
-        if (window.THREE && (window.THREE.STLLoader || window.STLLoader)) {
-            // Make sure STLLoader is attached to THREE
-            if (!window.THREE.STLLoader && window.STLLoader) {
-                window.THREE.STLLoader = window.STLLoader;
-            }
-            // Render after DOM update
-            setTimeout(render3D, 0);
-        } else {
-            // Lazy load Three.js only if not already loading
-            if (!window._qde_three_loading) {
-                // Pin to version 0.150.0 which has the legacy js examples
-                window._qde_three_loading = this.loadScript('https://unpkg.com/three@0.150.0/build/three.min.js')
-                    .then(() => {
-                        // Load STLLoader after Three.js is loaded (legacy path for 0.150.0)
-                        return this.loadScript('https://unpkg.com/three@0.150.0/examples/js/loaders/STLLoader.js');
-                    })
-                    .then(() => {
-                        // Ensure STLLoader is attached to THREE
-                        if (window.STLLoader && !window.THREE.STLLoader) {
-                            window.THREE.STLLoader = window.STLLoader;
-                        }
-                    })
-                    .catch(err => {
-                        console.warn('Failed to load Three.js or STLLoader:', err);
-                        // Clear the loading promise so it can be retried
-                        window._qde_three_loading = null;
-                        // Update the placeholder to show error
-                        const element = document.getElementById(id);
-                        if (element) {
-                            element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load 3D libraries</div>';
-                        }
-                    });
-            }
+        // Render after DOM update
+        setTimeout(render3D, 0);
+        
+        // Return placeholder
+        return `<div id="${id}" class="qde-stl-container" data-qd-fence="\`\`\`" data-qd-lang="stl" data-qd-source="${this.escapeHtml(code)}" contenteditable="false" style="height: 400px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">Loading 3D model...</div>`;
+    }
+    
+    /**
+     * Parse ASCII STL format
+     * @param {string} stlData - The STL file content
+     * @returns {THREE.BufferGeometry} - The parsed geometry
+     */
+    parseSTL(stlData) {
+        const THREE = window.THREE;
+        const geometry = new THREE.BufferGeometry();
+        const vertices = [];
+        const normals = [];
+        
+        const lines = stlData.split('\n');
+        let currentNormal = null;
+        
+        for (let line of lines) {
+            line = line.trim();
             
-            if (window._qde_three_loading) {
-                window._qde_three_loading.then(() => {
-                    if (window.THREE && (window.THREE.STLLoader || window.STLLoader)) {
-                        if (!window.THREE.STLLoader && window.STLLoader) {
-                            window.THREE.STLLoader = window.STLLoader;
-                        }
-                        render3D();
-                    }
-                }).catch(() => {
-                    // Error already handled above
-                });
+            if (line.startsWith('facet normal')) {
+                const parts = line.split(/\s+/);
+                currentNormal = [parseFloat(parts[2]), parseFloat(parts[3]), parseFloat(parts[4])];
+            } else if (line.startsWith('vertex')) {
+                const parts = line.split(/\s+/);
+                vertices.push(parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3]));
+                if (currentNormal) {
+                    normals.push(currentNormal[0], currentNormal[1], currentNormal[2]);
+                }
             }
         }
         
-        // Return placeholder
-        const container = document.createElement('div');
-        container.id = id;
-        container.style.cssText = 'height: 400px; background: #f0f0f0;';
-        container.contentEditable = 'false';
-        container.setAttribute('data-qd-fence', '```');
-        container.setAttribute('data-qd-lang', 'stl');
-        container.setAttribute('data-qd-source', code);
-        container.textContent = 'Loading 3D model...';
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
         
-        return container.outerHTML;
+        return geometry;
     }
     
     /**
