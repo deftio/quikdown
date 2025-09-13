@@ -1,10 +1,10 @@
 # Welcome to Quikdown 
 
-**Quikdown** is compact markdown parser/editor. This document shows various features such as html preview, Mermaid diagrams, syntax-highlighted code blocks, tables, and inline SVG graphics.
+**Quikdown** is a compact markdown parser/editor. This document shows various features such as html preview, Mermaid diagrams, syntax-highlighted code blocks, tables, and inline SVG graphics.
 
 [Code is Here on GitHub](www.github.com/deftio/quikdown)
 
-Squibview allows live view of source (mixed markdown), rendered (html), or split-view for debugging.  It can be used as a lightweight editor or as a headless component which can be deployed in apps. Squibview supports running headless (no controls) and can be styled or themed with CSS.
+Quikdown allows live view of source (mixed markdown), rendered (html), or split-view for debugging.  It can be used as a lightweight editor or as a headless component which can be deployed in apps. Quikdown supports running headless (no controls) and can be styled or themed with CSS.
 
 ## Diagram Example
 
@@ -77,7 +77,7 @@ Below is an inline SVG graphic rendered directly from Markdown:
 ```
 
 ## CSV / TSV / PSV Support
-Squibview allows inline tables via CSV, TSV, or PSV separated entries
+Quikdown allows inline tables via CSV, TSV, or PSV separated entries
 
 ### CSV Example
 
@@ -118,7 +118,7 @@ You can also include regular text, lists, images, and more:
 
 - Bullet points are supported.
 - **Bold** and *italic* text work seamlessly.
-- [Links](https://github.com) can be included.
+- [Links](https://github.com/quikdown) can be included.
 
 ## Image Support
 

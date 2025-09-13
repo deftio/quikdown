@@ -554,6 +554,36 @@ class QuikdownEditor {
                 this.previewPanel.innerHTML = this._html;
                 // Make all fence blocks non-editable
                 this.makeFencesNonEditable();
+                
+                // Process all math elements with MathJax if loaded (like squibview)
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    const mathElements = this.previewPanel.querySelectorAll('.math-display');
+                    console.log('Found math elements to process:', mathElements.length);
+                    if (mathElements.length > 0) {
+                        mathElements.forEach(el => {
+                            console.log('Processing math element:', {
+                                id: el.id,
+                                content: el.textContent,
+                                hasInnerHTML: !!el.innerHTML
+                            });
+                        });
+                        window.MathJax.typesetPromise(Array.from(mathElements))
+                            .then(() => {
+                                console.log('MathJax typesetting completed');
+                                mathElements.forEach(el => {
+                                    const mjxContainer = el.querySelector('mjx-container');
+                                    console.log('After typesetting:', {
+                                        id: el.id,
+                                        hasMjxContainer: !!mjxContainer,
+                                        hasSVG: !!el.querySelector('svg')
+                                    });
+                                });
+                            })
+                            .catch(err => {
+                                console.warn('MathJax batch processing failed:', err);
+                            });
+                    }
+                }
             }
         }
         
@@ -876,58 +906,90 @@ class QuikdownEditor {
      * Render math with MathJax (SVG output for better copy support)
      */
     renderMath(code, lang) {
-        const id = `math-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const id = `math-${Math.random().toString(36).substring(2, 15)}`;
         
-        // Check if MathJax is loaded
-        if (window.MathJax && window.MathJax.typesetPromise) {
-            // Create container with MathJax delimiters
-            const container = document.createElement('div');
-            container.id = id;
-            container.className = 'qde-math-container math-display';
-            container.contentEditable = 'false';
-            container.setAttribute('data-qd-fence', '```');
-            container.setAttribute('data-qd-lang', lang);
-            container.setAttribute('data-qd-source', code);
-            
-            // Format content for MathJax (display mode with $$)
-            const singleLineContent = code.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
-            container.textContent = `$$${singleLineContent}$$`;
-            
-            // Schedule MathJax to process after DOM update
-            setTimeout(() => {
-                const element = document.getElementById(id);
-                if (element && window.MathJax && window.MathJax.typesetPromise) {
-                    window.MathJax.typesetPromise([element]).catch(err => {
-                        console.warn('MathJax rendering failed:', err);
-                        element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
-                    });
-                }
-            }, 0);
-            
-            return container.outerHTML;
+        // Create container exactly like squibview
+        const container = document.createElement('div');
+        container.id = id;
+        container.className = 'math-display';
+        container.contentEditable = 'false';
+        container.setAttribute('data-source-type', 'math');
+        
+        // Format content for MathJax (display mode with $$) - exactly like squibview
+        const singleLineContent = code.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+        container.textContent = `$$${singleLineContent}$$`;
+        
+        // Add centering style
+        container.style.textAlign = 'center';
+        container.style.margin = '1em 0';
+        
+        console.log('Creating math container:', {
+            id: id,
+            content: singleLineContent,
+            containerHTML: container.outerHTML
+        });
+        
+        // Ensure MathJax will be loaded (if not already)
+        if (!window.MathJax || !window.MathJax.typesetPromise) {
+            this.ensureMathJaxLoaded();
         }
         
-        // Try to lazy load MathJax
-        this.ensureMathJaxAndTypeset(id, code, lang);
-        
-        // Return placeholder that will be replaced
-        const placeholder = document.createElement('div');
-        placeholder.id = id;
-        placeholder.className = 'qde-math-container math-display';
-        placeholder.contentEditable = 'false';
-        placeholder.setAttribute('data-qd-fence', '```');
-        placeholder.setAttribute('data-qd-lang', lang);
-        placeholder.setAttribute('data-qd-source', code);
-        
-        // Format content for MathJax (display mode with $$)
-        const singleLineContent = code.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
-        placeholder.textContent = `$$${singleLineContent}$$`;
-        
-        return placeholder.outerHTML;
+        // MathJax will be processed in batch after preview update
+        return container.outerHTML;
     }
     
     /**
-     * Ensures MathJax is loaded and typesets the math element
+     * Ensures MathJax is loaded (but doesn't process elements)
+     */
+    ensureMathJaxLoaded() {
+        if (typeof window.MathJax === 'undefined' && !window.mathJaxLoading) {
+            window.mathJaxLoading = true;
+            
+            // Configure MathJax before loading
+            if (!window.MathJax) {
+                window.MathJax = {
+                    loader: { load: ['input/tex', 'output/svg'] },
+                    tex: { 
+                        packages: { '[+]': ['ams'] },
+                        inlineMath: [['$', '$'], ['\\(', '\\)']],
+                        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                        processEscapes: true
+                    },
+                    svg: {
+                        fontCache: 'global',
+                        scale: 1
+                    },
+                    startup: { typeset: false }
+                };
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js';
+            script.async = true;
+            script.onload = () => {
+                window.mathJaxLoading = false;
+                console.log('MathJax loaded successfully');
+                
+                // Process any existing math elements (like squibview)
+                if (window.MathJax && window.MathJax.typesetPromise) {
+                    const mathElements = document.querySelectorAll('.math-display');
+                    if (mathElements.length > 0) {
+                        window.MathJax.typesetPromise(Array.from(mathElements)).catch(err => {
+                            console.warn('Initial MathJax processing failed:', err);
+                        });
+                    }
+                }
+            };
+            script.onerror = () => {
+                window.mathJaxLoading = false;
+                console.error('Failed to load MathJax');
+            };
+            document.head.appendChild(script);
+        }
+    }
+    
+    /**
+     * DEPRECATED - Ensures MathJax is loaded and typesets the math element
      */
     async ensureMathJaxAndTypeset(id, code, lang) {
         if (typeof window.MathJax === 'undefined') {
@@ -953,18 +1015,26 @@ class QuikdownEditor {
             }
             
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
+            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js';
             script.async = true;
             script.onload = () => {
                 window.mathJaxLoading = false;
-                // Process the element
-                const element = document.getElementById(id);
-                if (element && window.MathJax && window.MathJax.typesetPromise) {
-                    window.MathJax.typesetPromise([element]).catch(err => {
-                        console.warn('MathJax rendering failed:', err);
-                        element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
-                    });
-                }
+                console.log('MathJax loaded, processing element:', id);
+                // Process the element after a small delay to ensure it's in the DOM
+                setTimeout(() => {
+                    const element = document.getElementById(id);
+                    if (element && window.MathJax && window.MathJax.typesetPromise) {
+                        console.log('Processing lazy-loaded MathJax for:', id, element.textContent);
+                        window.MathJax.typesetPromise([element]).then(() => {
+                            console.log('MathJax lazy processing complete for:', id);
+                        }).catch(err => {
+                            console.warn('MathJax rendering failed:', err);
+                            element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
+                        });
+                    } else {
+                        console.warn('Element not found after MathJax load:', id);
+                    }
+                }, 100);
             };
             script.onerror = () => {
                 window.mathJaxLoading = false;
@@ -972,14 +1042,21 @@ class QuikdownEditor {
             };
             document.head.appendChild(script);
         } else if (window.MathJax && window.MathJax.typesetPromise) {
-            // MathJax is loaded, process the element
-            const element = document.getElementById(id);
-            if (element) {
-                window.MathJax.typesetPromise([element]).catch(err => {
-                    console.warn('MathJax rendering failed:', err);
-                    element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
-                });
-            }
+            // MathJax is loaded, process the element after a delay
+            setTimeout(() => {
+                const element = document.getElementById(id);
+                if (element) {
+                    console.log('Processing already-loaded MathJax for:', id, element.textContent);
+                    window.MathJax.typesetPromise([element]).then(() => {
+                        console.log('MathJax processing complete (already loaded) for:', id);
+                    }).catch(err => {
+                        console.warn('MathJax rendering failed:', err);
+                        element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
+                    });
+                } else {
+                    console.warn('Element not found for MathJax processing:', id);
+                }
+            }, 100);
         }
     }
     
@@ -1091,21 +1168,59 @@ class QuikdownEditor {
      * Render GeoJSON map
      */
     renderGeoJSON(code) {
-        const id = `geojson-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Generate unique map ID (following SquibView pattern)
+        const mapId = `map-${Math.random().toString(36).substr(2, 15)}`;
         
         // Function to render the map
         const renderMap = () => {
-            const element = document.getElementById(id);
-            if (element && window.L) {
-                try {
-                    const data = JSON.parse(code);
-                    const map = L.map(element).setView([0, 0], 2);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                    const geoJsonLayer = L.geoJSON(data).addTo(map);
+            const container = document.getElementById(mapId + '-container');
+            if (!container || !window.L) return;
+            
+            try {
+                const data = JSON.parse(code);
+                
+                // Clear container and set deterministic size for rasterization
+                const mapDiv = document.createElement('div');
+                mapDiv.id = mapId;
+                mapDiv.style.cssText = 'width: 100%; height: 300px;';
+                container.innerHTML = '';
+                container.appendChild(mapDiv);
+                
+                // Create the map
+                const map = L.map(mapId);
+                
+                // Store back-reference for capture (per Gem's guide)
+                container._map = map; // Avoid window pollution
+                
+                // Add tile layer with CORS support
+                const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '',
+                    crossOrigin: 'anonymous' // Important for canvas capture
+                });
+                tileLayer.addTo(map);
+                
+                // Add GeoJSON layer
+                const geoJsonLayer = L.geoJSON(data);
+                geoJsonLayer.addTo(map);
+                
+                // Fit bounds if valid
+                if (geoJsonLayer.getBounds().isValid()) {
                     map.fitBounds(geoJsonLayer.getBounds());
-                } catch (err) {
-                    element.innerHTML = `<pre class="qde-error">GeoJSON error: ${this.escapeHtml(err.message)}</pre>`;
+                } else {
+                    map.setView([0, 0], 2);
                 }
+                
+                // Store references for copy-time capture
+                container._tileLayer = tileLayer;
+                container._geoJsonLayer = geoJsonLayer;
+                
+                // Optional: Wait for tiles to load for better capture
+                tileLayer.on('load', () => {
+                    container.setAttribute('data-tiles-loaded', 'true');
+                });
+                
+            } catch (err) {
+                container.innerHTML = `<pre class="qde-error">GeoJSON error: ${this.escapeHtml(err.message)}</pre>`;
             }
         };
         
@@ -1143,14 +1258,22 @@ class QuikdownEditor {
             });
         }
         
-        // Return placeholder
+        // Return container following SquibView pattern
         const container = document.createElement('div');
-        container.id = id;
-        container.style.cssText = 'height: 400px; background: #f0f0f0;';
+        container.className = 'geojson-container';
+        container.id = mapId + '-container';
+        container.style.cssText = 'width: 100%; height: 300px; border: 1px solid #ddd; border-radius: 4px; margin: 0.5em 0; background: #f0f0f0;';
         container.contentEditable = 'false';
+        
+        // Preserve source for copy-time identification (per Gem's guide)
+        container.setAttribute('data-source-type', 'geojson');
+        container.setAttribute('data-original-source', this.escapeHtml(code));
+        
+        // For bidirectional editing
         container.setAttribute('data-qd-fence', '```');
         container.setAttribute('data-qd-lang', 'geojson');
         container.setAttribute('data-qd-source', code);
+        
         container.textContent = 'Loading map...';
         
         return container.outerHTML;
