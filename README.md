@@ -11,7 +11,7 @@ For small and fast projects quikdown includes built-in inline styles for a "batt
 
 - **quikdown.js** (9.0KB) - Markdown to HTML Parser with theme support, XSS protection, fence callbacks
 - **quikdown_bd.js** (13.8KB) - Bidirectional (HTML ↔ Markdown) Parser
-- **quikdown_edit.js** (37.8KB) - Drop-in editor component (HTML ↔ Markdown) with md/split/html views
+- **quikdown_edit.js** (69.2KB) - Drop-in editor component with live preview, copy-as-rich-text, and lazy-loaded fence handlers
 
 🚀 **[Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** | **[Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** | **[Documentation](docs/)**
 
@@ -21,7 +21,7 @@ For small and fast projects quikdown includes built-in inline styles for a "batt
 
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js
-- 🚀 **Lightweight** - 9.0KB (core), 13.8KB (bidirectional), 37.8KB (editor)
+- 🚀 **Lightweight** - 9.0KB (core), 13.8KB (bidirectional), 69.2KB (editor)
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
 - 🎨 **Flexible styling** - Inline styles or CSS classes with theme support
 - 🔌 **Plugin system** - Extensible fence block handlers

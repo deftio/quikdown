@@ -558,25 +558,13 @@ class QuikdownEditor {
                 // Process all math elements with MathJax if loaded (like squibview)
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     const mathElements = this.previewPanel.querySelectorAll('.math-display');
-                    console.log('Found math elements to process:', mathElements.length);
                     if (mathElements.length > 0) {
                         mathElements.forEach(el => {
-                            console.log('Processing math element:', {
-                                id: el.id,
-                                content: el.textContent,
-                                hasInnerHTML: !!el.innerHTML
-                            });
                         });
                         window.MathJax.typesetPromise(Array.from(mathElements))
                             .then(() => {
-                                console.log('MathJax typesetting completed');
                                 mathElements.forEach(el => {
                                     const mjxContainer = el.querySelector('mjx-container');
-                                    console.log('After typesetting:', {
-                                        id: el.id,
-                                        hasMjxContainer: !!mjxContainer,
-                                        hasSVG: !!el.querySelector('svg')
-                                    });
                                 });
                             })
                             .catch(err => {
@@ -722,7 +710,6 @@ class QuikdownEditor {
                         return this.renderHTML(code);
                         
                     case 'math':
-                    case 'katex':
                     case 'tex':
                     case 'latex':
                         return this.renderMath(code, lang);
@@ -735,6 +722,9 @@ class QuikdownEditor {
                     case 'json':
                     case 'json5':
                         return this.renderJSON(code, lang);
+                        
+                    case 'katex':  // Use MathJax for katex fence blocks (backward compatibility)
+                        return this.renderMath(code, 'katex');
                         
                     case 'mermaid':
                         if (window.mermaid) {
@@ -923,11 +913,6 @@ class QuikdownEditor {
         container.style.textAlign = 'center';
         container.style.margin = '1em 0';
         
-        console.log('Creating math container:', {
-            id: id,
-            content: singleLineContent,
-            containerHTML: container.outerHTML
-        });
         
         // Ensure MathJax will be loaded (if not already)
         if (!window.MathJax || !window.MathJax.typesetPromise) {
@@ -973,7 +958,6 @@ class QuikdownEditor {
             script.async = true;
             script.onload = () => {
                 window.mathJaxLoading = false;
-                console.log('MathJax loaded successfully');
                 
                 // Process any existing math elements (like squibview)
                 if (window.MathJax && window.MathJax.typesetPromise) {
@@ -1495,7 +1479,7 @@ class QuikdownEditor {
         this.options.lazy_linefeeds = enabled;
         // Re-render if we have content
         if (this._markdown) {
-            this.updateFromSource();
+            this.updateFromMarkdown(this._markdown);
         }
     }
     

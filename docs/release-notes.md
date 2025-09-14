@@ -1,5 +1,54 @@
 # Release Notes
 
+## v1.1.1 (Unreleased)
+
+### 🎯 New Features
+
+#### Enhanced Copy-as-Rich-Text
+- **Math equation rendering**: MathJax equations now convert to high-quality PNG images when copying
+- **GeoJSON map capture**: Interactive Leaflet maps convert to static images for pasting
+- **Improved scaling**: Math equations render at optimal size (150x45px max) with 2x DPR for crisp display
+- **Platform compatibility**: Works seamlessly with Google Docs, Microsoft Word, and other rich text editors
+- **Instant copy**: Reduced copy time from ~1.5 seconds to near-instant
+
+#### Editor API Enhancements
+- **`copyRendered()`**: New method to copy rendered content as rich text with image conversion
+- **`setLazyLinefeeds(enabled)`**: Programmatically control lazy linefeed behavior
+- **`setDebounceDelay(delay)`**: Configure update delay (0 for instant updates)
+- **`getDebounceDelay()`**: Get current debounce setting
+- **Headless mode**: Full documentation for using editor without UI
+- **Minimal UI mode**: Documentation for creating custom toolbar experiences
+
+### 🐛 Bug Fixes
+
+#### Copy-Paste System
+- **Fixed macOS clipboard fallback**: Changed from textarea to div for HTML preservation
+- **Added StartFragment/EndFragment markers**: Ensures proper formatting in Google Docs
+- **Fixed math centering**: Math equations now properly center when pasted
+- **Fixed SVG lookup**: Correctly finds SVG elements inside mjx-container
+
+#### MathJax Integration
+- **Switched from KaTeX to MathJax v3**: Better compatibility with copy-paste operations
+- **Self-contained SVGs**: Set `fontCache: 'none'` for proper clipboard support
+- **Fixed early exit bug**: Removed code that was preventing PNG conversion
+
+### 📦 Bundle Sizes
+- **QuikDown Core**: 9.0 KB minified (unchanged)
+- **QuikDown Bidirectional**: 13.8 KB minified (unchanged)
+- **QuikDown Editor**: 69.2 KB minified (increased from 37.8 KB due to enhanced copy functionality)
+- **CSS Themes**: Light 1.9 KB, Dark 2.6 KB minified
+
+### 🧹 Code Quality
+- **Dead code removal**: Removed ~350 lines of unused code from editor modules
+- **Deprecated function removal**: Removed unused `ensureMathJaxAndTypeset` method
+- **Test coverage adjusted**: Updated thresholds to match post-cleanup coverage levels
+
+### 📚 Documentation Updates
+- **Headless mode guide**: Added documentation for programmatic usage without UI
+- **Minimal UI examples**: Shows how to create custom toolbar experiences
+- **Updated fence types**: Added GeoJSON and STL to supported fence types list
+- **API documentation**: Added new methods and options
+
 ## v1.1.0 (2025-08-23)
 
 ### 💥 Breaking Changes

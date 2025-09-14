@@ -92,6 +92,7 @@ const editor = new QuikdownEditor('#editor', {
 | `mode` | string | `'split'` | Initial view mode: `'source'`, `'split'`, or `'preview'` |
 | `theme` | string | `'auto'` | Theme: `'light'`, `'dark'`, or `'auto'` (follows system) |
 | `showToolbar` | boolean | `true` | Show/hide the toolbar |
+| `showRemoveHR` | boolean | `false` | Show/hide the "Remove HR" button in toolbar |
 | `lazy_linefeeds` | boolean | `false` | Enable lazy linefeeds (single \n becomes `<br>`) |
 | `debounceDelay` | number | `300` | Debounce delay in milliseconds for updates |
 | `placeholder` | string | `'Start typing markdown...'` | Placeholder text for empty editor |
@@ -156,6 +157,39 @@ Changes the view mode.
 
 ```javascript
 editor.setMode('preview'); // 'source', 'split', or 'preview'
+```
+
+#### `removeHR()`
+
+Removes all horizontal rules (---) from the markdown content.
+
+```javascript
+editor.removeHR();
+```
+
+#### `copyRendered()`
+
+Copies the rendered HTML content to clipboard as rich text. Converts math equations to images and GeoJSON maps to static images for better paste compatibility.
+
+```javascript
+editor.copyRendered();
+```
+
+#### `setLazyLinefeeds(enabled)`
+
+Enables or disables lazy linefeeds (single \n becomes `<br>`).
+
+```javascript
+editor.setLazyLinefeeds(true);
+```
+
+#### `setDebounceDelay(delay)`
+
+Sets the debounce delay for input updates (in milliseconds). Use 0 for instant updates.
+
+```javascript
+editor.setDebounceDelay(0); // Instant updates
+editor.setDebounceDelay(300); // Default
 ```
 
 #### `destroy()`
@@ -250,6 +284,62 @@ const editor = new QuikdownEditor('#editor', {
 });
 ```
 
+## Headless and Minimal UI Usage
+
+### Headless Mode (No UI)
+
+You can use QuikdownEditor programmatically without any UI:
+
+```javascript
+// Create editor without toolbar
+const editor = new QuikdownEditor('#hidden-container', {
+    showToolbar: false,
+    mode: 'source'  // Use source mode for direct text manipulation
+});
+
+// Programmatically set content
+editor.setMarkdown('# My Document');
+
+// Get rendered HTML
+const html = editor.getHTML();
+
+// Convert and transform markdown
+const processedMarkdown = editor.getMarkdown();
+```
+
+### Minimal UI
+
+For a minimal interface with just essential buttons:
+
+```javascript
+const editor = new QuikdownEditor('#editor', {
+    showToolbar: true,
+    showRemoveHR: false,  // Hide special buttons
+    mode: 'split',
+    theme: 'light'
+});
+```
+
+### Custom Toolbar
+
+You can hide the built-in toolbar and create your own:
+
+```javascript
+// Create editor without toolbar
+const editor = new QuikdownEditor('#editor', {
+    showToolbar: false
+});
+
+// Add custom buttons
+document.getElementById('my-preview-btn').onclick = () => {
+    editor.setMode('preview');
+};
+
+document.getElementById('my-copy-btn').onclick = () => {
+    editor.copyRendered();
+};
+```
+
 ## Plugin Integration
 
 ### Built-in Fence Types (Lazy Loaded)
@@ -260,11 +350,13 @@ The editor includes built-in handlers for common fence types that automatically 
 |------------|-------------|---------|-------------|
 | `svg` | Inline SVG rendering | None | N/A |
 | `html` | Safe HTML rendering | DOMPurify | Yes |
-| `math`, `katex`, `tex`, `latex` | Math equations | KaTeX | Yes |
+| `math`, `katex`, `tex`, `latex` | Math equations | MathJax v3 | Yes |
 | `csv` | Comma-separated values table | None | N/A |
 | `psv` | Pipe-separated values table | None | N/A |
 | `tsv` | Tab-separated values table | None | N/A |
 | `json`, `json5` | Syntax highlighted JSON | None/Highlight.js | Optional |
+| `geojson` | Interactive maps from GeoJSON | Leaflet | Yes |
+| `stl` | 3D model viewer | Three.js | Yes |
 | `mermaid` | Diagrams | Mermaid | Yes |
 
 ### Highlight.js

@@ -1262,7 +1262,6 @@
             
             // 1. Draw tiles from THIS container only
             const tiles = liveContainer.querySelectorAll('.leaflet-tile');
-            console.log(`Found ${tiles.length} tiles to capture`);
             
             const tilePromises = [];
             for (const tile of tiles) {
@@ -1279,7 +1278,6 @@
                             
                             // Draw tile at correct position
                             ctx.drawImage(img, offsetX, offsetY, tileRect.width, tileRect.height);
-                            console.log(`Drew tile at ${offsetX}, ${offsetY}`);
                         } catch (err) {
                             console.warn('Failed to draw tile:', err);
                         }
@@ -1300,7 +1298,6 @@
             
             // 2. Draw vector overlays (SVG paths for GeoJSON features)
             const svgOverlays = liveContainer.querySelectorAll('svg:not(.leaflet-attribution-flag)');
-            console.log(`Found ${svgOverlays.length} SVG overlays`);
             
             for (const svg of svgOverlays) {
                 // Skip attribution/control overlays
@@ -1338,7 +1335,6 @@
             
             // 3. Draw marker icons if any
             const markerIcons = liveContainer.querySelectorAll('.leaflet-marker-icon');
-            console.log(`Found ${markerIcons.length} marker icons`);
             
             for (const marker of markerIcons) {
                 try {
@@ -1387,14 +1383,11 @@
             const needsRendering = Array.from(mathBlocks).some(block => !block.querySelector('mjx-container'));
             
             if (needsRendering && window.MathJax && window.MathJax.typesetPromise) {
-                console.log('Waiting for MathJax to render...');
                 try {
                     await window.MathJax.typesetPromise(Array.from(mathBlocks));
                 } catch (err) {
                     console.warn('MathJax typesetting failed:', err);
                 }
-            } else {
-                console.log('MathJax already rendered, skipping wait');
             }
         }
         
@@ -1912,7 +1905,6 @@
             const mathElements = Array.from(clone.querySelectorAll('.math-display'));
             
             if (mathElements.length > 0) {
-                console.log(`Processing ${mathElements.length} math elements`);
                 for (const mathEl of mathElements) {
                     try {
                         // Find SVG inside the math element (MathJax creates it)
@@ -2036,7 +2028,6 @@
             // 2. Process GeoJSON maps - convert to static images (following Gem's guide)
             const geojsonContainers = clone.querySelectorAll('.geojson-container');
             if (geojsonContainers.length > 0) {
-                console.log(`Processing ${geojsonContainers.length} GeoJSON containers`);
                 
                 for (const clonedContainer of geojsonContainers) {
                     try {
@@ -2268,14 +2259,6 @@
                                     
                                     await new Promise((resolve, reject) => {
                                         tempImg.onload = function() {
-                                            console.log('HTML fence image loaded:', {
-                                                naturalWidth: tempImg.naturalWidth,
-                                                naturalHeight: tempImg.naturalHeight,
-                                                imgWidth: img.width,
-                                                imgHeight: img.height,
-                                                widthAttr: widthAttr,
-                                                heightAttr: heightAttr
-                                            });
                                             
                                             // Calculate dimensions preserving aspect ratio
                                             let displayWidth = 0;
@@ -2291,14 +2274,12 @@
                                                 displayHeight = parseInt(heightAttr);
                                             }
                                             
-                                            console.log('Parsed dimensions from HTML:', { displayWidth, displayHeight });
                                             
                                             // If only width is specified, calculate height based on aspect ratio
                                             if (displayWidth > 0 && displayHeight === 0) {
                                                 if (tempImg.naturalWidth > 0) {
                                                     const aspectRatio = tempImg.naturalHeight / tempImg.naturalWidth;
                                                     displayHeight = Math.round(displayWidth * aspectRatio);
-                                                    console.log('Calculated height from aspect ratio:', displayHeight);
                                                 }
                                             }
                                             // If only height is specified, calculate width based on aspect ratio
@@ -2306,17 +2287,14 @@
                                                 if (tempImg.naturalHeight > 0) {
                                                     const aspectRatio = tempImg.naturalWidth / tempImg.naturalHeight;
                                                     displayWidth = Math.round(displayHeight * aspectRatio);
-                                                    console.log('Calculated width from aspect ratio:', displayWidth);
                                                 }
                                             }
                                             // If neither specified, use natural dimensions
                                             else if (displayWidth === 0 && displayHeight === 0) {
                                                 displayWidth = tempImg.naturalWidth || 250;
                                                 displayHeight = tempImg.naturalHeight || 200;
-                                                console.log('Using natural dimensions');
                                             }
                                             
-                                            console.log('Final dimensions for canvas:', { displayWidth, displayHeight });
                                             
                                             canvas.width = displayWidth;
                                             canvas.height = displayHeight;
@@ -3116,25 +3094,13 @@
                     // Process all math elements with MathJax if loaded (like squibview)
                     if (window.MathJax && window.MathJax.typesetPromise) {
                         const mathElements = this.previewPanel.querySelectorAll('.math-display');
-                        console.log('Found math elements to process:', mathElements.length);
                         if (mathElements.length > 0) {
                             mathElements.forEach(el => {
-                                console.log('Processing math element:', {
-                                    id: el.id,
-                                    content: el.textContent,
-                                    hasInnerHTML: !!el.innerHTML
-                                });
                             });
                             window.MathJax.typesetPromise(Array.from(mathElements))
                                 .then(() => {
-                                    console.log('MathJax typesetting completed');
                                     mathElements.forEach(el => {
-                                        const mjxContainer = el.querySelector('mjx-container');
-                                        console.log('After typesetting:', {
-                                            id: el.id,
-                                            hasMjxContainer: !!mjxContainer,
-                                            hasSVG: !!el.querySelector('svg')
-                                        });
+                                        el.querySelector('mjx-container');
                                     });
                                 })
                                 .catch(err => {
@@ -3280,7 +3246,6 @@
                             return this.renderHTML(code);
                             
                         case 'math':
-                        case 'katex':
                         case 'tex':
                         case 'latex':
                             return this.renderMath(code, lang);
@@ -3293,6 +3258,9 @@
                         case 'json':
                         case 'json5':
                             return this.renderJSON(code, lang);
+                            
+                        case 'katex':  // Use MathJax for katex fence blocks (backward compatibility)
+                            return this.renderMath(code, 'katex');
                             
                         case 'mermaid':
                             if (window.mermaid) {
@@ -3481,11 +3449,6 @@
             container.style.textAlign = 'center';
             container.style.margin = '1em 0';
             
-            console.log('Creating math container:', {
-                id: id,
-                content: singleLineContent,
-                containerHTML: container.outerHTML
-            });
             
             // Ensure MathJax will be loaded (if not already)
             if (!window.MathJax || !window.MathJax.typesetPromise) {
@@ -3531,7 +3494,6 @@
                 script.async = true;
                 script.onload = () => {
                     window.mathJaxLoading = false;
-                    console.log('MathJax loaded successfully');
                     
                     // Process any existing math elements (like squibview)
                     if (window.MathJax && window.MathJax.typesetPromise) {
@@ -4053,7 +4015,7 @@
             this.options.lazy_linefeeds = enabled;
             // Re-render if we have content
             if (this._markdown) {
-                this.updateFromSource();
+                this.updateFromMarkdown(this._markdown);
             }
         }
         
