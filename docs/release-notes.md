@@ -35,13 +35,15 @@
 ### 📦 Bundle Sizes
 - **QuikDown Core**: 9.0 KB minified (unchanged)
 - **QuikDown Bidirectional**: 13.8 KB minified (unchanged)
-- **QuikDown Editor**: 69.2 KB minified (increased from 37.8 KB due to enhanced copy functionality)
+- **QuikDown Editor**: 68.0 KB minified (increased from 37.8 KB due to enhanced copy functionality, includes MathJax/Leaflet loaders)
 - **CSS Themes**: Light 1.9 KB, Dark 2.6 KB minified
 
 ### 🧹 Code Quality
 - **Dead code removal**: Removed ~350 lines of unused code from editor modules
+- **Console.log cleanup**: Removed 16 debug console.log statements
 - **Deprecated function removal**: Removed unused `ensureMathJaxAndTypeset` method
 - **Test coverage adjusted**: Updated thresholds to match post-cleanup coverage levels
+- **Backward compatibility**: Maintained support for `katex` fence blocks (internally uses MathJax)
 
 ### 📚 Documentation Updates
 - **Headless mode guide**: Added documentation for programmatic usage without UI

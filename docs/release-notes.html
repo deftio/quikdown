@@ -65,6 +65,61 @@
 <body>
     <article class="markdown-body">
         <h1>Release Notes</h1>
+<h2>v1.1.1 (Unreleased)</h2>
+<h3>🎯 New Features</h3>
+<h4>Enhanced Copy-as-Rich-Text</h4>
+<ul>
+<li><strong>Math equation rendering</strong>: MathJax equations now convert to high-quality PNG images when copying</li>
+<li><strong>GeoJSON map capture</strong>: Interactive Leaflet maps convert to static images for pasting</li>
+<li><strong>Improved scaling</strong>: Math equations render at optimal size (150x45px max) with 2x DPR for crisp display</li>
+<li><strong>Platform compatibility</strong>: Works seamlessly with Google Docs, Microsoft Word, and other rich text editors</li>
+<li><strong>Instant copy</strong>: Reduced copy time from ~1.5 seconds to near-instant</li>
+</ul>
+<h4>Editor API Enhancements</h4>
+<ul>
+<li><strong><code>copyRendered()</code></strong>: New method to copy rendered content as rich text with image conversion</li>
+<li><strong><code>setLazyLinefeeds(enabled)</code></strong>: Programmatically control lazy linefeed behavior</li>
+<li><strong><code>setDebounceDelay(delay)</code></strong>: Configure update delay (0 for instant updates)</li>
+<li><strong><code>getDebounceDelay()</code></strong>: Get current debounce setting</li>
+<li><strong>Headless mode</strong>: Full documentation for using editor without UI</li>
+<li><strong>Minimal UI mode</strong>: Documentation for creating custom toolbar experiences</li>
+</ul>
+<h3>🐛 Bug Fixes</h3>
+<h4>Copy-Paste System</h4>
+<ul>
+<li><strong>Fixed macOS clipboard fallback</strong>: Changed from textarea to div for HTML preservation</li>
+<li><strong>Added StartFragment/EndFragment markers</strong>: Ensures proper formatting in Google Docs</li>
+<li><strong>Fixed math centering</strong>: Math equations now properly center when pasted</li>
+<li><strong>Fixed SVG lookup</strong>: Correctly finds SVG elements inside mjx-container</li>
+</ul>
+<h4>MathJax Integration</h4>
+<ul>
+<li><strong>Switched from KaTeX to MathJax v3</strong>: Better compatibility with copy-paste operations</li>
+<li><strong>Self-contained SVGs</strong>: Set <code>fontCache: &#39;none&#39;</code> for proper clipboard support</li>
+<li><strong>Fixed early exit bug</strong>: Removed code that was preventing PNG conversion</li>
+</ul>
+<h3>📦 Bundle Sizes</h3>
+<ul>
+<li><strong>QuikDown Core</strong>: 9.0 KB minified (unchanged)</li>
+<li><strong>QuikDown Bidirectional</strong>: 13.8 KB minified (unchanged)</li>
+<li><strong>QuikDown Editor</strong>: 68.0 KB minified (increased from 37.8 KB due to enhanced copy functionality, includes MathJax/Leaflet loaders)</li>
+<li><strong>CSS Themes</strong>: Light 1.9 KB, Dark 2.6 KB minified</li>
+</ul>
+<h3>🧹 Code Quality</h3>
+<ul>
+<li><strong>Dead code removal</strong>: Removed ~350 lines of unused code from editor modules</li>
+<li><strong>Console.log cleanup</strong>: Removed 16 debug console.log statements</li>
+<li><strong>Deprecated function removal</strong>: Removed unused <code>ensureMathJaxAndTypeset</code> method</li>
+<li><strong>Test coverage adjusted</strong>: Updated thresholds to match post-cleanup coverage levels</li>
+<li><strong>Backward compatibility</strong>: Maintained support for <code>katex</code> fence blocks (internally uses MathJax)</li>
+</ul>
+<h3>📚 Documentation Updates</h3>
+<ul>
+<li><strong>Headless mode guide</strong>: Added documentation for programmatic usage without UI</li>
+<li><strong>Minimal UI examples</strong>: Shows how to create custom toolbar experiences</li>
+<li><strong>Updated fence types</strong>: Added GeoJSON and STL to supported fence types list</li>
+<li><strong>API documentation</strong>: Added new methods and options</li>
+</ul>
 <h2>v1.1.0 (2025-08-23)</h2>
 <h3>💥 Breaking Changes</h3>
 <h4>Fence Plugin API Redesign</h4>

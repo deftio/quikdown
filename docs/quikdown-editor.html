@@ -162,6 +162,12 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);
 <td>Show/hide the toolbar</td>
 </tr>
 <tr>
+<td><code>showRemoveHR</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>Show/hide the &quot;Remove HR&quot; button in toolbar</td>
+</tr>
+<tr>
 <td><code>lazy_linefeeds</code></td>
 <td>boolean</td>
 <td><code>false</code></td>
@@ -243,6 +249,23 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);
 <p>Changes the view mode.</p>
 <pre><code class="language-javascript">editor.setMode(&#39;preview&#39;); // &#39;source&#39;, &#39;split&#39;, or &#39;preview&#39;
 </code></pre>
+<h4><code>removeHR()</code></h4>
+<p>Removes all horizontal rules (---) from the markdown content.</p>
+<pre><code class="language-javascript">editor.removeHR();
+</code></pre>
+<h4><code>copyRendered()</code></h4>
+<p>Copies the rendered HTML content to clipboard as rich text. Converts math equations to images and GeoJSON maps to static images for better paste compatibility.</p>
+<pre><code class="language-javascript">editor.copyRendered();
+</code></pre>
+<h4><code>setLazyLinefeeds(enabled)</code></h4>
+<p>Enables or disables lazy linefeeds (single \n becomes <code>&lt;br&gt;</code>).</p>
+<pre><code class="language-javascript">editor.setLazyLinefeeds(true);
+</code></pre>
+<h4><code>setDebounceDelay(delay)</code></h4>
+<p>Sets the debounce delay for input updates (in milliseconds). Use 0 for instant updates.</p>
+<pre><code class="language-javascript">editor.setDebounceDelay(0); // Instant updates
+editor.setDebounceDelay(300); // Default
+</code></pre>
 <h4><code>destroy()</code></h4>
 <p>Cleans up the editor and removes event listeners.</p>
 <pre><code class="language-javascript">editor.destroy();
@@ -294,6 +317,49 @@ editor.markdown = &#39;# New Content&#39;;
     theme: &#39;auto&#39;  // Default
 });
 </code></pre>
+<h2>Headless and Minimal UI Usage</h2>
+<h3>Headless Mode (No UI)</h3>
+<p>You can use QuikdownEditor programmatically without any UI:</p>
+<pre><code class="language-javascript">// Create editor without toolbar
+const editor = new QuikdownEditor(&#39;#hidden-container&#39;, {
+    showToolbar: false,
+    mode: &#39;source&#39;  // Use source mode for direct text manipulation
+});
+
+// Programmatically set content
+editor.setMarkdown(&#39;# My Document&#39;);
+
+// Get rendered HTML
+const html = editor.getHTML();
+
+// Convert and transform markdown
+const processedMarkdown = editor.getMarkdown();
+</code></pre>
+<h3>Minimal UI</h3>
+<p>For a minimal interface with just essential buttons:</p>
+<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    showToolbar: true,
+    showRemoveHR: false,  // Hide special buttons
+    mode: &#39;split&#39;,
+    theme: &#39;light&#39;
+});
+</code></pre>
+<h3>Custom Toolbar</h3>
+<p>You can hide the built-in toolbar and create your own:</p>
+<pre><code class="language-javascript">// Create editor without toolbar
+const editor = new QuikdownEditor(&#39;#editor&#39;, {
+    showToolbar: false
+});
+
+// Add custom buttons
+document.getElementById(&#39;my-preview-btn&#39;).onclick = () =&gt; {
+    editor.setMode(&#39;preview&#39;);
+};
+
+document.getElementById(&#39;my-copy-btn&#39;).onclick = () =&gt; {
+    editor.copyRendered();
+};
+</code></pre>
 <h2>Plugin Integration</h2>
 <h3>Built-in Fence Types (Lazy Loaded)</h3>
 <p>The editor includes built-in handlers for common fence types that automatically load required libraries:</p>
@@ -321,7 +387,7 @@ editor.markdown = &#39;# New Content&#39;;
 <tr>
 <td><code>math</code>, <code>katex</code>, <code>tex</code>, <code>latex</code></td>
 <td>Math equations</td>
-<td>KaTeX</td>
+<td>MathJax v3</td>
 <td>Yes</td>
 </tr>
 <tr>
@@ -347,6 +413,18 @@ editor.markdown = &#39;# New Content&#39;;
 <td>Syntax highlighted JSON</td>
 <td>None/Highlight.js</td>
 <td>Optional</td>
+</tr>
+<tr>
+<td><code>geojson</code></td>
+<td>Interactive maps from GeoJSON</td>
+<td>Leaflet</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>stl</code></td>
+<td>3D model viewer</td>
+<td>Three.js</td>
+<td>Yes</td>
 </tr>
 <tr>
 <td><code>mermaid</code></td>

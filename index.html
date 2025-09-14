@@ -71,7 +71,7 @@
 <ul>
 <li><strong>quikdown.js</strong> (9.0KB) - Markdown to HTML Parser with theme support, XSS protection, fence callbacks</li>
 <li><strong>quikdown_bd.js</strong> (13.8KB) - Bidirectional (HTML ↔ Markdown) Parser</li>
-<li><strong>quikdown_edit.js</strong> (37.8KB) - Drop-in editor component (HTML ↔ Markdown) with md/split/html views</li>
+<li><strong>quikdown_edit.js</strong> (68.0KB) - Drop-in editor component with live preview, copy-as-rich-text, and lazy-loaded fence handlers</li>
 </ul>
 <p>🚀 <strong><a href="https://deftio.github.io/quikdown/examples/quikdown-live.html">Live Demo</a></strong> | <strong><a href="https://deftio.github.io/quikdown/examples/qde/">Editor Demo</a></strong> | <strong><a href="docs/">Documentation</a></strong></p>
 <p>📍 <strong>Quick Links:</strong> <a href="#installation">Installation</a> • <a href="#quick-start">Quick Start</a> • <a href="#api-reference">API</a> • <a href="#typescript-support">TypeScript</a> • <a href="#fence-plugins">Plugins</a> • <a href="examples/">Examples</a></p>
@@ -79,7 +79,7 @@
 <ul>
 <li>📦 <strong>Zero dependencies</strong> - No external libraries required</li>
 <li>🌐 <strong>Universal</strong> - Works in browsers and Node.js</li>
-<li>🚀 <strong>Lightweight</strong> - 9.0KB (core), 13.8KB (bidirectional), 37.8KB (editor)</li>
+<li>🚀 <strong>Lightweight</strong> - 9.0KB (core), 13.8KB (bidirectional), 68.0KB (editor)</li>
 <li>🔒 <strong>Secure by default</strong> - Built-in XSS protection with URL sanitization</li>
 <li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes with theme support</li>
 <li>🔌 <strong>Plugin system</strong> - Extensible fence block handlers</li>
@@ -137,6 +137,14 @@ const markdown = quikdown_bd.toMarkdown(htmlString);
 editor.setMarkdown(&#39;# Content  \nTo be quik or not to be.&#39;);  // provide default content
 const content = editor.getMarkdown(); // get source content, see APIs for getting / setting HTML 
 </code></pre>
+<p><strong>Note:</strong> The editor automatically lazy-loads plugin libraries from CDNs when needed:</p>
+<ul>
+<li><strong>highlight.js</strong> - Loaded when code blocks are encountered and <code>highlightjs: true</code></li>
+<li><strong>mermaid</strong> - Loaded when mermaid diagrams are found and <code>mermaid: true</code></li>
+<li><strong>DOMPurify</strong> - Loaded when HTML fence blocks are rendered</li>
+<li><strong>KaTeX</strong> - Loaded when math/tex fence blocks are encountered</li>
+</ul>
+<p>This keeps the initial bundle small while providing rich functionality on-demand.</p>
 <h2>Other Configuration Options</h2>
 <p>quikdown supports built-in styles for a &quot;batteries included&quot; experience or you can bring your own CSS themes.  Example css files are provided for basic light and dark themes to get started.</p>
 <pre><code class="language-javascript">const html = quikdown(markdown, {
