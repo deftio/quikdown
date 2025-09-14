@@ -953,11 +953,16 @@ class QuikdownEditor {
                         packages: { '[+]': ['ams'] },
                         inlineMath: [['$', '$'], ['\\(', '\\)']],
                         displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                        processEscapes: true
+                        processEscapes: true,
+                        processEnvironments: true
+                    },
+                    options: {
+                        renderActions: { addMenu: [] },
+                        ignoreHtmlClass: 'tex2jax_ignore',
+                        processHtmlClass: 'tex2jax_process'
                     },
                     svg: {
-                        fontCache: 'global',
-                        scale: 1
+                        fontCache: 'none'  // Important: self-contained SVGs for copy
                     },
                     startup: { typeset: false }
                 };
@@ -1004,11 +1009,16 @@ class QuikdownEditor {
                         packages: { '[+]': ['ams'] },
                         inlineMath: [['$', '$'], ['\\(', '\\)']],
                         displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                        processEscapes: true
+                        processEscapes: true,
+                        processEnvironments: true
+                    },
+                    options: {
+                        renderActions: { addMenu: [] },
+                        ignoreHtmlClass: 'tex2jax_ignore',
+                        processHtmlClass: 'tex2jax_process'
                     },
                     svg: {
-                        fontCache: 'global',
-                        scale: 1
+                        fontCache: 'none'  // Important: self-contained SVGs for copy
                     },
                     startup: { typeset: false }
                 };

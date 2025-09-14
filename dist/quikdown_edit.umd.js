@@ -1908,77 +1908,23 @@
                 }
             }
             
-            // 5. Process Math equations - convert to PNG images (exactly like squibview)
+            // 5. Process Math equations - convert to PNG images (exactly like SquibView)
             const mathElements = Array.from(clone.querySelectorAll('.math-display'));
             
-            // Process math elements - try keeping the SVG directly first
             if (mathElements.length > 0) {
                 console.log(`Processing ${mathElements.length} math elements`);
                 for (const mathEl of mathElements) {
                     try {
-                        // Check what's inside the math element
-                        const mjxContainer = mathEl.querySelector('mjx-container');
-                        console.log('Math element structure:', {
-                            id: mathEl.id,
-                            hasMjxContainer: !!mjxContainer,
-                            hasSVG: !!mathEl.querySelector('svg')
-                        });
-                        
-                        // Look for SVG to convert to PNG (use original DOM for accurate sizing)
-                        let svg = null;
-                        try {
-                            const origMath = mathEl.id ? previewPanel.querySelector(`#${mathEl.id}`) : null;
-                            svg = (origMath && origMath.querySelector('svg')) || mathEl.querySelector('svg');
-                        } catch (_) {
-                            svg = mathEl.querySelector('svg');
-                        }
+                        // Find SVG inside the math element (MathJax creates it)
+                        const svg = mathEl.querySelector('svg');
                         if (!svg) {
                             console.warn('No SVG found in math element, skipping');
                             continue;
                         }
                         
-                        // Convert SVG to PNG data URL using squibview-like normalization
+                        // Convert SVG to PNG data URL (exactly like SquibView)
                         const serializer = new XMLSerializer();
-                        let svgStr = serializer.serializeToString(svg);
-                        // Normalize: ensure xmlns, replace currentColor, convert ex->px, ensure viewBox
-                        try {
-                            svgStr = svgStr.replace(/currentColor/g, 'black');
-                            const tdiv = document.createElement('div');
-                            tdiv.innerHTML = svgStr;
-                            const ts = tdiv.querySelector('svg');
-                            if (ts) {
-                                if (!ts.hasAttribute('xmlns')) {
-                                    ts.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                                }
-                                if (!ts.hasAttribute('xmlns:xlink')) {
-                                    ts.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-                                }
-                                const exToPx = (val) => {
-                                    if (!val) return null;
-                                    if (/ex$/i.test(val)) {
-                                        const num = parseFloat(val);
-                                        if (!isNaN(num)) return String(Math.round(num * 8));
-                                    }
-                                    if (/px$/i.test(val)) {
-                                        return String(parseFloat(val));
-                                    }
-                                    const num = parseFloat(val);
-                                    return isNaN(num) ? null : String(num);
-                                };
-                                const w = ts.getAttribute('width');
-                                const h = ts.getAttribute('height');
-                                const wPx = exToPx(w);
-                                const hPx = exToPx(h);
-                                if (wPx) ts.setAttribute('width', wPx);
-                                if (hPx) ts.setAttribute('height', hPx);
-                                if (!ts.hasAttribute('viewBox')) {
-                                    const vw = wPx ? parseFloat(wPx) : (ts.viewBox && ts.viewBox.baseVal ? ts.viewBox.baseVal.width : null);
-                                    const vh = hPx ? parseFloat(hPx) : (ts.viewBox && ts.viewBox.baseVal ? ts.viewBox.baseVal.height : null);
-                                    if (vw && vh) ts.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
-                                }
-                                svgStr = new XMLSerializer().serializeToString(ts);
-                            }
-                        } catch (_) {}
+                        const svgStr = serializer.serializeToString(svg);
                         const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
                         const url = URL.createObjectURL(svgBlob);
                         
@@ -1987,82 +1933,60 @@
                             img.onload = function () {
                                 const canvas = document.createElement('canvas');
                                 
-                                // Prefer the on-screen rendered size from the ORIGINAL element
-                                let rect = { width: 0, height: 0 };
+                                // Determine SVG dimensions robustly (exactly like SquibView)
+                                let width, height;
                                 try {
-                                    rect = svg.getBoundingClientRect();
-                                } catch (_) {}
-                                let width = Math.round(rect.width);
-                                let height = Math.round(rect.height);
-                                let usedRect = width > 0 && height > 0;
-
-                                if (!usedRect) {
-                                    // Fallback: try absolute units or viewBox
-                                    try {
-                                        width = svg.width.baseVal.value;
-                                        height = svg.height.baseVal.value;
-                                    } catch (e) {
-                                        if (svg.viewBox && svg.viewBox.baseVal) {
-                                            width = svg.viewBox.baseVal.width;
-                                            height = svg.viewBox.baseVal.height;
-                                        } else {
-                                            width = img.naturalWidth || img.width || 200;
-                                            height = img.naturalHeight || img.height || 50;
-                                        }
+                                    // First try baseVal.value (works for absolute units)
+                                    width = svg.width.baseVal.value;
+                                    height = svg.height.baseVal.value;
+                                } catch (e) {
+                                    // Fallback for relative units - use viewBox or rendered size
+                                    if (svg.viewBox && svg.viewBox.baseVal) {
+                                        width = svg.viewBox.baseVal.width;
+                                        height = svg.viewBox.baseVal.height;
+                                    } else {
+                                        // Use the natural size of the loaded image
+                                        width = img.naturalWidth || img.width || 200;
+                                        height = img.naturalHeight || img.height || 50;
                                     }
                                 }
                                 
-                                // Target constraints
+                                // Scale down for sane paste sizes (exactly like SquibView)
                                 const targetMaxWidth = 300;
                                 const targetMaxHeight = 100;
                                 
-                                // If we used screen rect, don't apply base 0.10 shrink
-                                let scaleFactor = usedRect ? 1.0 : 0.10;
+                                // Apply base downsizing for MathJax SVGs
+                                let scaleFactor = 0.10; // base downsizing for MathJax SVGs
                                 
                                 let scaledWidth = width * scaleFactor;
                                 let scaledHeight = height * scaleFactor;
+                                
+                                // If still too large after base scaling, scale down further
                                 if (scaledWidth > targetMaxWidth || scaledHeight > targetMaxHeight) {
                                     const scaleX = targetMaxWidth / scaledWidth;
                                     const scaleY = targetMaxHeight / scaledHeight;
                                     scaleFactor *= Math.min(scaleX, scaleY);
-                                    scaledWidth = width * scaleFactor;
-                                    scaledHeight = height * scaleFactor;
                                 }
-                                width = Math.max(1, Math.round(scaledWidth));
-                                height = Math.max(1, Math.round(scaledHeight));
                                 
-                                // Use device pixel ratio for crisp rasterization
-                                const dpr = Math.max(1, window.devicePixelRatio || 1);
-                                canvas.width = Math.round(width * dpr);
-                                canvas.height = Math.round(height * dpr);
+                                width *= scaleFactor;
+                                height *= scaleFactor;
+                                
+                                canvas.width = width;
+                                canvas.height = height;
                                 const ctx = canvas.getContext('2d');
-                                ctx.scale(dpr, dpr);
                                 
                                 // White background
                                 ctx.fillStyle = "#FFFFFF";
-                                ctx.fillRect(0, 0, width, height);
+                                ctx.fillRect(0, 0, canvas.width, canvas.height);
                                 
-                                // Draw the SVG image at logical size
-                                ctx.drawImage(img, 0, 0, width, height);
-                                
-                                // Debug: Check if anything was drawn
-                                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                                const pixels = imageData.data;
-                                let nonWhitePixels = 0;
-                                for (let i = 0; i < pixels.length; i += 4) {
-                                    if (pixels[i] !== 255 || pixels[i+1] !== 255 || pixels[i+2] !== 255) {
-                                        nonWhitePixels++;
-                                    }
-                                }
-                                console.log(`Canvas ${canvas.width}x${canvas.height}, non-white pixels: ${nonWhitePixels}/${pixels.length/4} (${(nonWhitePixels/(pixels.length/4)*100).toFixed(2)}%)`);
+                                // Draw the SVG image
+                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                                 
                                 // Clean up URL
                                 URL.revokeObjectURL(url);
                                 
                                 // Return data URL
-                                const dataUrl = canvas.toDataURL('image/png', 1.0);
-                                console.log('Generated data URL length:', dataUrl.length);
-                                resolve(dataUrl);
+                                resolve(canvas.toDataURL('image/png'));
                             };
                             
                             img.onerror = () => {
@@ -2073,33 +1997,16 @@
                             img.src = url;
                         });
                         
-                        // Replace math element with img tag containing the PNG data URL
+                        // Replace math element with img tag containing the PNG data URL (exactly like SquibView)
                         const imgElement = document.createElement('img');
                         imgElement.src = dataUrl;
-                        imgElement.style.cssText = 'display:inline-block;margin:0.5em 0;vertical-align:middle;';
-                        // Set explicit dimensions for better paste behavior
-                        try {
-                            const probe = new Image();
-                            probe.src = dataUrl;
-                            await new Promise((resolve) => { probe.onload = resolve; probe.onerror = resolve; });
-                            if (probe.width && probe.height) {
-                                imgElement.width = probe.width / (window.devicePixelRatio || 1);
-                                imgElement.height = probe.height / (window.devicePixelRatio || 1);
-                                imgElement.style.width = imgElement.width + 'px';
-                                imgElement.style.height = imgElement.height + 'px';
-                            }
-                        } catch (_) {}
+                        imgElement.style.cssText = 'display:block;margin:0.5em 0;max-width:100%;height:auto;';
                         imgElement.alt = 'Math equation';
                         
-                        console.log('Replacing math element with image, data URL starts with:', dataUrl.substring(0, 50));
                         mathEl.parentNode.replaceChild(imgElement, mathEl);
-                        console.log('Replacement complete, img element created');
                     } catch (error) {
-                        console.error('Failed to convert math element:', error);
-                        // Keep track of failure
-                        console.log('Math element that failed:', mathEl.innerHTML);
-                        // Mark the element so we can see it failed
-                        mathEl.style.border = '2px solid red';
+                        console.error('Failed to convert math element to image:', error);
+                        // Keep the original element if conversion fails
                     }
                 }
             }
@@ -3860,11 +3767,16 @@
                             packages: { '[+]': ['ams'] },
                             inlineMath: [['$', '$'], ['\\(', '\\)']],
                             displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                            processEscapes: true
+                            processEscapes: true,
+                            processEnvironments: true
+                        },
+                        options: {
+                            renderActions: { addMenu: [] },
+                            ignoreHtmlClass: 'tex2jax_ignore',
+                            processHtmlClass: 'tex2jax_process'
                         },
                         svg: {
-                            fontCache: 'global',
-                            scale: 1
+                            fontCache: 'none'  // Important: self-contained SVGs for copy
                         },
                         startup: { typeset: false }
                     };
@@ -3911,11 +3823,16 @@
                             packages: { '[+]': ['ams'] },
                             inlineMath: [['$', '$'], ['\\(', '\\)']],
                             displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                            processEscapes: true
+                            processEscapes: true,
+                            processEnvironments: true
+                        },
+                        options: {
+                            renderActions: { addMenu: [] },
+                            ignoreHtmlClass: 'tex2jax_ignore',
+                            processHtmlClass: 'tex2jax_process'
                         },
                         svg: {
-                            fontCache: 'global',
-                            scale: 1
+                            fontCache: 'none'  // Important: self-contained SVGs for copy
                         },
                         startup: { typeset: false }
                     };
