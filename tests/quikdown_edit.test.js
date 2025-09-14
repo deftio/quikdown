@@ -235,7 +235,7 @@ describe('QuikdownEditor', () => {
             await editor.setMarkdown(math);
             const html = editor.getHTML();
             
-            expect(html).toContain('qde-math-container');
+            expect(html).toContain('math-display');
             expect(html).toContain('data-qd-source');
         });
 
@@ -764,25 +764,25 @@ describe('QuikdownEditor', () => {
         test('should handle renderMath fence', async () => {
             await editor.setMarkdown('```math\nx^2\n```');
             const html = editor.getHTML();
-            expect(html).toContain('qde-math-container');
+            expect(html).toContain('math-display');
         });
 
         test('should handle katex fence', async () => {
             await editor.setMarkdown('```katex\n\\frac{1}{2}\n```');
             const html = editor.getHTML();
-            expect(html).toContain('qde-math-container');
+            expect(html).toContain('math-display');
         });
 
         test('should handle tex fence', async () => {
             await editor.setMarkdown('```tex\n\\alpha\n```');
             const html = editor.getHTML();
-            expect(html).toContain('qde-math-container');
+            expect(html).toContain('math-display');
         });
 
         test('should handle latex fence', async () => {
             await editor.setMarkdown('```latex\n\\beta\n```');
             const html = editor.getHTML();
-            expect(html).toContain('qde-math-container');
+            expect(html).toContain('math-display');
         });
 
         test('should handle json5 fence', async () => {

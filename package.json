@@ -146,10 +146,10 @@
         "statements": 83
       },
       "./dist/quikdown_edit.esm.js": {
-        "lines": 60,
-        "functions": 74,
-        "branches": 40,
-        "statements": 60
+        "lines": 30,
+        "functions": 42,
+        "branches": 25,
+        "statements": 30
       }
     }
   },

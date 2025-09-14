@@ -133,7 +133,7 @@ describe('QuikdownEditor ESM', () => {
             await editor.setMarkdown(math);
             const html = editor.getHTML();
             
-            expect(html).toContain('qde-math-container');
+            expect(html).toContain('math-display');
             expect(html).toContain('data-qd-source');
         });
 
@@ -562,7 +562,7 @@ Fourth paragraph`;
             // Complex Math
             await editor.setMarkdown('```katex\n\\sum_{i=0}^{n} x_i = \\int_{0}^{1} f(x) dx\n```');
             html = editor.getHTML();
-            expect(html).toContain('qde-math-container');
+            expect(html).toContain('math-display');
             
             // HTML with script (should be sanitized)
             await editor.setMarkdown('```html\n<script>alert("xss")</script><div>Safe</div>\n```');

@@ -1951,12 +1951,12 @@
                                     }
                                 }
                                 
-                                // Scale down for sane paste sizes (exactly like SquibView)
-                                const targetMaxWidth = 300;
-                                const targetMaxHeight = 100;
+                                // Scale down for much smaller paste sizes
+                                const targetMaxWidth = 150;  // Further reduced
+                                const targetMaxHeight = 45;   // Further reduced
                                 
-                                // Apply base downsizing for MathJax SVGs
-                                let scaleFactor = 0.10; // base downsizing for MathJax SVGs
+                                // Apply aggressive downsizing for MathJax SVGs
+                                let scaleFactor = 0.04; // Further reduced for smaller output
                                 
                                 let scaledWidth = width * scaleFactor;
                                 let scaledHeight = height * scaleFactor;
@@ -1971,16 +1971,22 @@
                                 width *= scaleFactor;
                                 height *= scaleFactor;
                                 
-                                canvas.width = width;
-                                canvas.height = height;
+                                // Use higher DPR for crisp rendering at smaller sizes
+                                const dpr = 2; // Fixed 2x for consistent quality
+                                canvas.width = width * dpr;
+                                canvas.height = height * dpr;
+                                canvas.style.width = width + 'px';
+                                canvas.style.height = height + 'px';
+                                
                                 const ctx = canvas.getContext('2d');
+                                ctx.scale(dpr, dpr);
                                 
                                 // White background
                                 ctx.fillStyle = "#FFFFFF";
-                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                ctx.fillRect(0, 0, width, height);
                                 
-                                // Draw the SVG image
-                                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                                // Draw the SVG image at logical size
+                                ctx.drawImage(img, 0, 0, width, height);
                                 
                                 // Clean up URL
                                 URL.revokeObjectURL(url);
@@ -1997,10 +2003,26 @@
                             img.src = url;
                         });
                         
-                        // Replace math element with img tag containing the PNG data URL (exactly like SquibView)
+                        // Replace math element with img tag containing the PNG data URL
                         const imgElement = document.createElement('img');
                         imgElement.src = dataUrl;
-                        imgElement.style.cssText = 'display:block;margin:0.5em 0;max-width:100%;height:auto;';
+                        
+                        // Extract dimensions from the data URL canvas
+                        const img2 = new Image();
+                        img2.src = dataUrl;
+                        await new Promise((resolve) => {
+                            img2.onload = resolve;
+                            img2.onerror = resolve;
+                            setTimeout(resolve, 100); // Timeout fallback
+                        });
+                        
+                        // Set explicit dimensions (accounting for DPR)
+                        const displayWidth = img2.naturalWidth / 2;  // Divide by DPR
+                        const displayHeight = img2.naturalHeight / 2;
+                        
+                        imgElement.width = displayWidth;
+                        imgElement.height = displayHeight;
+                        imgElement.style.cssText = `display:inline-block;margin:0.5em 0;width:${displayWidth}px;height:${displayHeight}px;vertical-align:middle;`;
                         imgElement.alt = 'Math equation';
                         
                         mathEl.parentNode.replaceChild(imgElement, mathEl);
@@ -2085,284 +2107,6 @@
             }
             
             
-            /* OLD PROCESSING REMOVED - using squibview's simpler approach above
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = svgStr;
-                        const tempSvg = tempDiv.querySelector('svg');
-                        if (tempSvg) {
-                            // Ensure SVG has the namespace
-                            if (!tempSvg.hasAttribute('xmlns')) {
-                                tempSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-                            }
-                            tempSvg.setAttribute('width', width.toString());
-                            tempSvg.setAttribute('height', height.toString());
-                            // Also set viewBox if not present
-                            if (!tempSvg.hasAttribute('viewBox')) {
-                                tempSvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-                            }
-                            svgStr = new XMLSerializer().serializeToString(tempSvg);
-                        }
-                        
-                        // Scale math images - MathJax viewBox dimensions are very large
-                        const targetMaxWidth = 300;   // Target max width for math images  
-                        const targetMaxHeight = 100;  // Target max height for math images
-                        
-                        // Apply base scale factor for MathJax SVGs which have oversized viewBox
-                        let scaleFactor = 0.10; // Base scale as per squibview
-                        
-                        let finalWidth = width * scaleFactor;
-                        let finalHeight = height * scaleFactor;
-                        
-                        // If still too large after base scaling, scale down further
-                        if (finalWidth > targetMaxWidth || finalHeight > targetMaxHeight) {
-                            const additionalScale = Math.min(targetMaxWidth / finalWidth, targetMaxHeight / finalHeight);
-                            finalWidth *= additionalScale;
-                            finalHeight *= additionalScale;
-                        }
-                        
-                        console.log('Math scaling:', {
-                            original: { width, height },
-                            scaleFactor: scaleFactor,
-                            final: { finalWidth, finalHeight }
-                        });
-                        
-                        // Create canvas (no scaling - exactly like squibview)
-                        const canvas = document.createElement('canvas');
-                        canvas.width = finalWidth;
-                        canvas.height = finalHeight;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // White background
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        
-                        // Try blob URL approach like squibview  
-                        const svgBlob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
-                        const blobUrl = URL.createObjectURL(svgBlob);
-                        
-                        const img = new Image();
-                        const dataUrl = await new Promise((resolve, reject) => {
-                            img.onload = function() {
-                                console.log('SVG Image loaded:', {
-                                    naturalWidth: img.naturalWidth,
-                                    naturalHeight: img.naturalHeight,
-                                    width: img.width,
-                                    height: img.height
-                                });
-                                try {
-                                    // Draw the image to fill the entire canvas
-                                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                                    
-                                    // Check what was drawn - sample a few pixels
-                                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                                    
-                                    // Count non-white pixels to see if anything was drawn
-                                    let nonWhiteCount = 0;
-                                    for (let i = 0; i < imageData.data.length; i += 4) {
-                                        const r = imageData.data[i];
-                                        const g = imageData.data[i + 1];
-                                        const b = imageData.data[i + 2];
-                                        if (r !== 255 || g !== 255 || b !== 255) {
-                                            nonWhiteCount++;
-                                        }
-                                    }
-                                    
-                                    console.log('Canvas pixel analysis:', {
-                                        canvasSize: { width: canvas.width, height: canvas.height },
-                                        nonWhitePixels: nonWhiteCount,
-                                        totalPixels: imageData.data.length / 4,
-                                        percentNonWhite: (nonWhiteCount / (imageData.data.length / 4) * 100).toFixed(2) + '%'
-                                    });
-                                    
-                                    // Clean up blob URL
-                                    URL.revokeObjectURL(blobUrl);
-                                    
-                                    // Convert canvas to data URL
-                                    const pngDataUrl = canvas.toDataURL('image/png', 1.0);
-                                    resolve(pngDataUrl);
-                                } catch (e) {
-                                    console.error('Error drawing MathJax SVG:', e);
-                                    URL.revokeObjectURL(blobUrl);
-                                    reject(e);
-                                }
-                            };
-                            
-                            img.onerror = (e) => {
-                                console.error('Failed to load MathJax SVG:', e);
-                                console.error('SVG that failed (first 500 chars):', svgStr.substring(0, 500));
-                                URL.revokeObjectURL(blobUrl);
-                                reject(new Error('Failed to load SVG'));
-                            };
-                            
-                            img.src = blobUrl;
-                        });
-                        
-                        // Replace math element with img tag
-                        const imgElement = document.createElement('img');
-                        imgElement.src = dataUrl;
-                        imgElement.width = finalWidth;
-                        imgElement.height = finalHeight;
-                        imgElement.style.width = finalWidth + 'px';
-                        imgElement.style.height = finalHeight + 'px';
-                        imgElement.style.verticalAlign = 'middle';
-                        imgElement.style.margin = '0.5em';
-                        imgElement.alt = 'Math equation';
-                        imgElement.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
-                        
-                        console.log('Math converted to image:', {
-                            dataUrlLength: dataUrl.length,
-                            width: finalWidth,
-                            height: finalHeight
-                        });
-                        
-                        mathEl.parentNode.replaceChild(imgElement, mathEl);
-                    } catch (err) {
-                        console.warn('Failed to convert math element:', err);
-                    }
-                }
-            }
-            
-            // Skip the fallback processing since we already handled all math containers above
-            /* Removed duplicate math processing
-            for (const mathEl of mathElements) {
-                try {
-                    
-                    // Look for SVG in the math container (in case MathJax already processed it)
-                    // MathJax might have placed an mjx-container inside our container
-                    let svg = mathEl.querySelector('svg');
-                    if (!svg) {
-                        const mjxContainer = mathEl.querySelector('mjx-container');
-                        if (mjxContainer) {
-                            svg = mjxContainer.querySelector('svg');
-                        }
-                    }
-                    
-                    if (svg) {
-                        // Handle SVG-based math (MathJax) - use same approach as mjx-container
-                        const serializer = new XMLSerializer();
-                        let svgStr = serializer.serializeToString(svg);
-                        
-                        // Get dimensions from SVG
-                        const widthAttr = svg.getAttribute('width');
-                        const heightAttr = svg.getAttribute('height');
-                        
-                        let width, height;
-                        
-                        // Use viewBox dimensions first (actual coordinate system)
-                        if (svg.viewBox && svg.viewBox.baseVal) {
-                            width = svg.viewBox.baseVal.width;
-                            height = svg.viewBox.baseVal.height;
-                        } else if (widthAttr && widthAttr.includes('ex')) {
-                            width = parseFloat(widthAttr) * 8; // 1ex ≈ 8px
-                            height = heightAttr ? parseFloat(heightAttr) * 8 : 50;
-                        } else if (widthAttr) {
-                            width = parseFloat(widthAttr);
-                            height = heightAttr ? parseFloat(heightAttr) : 50;
-                        } else {
-                            width = 200;
-                            height = 50;
-                        }
-                        
-                        // Ensure SVG has explicit pixel dimensions
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = svgStr;
-                        const tempSvg = tempDiv.querySelector('svg');
-                        if (tempSvg) {
-                            tempSvg.setAttribute('width', width.toString());
-                            tempSvg.setAttribute('height', height.toString());
-                            if (!tempSvg.hasAttribute('viewBox')) {
-                                tempSvg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-                            }
-                            svgStr = new XMLSerializer().serializeToString(tempSvg);
-                        }
-                                
-                        // Scale down math images (same as mjx-container approach)
-                        const targetMaxWidth = 300;
-                        const targetMaxHeight = 100;
-                        
-                        // Apply base scale factor for MathJax SVGs
-                        let scaleFactor = 0.10;
-                        
-                        let finalWidth = width * scaleFactor;
-                        let finalHeight = height * scaleFactor;
-                        
-                        // If still too large after base scaling, scale down further
-                        if (finalWidth > targetMaxWidth || finalHeight > targetMaxHeight) {
-                            const additionalScale = Math.min(targetMaxWidth / finalWidth, targetMaxHeight / finalHeight);
-                            finalWidth *= additionalScale;
-                            finalHeight *= additionalScale;
-                        }
-                        
-                        const scale = 2;
-                        
-                        const canvas = document.createElement('canvas');
-                        canvas.width = finalWidth * scale;
-                        canvas.height = finalHeight * scale;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // White background (fill entire canvas)
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        
-                        const img = new Image();
-                        const dataUrl = await new Promise((resolve, reject) => {
-                            img.onload = function() {
-                                try {
-                                    // Draw to entire canvas
-                                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                                    const pngDataUrl = canvas.toDataURL('image/png', 1.0);
-                                    resolve(pngDataUrl);
-                                } catch (e) {
-                                    console.error('Error drawing fallback MathJax SVG:', e);
-                                    reject(e);
-                                }
-                            };
-                            
-                            img.onerror = (e) => {
-                                console.error('Failed to load fallback MathJax SVG:', e);
-                                reject(new Error('Failed to load SVG'));
-                            };
-                            
-                            // Use data URL
-                            const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgStr);
-                            img.src = svgDataUrl;
-                        });
-                        
-                        const replacementImg = document.createElement('img');
-                        replacementImg.src = dataUrl;
-                        replacementImg.style.verticalAlign = 'middle';
-                        replacementImg.style.margin = '0.5em';
-                        replacementImg.alt = 'Math equation';
-                        replacementImg.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
-                        
-                        mathEl.parentNode.replaceChild(replacementImg, mathEl);
-                    } else {
-                        // Handle HTML-based math (KaTeX) - use html2canvas approach
-                        // For now, add inline styles to make it copy better
-                        const katexEl = mathEl.querySelector('.katex');
-                        if (katexEl) {
-                            // Add inline styles for better copying
-                            katexEl.style.fontSize = '1.21em';
-                            katexEl.style.textAlign = 'center';
-                            katexEl.style.margin = '0.5em';
-                            katexEl.style.display = 'inline-block';
-                            
-                            // Make sure all child elements have proper styles
-                            katexEl.querySelectorAll('*').forEach(el => {
-                                const computed = window.getComputedStyle(el);
-                                if (computed.fontFamily) el.style.fontFamily = computed.fontFamily;
-                                if (computed.fontSize) el.style.fontSize = computed.fontSize;
-                                if (computed.fontStyle) el.style.fontStyle = computed.fontStyle;
-                                if (computed.fontWeight) el.style.fontWeight = computed.fontWeight;
-                            });
-                        }
-                    }
-                    
-                } catch (error) {
-                    console.error('Failed to convert math element:', error);
-                }
-            }
-            */
             
             // 6. Process GeoJSON/Leaflet maps - capture as single image (compose tiles + overlays)
             const mapContainers = clone.querySelectorAll('[data-qd-lang="geojson"]');
@@ -3804,83 +3548,6 @@
                     console.error('Failed to load MathJax');
                 };
                 document.head.appendChild(script);
-            }
-        }
-        
-        /**
-         * DEPRECATED - Ensures MathJax is loaded and typesets the math element
-         */
-        async ensureMathJaxAndTypeset(id, code, lang) {
-            if (typeof window.MathJax === 'undefined') {
-                if (window.mathJaxLoading) return;
-                window.mathJaxLoading = true;
-                
-                // Configure MathJax before loading script to ensure SVG output
-                if (!window.MathJax) {
-                    window.MathJax = {
-                        loader: { load: ['input/tex', 'output/svg'] },
-                        tex: { 
-                            packages: { '[+]': ['ams'] },
-                            inlineMath: [['$', '$'], ['\\(', '\\)']],
-                            displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                            processEscapes: true,
-                            processEnvironments: true
-                        },
-                        options: {
-                            renderActions: { addMenu: [] },
-                            ignoreHtmlClass: 'tex2jax_ignore',
-                            processHtmlClass: 'tex2jax_process'
-                        },
-                        svg: {
-                            fontCache: 'none'  // Important: self-contained SVGs for copy
-                        },
-                        startup: { typeset: false }
-                    };
-                }
-                
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js';
-                script.async = true;
-                script.onload = () => {
-                    window.mathJaxLoading = false;
-                    console.log('MathJax loaded, processing element:', id);
-                    // Process the element after a small delay to ensure it's in the DOM
-                    setTimeout(() => {
-                        const element = document.getElementById(id);
-                        if (element && window.MathJax && window.MathJax.typesetPromise) {
-                            console.log('Processing lazy-loaded MathJax for:', id, element.textContent);
-                            window.MathJax.typesetPromise([element]).then(() => {
-                                console.log('MathJax lazy processing complete for:', id);
-                            }).catch(err => {
-                                console.warn('MathJax rendering failed:', err);
-                                element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
-                            });
-                        } else {
-                            console.warn('Element not found after MathJax load:', id);
-                        }
-                    }, 100);
-                };
-                script.onerror = () => {
-                    window.mathJaxLoading = false;
-                    console.error('Failed to load MathJax');
-                };
-                document.head.appendChild(script);
-            } else if (window.MathJax && window.MathJax.typesetPromise) {
-                // MathJax is loaded, process the element after a delay
-                setTimeout(() => {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        console.log('Processing already-loaded MathJax for:', id, element.textContent);
-                        window.MathJax.typesetPromise([element]).then(() => {
-                            console.log('MathJax processing complete (already loaded) for:', id);
-                        }).catch(err => {
-                            console.warn('MathJax rendering failed:', err);
-                            element.innerHTML = `<pre class="qde-error">Math rendering failed: ${this.escapeHtml(err.message)}</pre>`;
-                        });
-                    } else {
-                        console.warn('Element not found for MathJax processing:', id);
-                    }
-                }, 100);
             }
         }
         
