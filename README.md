@@ -12,6 +12,10 @@ For small and fast projects quikdown includes built-in inline styles for a "batt
 - **quikdown.js** (9.0KB) - Markdown to HTML Parser with theme support, XSS protection, fence callbacks
 - **quikdown_bd.js** (13.8KB) - Bidirectional (HTML ↔ Markdown) Parser
 - **quikdown_edit.js** (68.0KB) - Drop-in editor component with live preview, copy-as-rich-text, and lazy-loaded fence handlers
+- **quikdown_ast.js** - Markdown to AST (Abstract Syntax Tree) Parser
+- **quikdown_json.js** - Markdown to JSON conversion
+- **quikdown_yaml.js** - Markdown to YAML conversion
+- **quikdown_ast_html.js** - AST/JSON/YAML to HTML renderer
 
 🚀 **[Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** | **[Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** | **[Documentation](docs/)**
 
@@ -92,14 +96,41 @@ Note: quikdown does not provide a *generic* html to markdown conversion but uses
 
 ```javascript
 const editor = new QuikdownEditor('#container', {
-  mode: 'split',           // 'source', 'split', 'preview' 
+  mode: 'split',           // 'source', 'split', 'preview'
   theme: 'auto',           // 'light', 'dark', 'auto'
   plugins: { highlightjs: true, mermaid: true } // built-in fence handlers, see API docs for custom plugins
 });
 
 editor.setMarkdown('# Content  \nTo be quik or not to be.');  // provide default content
-const content = editor.getMarkdown(); // get source content, see APIs for getting / setting HTML 
+const content = editor.getMarkdown(); // get source content, see APIs for getting / setting HTML
 ```
+
+### AST Libraries (quikdown_ast, quikdown_json, quikdown_yaml)
+
+Convert markdown to structured data formats for programmatic manipulation:
+
+```javascript
+import quikdown_ast from 'quikdown/ast';
+import quikdown_json from 'quikdown/json';
+import quikdown_yaml from 'quikdown/yaml';
+import quikdown_ast_html from 'quikdown/ast-html';
+
+const markdown = '# Hello\n\nWorld **bold**';
+
+// Markdown → AST object
+const ast = quikdown_ast(markdown);
+
+// Markdown → JSON string
+const json = quikdown_json(markdown);
+
+// Markdown → YAML string
+const yaml = quikdown_yaml(markdown);
+
+// AST/JSON/YAML → HTML
+const html = quikdown_ast_html(ast);  // or pass json/yaml string
+```
+
+The AST parsers are "forgiving" - they handle malformed markdown gracefully without throwing errors. See [AST Documentation](docs/quikdown-ast.md) for the complete node type reference.
 
 **Note:** The editor automatically lazy-loads plugin libraries from CDNs when needed:
 - **highlight.js** - Loaded when code blocks are encountered and `highlightjs: true`

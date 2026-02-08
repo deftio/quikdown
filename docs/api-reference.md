@@ -580,9 +580,66 @@ quikdown is distributed in multiple formats:
 | ESM minified | `dist/quikdown_bd.esm.min.js` | Production ES6 |
 | CommonJS | `dist/quikdown_bd.cjs` | Node.js require() |
 
+## AST Libraries
+
+For structured data output, quikdown provides AST (Abstract Syntax Tree) libraries:
+
+### `quikdown_ast(markdown, options?)`
+
+Parses markdown into an AST object.
+
+```javascript
+import quikdown_ast from 'quikdown/ast';
+
+const ast = quikdown_ast('# Hello **world**');
+// { type: 'document', children: [{ type: 'heading', level: 1, ... }] }
+```
+
+### `quikdown_json(markdown, options?)`
+
+Converts markdown to a JSON string.
+
+```javascript
+import quikdown_json from 'quikdown/json';
+
+const json = quikdown_json('# Hello', { indent: 2 });
+```
+
+### `quikdown_yaml(markdown, options?)`
+
+Converts markdown to a YAML string.
+
+```javascript
+import quikdown_yaml from 'quikdown/yaml';
+
+const yaml = quikdown_yaml('# Hello');
+```
+
+### `quikdown_ast_html(input, options?)`
+
+Renders AST, JSON, YAML, or markdown to HTML.
+
+```javascript
+import quikdown_ast_html from 'quikdown/ast-html';
+
+const html = quikdown_ast_html(ast);  // or json/yaml string
+```
+
+See [AST Documentation](quikdown-ast.md) for complete node type reference.
+
+### AST Module Formats
+
+| Format | File | Usage |
+|--------|------|-------|
+| ESM | `dist/quikdown_ast.esm.js` | ES6 imports |
+| UMD | `dist/quikdown_ast.umd.min.js` | Browser |
+| CommonJS | `dist/quikdown_ast.cjs` | Node.js |
+
+Similar formats available for `quikdown_json`, `quikdown_yaml`, and `quikdown_ast_html`.
+
 ## TypeScript
 
-TypeScript definitions are included for both modules:
+TypeScript definitions are included for all modules:
 
 ```typescript
 declare module 'quikdown' {

@@ -202,5 +202,249 @@ export default [
       banner: banner.replace('quikdown - Lightweight', 'Quikdown Editor - Drop-in')
     },
     plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // ========== quikdown_ast (AST Parser) Builds ==========
+
+  // AST UMD build (browser)
+  {
+    input: 'src/quikdown_ast.js',
+    output: {
+      file: 'dist/quikdown_ast.umd.js',
+      format: 'umd',
+      name: 'quikdown_ast',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast - AST')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // AST UMD minified
+  {
+    input: 'src/quikdown_ast.js',
+    output: {
+      file: 'dist/quikdown_ast.umd.min.js',
+      format: 'umd',
+      name: 'quikdown_ast',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast - AST'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+
+  // AST ESM build
+  {
+    input: 'src/quikdown_ast.js',
+    output: {
+      file: 'dist/quikdown_ast.esm.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast - AST')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // AST ESM minified
+  {
+    input: 'src/quikdown_ast.js',
+    output: {
+      file: 'dist/quikdown_ast.esm.min.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast - AST'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+
+  // AST CommonJS build
+  {
+    input: 'src/quikdown_ast.js',
+    output: {
+      file: 'dist/quikdown_ast.cjs',
+      format: 'cjs',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast - AST')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // ========== quikdown_json (JSON Output) Builds ==========
+
+  // JSON UMD build (browser)
+  {
+    input: 'src/quikdown_json.js',
+    output: {
+      file: 'dist/quikdown_json.umd.js',
+      format: 'umd',
+      name: 'quikdown_json',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_json - JSON')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // JSON UMD minified
+  {
+    input: 'src/quikdown_json.js',
+    output: {
+      file: 'dist/quikdown_json.umd.min.js',
+      format: 'umd',
+      name: 'quikdown_json',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_json - JSON'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+
+  // JSON ESM build
+  {
+    input: 'src/quikdown_json.js',
+    output: {
+      file: 'dist/quikdown_json.esm.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_json - JSON')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // JSON ESM minified
+  {
+    input: 'src/quikdown_json.js',
+    output: {
+      file: 'dist/quikdown_json.esm.min.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_json - JSON'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+
+  // JSON CommonJS build
+  {
+    input: 'src/quikdown_json.js',
+    output: {
+      file: 'dist/quikdown_json.cjs',
+      format: 'cjs',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_json - JSON')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // ========== quikdown_yaml (YAML Output) Builds ==========
+
+  // YAML UMD build (browser)
+  {
+    input: 'src/quikdown_yaml.js',
+    output: {
+      file: 'dist/quikdown_yaml.umd.js',
+      format: 'umd',
+      name: 'quikdown_yaml',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_yaml - YAML')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // YAML UMD minified
+  {
+    input: 'src/quikdown_yaml.js',
+    output: {
+      file: 'dist/quikdown_yaml.umd.min.js',
+      format: 'umd',
+      name: 'quikdown_yaml',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_yaml - YAML'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+
+  // YAML ESM build
+  {
+    input: 'src/quikdown_yaml.js',
+    output: {
+      file: 'dist/quikdown_yaml.esm.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_yaml - YAML')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // YAML ESM minified
+  {
+    input: 'src/quikdown_yaml.js',
+    output: {
+      file: 'dist/quikdown_yaml.esm.min.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_yaml - YAML'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+
+  // YAML CommonJS build
+  {
+    input: 'src/quikdown_yaml.js',
+    output: {
+      file: 'dist/quikdown_yaml.cjs',
+      format: 'cjs',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_yaml - YAML')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // ========== quikdown_ast_html (AST to HTML) Builds ==========
+
+  // AST-HTML UMD build (browser)
+  {
+    input: 'src/quikdown_ast_html.js',
+    output: {
+      file: 'dist/quikdown_ast_html.umd.js',
+      format: 'umd',
+      name: 'quikdown_ast_html',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast_html - AST to HTML')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // AST-HTML UMD minified
+  {
+    input: 'src/quikdown_ast_html.js',
+    output: {
+      file: 'dist/quikdown_ast_html.umd.min.js',
+      format: 'umd',
+      name: 'quikdown_ast_html',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast_html - AST to HTML'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+
+  // AST-HTML ESM build
+  {
+    input: 'src/quikdown_ast_html.js',
+    output: {
+      file: 'dist/quikdown_ast_html.esm.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast_html - AST to HTML')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
+  },
+
+  // AST-HTML ESM minified
+  {
+    input: 'src/quikdown_ast_html.js',
+    output: {
+      file: 'dist/quikdown_ast_html.esm.min.js',
+      format: 'es',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast_html - AST to HTML'),
+      sourcemap: true
+    },
+    plugins: [replaceVersion(), nodeResolve(), terser()]
+  },
+
+  // AST-HTML CommonJS build
+  {
+    input: 'src/quikdown_ast_html.js',
+    output: {
+      file: 'dist/quikdown_ast_html.cjs',
+      format: 'cjs',
+      banner: banner.replace('quikdown - Lightweight', 'quikdown_ast_html - AST to HTML')
+    },
+    plugins: [replaceVersion(), nodeResolve()]
   }
 ];

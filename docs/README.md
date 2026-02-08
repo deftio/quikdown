@@ -10,6 +10,7 @@ Complete documentation for the quikdown markdown parser.
 - **[Plugin Development](plugin-guide.md)** - How to create custom fence plugins
 - **[Framework Integration](framework-integration.md)** - Using quikdown with React, Vue, Svelte, Angular
 - **[Bidirectional Conversion](quikdown-bidirectional.md)** - HTML to Markdown round-trip conversion
+- **[AST Libraries](quikdown-ast.md)** - Markdown to AST, JSON, YAML conversion
 - **[Lexer Implementation](lexer-implementation.md)** - Experimental lexer-based parser
 
 ## 🚀 Quick Links

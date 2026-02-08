@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown AST Demo</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 { color: #333; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 20px; }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .panel h2 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            resize: vertical;
+        }
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            overflow: auto;
+            max-height: 300px;
+            font-size: 12px;
+            margin: 0;
+        }
+        .json { color: #9cdcfe; }
+        .yaml { color: #ce9178; }
+        .html-output {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        .tab {
+            padding: 8px 16px;
+            border: none;
+            background: #e0e0e0;
+            border-radius: 4px 4px 0 0;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .tab.active {
+            background: #1e1e1e;
+            color: white;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+    <h1>Quikdown AST Demo</h1>
+    <p class="subtitle">Convert Markdown to AST, JSON, YAML, and back to HTML</p>
+
+    <div class="container">
+        <div class="panel">
+            <h2>Markdown Input</h2>
+            <textarea id="markdown"># Hello World
+
+This is a **bold** and *italic* paragraph with `inline code`.
+
+## Features
+
+- Item 1
+- Item 2
+  - Nested item
+- [x] Task done
+- [ ] Task todo
+
+> A blockquote with **formatting**
+
+```javascript
+console.log('Hello!');
+```
+
+| Header 1 | Header 2 |
+|:---------|:--------:|
+| Left     | Center   |
+
+[Link](https://example.com) and ![Image](image.png)</textarea>
+        </div>
+
+        <div class="panel">
+            <h2>Rendered HTML</h2>
+            <div id="html-output" class="html-output"></div>
+        </div>
+
+        <div class="panel" style="grid-column: 1 / -1;">
+            <div class="tabs">
+                <button class="tab active" data-tab="ast">AST Object</button>
+                <button class="tab" data-tab="json">JSON</button>
+                <button class="tab" data-tab="yaml">YAML</button>
+            </div>
+            <div id="ast" class="tab-content active">
+                <pre id="ast-output"></pre>
+            </div>
+            <div id="json" class="tab-content">
+                <pre id="json-output" class="json"></pre>
+            </div>
+            <div id="yaml" class="tab-content">
+                <pre id="yaml-output" class="yaml"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import quikdown_ast from '../dist/quikdown_ast.esm.js';
+        import quikdown_json from '../dist/quikdown_json.esm.js';
+        import quikdown_yaml from '../dist/quikdown_yaml.esm.js';
+        import quikdown_ast_html from '../dist/quikdown_ast_html.esm.js';
+
+        const markdownInput = document.getElementById('markdown');
+        const astOutput = document.getElementById('ast-output');
+        const jsonOutput = document.getElementById('json-output');
+        const yamlOutput = document.getElementById('yaml-output');
+        const htmlOutput = document.getElementById('html-output');
+
+        function update() {
+            const markdown = markdownInput.value;
+
+            try {
+                // Generate all outputs
+                const ast = quikdown_ast(markdown);
+                const json = quikdown_json(markdown, { indent: 2 });
+                const yaml = quikdown_yaml(markdown);
+                const html = quikdown_ast_html(ast, { inline_styles: true });
+
+                // Display outputs
+                astOutput.textContent = JSON.stringify(ast, null, 2);
+                jsonOutput.textContent = json;
+                yamlOutput.textContent = yaml;
+                htmlOutput.innerHTML = html;
+            } catch (e) {
+                console.error('Parse error:', e);
+            }
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Update on input
+        markdownInput.addEventListener('input', update);
+
+        // Initial render
+        update();
+    </script>
+</body>
+</html>
