@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - 'v*'
+  # Allow manual re-run for an existing tag (e.g., if previous publish failed).
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to publish (e.g. v1.2.2)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -15,12 +22,19 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.tag || github.ref }}
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20.x
+        node-version: 22.x
         registry-url: https://registry.npmjs.org
+
+    # npm 11.5.1+ is required for OIDC trusted publishing.
+    # Node 22 ships with npm 10.x, so upgrade explicitly.
+    - name: Upgrade npm to OIDC-capable version
+      run: npm install -g npm@latest
 
     - name: Install dependencies
       run: npm ci
@@ -39,6 +53,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.tag || github.ref }}
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
