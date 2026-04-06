@@ -59,6 +59,10 @@ jobs:
         fail_ci_if_error: false
         verbose: true
 
+  # Auto-tag job: creates a vX.Y.Z git tag if package.json version is new.
+  # Skips gracefully (does NOT fail) when the version is unchanged — this lets
+  # non-release commits (docs, workflow tweaks, CI fixes) land on main without
+  # requiring a version bump. The tag push triggers publish.yml for release.
   tag-version:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -72,23 +76,29 @@ jobs:
       with:
         node-version: 20.x
 
-    - name: Check version is not already published or tagged
-      run: node tools/checkVersion.cjs
-
     - name: Read version from package.json
       id: version
       run: echo "version=v$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
 
-    - name: Fail loudly if tag already exists
+    - name: Check if tag already exists on origin
+      id: tag_exists
       run: |
         TAG="${{ steps.version.outputs.version }}"
         if git ls-remote --tags origin "$TAG" | grep -q .; then
-          echo "::error::Tag $TAG already exists on origin. Bump the version before pushing to main."
-          exit 1
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+          echo "::notice::Tag $TAG already exists — skipping tag creation (not a release commit)."
+        else
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+          echo "Tag $TAG does not exist yet — will create it."
         fi
-        echo "Tag $TAG does not exist yet — OK to create."
 
-    - name: Create and push tag
+    - name: Check npm version collision (only for new tags)
+      if: steps.tag_exists.outputs.exists == 'false'
+      run: node tools/checkVersion.cjs
+
+    - name: Create and push tag (only for new versions)
+      if: steps.tag_exists.outputs.exists == 'false'
       run: |
         git tag "${{ steps.version.outputs.version }}"
         git push origin "${{ steps.version.outputs.version }}"
+        echo "::notice::Tag ${{ steps.version.outputs.version }} created and pushed — publish.yml will run."
