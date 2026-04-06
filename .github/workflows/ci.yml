@@ -72,24 +72,23 @@ jobs:
       with:
         node-version: 20.x
 
-    - name: Check version is not already published
+    - name: Check version is not already published or tagged
       run: node tools/checkVersion.cjs
 
     - name: Read version from package.json
       id: version
       run: echo "version=v$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
 
-    - name: Check if tag already exists
-      id: check
+    - name: Fail loudly if tag already exists
       run: |
-        if git ls-remote --tags origin "${{ steps.version.outputs.version }}" | grep -q .; then
-          echo "exists=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "exists=false" >> "$GITHUB_OUTPUT"
+        TAG="${{ steps.version.outputs.version }}"
+        if git ls-remote --tags origin "$TAG" | grep -q .; then
+          echo "::error::Tag $TAG already exists on origin. Bump the version before pushing to main."
+          exit 1
         fi
+        echo "Tag $TAG does not exist yet — OK to create."
 
     - name: Create and push tag
-      if: steps.check.outputs.exists == 'false'
       run: |
         git tag "${{ steps.version.outputs.version }}"
         git push origin "${{ steps.version.outputs.version }}"
