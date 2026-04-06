@@ -1,0 +1,39 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    # Group ALL dev-dep updates into a single PR (minor + patch + major)
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "major"
+          - "minor"
+          - "patch"
+    # Only open 1 PR at a time — keeps the noise down
+    open-pull-requests-limit: 1
+    # quikdown has zero runtime deps — only watch devDependencies
+    allow:
+      - dependency-type: "development"
+    # Ignore patch bumps for stable tooling that rarely matters
+    ignore:
+      - dependency-name: "@babel/*"
+        update-types: ["version-update:semver-patch"]
+      - dependency-name: "rollup"
+        update-types: ["version-update:semver-patch"]
+      - dependency-name: "@rollup/*"
+        update-types: ["version-update:semver-patch"]
+      - dependency-name: "jest"
+        update-types: ["version-update:semver-patch"]
+      - dependency-name: "jest-environment-jsdom"
+        update-types: ["version-update:semver-patch"]
+      - dependency-name: "babel-jest"
+        update-types: ["version-update:semver-patch"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "quarterly"
+    open-pull-requests-limit: 1

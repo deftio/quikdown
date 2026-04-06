@@ -52,7 +52,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         
         // Process children with context
         let childContent = '';
-        for (let child of node.childNodes) {
+        for (const child of node.childNodes) {
             childContent += walkNode(child, { parentTag: tag, ...parentContext });
         }
         
@@ -286,7 +286,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         let index = 1;
         const indent = '  '.repeat(depth);
         
-        for (let child of listNode.children) {
+        for (const child of listNode.children) {
             if (child.tagName !== 'LI') continue;
             
             const dataQd = child.getAttribute('data-qd');
@@ -299,7 +299,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                 marker = '-';
                 // Get text without the checkbox
                 let text = '';
-                for (let node of child.childNodes) {
+                for (const node of child.childNodes) {
                     if (node.nodeType === Node.TEXT_NODE) {
                         text += node.textContent;
                     } else if (node.tagName && node.tagName !== 'INPUT') {
@@ -310,7 +310,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
             } else {
                 let itemContent = '';
                 
-                for (let node of child.childNodes) {
+                for (const node of child.childNodes) {
                     if (node.tagName === 'UL' || node.tagName === 'OL') {
                         itemContent += walkList(node, node.tagName === 'OL', depth + 1);
                     } else {
@@ -339,7 +339,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
             const headerRow = thead.querySelector('tr');
             if (headerRow) {
                 const headers = [];
-                for (let th of headerRow.querySelectorAll('th')) {
+                for (const th of headerRow.querySelectorAll('th')) {
                     headers.push(th.textContent.trim());
                 }
                 result += '| ' + headers.join(' | ') + ' |\n';
@@ -358,9 +358,9 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         // Process body
         const tbody = table.querySelector('tbody');
         if (tbody) {
-            for (let row of tbody.querySelectorAll('tr')) {
+            for (const row of tbody.querySelectorAll('tr')) {
                 const cells = [];
-                for (let td of row.querySelectorAll('td')) {
+                for (const td of row.querySelectorAll('td')) {
                     cells.push(td.textContent.trim());
                 }
                 if (cells.length > 0) {

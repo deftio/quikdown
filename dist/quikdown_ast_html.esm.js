@@ -30,7 +30,7 @@ function quikdown_ast(markdown, options = {}) {
     }
 
     // Normalize line endings (handle CRLF, CR, LF uniformly)
-    let text = markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const text = markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
     const children = parseBlocks(text);
 
@@ -338,7 +338,7 @@ function parseInline(text, options) {
 
         // Line break (1+ trailing spaces or explicit \n after processing)
         // Handle inline line breaks (two spaces at end of line or backslash before newline)
-        const brMatch = remaining.match(/^(.+?)(?:  |\\\n|\n)/);
+        const brMatch = remaining.match(/^(.+?)(?: {2}|\\\n|\n)/);
         if (brMatch && remaining.includes('\n')) {
             const beforeBr = remaining.indexOf('\n');
             const beforeText = remaining.slice(0, beforeBr);
@@ -432,7 +432,7 @@ function parseInline(text, options) {
         }
 
         // Autolinks: URLs starting with http:// or https://
-        const urlMatch = remaining.match(/^(https?:\/\/[^\s<>\[\]]+)/);
+        const urlMatch = remaining.match(/^(https?:\/\/[^\s<>[\]]+)/);
         if (urlMatch) {
             nodes.push({
                 type: 'link',
@@ -447,7 +447,7 @@ function parseInline(text, options) {
         // Plain text - consume until next potential inline element or end
         if (!matched) {
             // Find next potential inline marker
-            const nextMarker = remaining.search(/[`*_~!\[\n]|https?:\/\//);
+            const nextMarker = remaining.search(/[`*_~![\\n]|https?:\/\//);
             if (nextMarker === -1) {
                 // No more markers, consume rest as text
                 nodes.push({ type: 'text', value: remaining });
@@ -637,7 +637,7 @@ function toAst(input, options = {}) {
                     return { type: 'document', children: parsed };
                 }
                 return parsed;
-            } catch (e) {
+            } catch (_e) {
                 // Not valid JSON, fall through to markdown
             }
         }
@@ -649,7 +649,7 @@ function toAst(input, options = {}) {
                 if (parsed && parsed.type) {
                     return parsed;
                 }
-            } catch (e) {
+            } catch (_e) {
                 // Not valid YAML AST, fall through to markdown
             }
         }
@@ -751,7 +751,7 @@ function parseYamlArray(lines, startLine, baseIndent) {
             const obj = {};
             const colonIdx = itemContent.indexOf(':');
             const key = itemContent.slice(0, colonIdx).trim();
-            let value = itemContent.slice(colonIdx + 1).trim();
+            const value = itemContent.slice(colonIdx + 1).trim();
 
             if (value === '' || value.startsWith('\n')) {
                 // Value on next lines
@@ -779,7 +779,7 @@ function parseYamlArray(lines, startLine, baseIndent) {
                 const nextColonIdx = nextTrimmed.indexOf(':');
                 if (nextColonIdx > 0) {
                     const nextKey = nextTrimmed.slice(0, nextColonIdx).trim();
-                    let nextValue = nextTrimmed.slice(nextColonIdx + 1).trim();
+                    const nextValue = nextTrimmed.slice(nextColonIdx + 1).trim();
 
                     if (nextValue === '' || nextValue.startsWith('\n')) {
                         const result = parseYamlNode(lines, i + 1, nextIndent + 2);
@@ -830,7 +830,7 @@ function parseYamlObject(lines, startLine, baseIndent) {
         }
 
         const key = trimmed.slice(0, colonIdx).trim();
-        let value = trimmed.slice(colonIdx + 1).trim();
+        const value = trimmed.slice(colonIdx + 1).trim();
 
         if (value === '' || value === '|' || value === '>') {
             // Value on next lines

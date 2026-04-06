@@ -11,7 +11,8 @@ import { getRenderedContent } from './quikdown_edit_copy.js';
 const DEFAULT_OPTIONS = {
     mode: 'split',          // 'source' | 'preview' | 'split'
     showToolbar: true,
-    showRemoveHR: false,    // Show button to remove horizontal rules (---) 
+    showRemoveHR: false,    // Show button to remove horizontal rules (---)
+    showLazyLinefeeds: false, // Show button to convert lazy linefeeds
     theme: 'auto',          // 'light' | 'dark' | 'auto'
     lazy_linefeeds: false,
     inline_styles: false,   // Use CSS classes (false) or inline styles (true)
@@ -22,7 +23,9 @@ const DEFAULT_OPTIONS = {
         mermaid: false
     },
     customFences: {}, // { 'language': (code, lang) => html }
-    enableComplexFences: true // Enable CSV tables, math rendering, SVG, etc.
+    enableComplexFences: true, // Enable CSV tables, math rendering, SVG, etc.
+    showUndoRedo: false,      // Show undo/redo toolbar buttons
+    undoStackSize: 100        // Maximum number of undo states to keep
 };
 
 /**
@@ -47,6 +50,11 @@ class QuikdownEditor {
         this._html = '';
         this.currentMode = this.options.mode;
         this.updateTimer = null;
+
+        // Undo/redo state
+        this._undoStack = [];
+        this._redoStack = [];
+        this._isUndoRedo = false;
         
         // Initialize
         this.initPromise = this.init();
@@ -139,6 +147,23 @@ class QuikdownEditor {
             toolbar.appendChild(btn);
         });
         
+        // Undo/Redo buttons (if enabled)
+        if (this.options.showUndoRedo) {
+            const undoBtn = document.createElement('button');
+            undoBtn.className = 'qde-btn disabled';
+            undoBtn.dataset.action = 'undo';
+            undoBtn.textContent = 'Undo';
+            undoBtn.title = 'Undo (Ctrl+Z)';
+            toolbar.appendChild(undoBtn);
+
+            const redoBtn = document.createElement('button');
+            redoBtn.className = 'qde-btn disabled';
+            redoBtn.dataset.action = 'redo';
+            redoBtn.textContent = 'Redo';
+            redoBtn.title = 'Redo (Ctrl+Shift+Z / Ctrl+Y)';
+            toolbar.appendChild(redoBtn);
+        }
+
         // Spacer
         const spacer = document.createElement('span');
         spacer.className = 'qde-spacer';
@@ -168,6 +193,16 @@ class QuikdownEditor {
             removeHRBtn.textContent = 'Remove HR';
             removeHRBtn.title = 'Remove all horizontal rules (---) from markdown';
             toolbar.appendChild(removeHRBtn);
+        }
+
+        // Lazy linefeeds button (if enabled)
+        if (this.options.showLazyLinefeeds) {
+            const lazyLFBtn = document.createElement('button');
+            lazyLFBtn.className = 'qde-btn';
+            lazyLFBtn.dataset.action = 'lazy-linefeeds';
+            lazyLFBtn.textContent = 'Fix Linefeeds';
+            lazyLFBtn.title = 'Convert single newlines to paragraph breaks (one-time transform)';
+            toolbar.appendChild(lazyLFBtn);
         }
         
         return toolbar;
@@ -220,6 +255,11 @@ class QuikdownEditor {
                 background: #007bff;
                 color: white;
                 border-color: #0056b3;
+            }
+
+            .qde-btn.disabled {
+                opacity: 0.4;
+                pointer-events: none;
             }
             
             .qde-spacer {
@@ -505,6 +545,21 @@ class QuikdownEditor {
                         e.preventDefault();
                         this.setMode('preview');
                         break;
+                    case 'z':
+                    case 'Z':
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            this.redo();
+                        } else {
+                            e.preventDefault();
+                            this.undo();
+                        }
+                        break;
+                    case 'y':
+                    case 'Y':
+                        e.preventDefault();
+                        this.redo();
+                        break;
                 }
             }
         });
@@ -534,6 +589,12 @@ class QuikdownEditor {
      * Update from markdown source
      */
     updateFromMarkdown(markdown) {
+        // Push current state to undo stack before changing (unless this is an undo/redo operation)
+        if (!this._isUndoRedo) {
+            this._pushUndoState(markdown || '');
+        }
+        this._isUndoRedo = false;
+
         this._markdown = markdown || '';
         
         // Show placeholder if empty
@@ -559,16 +620,9 @@ class QuikdownEditor {
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     const mathElements = this.previewPanel.querySelectorAll('.math-display');
                     if (mathElements.length > 0) {
-                        mathElements.forEach(el => {
-                        });
                         window.MathJax.typesetPromise(Array.from(mathElements))
-                            .then(() => {
-                                mathElements.forEach(el => {
-                                    const mjxContainer = el.querySelector('mjx-container');
-                                });
-                            })
-                            .catch(err => {
-                                console.warn('MathJax batch processing failed:', err);
+                            .catch(_err => {
+                                console.warn('MathJax batch processing failed:', _err);
                             });
                     }
                 }
@@ -805,7 +859,7 @@ class QuikdownEditor {
             // Remove event handlers
             const walker = document.createTreeWalker(svg, NodeFilter.SHOW_ELEMENT);
             let node;
-            while (node = walker.nextNode()) {
+            while ((node = walker.nextNode())) {
                 for (let i = node.attributes.length - 1; i >= 0; i--) {
                     const attr = node.attributes[i];
                     if (attr.name.startsWith('on') || attr.value.includes('javascript:')) {
@@ -895,7 +949,7 @@ class QuikdownEditor {
     /**
      * Render math with MathJax (SVG output for better copy support)
      */
-    renderMath(code, lang) {
+    renderMath(code, _lang) {
         const id = `math-${Math.random().toString(36).substring(2, 15)}`;
         
         // Create container exactly like squibview
@@ -1018,11 +1072,11 @@ class QuikdownEditor {
             
             html += '</table>';
             return html;
-        } catch (err) {
+        } catch (_err) {
             return `<pre data-qd-fence="\`\`\`" data-qd-lang="${lang}" data-qd-source="${escapedCode}">${escapedCode}</pre>`;
         }
     }
-    
+
     /**
      * Parse CSV line handling quoted values
      */
@@ -1066,13 +1120,13 @@ class QuikdownEditor {
                 try {
                     const data = JSON.parse(code);
                     toHighlight = JSON.stringify(data, null, 2);
-                } catch (e) {
+                } catch (_e) {
                     // Use original if not valid JSON
                 }
                 
                 const highlighted = hljs.highlight(toHighlight, { language: 'json' }).value;
                 return `<pre class="qde-json" data-qd-fence="\`\`\`" data-qd-lang="${lang}"><code class="hljs language-json">${highlighted}</code></pre>`;
-            } catch (e) {
+            } catch (_e) {
                 // Fall through if highlighting fails
             }
         }
@@ -1165,7 +1219,7 @@ class QuikdownEditor {
                 if (loaded) {
                     renderMap();
                 } else {
-                    const element = document.getElementById(id);
+                    const element = document.getElementById(mapId + '-container');
                     if (element) {
                         element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load map library</div>';
                     }
@@ -1452,23 +1506,45 @@ class QuikdownEditor {
     }
     
     /**
-     * Apply theme
+     * Apply the current theme (based on this.options.theme)
      */
     applyTheme() {
         const theme = this.options.theme;
-        
+
+        // Tear down any previous auto-mode listener so we don't stack them
+        if (this._autoThemeListener) {
+            window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', this._autoThemeListener);
+            this._autoThemeListener = null;
+        }
+
         if (theme === 'auto') {
-            // Check system preference
-            const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            this.container.classList.toggle('qde-dark', isDark);
-            
-            // Listen for changes
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            const mq = window.matchMedia('(prefers-color-scheme: dark)');
+            this.container.classList.toggle('qde-dark', mq.matches);
+            this._autoThemeListener = (e) => {
                 this.container.classList.toggle('qde-dark', e.matches);
-            });
+            };
+            mq.addEventListener('change', this._autoThemeListener);
         } else {
             this.container.classList.toggle('qde-dark', theme === 'dark');
         }
+    }
+
+    /**
+     * Set theme at runtime. Accepts 'light', 'dark', or 'auto'.
+     * @param {'light'|'dark'|'auto'} theme
+     */
+    setTheme(theme) {
+        if (!['light', 'dark', 'auto'].includes(theme)) return;
+        this.options.theme = theme;
+        this.applyTheme();
+    }
+
+    /**
+     * Get the current theme option (as configured, not resolved).
+     * @returns {'light'|'dark'|'auto'}
+     */
+    getTheme() {
+        return this.options.theme;
     }
     
     /**
@@ -1539,6 +1615,105 @@ class QuikdownEditor {
         }
     }
     
+    // --- Undo / Redo ---
+
+    /**
+     * Push current markdown state onto the undo stack (called before a change).
+     * Only pushes if the new state differs from the current state.
+     * @param {string} newMarkdown - the incoming markdown (used to detect no-op)
+     * @private
+     */
+    _pushUndoState(newMarkdown) {
+        // Don't push if the content hasn't actually changed
+        if (newMarkdown === this._markdown) return;
+
+        this._undoStack.push(this._markdown);
+
+        // Enforce max stack size
+        const max = this.options.undoStackSize || 100;
+        if (this._undoStack.length > max) {
+            this._undoStack.splice(0, this._undoStack.length - max);
+        }
+
+        // Any new edit clears the redo stack
+        this._redoStack = [];
+        this._updateUndoButtons();
+    }
+
+    /**
+     * Undo the last change. Restores the previous markdown state.
+     */
+    undo() {
+        if (!this.canUndo()) return;
+        // Save current state to redo stack
+        this._redoStack.push(this._markdown);
+        const previous = this._undoStack.pop();
+        this._isUndoRedo = true;
+        // Update state directly (setMarkdown is async; keep it synchronous here)
+        this._markdown = previous;
+        if (this.sourceTextarea) {
+            this.sourceTextarea.value = previous;
+        }
+        this.updateFromMarkdown(previous);
+        this._updateUndoButtons();
+    }
+
+    /**
+     * Redo the last undone change.
+     */
+    redo() {
+        if (!this.canRedo()) return;
+        // Save current state to undo stack
+        this._undoStack.push(this._markdown);
+        const next = this._redoStack.pop();
+        this._isUndoRedo = true;
+        this._markdown = next;
+        if (this.sourceTextarea) {
+            this.sourceTextarea.value = next;
+        }
+        this.updateFromMarkdown(next);
+        this._updateUndoButtons();
+    }
+
+    /**
+     * @returns {boolean} true if undo is possible
+     */
+    canUndo() {
+        return this._undoStack.length > 0;
+    }
+
+    /**
+     * @returns {boolean} true if redo is possible
+     */
+    canRedo() {
+        return this._redoStack.length > 0;
+    }
+
+    /**
+     * Clear the undo and redo history.
+     */
+    clearHistory() {
+        this._undoStack = [];
+        this._redoStack = [];
+        this._updateUndoButtons();
+    }
+
+    /**
+     * Update the disabled state of the undo/redo toolbar buttons.
+     * @private
+     */
+    _updateUndoButtons() {
+        if (!this.toolbar) return;
+        const undoBtn = this.toolbar.querySelector('[data-action="undo"]');
+        const redoBtn = this.toolbar.querySelector('[data-action="redo"]');
+        if (undoBtn) {
+            undoBtn.classList.toggle('disabled', !this.canUndo());
+        }
+        if (redoBtn) {
+            redoBtn.classList.toggle('disabled', !this.canRedo());
+        }
+    }
+
     /**
      * Handle toolbar actions
      */
@@ -1555,6 +1730,15 @@ class QuikdownEditor {
                 break;
             case 'remove-hr':
                 this.removeHR();
+                break;
+            case 'lazy-linefeeds':
+                this.convertLazyLinefeeds();
+                break;
+            case 'undo':
+                this.undo();
+                break;
+            case 'redo':
+                this.redo();
                 break;
         }
     }
@@ -1643,24 +1827,13 @@ class QuikdownEditor {
     }
     
     /**
-     * Remove all horizontal rules (---) from markdown
+     * Remove all horizontal rules (---) from markdown source.
+     * Preserves content inside fences (``` or ~~~) and table separator rows.
      */
     async removeHR() {
-        // Remove standalone HR lines (3 or more dashes/underscores/asterisks)
-        // Matches: ---, ___, ***, ----, etc. with optional spaces
-        const cleaned = this._markdown
-            .split('\n')
-            .filter(line => {
-                // Keep lines that aren't just HR patterns
-                const trimmed = line.trim();
-                // Match HR patterns: 3+ of -, _, or * with optional spaces between
-                return !(/^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed));
-            })
-            .join('\n');
-        
-        // Update the markdown
+        const cleaned = QuikdownEditor.removeHRFromMarkdown(this._markdown);
         await this.setMarkdown(cleaned);
-        
+
         // Visual feedback if toolbar button exists
         const btn = this.toolbar?.querySelector('[data-action="remove-hr"]');
         if (btn) {
@@ -1670,6 +1843,202 @@ class QuikdownEditor {
                 btn.textContent = originalText;
             }, 1500);
         }
+    }
+
+    /**
+     * Static: remove horizontal rules from markdown string.
+     * Safe for fences, tables, and all markdown constructs.
+     * Can be used headless without an editor instance.
+     * @param {string} markdown - source markdown
+     * @returns {string} markdown with standalone HRs removed
+     */
+    static removeHRFromMarkdown(markdown) {
+        const lines = (markdown || '').split('\n');
+        const result = [];
+        let inFence = false;
+        let fenceChar = null;  // '`' or '~'
+        let fenceLen = 0;      // length of opening fence marker
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+
+            // Track fence open/close (``` or ~~~, 3+ chars)
+            const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
+            if (fenceMatch) {
+                const matchChar = fenceMatch[1][0];
+                const matchLen = fenceMatch[1].length;
+                if (!inFence) {
+                    inFence = true;
+                    fenceChar = matchChar;
+                    fenceLen = matchLen;
+                    result.push(line);
+                    continue;
+                } else if (matchChar === fenceChar && matchLen >= fenceLen && /^(`{3,}|~{3,})\s*$/.test(trimmed)) {
+                    // Closing fence: same char, at least as many chars, no trailing content
+                    inFence = false;
+                    fenceChar = null;
+                    fenceLen = 0;
+                    result.push(line);
+                    continue;
+                }
+            }
+
+            // Inside a fence — keep everything
+            if (inFence) {
+                result.push(line);
+                continue;
+            }
+
+            // Detect table row/separator with pipes — always keep
+            if (/^\|.*\|$/.test(trimmed) || (/^[-| :]+$/.test(trimmed) && trimmed.includes('|'))) {
+                result.push(line);
+                continue;
+            }
+
+            // Check if this line is a standalone HR
+            const isHR = /^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed);
+            if (isHR) {
+                // Table separator heuristic: immediately adjacent lines (no blank
+                // lines between) that look like table rows protect this HR-like line
+                const prevLine = i > 0 ? lines[i - 1].trim() : '';
+                const nextLine = i < lines.length - 1 ? lines[i + 1].trim() : '';
+                if (_looksLikeTableRow(prevLine) || _looksLikeTableRow(nextLine)) {
+                    result.push(line);
+                    continue;
+                }
+                // It's a real HR — skip it
+                continue;
+            }
+
+            result.push(line);
+        }
+
+        return result.join('\n');
+    }
+
+    /**
+     * Convert lazy linefeeds in markdown source.
+     * Replaces single newlines with double newlines (adds real line breaks)
+     * except inside fences, tables, and other block-level constructs.
+     * Idempotent: calling multiple times produces the same result.
+     * Can be used as a toolbar action or headless via the static method.
+     */
+    async convertLazyLinefeeds() {
+        const converted = QuikdownEditor.convertLazyLinefeeds(this._markdown);
+        await this.setMarkdown(converted);
+
+        // Visual feedback if toolbar button exists
+        const btn = this.toolbar?.querySelector('[data-action="lazy-linefeeds"]');
+        if (btn) {
+            const originalText = btn.textContent;
+            btn.textContent = 'Converted!';
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 1500);
+        }
+    }
+
+    /**
+     * Static: convert lazy linefeeds in markdown source.
+     * Turns single \n between non-blank lines into \n\n so each line becomes
+     * its own paragraph / hard break. Idempotent — already-doubled newlines
+     * are not doubled again. Fences, tables, lists, blockquotes, headings,
+     * and HTML blocks are left untouched.
+     * @param {string} markdown - source markdown
+     * @returns {string} markdown with lazy linefeeds resolved
+     */
+    static convertLazyLinefeeds(markdown) {
+        const lines = (markdown || '').split('\n');
+        const result = [];
+        let inFence = false;
+        let fenceChar = null;
+        let fenceLen = 0;
+        let inHTMLBlock = false;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const trimmed = line.trim();
+
+            // Track fence open/close
+            const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
+            if (fenceMatch) {
+                const matchChar = fenceMatch[1][0];
+                const matchLen = fenceMatch[1].length;
+                if (!inFence) {
+                    inFence = true;
+                    fenceChar = matchChar;
+                    fenceLen = matchLen;
+                    result.push(line);
+                    continue;
+                } else if (matchChar === fenceChar && matchLen >= fenceLen && /^(`{3,}|~{3,})\s*$/.test(trimmed)) {
+                    inFence = false;
+                    fenceChar = null;
+                    fenceLen = 0;
+                    result.push(line);
+                    continue;
+                }
+            }
+
+            // Inside fence — pass through
+            if (inFence) {
+                result.push(line);
+                continue;
+            }
+
+            // Track HTML blocks (lines starting with < and ending with >)
+            if (/^<[a-zA-Z]/.test(trimmed)) inHTMLBlock = true;
+            if (inHTMLBlock) {
+                result.push(line);
+                if (/>$/.test(trimmed) || trimmed === '') inHTMLBlock = false;
+                continue;
+            }
+
+            // Always pass through blank lines, but never add extras
+            if (trimmed === '') {
+                // Avoid doubling: don't add blank line if the last result line is already blank
+                if (result.length === 0 || result[result.length - 1].trim() !== '') {
+                    result.push(line);
+                }
+                continue;
+            }
+
+            // Skip conversion for block-level constructs
+            const isBlockElement = (
+                /^#{1,6}\s/.test(trimmed) ||           // headings
+                /^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed) || // horizontal rules
+                /^(\d+\.|-|\*|\+)\s/.test(trimmed) ||  // list items
+                /^>/.test(trimmed) ||                   // blockquotes
+                /^\|/.test(trimmed)                     // table rows
+            );
+
+            if (isBlockElement) {
+                result.push(line);
+                continue;
+            }
+
+            // For plain paragraph text: if previous result line is non-blank
+            // plain text, insert a blank line between them (making the single
+            // newline into a paragraph break). This is the lazy→strict conversion.
+            if (result.length > 0) {
+                const prevLine = result[result.length - 1];
+                const prevTrimmed = prevLine.trim();
+                // Only insert blank line if prev is non-blank, non-block text
+                if (prevTrimmed !== '' &&
+                    !/^#{1,6}\s/.test(prevTrimmed) &&
+                    !/^[-_*](\s*[-_*]){2,}\s*$/.test(prevTrimmed) &&
+                    !/^(\d+\.|-|\*|\+)\s/.test(prevTrimmed) &&
+                    !/^>/.test(prevTrimmed) &&
+                    !/^\|/.test(prevTrimmed) &&
+                    !/^(`{3,}|~{3,})/.test(prevTrimmed)) {
+                    result.push('');
+                }
+            }
+
+            result.push(line);
+        }
+
+        return result.join('\n');
     }
     
     /**
@@ -1712,6 +2081,13 @@ class QuikdownEditor {
             if (style) style.remove();
         }
     }
+}
+
+// --- Internal helpers for removeHR fence/table awareness ---
+
+/** Heuristic: does this line look like a markdown table row? */
+function _looksLikeTableRow(line) {
+    return line.includes('|');
 }
 
 // Export

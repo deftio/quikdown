@@ -5,305 +5,104 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quikdown Editor Demo</title>
     <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="qde-demo.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 0 0 1vh 0;
-            height: 100vh;
-            overflow: hidden;
-            box-sizing: border-box;
-        }
-        
-        .container {
-            max-width: 1400px;
-            width: 100%;
-            margin: 0 auto;
+        .qde-editor-wrap.main { height: 620px; }
+        .qde-nav-row {
             display: flex;
-            flex-direction: column;
-            height: calc(100vh - 1vh);
-            background: white;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: white;
-            padding: 20px 30px;
-            border-bottom: 1px solid #ddd;
-            flex-shrink: 0;
-        }
-        
-        .header h1 {
-            color: #333;
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-        
-        .header p {
-            color: #666;
-        }
-        
-        .tabs {
-            background: white;
-            border-bottom: 1px solid #ddd;
-            padding: 0 30px;
-            display: flex;
-            gap: 20px;
-            flex-shrink: 0;
-        }
-        
-        .tab {
-            padding: 15px 20px;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-            color: #666;
-            transition: all 0.3s;
-        }
-        
-        .tab:hover {
-            color: #333;
-        }
-        
-        .tab.active {
-            color: #007bff;
-            border-bottom-color: #007bff;
-        }
-        
-        .tab-content {
-            display: none;
-            flex: 1;
-            overflow: auto;
-            min-height: 0;
-        }
-        
-        .tab-content.active {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        #editor-container {
-            height: 100%;
-            margin: 0;
-        }
-        
-        #source-view {
-            padding: 30px;
-            background: white;
-            overflow: auto;
-        }
-        
-        pre {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }
-        
-        code {
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        
-        .controls {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 4px;
-        }
-        
-        .control-group {
-            display: flex;
-            gap: 15px;
-            align-items: center;
             flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
         }
-        
-        .control-group label {
-            display: flex;
+        .qde-nav-row a {
+            display: inline-flex;
             align-items: center;
-            gap: 5px;
-            color: #333;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: transform 0.15s, box-shadow 0.15s;
         }
-        
-        .control-group select {
-            padding: 5px 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: white;
+        .qde-nav-row a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(118, 75, 162, 0.4);
         }
-        
-        .info-box {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            padding: 15px;
-            margin-bottom: 20px;
+        .qde-nav-row a.alt {
+            background: transparent;
+            color: #764ba2;
+            border: 2px solid #764ba2;
         }
-        
-        .info-box h3 {
-            color: #1976d2;
-            margin-bottom: 10px;
-        }
-        
-        .info-box ul {
-            margin-left: 20px;
-            color: #555;
-            line-height: 1.8;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                box-shadow: none;
-            }
-            
-            .header {
-                padding: 15px 20px;
-            }
-            
-            .header h1 {
-                font-size: 20px;
-            }
-            
-            .tabs {
-                padding: 0 20px;
-                gap: 10px;
-            }
-            
-            .tab {
-                padding: 12px 15px;
-                font-size: 14px;
-            }
-            
-            #source-view {
-                padding: 20px;
-            }
-            
-            pre {
-                font-size: 12px;
-                padding: 15px;
-            }
+        body.qde-dark-page .qde-nav-row a.alt {
+            color: #d9b3ff;
+            border-color: #d9b3ff;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-        <h1>Quikdown Editor Demo</h1>
-        <p>A drop-in markdown editor with live preview and bidirectional editing</p>
-    </div>
-    
-    <div class="tabs">
-        <div class="tab active" onclick="switchTab('demo')">Live Demo</div>
-        <div class="tab" onclick="switchTab('source')">Source Code</div>
-    </div>
-    
-    <div id="demo-tab" class="tab-content active">
-        <div id="editor-container"></div>
-    </div>
-    
-    <div id="source-tab" class="tab-content">
-        <div id="source-view">
-            <div class="info-box">
-                <h3>How to Use Quikdown Editor</h3>
-                <ul>
-                    <li>Import the editor from CDN or npm</li>
-                    <li>Create a container div with a defined height</li>
-                    <li>Initialize with options</li>
-                    <li>That's it! The editor handles everything else</li>
-                </ul>
+    <div class="qde-page">
+        <header class="qde-page-header">
+            <a class="qde-brand" href="../index.html">
+                <span class="qde-brand-icon">q</span>
+                quikdown
+            </a>
+            <span class="qde-breadcrumb">
+                <a href="../index.html">examples</a>
+                <span>›</span>
+                <span>editor demo</span>
+            </span>
+            <span class="qde-header-spacer"></span>
+            <button id="theme-toggle" class="qde-theme-toggle" title="Cycle theme: light → dark → auto">
+                <span id="theme-icon">☀️</span>
+                <span id="theme-label">light</span>
+            </button>
+        </header>
+
+        <div class="qde-card">
+            <h1>Quikdown Editor</h1>
+            <p class="subtitle">
+                A drop-in markdown editor with live preview, bidirectional editing, and
+                built-in XSS protection. Zero runtime dependencies.
+            </p>
+
+            <div class="qde-editor-wrap main">
+                <div id="editor-container"></div>
             </div>
-            
-            <h2>HTML Setup</h2>
-            <pre><code>&lt;!-- Container for the editor --&gt;
-&lt;div id="editor" style="height: 500px;"&gt;&lt;/div&gt;</code></pre>
-            
-            <h2>Complete Working Example</h2>
-            <pre><code>&lt;!DOCTYPE html&gt;
-&lt;html&gt;
-&lt;head&gt;
-    &lt;title&gt;My Editor&lt;/title&gt;
-&lt;/head&gt;
-&lt;body&gt;
-    &lt;!-- 1. Create a container --&gt;
-    &lt;div id="editor" style="height: 500px;"&gt;&lt;/div&gt;
-    
-    &lt;!-- 2. Load and initialize --&gt;
-    &lt;script type="module"&gt;
-        import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
-        
-        // That's it! Editor is ready
-        const editor = new QuikdownEditor('#editor', {
-            mode: 'split',
-            plugins: { highlightjs: true, mermaid: true }
-        });
-        
-        // Optional: Load some content
-        editor.setMarkdown('# Hello World\n\nStart typing!');
-    &lt;/script&gt;
-&lt;/body&gt;
-&lt;/html&gt;</code></pre>
-            
-            <h2>Minimal Setup (3 lines)</h2>
-            <pre><code>&lt;div id="editor" style="height: 500px;"&gt;&lt;/div&gt;
-&lt;script type="module"&gt;
-    import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
-    new QuikdownEditor('#editor');
-&lt;/script&gt;</code></pre>
-            
-            <h2>Available Methods</h2>
-            <pre><code>// Set markdown content
-editor.setMarkdown('# Hello World');
 
-// Get current markdown
-const markdown = editor.getMarkdown();
+            <div class="qde-info qde-tip">
+                <div>
+                    <strong>Try it:</strong> Edit in either panel — the changes sync automatically.
+                    Use <kbd>Ctrl+1</kbd>/<kbd>Ctrl+2</kbd>/<kbd>Ctrl+3</kbd> for source/split/preview modes,
+                    <kbd>Ctrl+Z</kbd> to undo.
+                </div>
+            </div>
 
-// Get rendered HTML
-const html = editor.getHTML();
-
-// Change view mode
-editor.setMode('preview');  // or 'source' or 'split'
-
-// Clean up when done
-editor.destroy();</code></pre>
-            
-            <h2>Options</h2>
-            <div class="controls">
-                <p>The editor in the demo tab was initialized with these options:</p>
-                <pre><code>{
-    mode: 'split',
-    theme: 'auto',
-    showToolbar: true,
-    lazy_linefeeds: false,
-    plugins: {
-        highlightjs: true,
-        mermaid: true
-    }
-}</code></pre>
+            <div class="qde-nav-row">
+                <a href="demo-full.html">🧰 All Toolbar Features →</a>
+                <a href="demo-headless.html" class="alt">🎛️ Headless Mode →</a>
+                <a href="quikdown-editor-simple.html" class="alt">📝 Minimal Setup →</a>
+                <a href="quikdown-editor-cdn.html" class="alt">🚀 CDN Integration →</a>
             </div>
         </div>
     </div>
-    </div> <!-- Close container -->
-    
+
     <script type="module">
         import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
-        
-        // Create the editor - that's it!
+
         const editor = new QuikdownEditor('#editor-container', {
             mode: 'split',
-            showRemoveHR: true,  // Show the Remove --- button
+            showToolbar: true,
+            showRemoveHR: true,
+            showLazyLinefeeds: true,
+            showUndoRedo: true,
             plugins: { highlightjs: true, mermaid: true }
         });
-        
-        // Load sample content
+        window.editor = editor;
+
+        // Load sample content from sample.md, fall back to inline default
         fetch('sample.md')
             .then(res => {
                 if (!res.ok) throw new Error('Sample not found');
@@ -311,94 +110,65 @@ editor.destroy();</code></pre>
             })
             .then(content => editor.setMarkdown(content))
             .catch(() => {
-                // Use a nice default if sample.md can't be loaded
-                editor.setMarkdown(`# Welcome to Quikdown Editor!
+                editor.setMarkdown(`# Welcome to Quikdown Editor
 
-This is a **full-featured** markdown editor with live preview and bidirectional editing.
+A **full-featured** markdown editor with live preview and bidirectional editing.
 
 ## Quick Start
 
-- Type markdown in the **left panel** (Source)
-- See it rendered in the **right panel** (Rendered)
-- Or click the Rendered panel to edit it directly!
-- Try the buttons above to switch between modes
+- Type markdown in the **left panel**
+- See it rendered in the **right panel**
+- Or click the rendered panel to edit directly!
 
-## Features Demo
+## Features
 
-### Text Formatting
+- **Text formatting:** **bold**, *italic*, ~~strikethrough~~, \`inline code\`
+- **Lists, tables, code blocks, blockquotes** — all standard markdown
+- **Fence plugins** — SVG, CSV, math, mermaid, and more
+- **Bidirectional editing** — changes sync both ways
+- **Zero dependencies** — no external libraries required
 
-You can use **bold**, *italic*, ~~strikethrough~~, and \`inline code\`.
-
-### Lists
-
-- Unordered list item 1
-- Unordered list item 2
-  - Nested item
-  
-1. Ordered list
-2. Another item
-   1. Nested ordered
-
-### Task Lists
-
-- [x] Completed task
-- [ ] Pending task
-- [ ] Another todo
-
-### Code Blocks
+### Code Example
 
 \`\`\`javascript
-// Syntax highlighting works!
-function hello(name) {
-    console.log(\`Hello, \${name}!\`);
-    return \`Welcome to Quikdown Editor\`;
+function greet(name) {
+    return \`Hello, \${name}!\`;
 }
-
-hello('World');
 \`\`\`
 
-### Mermaid Diagrams
+### Table
 
-\`\`\`mermaid
-graph TD
-    A[Write Markdown] --> B[See HTML]
-    B --> C[Edit Either Side]
-    C --> D[Changes Sync!]
-    D --> A
-\`\`\`
-
-### Tables
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Markdown Parsing | ✅ | Fast and secure |
-| Bidirectional | ✅ | Edit either view |
-| Plugins | ✅ | Extensible |
-
-### Links and Images
-
-Visit the [Quikdown GitHub repo](https://github.com/deftio/quikdown) for more info.
-
-### Blockquotes
-
-> Quikdown is a lightweight, fast markdown parser with built-in XSS protection.
-> 
-> It works in both browser and Node.js environments.
+| Feature | Status |
+|---------|:------:|
+| Parser | ✅ |
+| Editor | ✅ |
+| Bidirectional | ✅ |
 
 ---
 
-**Try editing this content in either panel!** The changes will sync automatically.
-
-💡 **Tip**: Press Ctrl/Cmd + 1/2/3 to switch between Source, Split, and Rendered modes.`);
+**Tip:** Try the new toolbar buttons — Undo, Redo, Remove HR, and Fix Linefeeds.`);
             });
-        
-        // Tab switching
-        window.switchTab = function(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById(`${tab}-tab`).classList.add('active');
+
+        // ----- Theme toggle -----
+        const THEMES = ['light', 'dark', 'auto'];
+        const ICONS  = { light: '☀️', dark: '🌙', auto: '🖥️' };
+        const $ = (id) => document.getElementById(id);
+
+        function applyThemeUI(theme) {
+            $('theme-icon').textContent  = ICONS[theme];
+            $('theme-label').textContent = theme;
+            const isDark = theme === 'dark' ||
+                (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            document.body.classList.toggle('qde-dark-page', isDark);
+        }
+
+        $('theme-toggle').onclick = () => {
+            const current = editor.getTheme() || 'auto';
+            const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+            editor.setTheme(next);
+            applyThemeUI(next);
         };
+        applyThemeUI(editor.getTheme() || 'auto');
     </script>
 </body>
 </html>

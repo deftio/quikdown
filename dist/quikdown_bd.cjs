@@ -270,7 +270,7 @@ function quikdown(markdown, options = {}) {
         html = '<p>' + html + '</p>';
     } else {
         // Standard: two spaces at end of line for line breaks
-        html = html.replace(/  $/gm, `<br${getAttr('br')}>`);
+        html = html.replace(/ {2}$/gm, `<br${getAttr('br')}>`);
         
         // Paragraphs (double newlines)
         // Don't add </p> after block elements (they're not in paragraphs)
@@ -299,7 +299,7 @@ function quikdown(markdown, options = {}) {
         [/(<\/table>)<\/p>/g, '$1'],
         [/<p>(<pre[^>]*>)/g, '$1'],
         [/(<\/pre>)<\/p>/g, '$1'],
-        [new RegExp(`<p>(${PLACEHOLDER_CB}\\d+§)<\/p>`, 'g'), '$1']
+        [new RegExp(`<p>(${PLACEHOLDER_CB}\\d+§)</p>`, 'g'), '$1']
     ];
     
     cleanupPatterns.forEach(([pattern, replacement]) => {
@@ -505,7 +505,7 @@ function processLists(text, getAttr, inline_styles, bidirectional) {
     
     const lines = text.split('\n');
     const result = [];
-    let listStack = []; // Track nested lists
+    const listStack = []; // Track nested lists
     
     // Helper to escape HTML for data-qd attributes
     const escapeHtml = (text) => text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
@@ -715,7 +715,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         
         // Process children with context
         let childContent = '';
-        for (let child of node.childNodes) {
+        for (const child of node.childNodes) {
             childContent += walkNode(child, { parentTag: tag, ...parentContext });
         }
         
@@ -949,7 +949,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         let index = 1;
         const indent = '  '.repeat(depth);
         
-        for (let child of listNode.children) {
+        for (const child of listNode.children) {
             if (child.tagName !== 'LI') continue;
             
             const dataQd = child.getAttribute('data-qd');
@@ -962,7 +962,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                 marker = '-';
                 // Get text without the checkbox
                 let text = '';
-                for (let node of child.childNodes) {
+                for (const node of child.childNodes) {
                     if (node.nodeType === Node.TEXT_NODE) {
                         text += node.textContent;
                     } else if (node.tagName && node.tagName !== 'INPUT') {
@@ -973,7 +973,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
             } else {
                 let itemContent = '';
                 
-                for (let node of child.childNodes) {
+                for (const node of child.childNodes) {
                     if (node.tagName === 'UL' || node.tagName === 'OL') {
                         itemContent += walkList(node, node.tagName === 'OL', depth + 1);
                     } else {
@@ -1002,7 +1002,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
             const headerRow = thead.querySelector('tr');
             if (headerRow) {
                 const headers = [];
-                for (let th of headerRow.querySelectorAll('th')) {
+                for (const th of headerRow.querySelectorAll('th')) {
                     headers.push(th.textContent.trim());
                 }
                 result += '| ' + headers.join(' | ') + ' |\n';
@@ -1021,9 +1021,9 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         // Process body
         const tbody = table.querySelector('tbody');
         if (tbody) {
-            for (let row of tbody.querySelectorAll('tr')) {
+            for (const row of tbody.querySelectorAll('tr')) {
                 const cells = [];
-                for (let td of row.querySelectorAll('td')) {
+                for (const td of row.querySelectorAll('td')) {
                     cells.push(td.textContent.trim());
                 }
                 if (cells.length > 0) {

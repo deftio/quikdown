@@ -106,22 +106,24 @@
     "minifyCSS": "node ./tools/minifyCSS.cjs",
     "updateVersion": "node ./tools/updateVersion",
     "updateBadges": "node ./tools/updateBadges.js",
-    "release": "node ./tools/createRelease.js",
-    "release:patch": "node ./tools/createRelease.js patch",
-    "release:minor": "node ./tools/createRelease.js minor",
-    "release:major": "node ./tools/createRelease.js major",
+    "feature": "bash ./tools/feature.sh",
+    "release": "bash ./tools/release.sh",
+    "release:legacy": "node ./tools/createRelease.js",
     "tag": "./tools/createTag.sh",
     "buildDocs": "node ./tools/buildDocs.js",
     "docs:api": "npx jsdoc src/quikchat.js -d docs/api",
     "updateExampleCopies": "cp dist/quikchat.umd.min.js examples/fastapi_llm/static && cp dist/quikchat.min.css examples/fastapi_llm/static && cp dist/quikchat.umd.min.js examples/npm_express/static && cp dist/quikchat.min.css examples/npm_express/static",
-    "build": "npm run updateVersion && rollup -c && npm run css && npm run sizes",
+    "build": "npm run lint && npm run updateVersion && rollup -c && npm run css && npm run sizes",
     "build:all": "npm run build && npm run buildDocs",
     "build:css": "node tools/generateThemeCSS.js",
     "build:docs": "node ./tools/buildDocs.js",
     "minify:css": "node tools/minifyThemeCSS.js",
     "css": "npm run build:css && npm run minify:css",
     "test:perf": "node tests/performance-benchmark.js",
-    "sizes": "node tools/printSizes.cjs"
+    "lint": "eslint src/",
+    "sizes": "node tools/printSizes.cjs",
+    "clean": "node tools/clean.cjs",
+    "prepare": "husky"
   },
   "jest": {
     "testEnvironment": "jsdom",
@@ -156,12 +158,6 @@
       "/node_modules/"
     ],
     "coverageThreshold": {
-      "global": {
-        "lines": 91,
-        "functions": 91,
-        "branches": 74,
-        "statements": 89
-      },
       "./dist/quikdown.esm.js": {
         "lines": 100,
         "functions": 97,
@@ -169,16 +165,16 @@
         "statements": 99
       },
       "./dist/quikdown_bd.esm.js": {
-        "lines": 86,
-        "functions": 86,
-        "branches": 64,
-        "statements": 83
+        "lines": 93,
+        "functions": 89,
+        "branches": 83,
+        "statements": 93
       },
       "./dist/quikdown_edit.esm.js": {
-        "lines": 30,
+        "lines": 29,
         "functions": 42,
-        "branches": 25,
-        "statements": 30
+        "branches": 24,
+        "statements": 29
       },
       "./dist/quikdown_ast.esm.js": {
         "lines": 95,
@@ -187,48 +183,52 @@
         "statements": 94
       },
       "./dist/quikdown_json.esm.js": {
-        "lines": 92,
+        "lines": 93,
         "functions": 100,
-        "branches": 74,
-        "statements": 87
+        "branches": 75,
+        "statements": 88
       },
       "./dist/quikdown_yaml.esm.js": {
-        "lines": 89,
-        "functions": 100,
-        "branches": 78,
-        "statements": 85
-      },
-      "./dist/quikdown_ast_html.esm.js": {
         "lines": 90,
         "functions": 100,
-        "branches": 80,
+        "branches": 78,
         "statements": 86
+      },
+      "./dist/quikdown_ast_html.esm.js": {
+        "lines": 91,
+        "functions": 100,
+        "branches": 80,
+        "statements": 87
       }
     }
   },
   "devDependencies": {
-    "@babel/core": "^7.25.2",
-    "@babel/preset-env": "^7.25.3",
-    "@babel/preset-react": "^7.24.7",
-    "@playwright/test": "^1.54.2",
-    "@rollup/plugin-babel": "^6.0.4",
-    "@rollup/plugin-commonjs": "^26.0.1",
-    "@rollup/plugin-node-resolve": "^15.2.3",
-    "@rollup/plugin-terser": "^0.4.4",
-    "babel-jest": "^29.7.0",
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.2",
+    "@babel/preset-react": "^7.28.5",
+    "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.59.1",
+    "@rollup/plugin-babel": "^7.0.0",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-terser": "^1.0.0",
+    "babel-jest": "^30.3.0",
     "clean-css": "^5.3.3",
     "clean-css-cli": "^5.6.3",
     "coveralls": "^3.1.1",
-    "cssnano": "^7.0.4",
+    "cssnano": "^7.1.4",
     "docbat": "^0.9.3",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
+    "eslint": "^9.39.4",
+    "globals": "^17.4.0",
+    "husky": "^9.1.7",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
     "jsdom": "^26.1.0",
-    "marked": "^16.1.2",
-    "playwright": "^1.54.2",
-    "rollup": "^4.18.1",
-    "rollup-plugin-css-only": "^4.5.2",
+    "marked": "^17.0.5",
+    "playwright": "^1.59.1",
+    "rollup": "^4.60.1",
+    "rollup-plugin-css-only": "^4.5.5",
     "rollup-plugin-postcss": "^4.0.2",
-    "typescript": "^5.9.2"
+    "typescript": "^6.0.2"
   }
 }

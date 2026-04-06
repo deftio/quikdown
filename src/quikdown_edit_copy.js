@@ -316,7 +316,6 @@ export async function getRenderedContent(previewPanel) {
             } catch (err) {
                 console.warn('MathJax typesetting failed:', err);
             }
-        } else {
         }
     }
     
@@ -860,7 +859,7 @@ export async function getRenderedContent(previewPanel) {
                                 // First try baseVal.value (works for absolute units)
                                 width = svg.width.baseVal.value;
                                 height = svg.height.baseVal.value;
-                            } catch (e) {
+                            } catch (_e) {
                                 // Fallback for relative units - use viewBox or rendered size
                                 if (svg.viewBox && svg.viewBox.baseVal) {
                                     width = svg.viewBox.baseVal.width;
@@ -879,8 +878,8 @@ export async function getRenderedContent(previewPanel) {
                             // Apply aggressive downsizing for MathJax SVGs
                             let scaleFactor = 0.04; // Further reduced for smaller output
                             
-                            let scaledWidth = width * scaleFactor;
-                            let scaledHeight = height * scaleFactor;
+                            const scaledWidth = width * scaleFactor;
+                            const scaledHeight = height * scaleFactor;
                             
                             // If still too large after base scaling, scale down further
                             if (scaledWidth > targetMaxWidth || scaledHeight > targetMaxHeight) {
@@ -1113,7 +1112,7 @@ export async function getRenderedContent(previewPanel) {
                 let mapDataUrl = '';
                 try {
                     mapDataUrl = canvas.toDataURL('image/png', 1.0);
-                } catch (e) {
+                } catch (_e) {
                     console.warn('Map canvas tainted; falling back to placeholder');
                 }
 

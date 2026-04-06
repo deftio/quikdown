@@ -274,7 +274,7 @@
             html = '<p>' + html + '</p>';
         } else {
             // Standard: two spaces at end of line for line breaks
-            html = html.replace(/  $/gm, `<br${getAttr('br')}>`);
+            html = html.replace(/ {2}$/gm, `<br${getAttr('br')}>`);
             
             // Paragraphs (double newlines)
             // Don't add </p> after block elements (they're not in paragraphs)
@@ -303,7 +303,7 @@
             [/(<\/table>)<\/p>/g, '$1'],
             [/<p>(<pre[^>]*>)/g, '$1'],
             [/(<\/pre>)<\/p>/g, '$1'],
-            [new RegExp(`<p>(${PLACEHOLDER_CB}\\d+§)<\/p>`, 'g'), '$1']
+            [new RegExp(`<p>(${PLACEHOLDER_CB}\\d+§)</p>`, 'g'), '$1']
         ];
         
         cleanupPatterns.forEach(([pattern, replacement]) => {
@@ -509,7 +509,7 @@
         
         const lines = text.split('\n');
         const result = [];
-        let listStack = []; // Track nested lists
+        const listStack = []; // Track nested lists
         
         // Helper to escape HTML for data-qd attributes
         const escapeHtml = (text) => text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);

@@ -1,175 +1,128 @@
 # Release Guide for quikdown
 
-This guide explains how to create releases for quikdown.
+## Release Flow Overview
 
-## Quick Start
+```
+npm run feature "my-feature"   →  creates feature branch, bumps version
+  ... work, commit, repeat ...
+npm run release                →  preflight, squash-merge to main, push
+  CI auto-tags, publishes to npm, creates GitHub Release
+```
 
-### Option 1: Full Automated Release (Recommended)
+## Starting a Feature
+
+From `main`, create a feature branch with automatic version bump:
 
 ```bash
-# Create release with current version
-npm run release
-
-# Or bump version and release
-npm run release:patch  # 2.0.0 -> 2.0.1
-npm run release:minor  # 2.0.0 -> 2.1.0  
-npm run release:major  # 2.0.0 -> 3.0.0
+npm run feature "add-cool-thing"          # patch bump (default): 1.2.0 → 1.2.1
+npm run feature "add-cool-thing" minor    # minor bump: 1.2.0 → 1.3.0
+npm run feature "add-cool-thing" major    # major bump: 1.2.0 → 2.0.0
 ```
 
 This will:
-1. Check for uncommitted changes
-2. Bump version (if specified)
-3. Build the project
-4. Run tests
-5. Create git tag
-6. Push to GitHub
-7. Create GitHub release (if `gh` CLI is installed)
-8. Upload distribution files
+1. Pull latest `main` from origin
+2. Create branch `feature/add-cool-thing`
+3. Bump version in `package.json` and `src/quikdown_version.js`
+4. Commit the version bump
 
-### Option 2: Simple Tag Creation
+Now work normally — commit as often as you like on the feature branch.
+
+## Releasing
+
+When ready, from your feature branch:
 
 ```bash
-# Just create a tag from current version
-npm run tag
+npm run release
 ```
 
-Then manually:
-1. Push the tag: `git push origin v2.0.0`
-2. Create release on GitHub: https://github.com/deftio/quikdown/releases/new
+This will:
+1. Verify you're on a feature branch (not main)
+2. Verify working tree is clean
+3. Check version was bumped (compares against published npm version)
+4. Run `npm test` (must pass)
+5. Run `npm run build` (must succeed)
+6. Show summary and ask for confirmation
+7. Switch to `main`, pull latest, squash-merge your branch
+8. Push `main` to origin
 
-### Option 3: Manual Process
+**After push, CI takes over:**
+1. `ci.yml` runs tests + build on `main`
+2. If green, CI creates git tag `vX.Y.Z`
+3. Tag push triggers `publish.yml`
+4. `publish.yml` publishes to npm with provenance + creates GitHub Release
 
+## Manual / Legacy Options
+
+### Tag-only (skip CI auto-tag)
 ```bash
-# 1. Update version in package.json
-npm version patch  # or minor/major
+npm run tag                # creates annotated tag from package.json version
+git push origin v1.2.1     # push the tag — triggers publish.yml
+```
 
-# 2. Update version in source
-npm run updateVersion
-
-# 3. Build
-npm run build
-
-# 4. Test
-npm test
-
-# 5. Commit
-git add -A
-git commit -m "chore: bump version to 2.0.1"
-
-# 6. Create tag
-git tag -a v2.0.1 -m "Release v2.0.1"
-
-# 7. Push
-git push
-git push origin v2.0.1
-
-# 8. Create release on GitHub
-# Visit: https://github.com/deftio/quikdown/releases/new
+### Legacy release script (pre-CI flow)
+```bash
+npm run release:legacy         # builds, tests, tags, pushes, creates GH release locally
+npm run release:legacy patch   # bumps patch first
 ```
 
 ## Prerequisites
 
-### Required
-- Node.js 16+
-- Git configured with push access to the repository
-- Clean working directory (no uncommitted changes)
+- Node.js 20+
+- Git with push access to the repository
+- Clean working directory
+- For npm publish: `NPM_TOKEN` secret configured in GitHub repo settings
+- Optional: [GitHub CLI](https://cli.github.com/) (`gh`) for the legacy release script
 
-### Optional but Recommended
-- [GitHub CLI](https://cli.github.com/) (`gh`) for automated releases
-  ```bash
-  # Install GitHub CLI
-  brew install gh  # macOS
-  # or
-  npm install -g gh
-  
-  # Authenticate
-  gh auth login
-  ```
+## CI/CD Pipeline
 
-## Release Checklist
-
-Before releasing, ensure:
-
-- [ ] All tests pass (`npm test`)
-- [ ] Build works (`npm run build`)
-- [ ] Bundle size is under 10KB
-- [ ] README is up to date
-- [ ] CHANGELOG is updated (if maintaining one)
-- [ ] Version number makes sense (follow semver)
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| `ci.yml` | Push to `main`, PRs | Test, build, verify dist files, upload coverage to Codecov, auto-tag |
+| `publish.yml` | Tag push `v*` | Publish to npm with provenance, create GitHub Release with dist artifacts |
 
 ## Version Numbering (Semantic Versioning)
 
-- **Patch** (2.0.0 → 2.0.1): Bug fixes, tiny improvements
-- **Minor** (2.0.0 → 2.1.0): New features, backwards compatible
-- **Major** (2.0.0 → 3.0.0): Breaking changes
+- **Patch** (1.2.0 → 1.2.1): Bug fixes, documentation
+- **Minor** (1.2.0 → 1.3.0): New features, backwards compatible
+- **Major** (1.2.0 → 2.0.0): Breaking changes
 
-## Publishing to NPM
+## Pre-commit Hooks
 
-After creating a GitHub release:
+Husky runs `npm test` before every commit. If tests fail, the commit is blocked.
 
-```bash
-# Ensure you're logged in to NPM
-npm login
-
-# Publish
-npm publish
-
-# Or use the GitHub Action (automatic on release)
-# Requires NPM_TOKEN secret in GitHub repository settings
-```
+To bypass in an emergency: `git commit --no-verify` (not recommended).
 
 ## Troubleshooting
 
 ### Tag already exists
 ```bash
-# Delete local tag
-git tag -d v2.0.0
-
-# Delete remote tag
-git push --delete origin v2.0.0
+git tag -d v1.2.1                    # delete local
+git push --delete origin v1.2.1     # delete remote
 ```
 
-### Uncommitted changes
+### Version check fails
+The version in `package.json` matches what's already on npm. Use `npm run feature` to auto-bump, or manually:
 ```bash
-# Stash changes
-git stash
-
-# Create release
-npm run release
-
-# Restore changes
-git stash pop
+npm version patch --no-git-tag-version
+npm run updateVersion
 ```
 
-### GitHub CLI not working
-1. Install: `brew install gh` or `npm install -g gh`
-2. Authenticate: `gh auth login`
-3. Check status: `gh auth status`
+### CI tag job didn't run
+The `tag-version` job only runs on direct pushes to `main` (not PRs). Verify the push landed on `main`.
 
-## GitHub Actions
+## Files Included in Releases
 
-The following workflows are triggered automatically:
+GitHub Release artifacts:
+- `dist/quikdown.umd.min.js` — Browser build (minified)
+- `dist/quikdown.esm.min.js` — ES Module build (minified)
+- `dist/quikdown.cjs` — CommonJS build
+- `dist/quikdown_bd.umd.min.js` — Bidirectional module
+- `dist/quikdown_bd.esm.min.js`
+- `dist/quikdown_edit.umd.min.js` — Editor module
+- `dist/quikdown.light.min.css` — Light theme
+- `dist/quikdown.dark.min.css` — Dark theme
 
-- **CI** (`ci.yml`): On every push and PR
-- **NPM Publish** (`npm-publish.yml`): On release creation
-- **Release** (`release.yml`): On version tags (v*)
-
-## Files Included in Release
-
-The release includes:
-- `dist/quikdown.umd.min.js` - Browser build (minified)
-- `dist/quikdown.esm.min.js` - ES Module build (minified)
-- `dist/quikdown.cjs` - CommonJS build
-
-## Release Notes Template
-
-The automated script generates release notes with:
-- Installation instructions
-- Bundle sizes
-- Recent commits
-- Feature highlights
-
-You can edit the release on GitHub after creation to add more details.
+npm package: everything in `dist/` (per `files` field in package.json).
 
 ## Questions?
 

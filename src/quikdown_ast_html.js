@@ -128,7 +128,7 @@ function toAst(input, options = {}) {
                     return { type: 'document', children: parsed };
                 }
                 return parsed;
-            } catch (e) {
+            } catch (_e) {
                 // Not valid JSON, fall through to markdown
             }
         }
@@ -140,7 +140,7 @@ function toAst(input, options = {}) {
                 if (parsed && parsed.type) {
                     return parsed;
                 }
-            } catch (e) {
+            } catch (_e) {
                 // Not valid YAML AST, fall through to markdown
             }
         }
@@ -242,7 +242,7 @@ function parseYamlArray(lines, startLine, baseIndent) {
             const obj = {};
             const colonIdx = itemContent.indexOf(':');
             const key = itemContent.slice(0, colonIdx).trim();
-            let value = itemContent.slice(colonIdx + 1).trim();
+            const value = itemContent.slice(colonIdx + 1).trim();
 
             if (value === '' || value.startsWith('\n')) {
                 // Value on next lines
@@ -270,7 +270,7 @@ function parseYamlArray(lines, startLine, baseIndent) {
                 const nextColonIdx = nextTrimmed.indexOf(':');
                 if (nextColonIdx > 0) {
                     const nextKey = nextTrimmed.slice(0, nextColonIdx).trim();
-                    let nextValue = nextTrimmed.slice(nextColonIdx + 1).trim();
+                    const nextValue = nextTrimmed.slice(nextColonIdx + 1).trim();
 
                     if (nextValue === '' || nextValue.startsWith('\n')) {
                         const result = parseYamlNode(lines, i + 1, nextIndent + 2);
@@ -321,7 +321,7 @@ function parseYamlObject(lines, startLine, baseIndent) {
         }
 
         const key = trimmed.slice(0, colonIdx).trim();
-        let value = trimmed.slice(colonIdx + 1).trim();
+        const value = trimmed.slice(colonIdx + 1).trim();
 
         if (value === '' || value === '|' || value === '>') {
             // Value on next lines

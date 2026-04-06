@@ -1,0 +1,367 @@
+/*
+ * Shared styles for quikdown editor demo pages.
+ * Matches the site's gradient aesthetic from examples/index.html.
+ */
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                 'Helvetica Neue', Arial, sans-serif;
+    color: #2c3e50;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+body.qde-dark-page {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    color: #e0e0e0;
+}
+
+.qde-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+}
+
+/* --- Header: breadcrumb + brand + theme toggle --- */
+.qde-page-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    margin-bottom: 20px;
+}
+
+body.qde-dark-page .qde-page-header {
+    background: rgba(30, 30, 30, 0.92);
+    color: #e0e0e0;
+}
+
+.qde-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 18px;
+    color: #764ba2;
+    text-decoration: none;
+}
+
+body.qde-dark-page .qde-brand {
+    color: #b388ff;
+}
+
+.qde-brand-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 900;
+    font-size: 16px;
+}
+
+.qde-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #888;
+    font-size: 14px;
+}
+
+.qde-breadcrumb a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.qde-breadcrumb a:hover { text-decoration: underline; }
+
+body.qde-dark-page .qde-breadcrumb { color: #aaa; }
+body.qde-dark-page .qde-breadcrumb a { color: #9ea8ff; }
+
+.qde-header-spacer { flex: 1; }
+
+/* Theme toggle button — cycles light → dark → auto */
+.qde-theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #f3e6ff;
+    border: 1px solid #d9b3ff;
+    color: #764ba2;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.qde-theme-toggle:hover {
+    background: #e6d1ff;
+    transform: translateY(-1px);
+}
+
+body.qde-dark-page .qde-theme-toggle {
+    background: rgba(179, 136, 255, 0.2);
+    border-color: #764ba2;
+    color: #d9b3ff;
+}
+
+body.qde-dark-page .qde-theme-toggle:hover {
+    background: rgba(179, 136, 255, 0.3);
+}
+
+/* --- Card containing the editor --- */
+.qde-card {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 16px;
+    padding: 24px 28px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    margin-bottom: 20px;
+}
+
+body.qde-dark-page .qde-card {
+    background: rgba(25, 25, 35, 0.95);
+    color: #e0e0e0;
+}
+
+.qde-card h1 {
+    margin: 0 0 6px 0;
+    color: #2c3e50;
+    font-size: 26px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.qde-card h2 {
+    color: #34495e;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 8px;
+    margin-top: 28px;
+}
+
+body.qde-dark-page .qde-card h2 {
+    color: #d9b3ff;
+    border-bottom-color: #3a3a4a;
+}
+
+.qde-card .subtitle {
+    color: #666;
+    margin: 0 0 16px 0;
+    font-size: 14px;
+}
+
+body.qde-dark-page .qde-card .subtitle { color: #aaa; }
+
+/* Editor container sizing */
+.qde-editor-wrap {
+    height: 560px;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    background: white;
+}
+
+body.qde-dark-page .qde-editor-wrap {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.qde-editor-wrap > div { height: 100%; }
+
+/* --- Info/tip box --- */
+.qde-info {
+    display: flex;
+    gap: 12px;
+    padding: 14px 18px;
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+    border-radius: 8px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: #1565c0;
+}
+
+body.qde-dark-page .qde-info {
+    background: rgba(33, 150, 243, 0.15);
+    color: #90caf9;
+}
+
+.qde-tip {
+    background: #fff9e6;
+    border-left-color: #ffb300;
+    color: #b77a00;
+}
+
+body.qde-dark-page .qde-tip {
+    background: rgba(255, 179, 0, 0.15);
+    color: #ffd54f;
+}
+
+/* Sample loader chips */
+.qde-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0;
+}
+
+.qde-chip {
+    padding: 8px 14px;
+    border: 1px solid #d9b3ff;
+    background: white;
+    color: #764ba2;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.qde-chip:hover {
+    background: #764ba2;
+    color: white;
+    transform: translateY(-1px);
+}
+
+body.qde-dark-page .qde-chip {
+    background: rgba(179, 136, 255, 0.15);
+    color: #d9b3ff;
+    border-color: #764ba2;
+}
+
+body.qde-dark-page .qde-chip:hover {
+    background: #764ba2;
+    color: white;
+}
+
+/* --- Code/kbd accents --- */
+.qde-card code {
+    background: #f3e6ff;
+    color: #764ba2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-family: 'Monaco', 'Courier New', monospace;
+}
+
+body.qde-dark-page .qde-card code {
+    background: rgba(179, 136, 255, 0.15);
+    color: #d9b3ff;
+}
+
+.qde-card kbd {
+    background: #2c3e50;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* --- API reference table --- */
+.qde-api-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 12px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.qde-api-table th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+}
+
+.qde-api-table td {
+    padding: 10px 14px;
+    border-top: 1px solid #eee;
+    background: white;
+}
+
+body.qde-dark-page .qde-api-table td {
+    background: #1e1e2e;
+    color: #e0e0e0;
+    border-top-color: #3a3a4a;
+}
+
+/* Custom toolbar for headless demo */
+.qde-custom-toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-radius: 10px 10px 0 0;
+    align-items: center;
+}
+
+.qde-custom-toolbar button {
+    padding: 8px 14px;
+    border: none;
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.qde-custom-toolbar button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.22);
+    transform: translateY(-1px);
+}
+
+.qde-custom-toolbar button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.qde-custom-toolbar .separator {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0 4px;
+}
+
+.qde-custom-toolbar .status {
+    margin-left: auto;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.qde-editor-wrap.qde-headless-wrap {
+    height: 460px;
+    border-radius: 0 0 10px 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .qde-page { padding: 16px 12px; }
+    .qde-page-header { flex-wrap: wrap; padding: 12px; }
+    .qde-card { padding: 18px 16px; }
+    .qde-editor-wrap { height: 480px; }
+}

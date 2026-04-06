@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown Editor — Headless Mode</title>
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="qde-demo.css">
+</head>
+<body>
+    <div class="qde-page">
+        <header class="qde-page-header">
+            <a class="qde-brand" href="../index.html">
+                <span class="qde-brand-icon">q</span>
+                quikdown
+            </a>
+            <span class="qde-breadcrumb">
+                <a href="../index.html">examples</a>
+                <span>›</span>
+                <span>editor</span>
+                <span>›</span>
+                <span>headless mode</span>
+            </span>
+            <span class="qde-header-spacer"></span>
+            <button id="theme-toggle" class="qde-theme-toggle" title="Cycle theme: light → dark → auto">
+                <span id="theme-icon">☀️</span>
+                <span id="theme-label">light</span>
+            </button>
+        </header>
+
+        <div class="qde-card">
+            <h1>Headless Mode</h1>
+            <p class="subtitle">
+                Drive the editor with your own UI via its public API. The toolbar is just
+                optional sugar — the same actions work from any button, keyboard shortcut,
+                or programmatic call.
+            </p>
+
+            <div class="qde-info">
+                <div>
+                    <strong>Why headless?</strong> Integrate the editor into your own app shell,
+                    style buttons to match your design, place controls anywhere on the page,
+                    or expose only the actions you want. The public API
+                    (<code>undo()</code>, <code>removeHR()</code>, <code>setMode()</code>, etc.) does all the work.
+                </div>
+            </div>
+
+            <h2>1. Headless (custom toolbar)</h2>
+            <p class="subtitle">Custom toolbar styled by the app — editor initialized with <code>showToolbar: false</code></p>
+
+            <div class="qde-custom-toolbar">
+                <button id="btn-source">Source</button>
+                <button id="btn-split">Split</button>
+                <button id="btn-preview">Preview</button>
+                <div class="separator"></div>
+                <button id="btn-undo">↶ Undo</button>
+                <button id="btn-redo">↷ Redo</button>
+                <div class="separator"></div>
+                <button id="btn-remove-hr">Strip HRs</button>
+                <button id="btn-fix-lf">Smart Paragraphs</button>
+                <div class="separator"></div>
+                <button id="btn-copy-md">⧉ MD</button>
+                <button id="btn-load-sample">Load Sample</button>
+                <span class="status" id="status">ready</span>
+            </div>
+            <div class="qde-editor-wrap qde-headless-wrap">
+                <div id="editor-headless"></div>
+            </div>
+
+            <h2>2. Built-in toolbar</h2>
+            <p class="subtitle">Same editor, stock toolbar — <code>showToolbar: true</code> + feature flags</p>
+            <div class="qde-editor-wrap">
+                <div id="editor-builtin"></div>
+            </div>
+
+            <h2>Public API Reference</h2>
+            <table class="qde-api-table">
+                <thead>
+                    <tr><th>Method</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>setMarkdown(md)</code></td><td>Replace current content (async)</td></tr>
+                    <tr><td><code>getMarkdown()</code></td><td>Get current markdown source</td></tr>
+                    <tr><td><code>getHTML()</code></td><td>Get rendered HTML</td></tr>
+                    <tr><td><code>setMode(mode)</code></td><td>Switch to 'source' | 'split' | 'preview'</td></tr>
+                    <tr><td><code>setTheme(theme)</code></td><td>Runtime theme: 'light' | 'dark' | 'auto'</td></tr>
+                    <tr><td><code>undo()</code> / <code>redo()</code></td><td>Step through edit history</td></tr>
+                    <tr><td><code>canUndo()</code> / <code>canRedo()</code></td><td>Check if undo/redo is available</td></tr>
+                    <tr><td><code>clearHistory()</code></td><td>Clear undo/redo stacks</td></tr>
+                    <tr><td><code>removeHR()</code></td><td>Strip all <code>---</code> (fence-safe, table-safe)</td></tr>
+                    <tr><td><code>convertLazyLinefeeds()</code></td><td>Single \n → paragraph breaks (idempotent)</td></tr>
+                    <tr><td><code>copy('markdown' | 'html')</code></td><td>Copy to clipboard</td></tr>
+                    <tr><td><code>copyRendered()</code></td><td>Copy rendered rich text</td></tr>
+                    <tr><td><code>destroy()</code></td><td>Clean up the editor</td></tr>
+                    <tr><td><code>QuikdownEditor.removeHRFromMarkdown(md)</code></td><td>Static: strip HRs from a string</td></tr>
+                    <tr><td><code>QuikdownEditor.convertLazyLinefeeds(md)</code></td><td>Static: fix lazy linefeeds in a string</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+
+        // ========= HEADLESS INSTANCE =========
+        const headless = new QuikdownEditor('#editor-headless', {
+            mode: 'split',
+            showToolbar: false,
+            onChange: (md) => {
+                updateButtonStates();
+                document.getElementById('status').textContent = `${md.length} chars`;
+            }
+        });
+        window.headless = headless;
+
+        const $ = (id) => document.getElementById(id);
+
+        $('btn-source').onclick    = () => headless.setMode('source');
+        $('btn-split').onclick     = () => headless.setMode('split');
+        $('btn-preview').onclick   = () => headless.setMode('preview');
+        $('btn-undo').onclick      = () => headless.undo();
+        $('btn-redo').onclick      = () => headless.redo();
+        $('btn-remove-hr').onclick = () => headless.removeHR();
+        $('btn-fix-lf').onclick    = () => headless.convertLazyLinefeeds();
+        $('btn-copy-md').onclick   = () => headless.copy('markdown');
+
+        $('btn-load-sample').onclick = () => {
+            headless.setMarkdown(`# Headless Demo
+
+Some lines
+that have only single
+newlines between them.
+
+---
+
+| Col A | Col B |
+|:------|------:|
+| foo   | 1     |
+| bar   | 2     |
+
+---
+
+\`\`\`yaml
+---
+embedded: frontmatter
+---
+\`\`\`
+
+End.`);
+        };
+
+        function updateButtonStates() {
+            $('btn-undo').disabled = !headless.canUndo();
+            $('btn-redo').disabled = !headless.canRedo();
+        }
+
+        await headless.setMarkdown(`# Headless Editor
+
+Try clicking the buttons above — they drive the editor via its public API.
+
+**Bold** and *italic* work. Click "Load Sample" for more content.`);
+        updateButtonStates();
+
+        // ========= BUILT-IN INSTANCE =========
+        const builtin = new QuikdownEditor('#editor-builtin', {
+            mode: 'split',
+            showToolbar: true,
+            showRemoveHR: true,
+            showLazyLinefeeds: true,
+            showUndoRedo: true
+        });
+        window.builtin = builtin;
+        builtin.setMarkdown('# Built-in Toolbar\n\nSame editor, stock toolbar. Use the buttons or keyboard shortcuts.');
+
+        // ========= THEME TOGGLE (applies to both editors + page) =========
+        const THEMES = ['light', 'dark', 'auto'];
+        const ICONS  = { light: '☀️', dark: '🌙', auto: '🖥️' };
+
+        function applyThemeUI(theme) {
+            $('theme-icon').textContent  = ICONS[theme];
+            $('theme-label').textContent = theme;
+            const isDark = theme === 'dark' ||
+                (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            document.body.classList.toggle('qde-dark-page', isDark);
+        }
+
+        function cycleTheme() {
+            const current = headless.getTheme() || 'auto';
+            const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+            headless.setTheme(next);
+            builtin.setTheme(next);
+            applyThemeUI(next);
+        }
+        $('theme-toggle').onclick = cycleTheme;
+        applyThemeUI(headless.getTheme() || 'auto');
+    </script>
+</body>
+</html>

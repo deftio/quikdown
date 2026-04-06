@@ -2,77 +2,94 @@ name: CI
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
+
+permissions:
+  contents: write
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         node-version: [20.x]
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    
+
     - name: Install dependencies
       run: npm ci
-    
-    - name: Build all targets
-      run: npm run build
-    
-    - name: Run tests with coverage
+
+    - name: Run tests
       run: npm test
-    
+
+    - name: Build project
+      run: npm run build
+
     - name: Check build output exists
       run: |
         test -f dist/quikdown.umd.js
         test -f dist/quikdown.umd.min.js
         test -f dist/quikdown.esm.js
-        test -f dist/quikdown.esm.min.js
         test -f dist/quikdown.cjs
         test -f dist/quikdown_bd.umd.js
-        test -f dist/quikdown_bd.umd.min.js
         test -f dist/quikdown_bd.esm.js
-        test -f dist/quikdown_bd.esm.min.js
         test -f dist/quikdown_bd.cjs
         test -f dist/quikdown_edit.umd.js
-        test -f dist/quikdown_edit.umd.min.js
         test -f dist/quikdown_edit.esm.js
-        test -f dist/quikdown_edit.esm.min.js
         test -f dist/quikdown_edit.cjs
-    
+        test -f dist/quikdown_ast.esm.js
+        test -f dist/quikdown_json.esm.js
+        test -f dist/quikdown_yaml.esm.js
+        test -f dist/quikdown_ast_html.esm.js
+
     - name: Upload coverage to Codecov
       if: matrix.node-version == '20.x'
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         fail_ci_if_error: false
         verbose: true
 
-  lint:
+  tag-version:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Use Node.js
-      uses: actions/setup-node@v3
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
       with:
-        node-version: '20.x'
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Check code formatting
+        node-version: 20.x
+
+    - name: Check version is not already published
+      run: node tools/checkVersion.cjs
+
+    - name: Read version from package.json
+      id: version
+      run: echo "version=v$(node -p 'require("./package.json").version')" >> "$GITHUB_OUTPUT"
+
+    - name: Check if tag already exists
+      id: check
       run: |
-        npm ls --depth=0 || true
-        echo "No linter configured yet - add ESLint or Prettier in future"
+        if git ls-remote --tags origin "${{ steps.version.outputs.version }}" | grep -q .; then
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Create and push tag
+      if: steps.check.outputs.exists == 'false'
+      run: |
+        git tag "${{ steps.version.outputs.version }}"
+        git push origin "${{ steps.version.outputs.version }}"

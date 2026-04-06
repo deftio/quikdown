@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown Editor — All Features</title>
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="qde-demo.css">
+</head>
+<body>
+    <div class="qde-page">
+        <header class="qde-page-header">
+            <a class="qde-brand" href="../index.html">
+                <span class="qde-brand-icon">q</span>
+                quikdown
+            </a>
+            <span class="qde-breadcrumb">
+                <a href="../index.html">examples</a>
+                <span>›</span>
+                <span>editor</span>
+                <span>›</span>
+                <span>all features</span>
+            </span>
+            <span class="qde-header-spacer"></span>
+            <button id="theme-toggle" class="qde-theme-toggle" title="Cycle theme: light → dark → auto">
+                <span id="theme-icon">☀️</span>
+                <span id="theme-label">light</span>
+            </button>
+        </header>
+
+        <div class="qde-card">
+            <h1>All Toolbar Features</h1>
+            <p class="subtitle">
+                Every built-in toolbar action enabled: Undo/Redo, Remove HR, Fix Linefeeds,
+                Copy actions. Try the sample loaders below to test each feature.
+            </p>
+
+            <div class="qde-editor-wrap">
+                <div id="editor"></div>
+            </div>
+
+            <div class="qde-chip-row">
+                <button class="qde-chip" onclick="loadSample('lazy')">Lazy linefeeds sample</button>
+                <button class="qde-chip" onclick="loadSample('hr')">Multiple HRs sample</button>
+                <button class="qde-chip" onclick="loadSample('table')">Table + HR sample</button>
+                <button class="qde-chip" onclick="loadSample('fence')">Fence with frontmatter</button>
+                <button class="qde-chip" onclick="loadSample('everything')">Everything sample</button>
+                <button class="qde-chip" onclick="window.editor.clearHistory()">Clear undo history</button>
+            </div>
+
+            <div class="qde-info qde-tip">
+                <div>
+                    <strong>Keyboard shortcuts:</strong>
+                    <kbd>Ctrl+Z</kbd> undo,
+                    <kbd>Ctrl+Shift+Z</kbd> / <kbd>Ctrl+Y</kbd> redo,
+                    <kbd>Ctrl+1</kbd>/<kbd>Ctrl+2</kbd>/<kbd>Ctrl+3</kbd> switch source/split/preview modes.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+
+        window.editor = new QuikdownEditor('#editor', {
+            mode: 'split',
+            showToolbar: true,
+            showRemoveHR: true,
+            showLazyLinefeeds: true,
+            showUndoRedo: true,
+            undoStackSize: 100,
+            plugins: { highlightjs: true }
+        });
+
+        // ----- Theme toggle -----
+        const THEMES = ['light', 'dark', 'auto'];
+        const ICONS  = { light: '☀️', dark: '🌙', auto: '🖥️' };
+
+        function applyThemeUI(theme) {
+            document.getElementById('theme-icon').textContent = ICONS[theme];
+            document.getElementById('theme-label').textContent = theme;
+            // Sync page background with editor theme
+            const isDark = theme === 'dark' ||
+                (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            document.body.classList.toggle('qde-dark-page', isDark);
+        }
+
+        function cycleTheme() {
+            const current = window.editor.getTheme() || 'auto';
+            const next = THEMES[(THEMES.indexOf(current) + 1) % THEMES.length];
+            window.editor.setTheme(next);
+            applyThemeUI(next);
+        }
+        document.getElementById('theme-toggle').onclick = cycleTheme;
+        applyThemeUI(window.editor.getTheme() || 'auto');
+
+        // ----- Sample content -----
+        const samples = {
+            lazy: `# Lazy Linefeeds Sample
+
+These lines have only single newlines between them.
+You'll see them as one paragraph in preview.
+Click "Fix Linefeeds" to make each its own paragraph.
+Then click it again — it's idempotent.
+
+Already-separated content
+stays the same.`,
+
+            hr: `# Multiple HRs
+
+Section one content.
+
+---
+
+Section two content.
+
+___
+
+Section three content.
+
+***
+
+Click "Remove HR" to strip all of them at once.`,
+
+            table: `# Table + HR Sample
+
+Some text before.
+
+---
+
+| Name | Value | Notes |
+|:-----|:-----:|------:|
+| Alice | 30 | NYC |
+| Bob | 25 | LA |
+| Charlie | 35 | SF |
+
+---
+
+The HR removal is smart: it keeps the table separator row but removes the standalone HRs.`,
+
+            fence: `# Fence with --- Sample
+
+Text before.
+
+---
+
+\`\`\`yaml
+---
+title: My Doc
+author: Jane
+---
+\`\`\`
+
+---
+
+Text after.
+
+The \`---\` inside the YAML frontmatter fence is preserved — only the standalone HRs are removed.`,
+
+            everything: `# Complete Document
+
+An intro paragraph with **bold** and *italic*.
+
+---
+
+## Code Example
+
+\`\`\`javascript
+function greet(name) {
+    return \`Hello, \${name}!\`;
+}
+\`\`\`
+
+## Data Table
+
+| Feature | Status | Notes |
+|:--------|:------:|------:|
+| Undo | Done | 100 states |
+| Redo | Done | Idempotent |
+| Remove HR | Done | Fence-safe |
+| Lazy LF | Done | Idempotent |
+
+---
+
+> A quote with **formatting**
+> spanning multiple lines.
+
+- Task 1
+- Task 2
+  - Subtask 2a
+  - Subtask 2b
+- Task 3
+
+***
+
+End of document.`
+        };
+
+        window.loadSample = (key) => window.editor.setMarkdown(samples[key]);
+
+        // Welcome content
+        window.editor.setMarkdown(`# Welcome
+
+Try the toolbar buttons above: **Undo**, **Redo**, **Remove HR**, **Fix Linefeeds**.
+Or load a sample document using the chips below.
+
+---
+
+This is a horizontal rule that "Remove HR" will strip.
+
+Some lines
+with single newlines
+that "Fix Linefeeds" will split into paragraphs.`);
+    </script>
+</body>
+</html>
