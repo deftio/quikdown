@@ -215,6 +215,14 @@ function quikdown(markdown, options = {}) {
         const sanitizedUrl = sanitizeUrl(url, options.allow_unsafe_urls);
         return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>`;
     });
+
+    const protectedBlocks = [];
+
+    html = html.replace(/(<a\b[^>]*>.*?<\/a>|<img\b[^>]*>)/gis, (match) => {
+        const key = `%%URL${protectedBlocks.length}%%`;
+        protectedBlocks.push(match);
+        return key;
+    });
     
     // Process inline formatting (bold, italic, strikethrough)
     const inlinePatterns = [
@@ -224,9 +232,13 @@ function quikdown(markdown, options = {}) {
         [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em', '_'],
         [/~~(.+?)~~/g, 'del', '~~']
     ];
-    
+
     inlinePatterns.forEach(([pattern, tag, marker]) => {
         html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(marker)}>$1</${tag}>`);
+    });
+
+    html = html.replace(/%%URL(\d+)%%/g, (_, i) => {
+        return protectedBlocks[i];
     });
     
     // Line breaks
