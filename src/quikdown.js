@@ -218,11 +218,11 @@ function quikdown(markdown, options = {}) {
     
     // Process inline formatting (bold, italic, strikethrough)
     const inlinePatterns = [
-        [/\*\*(.+?)\*\*/g, 'strong', '**'],
-        [/__(.+?)__/g, 'strong', '__'],
-        [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em', '*'],
-        [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em', '_'],
-        [/~~(.+?)~~/g, 'del', '~~']
+        [/(?<!<(?:a|img)[^>]*?)\*\*(.+?)\*\*/gi, 'strong', '**'],
+        [/(?<!<(?:a|img)[^>]*?)__(.+?)__/gi, 'strong', '__'],
+        [/(?<!<(?:a|img)[^>]*?)(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/gi, 'em', '*'],
+        [/(?<!<(?:a|img)[^>]*?)(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/gi, 'em', '_'],
+        [/(?<!<(?:a|img)[^>]*?)~~(.+?)~~/gi, 'del', '~~']
     ];
     
     inlinePatterns.forEach(([pattern, tag, marker]) => {
