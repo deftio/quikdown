@@ -25,6 +25,13 @@ The files `quikdown.js` and `quikdown_bd.js` must maintain 100% test coverage
 across all four metrics (statements, branches, functions, lines). If you modify
 these files, add or update tests accordingly.
 
+`quikdown_edit.js` is currently at ~30% coverage via JSDOM unit tests. The gap
+exists because the editor is DOM-heavy (contenteditable, clipboard, fence
+rendering) and a large portion of the file is a bundled copy of quikdown_bd
+that is already covered by its own tests. The goal is 80%+. Contributions that
+improve editor test coverage — especially Playwright tests for fence rendering,
+clipboard, and contenteditable interactions — are welcome.
+
 ## Pull Request Guidelines
 
 - Keep each PR focused on a single change or closely related set of changes.

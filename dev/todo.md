@@ -36,6 +36,7 @@ A small markdown to html parser with fence plugin support
 * [ ] Add optional error callback: `onError: (error) => {}`
 
 ### Testing
+* [ ] Improve quikdown_edit.js coverage to 80%+ (currently ~30%; needs Playwright tests for fence rendering, clipboard, contenteditable)
 * [ ] Add edge case tests for malformed markdown
 * [ ] Create fixtures for common patterns
 * [ ] Add fuzz tests for robustness
