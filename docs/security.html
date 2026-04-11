@@ -85,12 +85,14 @@ const html = quikdown(markdown);
 </ul>
 <h3>3. Trusted HTML via Fence Plugins</h3>
 <p>When you need to render trusted HTML, use the fence plugin system:</p>
-<pre><code class="language-javascript">const trustedHtmlPlugin = (content, lang) =&gt; {
-  // Only allow HTML from explicitly marked blocks
-  if (lang === &#39;html-render&#39; &amp;&amp; isSourceTrusted()) {
-    return content; // Return raw HTML
+<pre><code class="language-javascript">const trustedHtmlPlugin = {
+  render: (content, lang) =&gt; {
+    // Only allow HTML from explicitly marked blocks
+    if (lang === &#39;html-render&#39; &amp;&amp; isSourceTrusted()) {
+      return content; // Return raw HTML
+    }
+    return undefined; // Fall back to escaping
   }
-  return undefined; // Fall back to escaping
 };
 
 const html = quikdown(markdown, { 
@@ -135,46 +137,57 @@ const html = quikdown(markdown);
 &lt;!-- Rendered as: &amp;lt;img onerror=&quot;alert(&#39;XSS&#39;)&quot; src=&quot;x&quot;&amp;gt; --&gt;
 </code></pre>
 </li>
-<li><p><strong>JavaScript URLs</strong> (Future feature)</p>
+<li><p><strong>JavaScript URLs</strong></p>
 <pre><code class="language-markdown">[Click me](javascript:alert(&#39;XSS&#39;))
-&lt;!-- Will be sanitized when URL validation is added --&gt;
+&lt;!-- Rendered as: &lt;a href=&quot;#&quot;&gt;Click me&lt;/a&gt; --&gt;
 </code></pre>
 </li>
-<li><p><strong>Data URI Attacks</strong> (Future feature)</p>
+<li><p><strong>Data URI Attacks</strong></p>
 <pre><code class="language-markdown">![](data:text/html,&lt;script&gt;alert(&#39;XSS&#39;)&lt;/script&gt;)
-&lt;!-- Will be blocked when URL validation is added --&gt;
+&lt;!-- Blocked — non-image data: URIs are replaced with # --&gt;
 </code></pre>
 </li>
 </ol>
-<h3>Current Limitations</h3>
-<p><strong>Note</strong>: URL sanitization is not yet implemented. Currently, javascript: and data: URLs in links and images are NOT sanitized. This is on the roadmap.</p>
+<h3>URL Sanitization</h3>
+<p>quikdown includes built-in URL sanitization via <code>sanitizeUrl()</code>. All URLs in links and images are checked against a blocklist of dangerous protocols:</p>
+<ul>
+<li><code>javascript:</code> URLs are replaced with <code>#</code></li>
+<li><code>vbscript:</code> URLs are replaced with <code>#</code></li>
+<li><code>data:</code> URLs are replaced with <code>#</code> (except <code>data:image/*</code>, which is allowed)</li>
+</ul>
 <h2>Fence Plugin Security</h2>
 <h3>Plugin Responsibilities</h3>
 <p>When you write a fence plugin, YOU are responsible for security:</p>
 <pre><code class="language-javascript">// UNSAFE - Don&#39;t do this with untrusted input!
-const unsafePlugin = (content, lang) =&gt; {
-  return content; // Returns raw, unescaped HTML
+const unsafePlugin = {
+  render: (content, lang) =&gt; {
+    return content; // Returns raw, unescaped HTML
+  }
 };
 
 // SAFER - Validate and sanitize
-const saferPlugin = (content, lang) =&gt; {
-  if (lang === &#39;mermaid&#39;) {
-    // Mermaid handles its own escaping
-    return `&lt;div class=&quot;mermaid&quot;&gt;${escapeHtml(content)}&lt;/div&gt;`;
+const saferPlugin = {
+  render: (content, lang) =&gt; {
+    if (lang === &#39;mermaid&#39;) {
+      // Mermaid handles its own escaping
+      return `&lt;div class=&quot;mermaid&quot;&gt;${escapeHtml(content)}&lt;/div&gt;`;
+    }
+    return undefined;
   }
-  return undefined;
 };
 
 // SAFEST - Use established libraries
-const safestPlugin = (content, lang) =&gt; {
-  if (lang === &#39;html-preview&#39;) {
-    // Use DOMPurify or similar
-    return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: [&#39;div&#39;, &#39;span&#39;, &#39;p&#39;, &#39;a&#39;],
-      ALLOWED_ATTR: [&#39;class&#39;, &#39;href&#39;]
-    });
+const safestPlugin = {
+  render: (content, lang) =&gt; {
+    if (lang === &#39;html-preview&#39;) {
+      // Use DOMPurify or similar
+      return DOMPurify.sanitize(content, {
+        ALLOWED_TAGS: [&#39;div&#39;, &#39;span&#39;, &#39;p&#39;, &#39;a&#39;],
+        ALLOWED_ATTR: [&#39;class&#39;, &#39;href&#39;]
+      });
+    }
+    return undefined;
   }
-  return undefined;
 };
 </code></pre>
 <h3>Plugin Best Practices</h3>
@@ -267,7 +280,6 @@ function renderMixedContent(markdown, trustMap) {
 <h2>Future Security Enhancements</h2>
 <p>Planned security improvements:</p>
 <ol>
-<li><strong>URL Sanitization</strong> - Block javascript:, data:, and other dangerous URLs</li>
 <li><strong>Configurable URL Allowlist</strong> - Only allow specific URL schemes</li>
 <li><strong>Plugin Sandboxing</strong> - Optional plugin output validation</li>
 <li><strong>Security Headers Helper</strong> - Generate recommended CSP headers</li>

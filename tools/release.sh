@@ -58,6 +58,19 @@ info "=== Running build ==="
 npm run build || die "Build failed. Fix errors before releasing."
 echo ""
 
+# --- capture any badge/docs/dist drift and commit it before releasing -------
+# `npm test` and `npm run build` regenerate README.md badges, dist files, and
+# the root index.html (from buildDocs). If anything changed, commit it to the
+# feature branch so the squash-merge includes it.
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  warn "Build/test produced uncommitted changes (badges, docs, dist)."
+  warn "Committing them to '$BRANCH' before squash-merging."
+  git add -A
+  git commit -m "chore: refresh badges, dist, and docs for ${TAG}" || die "Auto-commit of drift failed."
+  echo ""
+fi
+
 # --- show summary ------------------------------------------------------------
 
 COMMIT_COUNT=$(git rev-list --count main..HEAD 2>/dev/null || echo "?")

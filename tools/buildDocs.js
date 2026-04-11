@@ -135,11 +135,18 @@ async function convertMarkdownToHtml(mdPath, htmlPath, title) {
 async function buildDocs() {
     console.log('🔨 Building documentation HTML files...\n');
     
-    // Convert README.md to index.html
+    // Convert README.md to docs/readme.html (and to index-old.html as a
+    // fallback while the new hand-crafted landing page in /index.html is the
+    // primary entry). buildSite.js owns /index.html.
     await convertMarkdownToHtml(
         path.join(projectRoot, 'README.md'),
-        path.join(projectRoot, 'index.html'),
-        'quikdown - Lightweight Markdown Parser'
+        path.join(projectRoot, 'index-old.html'),
+        'quikdown - Lightweight Markdown Parser (legacy README view)'
+    );
+    await convertMarkdownToHtml(
+        path.join(projectRoot, 'README.md'),
+        path.join(projectRoot, 'docs', 'readme.html'),
+        'quikdown - README'
     );
     
     // Convert all markdown files in docs/ folder
@@ -203,12 +210,15 @@ console.log(html);
         marked(docsIndexContent)
     );
     
+    // Note: buildSite.js owns docs/index.html now (the new chrome-wrapped hub).
+    // We write the legacy markdown-rendered hub to a side path so it remains
+    // available for anyone who deep-linked it.
     await fs.writeFile(
-        path.join(docsDir, 'index.html'),
+        path.join(docsDir, 'index-legacy.html'),
         docsIndexHtml,
         'utf8'
     );
-    console.log('✅ Created: docs/index.html (documentation hub)');
+    console.log('✅ Created: docs/index-legacy.html (legacy markdown hub)');
     
     console.log('\n✨ Documentation build complete!');
 }

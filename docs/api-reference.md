@@ -18,7 +18,7 @@ Converts markdown text to HTML.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `inline_styles` | `boolean` | `false` | Use inline styles instead of CSS classes |
-| `fence_plugin` | `function` | `undefined` | Custom handler for fenced code blocks |
+| `fence_plugin` | `object` | `undefined` | Custom handler for fenced code blocks (object with `.render` method) |
 | `bidirectional` | `boolean` | `false` | Add data-qd attributes for source tracking (v1.0.5+) |
 | `lazy_linefeeds` | `boolean` | `false` | Single newlines become `<br>` tags (v1.0.5+) |
 | `allow_unsafe_urls` | `boolean` | `false` | Allow javascript: and other potentially unsafe URLs |
@@ -147,43 +147,49 @@ The version of quikdown.
 #### Example
 
 ```javascript
-console.log(quikdown.version); // "1.0.5"
+console.log(quikdown.version); // "1.2.3"
 ```
 
 ## Fence Plugin API
 
-### Plugin Function Signature
+### Plugin Object Structure
 
 ```typescript
-type FencePlugin = (
-  content: string,
-  language: string
-) => string | undefined;
+interface FencePlugin {
+  render: (content: string, language: string) => string | undefined;
+  reverse?: (element: HTMLElement) => { fence: string; lang: string; content: string } | null;
+}
 ```
 
-#### Parameters
+#### `render` Parameters
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `content` | `string` | Raw, unescaped content of the code block |
 | `language` | `string` | Language identifier (empty string if none) |
 
-#### Returns
+#### `render` Returns
 
 - `string` - HTML to render
 - `undefined` - Use default code block rendering
 
+#### `reverse` (optional)
+
+Used by `quikdown_bd` to convert plugin-rendered HTML back to fenced code blocks.
+
 #### Example
 
 ```javascript
-function syntaxHighlightPlugin(content, language) {
-  if (language && hljs.getLanguage(language)) {
-    const highlighted = hljs.highlight(content, { language }).value;
-    return `<pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>`;
+const syntaxHighlightPlugin = {
+  render: (content, language) => {
+    if (language && hljs.getLanguage(language)) {
+      const highlighted = hljs.highlight(content, { language }).value;
+      return `<pre class="hljs"><code class="language-${language}">${highlighted}</code></pre>`;
+    }
+    // Return undefined to use default rendering
+    return undefined;
   }
-  // Return undefined to use default rendering
-  return undefined;
-}
+};
 
 const html = quikdown(markdown, {
   fence_plugin: syntaxHighlightPlugin
@@ -195,57 +201,65 @@ const html = quikdown(markdown, {
 #### Mermaid Diagrams
 
 ```javascript
-function mermaidPlugin(content, language) {
-  if (language === 'mermaid') {
-    const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-    // Render asynchronously after DOM insertion
-    setTimeout(() => {
-      mermaid.render(id + '-svg', content).then(result => {
-        document.getElementById(id).innerHTML = result.svg;
-      });
-    }, 0);
-    return `<div id="${id}" class="mermaid-diagram">Loading...</div>`;
+const mermaidPlugin = {
+  render: (content, language) => {
+    if (language === 'mermaid') {
+      const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
+      // Render asynchronously after DOM insertion
+      setTimeout(() => {
+        mermaid.render(id + '-svg', content).then(result => {
+          document.getElementById(id).innerHTML = result.svg;
+        });
+      }, 0);
+      return `<div id="${id}" class="mermaid-diagram">Loading...</div>`;
+    }
   }
-}
+};
 ```
 
 #### Math Rendering
 
 ```javascript
-function mathPlugin(content, language) {
-  if (language === 'math' || language === 'latex') {
-    return katex.renderToString(content, {
-      throwOnError: false,
-      displayMode: true
-    });
+const mathPlugin = {
+  render: (content, language) => {
+    if (language === 'math' || language === 'latex') {
+      return katex.renderToString(content, {
+        throwOnError: false,
+        displayMode: true
+      });
+    }
   }
-}
+};
 ```
 
 #### Custom Components
 
 ```javascript
-function componentPlugin(content, language) {
-  if (language === 'component') {
-    try {
-      const config = JSON.parse(content);
-      return renderComponent(config);
-    } catch (e) {
-      return `<div class="error">Invalid component: ${e.message}</div>`;
+const componentPlugin = {
+  render: (content, language) => {
+    if (language === 'component') {
+      try {
+        const config = JSON.parse(content);
+        return renderComponent(config);
+      } catch (e) {
+        return `<div class="error">Invalid component: ${e.message}</div>`;
+      }
     }
   }
-}
+};
 ```
 
 #### Trusted HTML
 
 ```javascript
-function trustedHtmlPlugin(content, language) {
-  // Only allow from trusted sources!
-  if (language === 'html-render' && isTrustedSource()) {
-    return content; // Raw HTML - be careful!
+const trustedHtmlPlugin = {
+  render: (content, language) => {
+    // Only allow from trusted sources!
+    if (language === 'html-render' && isTrustedSource()) {
+      return content; // Raw HTML - be careful!
+    }
   }
-}
+};
 ```
 
 ## Options Deep Dive
@@ -451,7 +465,7 @@ container.innerHTML = quikdown(combined);
 |---------|------------|---------------|
 | Markdown to HTML | ✅ Yes | ✅ Yes |
 | HTML to Markdown | ❌ No | ✅ Yes |
-| Size (minified) | 8.5KB | 12.5KB |
+| Size (minified) | 9.3KB | 14.1KB |
 | `toMarkdown()` method | ❌ No | ✅ Yes |
 | data-qd attributes | ❌ No | ✅ Yes |
 | Use case | Standard parsing | WYSIWYG editors |
@@ -476,7 +490,7 @@ Converts markdown to HTML with source tracking for bidirectional conversion. Onl
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `inline_styles` | `boolean` | `false` | Use inline styles instead of CSS classes |
-| `fence_plugin` | `function` | `undefined` | Custom handler for fenced code blocks |
+| `fence_plugin` | `object` | `undefined` | Custom handler for fenced code blocks (object with `.render` method) |
 | `bidirectional` | `boolean` | `true` | Add data-qd attributes for source tracking |
 | `lazy_linefeeds` | `boolean` | `false` | Single newlines become `<br>` tags (v1.0.5+) |
 

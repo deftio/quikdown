@@ -31,12 +31,14 @@ Unlike some markdown parsers, quikdown does **not** allow raw HTML to pass throu
 When you need to render trusted HTML, use the fence plugin system:
 
 ```javascript
-const trustedHtmlPlugin = (content, lang) => {
-  // Only allow HTML from explicitly marked blocks
-  if (lang === 'html-render' && isSourceTrusted()) {
-    return content; // Return raw HTML
+const trustedHtmlPlugin = {
+  render: (content, lang) => {
+    // Only allow HTML from explicitly marked blocks
+    if (lang === 'html-render' && isSourceTrusted()) {
+      return content; // Return raw HTML
+    }
+    return undefined; // Fall back to escaping
   }
-  return undefined; // Fall back to escaping
 };
 
 const html = quikdown(markdown, { 
@@ -99,21 +101,25 @@ const html = quikdown(markdown);
    <!-- Rendered as: &lt;img onerror="alert('XSS')" src="x"&gt; -->
    ```
 
-3. **JavaScript URLs** (Future feature)
+3. **JavaScript URLs**
    ```markdown
    [Click me](javascript:alert('XSS'))
-   <!-- Will be sanitized when URL validation is added -->
+   <!-- Rendered as: <a href="#">Click me</a> -->
    ```
 
-4. **Data URI Attacks** (Future feature)
+4. **Data URI Attacks**
    ```markdown
    ![](data:text/html,<script>alert('XSS')</script>)
-   <!-- Will be blocked when URL validation is added -->
+   <!-- Blocked — non-image data: URIs are replaced with # -->
    ```
 
-### Current Limitations
+### URL Sanitization
 
-**Note**: URL sanitization is not yet implemented. Currently, javascript: and data: URLs in links and images are NOT sanitized. This is on the roadmap.
+quikdown includes built-in URL sanitization via `sanitizeUrl()`. All URLs in links and images are checked against a blocklist of dangerous protocols:
+
+- `javascript:` URLs are replaced with `#`
+- `vbscript:` URLs are replaced with `#`
+- `data:` URLs are replaced with `#` (except `data:image/*`, which is allowed)
 
 ## Fence Plugin Security
 
@@ -123,29 +129,35 @@ When you write a fence plugin, YOU are responsible for security:
 
 ```javascript
 // UNSAFE - Don't do this with untrusted input!
-const unsafePlugin = (content, lang) => {
-  return content; // Returns raw, unescaped HTML
+const unsafePlugin = {
+  render: (content, lang) => {
+    return content; // Returns raw, unescaped HTML
+  }
 };
 
 // SAFER - Validate and sanitize
-const saferPlugin = (content, lang) => {
-  if (lang === 'mermaid') {
-    // Mermaid handles its own escaping
-    return `<div class="mermaid">${escapeHtml(content)}</div>`;
+const saferPlugin = {
+  render: (content, lang) => {
+    if (lang === 'mermaid') {
+      // Mermaid handles its own escaping
+      return `<div class="mermaid">${escapeHtml(content)}</div>`;
+    }
+    return undefined;
   }
-  return undefined;
 };
 
 // SAFEST - Use established libraries
-const safestPlugin = (content, lang) => {
-  if (lang === 'html-preview') {
-    // Use DOMPurify or similar
-    return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: ['div', 'span', 'p', 'a'],
-      ALLOWED_ATTR: ['class', 'href']
-    });
+const safestPlugin = {
+  render: (content, lang) => {
+    if (lang === 'html-preview') {
+      // Use DOMPurify or similar
+      return DOMPurify.sanitize(content, {
+        ALLOWED_TAGS: ['div', 'span', 'p', 'a'],
+        ALLOWED_ATTR: ['class', 'href']
+      });
+    }
+    return undefined;
   }
-  return undefined;
 };
 ```
 
@@ -255,11 +267,10 @@ If you discover a security vulnerability:
 
 Planned security improvements:
 
-1. **URL Sanitization** - Block javascript:, data:, and other dangerous URLs
-2. **Configurable URL Allowlist** - Only allow specific URL schemes
-3. **Plugin Sandboxing** - Optional plugin output validation
-4. **Security Headers Helper** - Generate recommended CSP headers
-5. **Built-in DOMPurify Integration** - Optional HTML sanitization
+1. **Configurable URL Allowlist** - Only allow specific URL schemes
+2. **Plugin Sandboxing** - Optional plugin output validation
+3. **Security Headers Helper** - Generate recommended CSP headers
+4. **Built-in DOMPurify Integration** - Optional HTML sanitization
 
 ## Summary
 

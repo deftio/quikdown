@@ -17,8 +17,11 @@ function quikdown_bd(markdown, options = {}) {
     return quikdown(markdown, { ...options, bidirectional: true });
 }
 
-// Copy all properties and methods from quikdown (including version)
+// Copy all properties and methods from quikdown (including version).
+// Skip `configure` — quikdown_bd provides its own override below, so the
+// inner quikdown.configure is dead code in this bundle.
 Object.keys(quikdown).forEach(key => {
+    if (key === 'configure') return;
     quikdown_bd[key] = quikdown[key];
 });
 
@@ -382,10 +385,13 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
     return markdown;
 };
 
-// Override the configure method to return a bidirectional version
+// Override the configure method to return a bidirectional version.
+// We delegate to the inner quikdown.configure so the shared closure
+// machinery is exercised in both bundles (no dead code).
 quikdown_bd.configure = function(options) {
+    const innerParser = quikdown.configure({ ...options, bidirectional: true });
     return function(markdown) {
-        return quikdown_bd(markdown, options);
+        return innerParser(markdown);
     };
 };
 

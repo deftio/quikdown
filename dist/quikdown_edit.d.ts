@@ -34,13 +34,27 @@ declare module 'quikdown/edit' {
     undoStackSize?: number;
     /** Enable complex fences (CSV, math, SVG, etc.) @default true */
     enableComplexFences?: boolean;
-    /** Plugin configuration */
+    /** Plugin configuration (legacy — prefer preloadFences) */
     plugins?: {
       /** Enable Highlight.js for syntax highlighting */
       highlightjs?: boolean;
       /** Enable Mermaid for diagrams */
       mermaid?: boolean;
     };
+    /**
+     * Preload fence-rendering libraries at construction time so the first
+     * encounter with a fence type renders instantly (no lazy-load delay).
+     *
+     * - `'all'` — preload every known library
+     * - `['highlightjs', 'mermaid', 'math', 'geojson', 'stl']` — specific list
+     * - `[{ name, script, css? }]` — custom library URL
+     * - `null` (default) — lazy-load on demand
+     *
+     * Trade-off: preloading uses more upfront network but eliminates the
+     * "loading..." flicker on first render of each fence type. Developer's
+     * choice — the editor itself stays ~70 KB minified either way.
+     */
+    preloadFences?: 'all' | Array<string | { name?: string; script: string; css?: string }> | null;
     /** Custom fence handlers keyed by language */
     customFences?: {
       [language: string]: (code: string, lang: string) => string;

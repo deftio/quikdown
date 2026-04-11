@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vue integration — Integration example 16 · quikdown</title>
+  <meta name="description" content="Use quikdown and the QuikdownEditor inside a Vue 3 component. v-html for the parser, ref + onMounted for the editor.">
+  <meta name="keywords" content="quikdown vue, vue markdown editor, vue markdown parser, v-html markdown">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/examples/integration-vue.html">
+  <link rel="icon" type="image/svg+xml" href="/quikdown/favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="quikdown in Vue">
+
+  <link rel="stylesheet" href="/quikdown/site/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header h1 {
+      font-size: 1.8rem; margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98); border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 { margin: 0 0 0.75rem 0; font-size: 1.05rem; }
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="/quikdown/examples/">Examples</a> › Track 4 — Integrations › Example 16</div>
+        <h1>Vue integration</h1>
+        <p style="color: #4b5563;">
+          Same patterns as the React example, in Vue 3 idiom: <code>computed</code> + <code>v-html</code> for the parser, <code>ref</code> + <code>onMounted</code> for the editor.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>Pattern 1: Parser only</h2>
+<pre><code>&lt;script setup&gt;
+import { computed } from 'vue';
+import quikdown from 'quikdown';
+
+const props = defineProps({ source: String });
+const html = computed(() =&gt; quikdown(props.source));
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div class="markdown" v-html="html"&gt;&lt;/div&gt;
+&lt;/template&gt;</code></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Pattern 2: Full editor as a component</h2>
+<pre><code>&lt;script setup&gt;
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import QuikdownEditor from 'quikdown/edit';
+
+const props = defineProps({
+  modelValue: { type: String, default: '' },
+  mode:  { type: String, default: 'split' },
+  theme: { type: String, default: 'auto' },
+});
+const emit = defineEmits(['update:modelValue']);
+
+const containerEl = ref(null);
+let editor = null;
+
+onMounted(() =&gt; {
+  editor = new QuikdownEditor(containerEl.value, {
+    mode:  props.mode,
+    theme: props.theme,
+    showUndoRedo: true,
+    onChange: (md) =&gt; emit('update:modelValue', md),
+  });
+  editor.setMarkdown(props.modelValue);
+});
+
+onBeforeUnmount(() =&gt; editor?.destroy());
+
+watch(() =&gt; props.modelValue, (val) =&gt; {
+  if (editor &amp;&amp; val !== editor.getMarkdown()) editor.setMarkdown(val);
+});
+watch(() =&gt; props.mode,  (m) =&gt; editor?.setMode(m));
+watch(() =&gt; props.theme, (t) =&gt; editor?.setTheme(t));
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div ref="containerEl" style="height: 500px"&gt;&lt;/div&gt;
+&lt;/template&gt;</code></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Usage</h2>
+<pre><code>&lt;script setup&gt;
+import { ref } from 'vue';
+import MarkdownEditor from './MarkdownEditor.vue';
+
+const md = ref('# Hello\n\nVue + quikdown');
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;MarkdownEditor v-model="md" theme="auto" /&gt;
+&lt;/template&gt;</code></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Notes</h2>
+        <ul>
+          <li><strong>Nuxt SSR</strong>: dynamically import the editor on the client only —
+              <code>const QuikdownEditor = (await import('quikdown/edit')).default</code>
+              inside <code>onMounted</code>. The parser (<code>quikdown</code>) and bidirectional (<code>quikdown/bd</code>) modules work in Node and are safe to import server-side.</li>
+          <li><strong>v-model</strong> works through the standard <code>modelValue</code> + <code>update:modelValue</code> contract. The editor's <code>onChange</code> callback emits the event.</li>
+          <li><strong>Cleanup</strong>: always call <code>editor.destroy()</code> in <code>onBeforeUnmount</code>.</li>
+        </ul>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="/quikdown/examples/integration-react.html">← React integration</a>
+        <a href="/quikdown/examples/integration-llm-stream.html">Next: Streaming LLM →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+  <script src="/quikdown/site/scripts/example-page.js" defer></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.2.2
+ * @version 1.2.3
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -24,7 +24,7 @@
      */
 
     // Version will be injected at build time  
-    const quikdownVersion = '1.2.2';
+    const quikdownVersion = '1.2.3';
 
     // Constants for reuse
     const CLASS_PREFIX = 'quikdown-';
@@ -72,6 +72,11 @@
                 // Remove default text-align if we're adding a different alignment
                 if (additionalStyle && additionalStyle.includes('text-align') && style && style.includes('text-align')) {
                     style = style.replace(/text-align:[^;]+;?/, '').trim();
+                    // Ensure trailing semicolon before concatenating additionalStyle.
+                    // Both short-circuit paths of this guard (empty `style` or
+                    // already-has-`;`) are defensive and unreachable with the
+                    // current QUIKDOWN_STYLES values — istanbul ignore next.
+                    /* istanbul ignore next */
                     if (style && !style.endsWith(';')) style += ';';
                 }
                 
@@ -103,9 +108,12 @@
             return text.replace(/[&<>"']/g, m => ESC_MAP[m]);
         }
         
-        // Helper to add data-qd attributes for bidirectional support
+        // Helper to add data-qd attributes for bidirectional support.
+        // The non-bidirectional branch is a trivial no-op arrow; it's exercised in
+        // the core bundle but never in quikdown_bd (which always sets bidirectional=true).
+        /* istanbul ignore next - trivial no-op fallback */
         const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
-        
+
         // Sanitize URLs to prevent XSS attacks
         function sanitizeUrl(url, allowUnsafe = false) {
             /* istanbul ignore next - defensive programming, regex ensures url is never empty */
@@ -511,8 +519,13 @@
         const result = [];
         const listStack = []; // Track nested lists
         
-        // Helper to escape HTML for data-qd attributes
-        const escapeHtml = (text) => text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+        // Helper to escape HTML for data-qd attributes. List markers (`-`, `*`,
+        // `+`, `1.`, etc.) never contain HTML-special chars, so the replace
+        // callback is defensive-only and never actually fires in practice.
+        const escapeHtml = (text) => text.replace(/[&<>"']/g,
+            /* istanbul ignore next - defensive: list markers never contain HTML specials */
+            m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+        /* istanbul ignore next - trivial no-op fallback; not exercised via bd bundle */
         const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
         
         for (let i = 0; i < lines.length; i++) {
@@ -684,8 +697,11 @@
         return quikdown(markdown, { ...options, bidirectional: true });
     }
 
-    // Copy all properties and methods from quikdown (including version)
+    // Copy all properties and methods from quikdown (including version).
+    // Skip `configure` — quikdown_bd provides its own override below, so the
+    // inner quikdown.configure is dead code in this bundle.
     Object.keys(quikdown).forEach(key => {
+        if (key === 'configure') return;
         quikdown_bd[key] = quikdown[key];
     });
 
@@ -1049,10 +1065,13 @@
         return markdown;
     };
 
-    // Override the configure method to return a bidirectional version
+    // Override the configure method to return a bidirectional version.
+    // We delegate to the inner quikdown.configure so the shared closure
+    // machinery is exercised in both bundles (no dead code).
     quikdown_bd.configure = function(options) {
+        const innerParser = quikdown.configure({ ...options, bidirectional: true });
         return function(markdown) {
-            return quikdown_bd(markdown, options);
+            return innerParser(markdown);
         };
     };
 

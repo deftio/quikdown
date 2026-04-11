@@ -4,7 +4,7 @@
 
 quikdown is designed with these core principles:
 
-1. **Small & Fast** - Optimized for size (~8.5KB minified) and performance
+1. **Small & Fast** - Optimized for size (~9.3KB minified) and performance
 2. **Secure by Default** - All HTML is escaped unless explicitly trusted
 3. **Zero Dependencies** - No external libraries required
 4. **Extensible** - Plugin system for custom rendering
@@ -38,8 +38,8 @@ Output HTML
 
 Before any processing, we extract code blocks and inline code, replacing them with placeholders:
 
-- **Fenced code blocks** → `%%%CODEBLOCK0%%%`, `%%%CODEBLOCK1%%%`, etc.
-- **Inline code** → `%%%INLINECODE0%%%`, `%%%INLINECODE1%%%`, etc.
+- **Fenced code blocks** → `§CB0§`, `§CB1§`, etc.
+- **Inline code** → `§IC0§`, `§IC1§`, etc.
 
 This prevents code content from being processed as markdown and ensures special characters remain intact.
 
@@ -104,11 +104,13 @@ By default, all HTML is escaped for security. However, trusted HTML can be rende
 
 ```javascript
 // Controlled HTML rendering via fence blocks
-const plugin = (content, lang) => {
-  if (lang === 'html-render') {
-    return content; // Trust this specific block
+const plugin = {
+  render: (content, lang) => {
+    if (lang === 'html-render') {
+      return content; // Trust this specific block
+    }
+    return undefined; // Use default escaping
   }
-  return undefined; // Use default escaping
 };
 ```
 
@@ -150,11 +152,13 @@ These trade-offs are acceptable for the target use case (chat messages, LLM outp
 Custom renderers for fenced code blocks:
 
 ```javascript
-function myPlugin(content, language) {
-  // content: Raw, unescaped content
-  // language: The language identifier (if any)
-  // Return: HTML string or undefined (fall back to default)
-}
+const myPlugin = {
+  render: (content, language) => {
+    // content: Raw, unescaped content
+    // language: The language identifier (if any)
+    // Return: HTML string or undefined (fall back to default)
+  }
+};
 ```
 
 ### 2. Style Options

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Themes &amp; emitStyles — Parser example 4 · quikdown</title>
+  <meta name="description" content="Use quikdown.emitStyles() to generate CSS for light and dark themes. See classes mode versus inline styles mode side by side.">
+  <meta name="keywords" content="quikdown emitStyles, markdown css themes, markdown dark mode, markdown inline styles">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/examples/parser-themes.html">
+  <link rel="icon" type="image/svg+xml" href="/quikdown/favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Themes &amp; emitStyles — quikdown">
+  <meta property="og:description" content="Generate themed CSS for quikdown classes, or use inline styles. Live comparison.">
+
+  <link rel="stylesheet" href="/quikdown/site/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header h1 {
+      font-size: 1.8rem;
+      margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 { margin: 0 0 0.75rem 0; font-size: 1.05rem; }
+
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 100px;
+      background: #f8f9fb;
+      border: 1px solid #e6e8ee;
+      cursor: pointer;
+    }
+    .controls input { margin: 0; }
+
+    .preview-frame {
+      padding: 1.5rem;
+      border-radius: 12px;
+      transition: all 0.2s;
+      min-height: 360px;
+      overflow: auto;
+    }
+    .preview-light { background: #ffffff; color: #1f2937; }
+    .preview-dark  { background: #1e1e2e; color: #e6e6f0; }
+
+    .css-output {
+      max-height: 240px;
+      overflow-y: auto;
+      font-size: 0.78rem;
+    }
+
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="/quikdown/examples/">Examples</a> › Track 1 — Parser › Example 4</div>
+        <h1>Themes &amp; emitStyles</h1>
+        <p style="color: #4b5563;">
+          Two ways to style quikdown's output: CSS classes (with a stylesheet) or inline styles (no stylesheet needed). The parser ships a <code>emitStyles()</code> helper that gives you a generated stylesheet for either light or dark theme — useful when you want to ship one CSS file alongside your markdown rendering.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>Live preview</h2>
+        <div class="controls">
+          <label>
+            <input type="radio" name="mode" value="classes" checked>
+            CSS classes (default)
+          </label>
+          <label>
+            <input type="radio" name="mode" value="inline">
+            Inline styles
+          </label>
+          <label>
+            Theme:
+            <select id="theme">
+              <option value="light">light</option>
+              <option value="dark">dark</option>
+            </select>
+          </label>
+        </div>
+        <div id="preview-frame" class="preview-frame preview-light"></div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Generated stylesheet</h2>
+        <p style="font-size: 0.9rem; color: #4b5563; margin-bottom: 0.5rem;">
+          This is the output of <code>quikdown.emitStyles('quikdown-', '<span id="theme-label">light</span>')</code>. Copy it into your CSS file to theme the rendered HTML.
+        </p>
+        <pre id="css-out" class="css-output"></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>How it works</h2>
+        <p><strong>CSS classes mode</strong> (default): the parser emits HTML like <code>&lt;p class="quikdown-p"&gt;...&lt;/p&gt;</code>. You provide the styles for those classes (or use the output of <code>emitStyles</code>).</p>
+        <p><strong>Inline styles mode</strong> (<code>inline_styles: true</code>): the parser emits HTML like <code>&lt;p style="margin:..."&gt;...&lt;/p&gt;</code>. No external stylesheet required — useful when you can't ship CSS (HTML emails, embedded snippets, web components with no shadow DOM).</p>
+        <p><strong>emitStyles helper</strong>: generates a complete stylesheet for the class-based output. Pass a prefix and an optional theme name. The output is a string of CSS you can write to a file or inject into a <code>&lt;style&gt;</code> tag.</p>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="/quikdown/examples/parser-fence-plugin.html">← Previous: Custom fence plugin</a>
+        <a href="/quikdown/examples/bd-roundtrip.html">Next track: Bidirectional →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import quikdown from '/quikdown/dist/quikdown.esm.js';
+
+    const $ = id => document.getElementById(id);
+    const sample = `# Sample document
+
+A paragraph with **bold**, *italic*, ~~strike~~, \`code\`.
+
+## Lists
+
+- one
+- two
+  - nested
+- three
+
+## Code
+
+\`\`\`js
+function hello() {
+  return 'world';
+}
+\`\`\`
+
+## Tables
+
+| Col A | Col B |
+|:------|------:|
+| 1     | 2     |
+| 3     | 4     |
+
+> A blockquote.
+
+[A link](https://example.com)`;
+
+    let styleEl = document.createElement('style');
+    document.head.appendChild(styleEl);
+
+    function render() {
+      const mode  = document.querySelector('input[name=mode]:checked').value;
+      const theme = $('theme').value;
+      $('theme-label').textContent = theme;
+
+      // Apply preview frame theme
+      const frame = $('preview-frame');
+      frame.classList.toggle('preview-light', theme === 'light');
+      frame.classList.toggle('preview-dark',  theme === 'dark');
+
+      // Render markdown
+      const html = quikdown(sample, { inline_styles: mode === 'inline' });
+      frame.innerHTML = html;
+
+      // Generate CSS
+      const css = quikdown.emitStyles('quikdown-', theme);
+      $('css-out').textContent = css;
+
+      // Apply the generated styles for the classes mode (so the preview reflects them)
+      if (mode === 'classes') {
+        styleEl.textContent = '#preview-frame { ' + css + ' }';
+      } else {
+        styleEl.textContent = '';
+      }
+    }
+
+    document.querySelectorAll('input[name=mode]').forEach(r => r.addEventListener('change', render));
+    $('theme').addEventListener('change', render);
+    render();
+  </script>
+  <script src="/quikdown/site/scripts/example-page.js" defer></script>
+</body>
+</html>

@@ -1,13 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <!-- (c) deftio 2025 & M. A. Chatterjee)-->
-  <!-- Background -->
-  <rect width="32" height="32" rx="4" fill="#9550bb"/>
+  <!-- Background — matches the site brand gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="4" fill="url(#bg)"/>
   
   <!-- Scale q + arrow around the center -->
   <g transform="translate(16,16) scale(1.45) translate(-18.5,-17)">
     <!-- Letter 'q' -->
     <text x="9.25" y="19.5" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">q</text>
-    
+
     <!-- Down arrow -->
     <path d="M 22.5 10.25 L 22.5 20 L 19.5 20 L 24 25 L 28 20 L 25 20 L 25 10.25 Z" fill="white"/>
   </g>

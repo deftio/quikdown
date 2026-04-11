@@ -109,9 +109,9 @@
 </tr>
 <tr>
 <td><code>fence_plugin</code></td>
-<td><code>function</code></td>
+<td><code>object</code></td>
 <td><code>undefined</code></td>
-<td>Custom handler for fenced code blocks</td>
+<td>Custom handler for fenced code blocks (object with <code>.render</code> method)</td>
 </tr>
 <tr>
 <td><code>bidirectional</code></td>
@@ -236,16 +236,16 @@ document.head.appendChild(styleElement);
 <h4>Type</h4>
 <p><code>string</code></p>
 <h4>Example</h4>
-<pre><code class="language-javascript">console.log(quikdown.version); // &quot;1.0.5&quot;
+<pre><code class="language-javascript">console.log(quikdown.version); // &quot;1.2.3&quot;
 </code></pre>
 <h2>Fence Plugin API</h2>
-<h3>Plugin Function Signature</h3>
-<pre><code class="language-typescript">type FencePlugin = (
-  content: string,
-  language: string
-) =&gt; string | undefined;
+<h3>Plugin Object Structure</h3>
+<pre><code class="language-typescript">interface FencePlugin {
+  render: (content: string, language: string) =&gt; string | undefined;
+  reverse?: (element: HTMLElement) =&gt; { fence: string; lang: string; content: string } | null;
+}
 </code></pre>
-<h4>Parameters</h4>
+<h4><code>render</code> Parameters</h4>
 <table>
 <thead>
 <tr>
@@ -265,20 +265,24 @@ document.head.appendChild(styleElement);
 <td>Language identifier (empty string if none)</td>
 </tr>
 </tbody></table>
-<h4>Returns</h4>
+<h4><code>render</code> Returns</h4>
 <ul>
 <li><code>string</code> - HTML to render</li>
 <li><code>undefined</code> - Use default code block rendering</li>
 </ul>
+<h4><code>reverse</code> (optional)</h4>
+<p>Used by <code>quikdown_bd</code> to convert plugin-rendered HTML back to fenced code blocks.</p>
 <h4>Example</h4>
-<pre><code class="language-javascript">function syntaxHighlightPlugin(content, language) {
-  if (language &amp;&amp; hljs.getLanguage(language)) {
-    const highlighted = hljs.highlight(content, { language }).value;
-    return `&lt;pre class=&quot;hljs&quot;&gt;&lt;code class=&quot;language-${language}&quot;&gt;${highlighted}&lt;/code&gt;&lt;/pre&gt;`;
+<pre><code class="language-javascript">const syntaxHighlightPlugin = {
+  render: (content, language) =&gt; {
+    if (language &amp;&amp; hljs.getLanguage(language)) {
+      const highlighted = hljs.highlight(content, { language }).value;
+      return `&lt;pre class=&quot;hljs&quot;&gt;&lt;code class=&quot;language-${language}&quot;&gt;${highlighted}&lt;/code&gt;&lt;/pre&gt;`;
+    }
+    // Return undefined to use default rendering
+    return undefined;
   }
-  // Return undefined to use default rendering
-  return undefined;
-}
+};
 
 const html = quikdown(markdown, {
   fence_plugin: syntaxHighlightPlugin
@@ -286,48 +290,56 @@ const html = quikdown(markdown, {
 </code></pre>
 <h3>Plugin Examples</h3>
 <h4>Mermaid Diagrams</h4>
-<pre><code class="language-javascript">function mermaidPlugin(content, language) {
-  if (language === &#39;mermaid&#39;) {
-    const id = &#39;mermaid-&#39; + Math.random().toString(36).substr(2, 9);
-    // Render asynchronously after DOM insertion
-    setTimeout(() =&gt; {
-      mermaid.render(id + &#39;-svg&#39;, content).then(result =&gt; {
-        document.getElementById(id).innerHTML = result.svg;
-      });
-    }, 0);
-    return `&lt;div id=&quot;${id}&quot; class=&quot;mermaid-diagram&quot;&gt;Loading...&lt;/div&gt;`;
-  }
-}
-</code></pre>
-<h4>Math Rendering</h4>
-<pre><code class="language-javascript">function mathPlugin(content, language) {
-  if (language === &#39;math&#39; || language === &#39;latex&#39;) {
-    return katex.renderToString(content, {
-      throwOnError: false,
-      displayMode: true
-    });
-  }
-}
-</code></pre>
-<h4>Custom Components</h4>
-<pre><code class="language-javascript">function componentPlugin(content, language) {
-  if (language === &#39;component&#39;) {
-    try {
-      const config = JSON.parse(content);
-      return renderComponent(config);
-    } catch (e) {
-      return `&lt;div class=&quot;error&quot;&gt;Invalid component: ${e.message}&lt;/div&gt;`;
+<pre><code class="language-javascript">const mermaidPlugin = {
+  render: (content, language) =&gt; {
+    if (language === &#39;mermaid&#39;) {
+      const id = &#39;mermaid-&#39; + Math.random().toString(36).substr(2, 9);
+      // Render asynchronously after DOM insertion
+      setTimeout(() =&gt; {
+        mermaid.render(id + &#39;-svg&#39;, content).then(result =&gt; {
+          document.getElementById(id).innerHTML = result.svg;
+        });
+      }, 0);
+      return `&lt;div id=&quot;${id}&quot; class=&quot;mermaid-diagram&quot;&gt;Loading...&lt;/div&gt;`;
     }
   }
-}
+};
+</code></pre>
+<h4>Math Rendering</h4>
+<pre><code class="language-javascript">const mathPlugin = {
+  render: (content, language) =&gt; {
+    if (language === &#39;math&#39; || language === &#39;latex&#39;) {
+      return katex.renderToString(content, {
+        throwOnError: false,
+        displayMode: true
+      });
+    }
+  }
+};
+</code></pre>
+<h4>Custom Components</h4>
+<pre><code class="language-javascript">const componentPlugin = {
+  render: (content, language) =&gt; {
+    if (language === &#39;component&#39;) {
+      try {
+        const config = JSON.parse(content);
+        return renderComponent(config);
+      } catch (e) {
+        return `&lt;div class=&quot;error&quot;&gt;Invalid component: ${e.message}&lt;/div&gt;`;
+      }
+    }
+  }
+};
 </code></pre>
 <h4>Trusted HTML</h4>
-<pre><code class="language-javascript">function trustedHtmlPlugin(content, language) {
-  // Only allow from trusted sources!
-  if (language === &#39;html-render&#39; &amp;&amp; isTrustedSource()) {
-    return content; // Raw HTML - be careful!
+<pre><code class="language-javascript">const trustedHtmlPlugin = {
+  render: (content, language) =&gt; {
+    // Only allow from trusted sources!
+    if (language === &#39;html-render&#39; &amp;&amp; isTrustedSource()) {
+      return content; // Raw HTML - be careful!
+    }
   }
-}
+};
 </code></pre>
 <h2>Options Deep Dive</h2>
 <h3><code>bidirectional</code> Option</h3>
@@ -650,8 +662,8 @@ container.innerHTML = quikdown(combined);
 </tr>
 <tr>
 <td>Size (minified)</td>
-<td>8.5KB</td>
-<td>12.5KB</td>
+<td>9.3KB</td>
+<td>14.1KB</td>
 </tr>
 <tr>
 <td><code>toMarkdown()</code> method</td>
@@ -714,9 +726,9 @@ container.innerHTML = quikdown(combined);
 </tr>
 <tr>
 <td><code>fence_plugin</code></td>
-<td><code>function</code></td>
+<td><code>object</code></td>
 <td><code>undefined</code></td>
-<td>Custom handler for fenced code blocks</td>
+<td>Custom handler for fenced code blocks (object with <code>.render</code> method)</td>
 </tr>
 <tr>
 <td><code>bidirectional</code></td>
@@ -865,8 +877,62 @@ const html = myParser(markdown);
 <td>Node.js require()</td>
 </tr>
 </tbody></table>
+<h2>AST Libraries</h2>
+<p>For structured data output, quikdown provides AST (Abstract Syntax Tree) libraries:</p>
+<h3><code>quikdown_ast(markdown, options?)</code></h3>
+<p>Parses markdown into an AST object.</p>
+<pre><code class="language-javascript">import quikdown_ast from &#39;quikdown/ast&#39;;
+
+const ast = quikdown_ast(&#39;# Hello **world**&#39;);
+// { type: &#39;document&#39;, children: [{ type: &#39;heading&#39;, level: 1, ... }] }
+</code></pre>
+<h3><code>quikdown_json(markdown, options?)</code></h3>
+<p>Converts markdown to a JSON string.</p>
+<pre><code class="language-javascript">import quikdown_json from &#39;quikdown/json&#39;;
+
+const json = quikdown_json(&#39;# Hello&#39;, { indent: 2 });
+</code></pre>
+<h3><code>quikdown_yaml(markdown, options?)</code></h3>
+<p>Converts markdown to a YAML string.</p>
+<pre><code class="language-javascript">import quikdown_yaml from &#39;quikdown/yaml&#39;;
+
+const yaml = quikdown_yaml(&#39;# Hello&#39;);
+</code></pre>
+<h3><code>quikdown_ast_html(input, options?)</code></h3>
+<p>Renders AST, JSON, YAML, or markdown to HTML.</p>
+<pre><code class="language-javascript">import quikdown_ast_html from &#39;quikdown/ast-html&#39;;
+
+const html = quikdown_ast_html(ast);  // or json/yaml string
+</code></pre>
+<p>See <a href="quikdown-ast.md">AST Documentation</a> for complete node type reference.</p>
+<h3>AST Module Formats</h3>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>File</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ESM</td>
+<td><code>dist/quikdown_ast.esm.js</code></td>
+<td>ES6 imports</td>
+</tr>
+<tr>
+<td>UMD</td>
+<td><code>dist/quikdown_ast.umd.min.js</code></td>
+<td>Browser</td>
+</tr>
+<tr>
+<td>CommonJS</td>
+<td><code>dist/quikdown_ast.cjs</code></td>
+<td>Node.js</td>
+</tr>
+</tbody></table>
+<p>Similar formats available for <code>quikdown_json</code>, <code>quikdown_yaml</code>, and <code>quikdown_ast_html</code>.</p>
 <h2>TypeScript</h2>
-<p>TypeScript definitions are included for both modules:</p>
+<p>TypeScript definitions are included for all modules:</p>
 <pre><code class="language-typescript">declare module &#39;quikdown&#39; {
   interface FencePlugin {
     render: (content: string, language: string) =&gt; string | undefined;

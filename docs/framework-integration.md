@@ -594,17 +594,19 @@ const debouncedConvert = debounce((markdown, callback) => {
 import quikdown from 'quikdown';
 import hljs from 'highlight.js';
 
-function highlightPlugin(code, language) {
-  if (language && hljs.getLanguage(language)) {
-    try {
-      const result = hljs.highlight(code, { language });
-      return `<pre><code class="hljs language-${language}">${result.value}</code></pre>`;
-    } catch (e) {
-      console.error('Highlighting failed:', e);
+const highlightPlugin = {
+  render: (code, language) => {
+    if (language && hljs.getLanguage(language)) {
+      try {
+        const result = hljs.highlight(code, { language });
+        return `<pre><code class="hljs language-${language}">${result.value}</code></pre>`;
+      } catch (e) {
+        console.error('Highlighting failed:', e);
+      }
     }
+    return undefined; // Use default
   }
-  return undefined; // Use default
-}
+};
 
 const html = quikdown(markdown, { 
   fence_plugin: highlightPlugin 

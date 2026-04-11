@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Framework Integration — React, Vue, Svelte, Angular · quikdown</title>
+  <meta name="description" content="Use quikdown in React, Vue, Svelte, or Angular. Copy-paste component patterns for the parser and the full editor. No wrapper package needed.">
+  <meta name="keywords" content="quikdown react, quikdown vue, markdown editor react, markdown editor vue, markdown editor svelte, markdown editor angular">
+  <meta name="author" content="deftio@deftio.com">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/frameworks/">
+  <link rel="icon" type="image/svg+xml" href="/quikdown/favicon.svg">
+
+  <link rel="stylesheet" href="/quikdown/site/styles/quikdown-site.css">
+  <style>
+    .fw-wrap { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    .fw-section { margin-bottom: 3rem; }
+    .fw-section h2 {
+      font-size: 1.5rem; margin: 0 0 0.25rem 0;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .fw-badge {
+      font-size: 0.7rem; font-weight: 700; padding: 0.2em 0.6em;
+      border-radius: 100px; background: #f3e6ff; color: #6c47b8;
+      vertical-align: middle;
+    }
+    .fw-desc { color: #4b5563; font-size: 0.95rem; margin: 0 0 1.25rem 0; }
+    .fw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 880px) { .fw-grid { grid-template-columns: 1fr; } }
+    .fw-pane {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px; padding: 1.25rem;
+    }
+    .fw-pane h3 { margin: 0 0 0.5rem 0; font-size: 1rem; }
+    .fw-pane p { color: #4b5563; font-size: 0.88rem; margin: 0 0 0.75rem 0; }
+    .fw-note {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-left: 4px solid #9550bb;
+      border-radius: 8px; padding: 1rem 1.25rem; margin-top: 1.25rem;
+    }
+    .fw-note h4 { margin: 0 0 0.3rem 0; font-size: 0.95rem; }
+    .fw-note p, .fw-note li { color: #4b5563; font-size: 0.88rem; margin: 0.2rem 0; }
+    .fw-note ul { padding-left: 1.5em; margin: 0.5rem 0; }
+    .fw-intro {
+      font-size: 1rem; color: #4b5563; max-width: 75ch; margin-bottom: 2.5rem;
+    }
+
+    body.qd-theme-dark .fw-desc,
+    body.qd-theme-dark .fw-intro { color: #b8b8c8; }
+    body.qd-theme-dark .fw-pane {
+      background: rgba(24, 24, 40, 0.96);
+      border-color: rgba(179, 136, 221, 0.18);
+    }
+    body.qd-theme-dark .fw-pane p { color: #b8b8c8; }
+    body.qd-theme-dark .fw-badge { background: rgba(179, 136, 221, 0.18); color: #d9b3ff; }
+    body.qd-theme-dark .fw-note {
+      background: rgba(24, 24, 40, 0.96);
+      border-color: rgba(179, 136, 221, 0.18);
+    }
+    body.qd-theme-dark .fw-note p,
+    body.qd-theme-dark .fw-note li { color: #b8b8c8; }
+  </style>
+</head>
+<body class="qd-theme-dark">
+  {{NAV_HTML}}
+
+  <main>
+    <section class="qd-hero" style="padding: 2.5rem 0;">
+      <div class="qd-hero-inner">
+        <h1 style="font-size: clamp(1.8rem, 4vw, 2.6rem); max-width: 28ch;">Framework Integration</h1>
+        <p class="qd-hero-sub">
+          quikdown is framework-agnostic. No wrapper package needed — just import and use.
+        </p>
+      </div>
+    </section>
+
+    <section class="qd-section">
+      <div class="fw-wrap">
+
+        <p class="fw-intro">
+          quikdown works in any framework. The parser is a pure function (markdown in, HTML out). The editor manages its own DOM, so you mount it in a lifecycle hook and clean it up on unmount. Here are copy-paste patterns for the most common frameworks.
+        </p>
+
+        <!-- React -->
+        <div class="fw-section">
+          <h2>React <span class="fw-badge">hooks</span></h2>
+          <p class="fw-desc">Works with React 18+. The parser uses <code>useMemo</code>, the editor uses <code>useEffect</code> + <code>useRef</code>.</p>
+          <div class="fw-grid">
+            <div class="fw-pane">
+              <h3>Parser only</h3>
+              <p>Render markdown as HTML with <code>dangerouslySetInnerHTML</code>. quikdown is XSS-safe by default.</p>
+<pre><code>import { useMemo } from 'react';
+import quikdown from 'quikdown';
+
+export function Markdown({ source }) {
+  const html = useMemo(
+    () =&gt; quikdown(source), [source]
+  );
+  return &lt;div dangerouslySetInnerHTML=
+    {{ __html: html }} /&gt;;
+}</code></pre>
+            </div>
+            <div class="fw-pane">
+              <h3>Full editor component</h3>
+              <p>Mount once in <code>useEffect</code>, sync props, destroy on unmount.</p>
+<pre><code>import { useEffect, useRef } from 'react';
+import QuikdownEditor from 'quikdown/edit';
+
+export function Editor({ value, onChange }) {
+  const el = useRef(null);
+  const ed = useRef(null);
+
+  useEffect(() =&gt; {
+    ed.current = new QuikdownEditor(
+      el.current,
+      { mode: 'split', showUndoRedo: true,
+        onChange: (md) =&gt; onChange?.(md) }
+    );
+    ed.current.setMarkdown(value || '');
+    return () =&gt; ed.current.destroy();
+  }, []);
+
+  useEffect(() =&gt; {
+    if (ed.current &amp;&amp;
+        value !== ed.current.getMarkdown())
+      ed.current.setMarkdown(value || '');
+  }, [value]);
+
+  return &lt;div ref={el}
+    style={{ height: 500 }} /&gt;;
+}</code></pre>
+            </div>
+          </div>
+          <div class="fw-note">
+            <h4>SSR / Next.js</h4>
+            <p>The parser works server-side. The editor needs DOM — use <code>dynamic(() =&gt; import('quikdown/edit'), { ssr: false })</code>.</p>
+          </div>
+        </div>
+
+        <!-- Vue -->
+        <div class="fw-section">
+          <h2>Vue 3 <span class="fw-badge">composition API</span></h2>
+          <p class="fw-desc">Uses <code>computed</code> + <code>v-html</code> for the parser, <code>onMounted</code> + <code>ref</code> for the editor.</p>
+          <div class="fw-grid">
+            <div class="fw-pane">
+              <h3>Parser only</h3>
+<pre><code>&lt;script setup&gt;
+import { computed } from 'vue';
+import quikdown from 'quikdown';
+
+const props = defineProps({
+  source: String
+});
+const html = computed(
+  () =&gt; quikdown(props.source)
+);
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div v-html="html"&gt;&lt;/div&gt;
+&lt;/template&gt;</code></pre>
+            </div>
+            <div class="fw-pane">
+              <h3>Full editor component</h3>
+<pre><code>&lt;script setup&gt;
+import { ref, onMounted,
+  onBeforeUnmount, watch } from 'vue';
+import QuikdownEditor from 'quikdown/edit';
+
+const props = defineProps({
+  modelValue: { type: String, default: '' },
+  mode:  { type: String, default: 'split' },
+  theme: { type: String, default: 'auto' },
+});
+const emit = defineEmits(
+  ['update:modelValue']
+);
+const el = ref(null);
+let editor = null;
+
+onMounted(() =&gt; {
+  editor = new QuikdownEditor(el.value, {
+    mode: props.mode, theme: props.theme,
+    showUndoRedo: true,
+    onChange: (md) =&gt;
+      emit('update:modelValue', md),
+  });
+  editor.setMarkdown(props.modelValue);
+});
+onBeforeUnmount(() =&gt; editor?.destroy());
+
+watch(() =&gt; props.modelValue, (v) =&gt; {
+  if (editor &amp;&amp; v !== editor.getMarkdown())
+    editor.setMarkdown(v);
+});
+&lt;/script&gt;
+
+&lt;template&gt;
+  &lt;div ref="el" style="height: 500px" /&gt;
+&lt;/template&gt;</code></pre>
+            </div>
+          </div>
+          <div class="fw-note">
+            <h4>Nuxt SSR</h4>
+            <p>Import the editor inside <code>onMounted</code> with <code>await import('quikdown/edit')</code>. The parser is safe server-side.</p>
+          </div>
+        </div>
+
+        <!-- Svelte -->
+        <div class="fw-section">
+          <h2>Svelte <span class="fw-badge">5 / 4</span></h2>
+          <p class="fw-desc">Use <code>onMount</code> / <code>onDestroy</code> for the editor, reactive statements for the parser.</p>
+          <div class="fw-grid">
+            <div class="fw-pane">
+              <h3>Parser only</h3>
+<pre><code>&lt;script&gt;
+  import quikdown from 'quikdown';
+  export let source = '';
+  $: html = quikdown(source);
+&lt;/script&gt;
+
+{@html html}</code></pre>
+            </div>
+            <div class="fw-pane">
+              <h3>Full editor component</h3>
+<pre><code>&lt;script&gt;
+  import { onMount, onDestroy } from 'svelte';
+  import QuikdownEditor from 'quikdown/edit';
+
+  export let value = '';
+  export let onChange = () =&gt; {};
+
+  let el;
+  let editor;
+
+  onMount(() =&gt; {
+    editor = new QuikdownEditor(el, {
+      mode: 'split', showUndoRedo: true,
+      onChange: (md) =&gt; onChange(md),
+    });
+    editor.setMarkdown(value);
+  });
+
+  onDestroy(() =&gt; editor?.destroy());
+
+  $: if (editor &amp;&amp;
+       value !== editor.getMarkdown())
+    editor.setMarkdown(value);
+&lt;/script&gt;
+
+&lt;div bind:this={el}
+  style="height: 500px" /&gt;</code></pre>
+            </div>
+          </div>
+          <div class="fw-note">
+            <h4>SvelteKit SSR</h4>
+            <p>Guard the editor import: <code>if (browser) { const { default: QE } = await import('quikdown/edit'); ... }</code></p>
+          </div>
+        </div>
+
+        <!-- Angular -->
+        <div class="fw-section">
+          <h2>Angular <span class="fw-badge">standalone component</span></h2>
+          <p class="fw-desc">Use <code>ngAfterViewInit</code> to mount, <code>ngOnDestroy</code> to clean up.</p>
+          <div class="fw-grid">
+            <div class="fw-pane">
+              <h3>Parser only</h3>
+<pre><code>import { Component, Input } from
+  '@angular/core';
+import { DomSanitizer } from
+  '@angular/platform-browser';
+import quikdown from 'quikdown';
+
+@Component({
+  selector: 'app-markdown',
+  template: `&lt;div
+    [innerHTML]="safeHtml"&gt;&lt;/div&gt;`,
+  standalone: true,
+})
+export class MarkdownComponent {
+  @Input() source = '';
+  get safeHtml() {
+    return this.sanitizer
+      .bypassSecurityTrustHtml(
+        quikdown(this.source));
+  }
+  constructor(
+    private sanitizer: DomSanitizer) {}
+}</code></pre>
+            </div>
+            <div class="fw-pane">
+              <h3>Full editor component</h3>
+<pre><code>import { Component, ElementRef,
+  ViewChild, Input, Output,
+  EventEmitter, AfterViewInit,
+  OnDestroy } from '@angular/core';
+import QuikdownEditor from 'quikdown/edit';
+
+@Component({
+  selector: 'app-editor',
+  template: `&lt;div #container
+    style="height:500px"&gt;&lt;/div&gt;`,
+  standalone: true,
+})
+export class EditorComponent
+  implements AfterViewInit, OnDestroy {
+  @ViewChild('container')
+    containerRef!: ElementRef;
+  @Input() value = '';
+  @Output() valueChange =
+    new EventEmitter&lt;string&gt;();
+  private editor?: QuikdownEditor;
+
+  ngAfterViewInit() {
+    this.editor = new QuikdownEditor(
+      this.containerRef.nativeElement, {
+        mode: 'split', showUndoRedo: true,
+        onChange: (md) =&gt;
+          this.valueChange.emit(md),
+      });
+    this.editor.setMarkdown(this.value);
+  }
+  ngOnDestroy() {
+    this.editor?.destroy();
+  }
+}</code></pre>
+            </div>
+          </div>
+          <div class="fw-note">
+            <h4>Angular Universal SSR</h4>
+            <p>Check <code>isPlatformBrowser(this.platformId)</code> before creating the editor.</p>
+          </div>
+        </div>
+
+        <!-- Vanilla / Web Components -->
+        <div class="fw-section">
+          <h2>Vanilla JS / Web Components</h2>
+          <p class="fw-desc">No framework needed. One script tag or import.</p>
+          <div class="fw-grid">
+            <div class="fw-pane">
+              <h3>Script tag</h3>
+<pre><code>&lt;div id="editor"
+  style="height: 500px"&gt;&lt;/div&gt;
+
+&lt;script type="module"&gt;
+  import QuikdownEditor from
+    'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
+
+  new QuikdownEditor('#editor', {
+    mode: 'split',
+    showUndoRedo: true,
+  });
+&lt;/script&gt;</code></pre>
+            </div>
+            <div class="fw-pane">
+              <h3>Web Component wrapper</h3>
+<pre><code>import QuikdownEditor from 'quikdown/edit';
+
+class QdEditor extends HTMLElement {
+  connectedCallback() {
+    this.editor = new QuikdownEditor(
+      this,
+      { mode: 'split', showUndoRedo: true }
+    );
+  }
+  disconnectedCallback() {
+    this.editor?.destroy();
+  }
+}
+customElements.define(
+  'qd-editor', QdEditor
+);</code></pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  {{FOOTER_HTML}}
+  <script src="/quikdown/site/scripts/site.js" defer></script>
+</body>
+</html>

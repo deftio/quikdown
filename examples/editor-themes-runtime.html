@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Runtime theme switching — Editor example 13 · quikdown</title>
+  <meta name="description" content="Switch the quikdown editor between light, dark, and auto themes at runtime via setTheme(). Honors system color-scheme preference in auto mode.">
+  <meta name="keywords" content="quikdown editor theme, markdown editor dark mode, runtime theme switch, prefers-color-scheme">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/examples/editor-themes-runtime.html">
+  <link rel="icon" type="image/svg+xml" href="/quikdown/favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Runtime theme switching — quikdown editor">
+
+  <link rel="stylesheet" href="/quikdown/site/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header h1 {
+      font-size: 1.8rem; margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98); border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 { margin: 0 0 0.75rem 0; font-size: 1.05rem; }
+    .theme-switcher { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .theme-btn {
+      padding: 0.6rem 1.2rem; border-radius: 8px;
+      border: 1px solid #e6e8ee; background: #ffffff;
+      color: #1f2937; cursor: pointer; font-family: inherit; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+    }
+    .theme-btn:hover { border-color: #9550bb; }
+    .theme-btn.active {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white; border-color: transparent;
+    }
+    #editor { height: 480px; border-radius: 12px; overflow: hidden;
+              box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); border: 1px solid #e6e8ee; }
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="/quikdown/examples/">Examples</a> › Track 3 — Editor › Example 13</div>
+        <h1>Runtime theme switching</h1>
+        <p style="color: #4b5563;">
+          Click a theme button — the editor updates instantly via <code>editor.setTheme()</code>. In <strong>auto</strong> mode, the editor honors your OS color-scheme preference and re-applies whenever the system flips light/dark.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>Live demo</h2>
+        <div class="theme-switcher">
+          <button class="theme-btn" data-t="light">☀️ Light</button>
+          <button class="theme-btn" data-t="dark">🌙 Dark</button>
+          <button class="theme-btn active" data-t="auto">🖥️ Auto (system)</button>
+          <span style="margin-left:auto; font-size:0.85rem; color:#6b7280; align-self:center;">
+            Current: <code id="current-theme">auto</code>
+          </span>
+        </div>
+        <div id="editor"></div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>The code</h2>
+<pre><code>const editor = new QuikdownEditor('#editor', {
+  mode: 'split',
+  theme: 'auto',   // ← initial theme
+});
+
+// Switch at runtime
+editor.setTheme('dark');
+editor.setTheme('light');
+editor.setTheme('auto');     // honors system preference
+
+// Read current setting
+const t = editor.getTheme(); // 'auto' | 'light' | 'dark'</code></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>How auto mode works</h2>
+        <p>In <code>auto</code> mode the editor calls <code>window.matchMedia('(prefers-color-scheme: dark)')</code>, applies the matching theme, and listens for changes. If the user (or their OS) flips the system theme, the editor flips too — without requiring a page reload or another <code>setTheme()</code> call.</p>
+        <p>When you call <code>setTheme('light')</code> or <code>setTheme('dark')</code>, the auto-mode listener is torn down so the editor stays at the explicit choice until you call <code>setTheme('auto')</code> again.</p>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="/quikdown/examples/editor-fence-custom.html">← Previous: Custom fences</a>
+        <a href="/quikdown/examples/">All examples</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import QuikdownEditor from '/quikdown/dist/quikdown_edit.esm.js';
+
+    const editor = new QuikdownEditor('#editor', {
+      mode: 'split',
+      theme: 'auto',
+      showRemoveHR: true,
+      showLazyLinefeeds: true,
+      showUndoRedo: true,
+    });
+    window.editor = editor;
+
+    editor.setMarkdown(`# Theme switching demo
+
+Click a theme button above to switch the editor between **light**, **dark**, and **auto** modes at runtime.
+
+In auto mode, the editor watches \`prefers-color-scheme\` and flips to match your system.
+
+## Try it
+
+- Click each button — see the editor restyle instantly
+- In **auto** mode, change your OS theme and watch the editor follow
+- The page chrome (this surrounding card) responds to your browser nav bar's theme toggle, independently
+
+\`\`\`javascript
+editor.setTheme('dark');
+const current = editor.getTheme();
+\`\`\``);
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const t = btn.dataset.t;
+        editor.setTheme(t);
+        document.getElementById('current-theme').textContent = t;
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+  </script>
+  <script src="/quikdown/site/scripts/example-page.js" defer></script>
+</body>
+</html>

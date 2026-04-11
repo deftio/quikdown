@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Round-trip basics — Bidirectional example 5 · quikdown</title>
+  <meta name="description" content="See quikdown_bd round-trip in action: markdown → HTML → edit in contenteditable → toMarkdown(). Three side-by-side panes that all stay in sync.">
+  <meta name="keywords" content="quikdown_bd, bidirectional markdown, html to markdown, markdown round trip, contenteditable markdown">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/examples/bd-roundtrip.html">
+  <link rel="icon" type="image/svg+xml" href="/quikdown/favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Bidirectional round-trip — quikdown_bd">
+  <meta property="og:description" content="Markdown → HTML → edit → markdown. Three panes, all in sync.">
+
+  <link rel="stylesheet" href="/quikdown/site/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 1300px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header h1 {
+      font-size: 1.8rem;
+      margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 { margin: 0 0 0.75rem 0; font-size: 1.05rem; }
+
+    .three-pane {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+    }
+    @media (max-width: 1000px) { .three-pane { grid-template-columns: 1fr; } }
+
+    .pane-col h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9550bb;
+      margin: 0 0 0.4rem 0;
+      font-weight: 800;
+    }
+    .pane-col .pane-step {
+      font-size: 0.72rem;
+      color: #6b7280;
+      margin-bottom: 0.3rem;
+      font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+    }
+    .pane-box {
+      min-height: 360px;
+      max-height: 50vh;
+      border: 1px solid #e6e8ee;
+      border-radius: 6px;
+      padding: 1rem;
+      background: #ffffff;
+      overflow: auto;
+      font-size: 0.85rem;
+    }
+    .pane-box.editable {
+      outline: none;
+    }
+    .pane-box.editable:focus {
+      border-color: #9550bb;
+      box-shadow: 0 0 0 3px #f3e6ff;
+    }
+    .pane-source-textarea {
+      width: 100%;
+      min-height: 360px;
+      border: none;
+      resize: vertical;
+      font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+      font-size: 0.85rem;
+      background: transparent;
+      color: #1f2937;
+      outline: none;
+    }
+    .pane-source-out {
+      font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #4b5563;
+    }
+
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="/quikdown/examples/">Examples</a> › Track 2 — Bidirectional › Example 5</div>
+        <h1>Round-trip basics</h1>
+        <p style="color: #4b5563;">
+          The key value of <code>quikdown_bd</code>: markdown round-trips through HTML and back without losing structure. Edit any of the three panes — they all stay in sync.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>Three panes, one document</h2>
+        <div class="three-pane">
+          <div class="pane-col">
+            <div class="pane-step">Step 1</div>
+            <h3>Markdown source</h3>
+            <div class="pane-box">
+              <textarea id="src" class="pane-source-textarea" spellcheck="false"></textarea>
+            </div>
+          </div>
+          <div class="pane-col">
+            <div class="pane-step">Step 2 — quikdown_bd(md)</div>
+            <h3>Rendered (editable)</h3>
+            <div id="preview" class="pane-box editable" contenteditable="true"></div>
+          </div>
+          <div class="pane-col">
+            <div class="pane-step">Step 3 — quikdown_bd.toMarkdown(preview)</div>
+            <h3>Markdown back</h3>
+            <div id="back" class="pane-box pane-source-out"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>The complete code</h2>
+<pre><code>&lt;script type="module"&gt;
+  import quikdown_bd from 'https://unpkg.com/quikdown/dist/quikdown_bd.esm.min.js';
+
+  const src     = document.getElementById('src');
+  const preview = document.getElementById('preview');
+  const back    = document.getElementById('back');
+
+  // Markdown → HTML
+  function renderForward() {
+    preview.innerHTML = quikdown_bd(src.value);
+    renderBack();
+  }
+
+  // HTML → Markdown
+  function renderBack() {
+    back.textContent = quikdown_bd.toMarkdown(preview);
+  }
+
+  src.addEventListener('input', renderForward);
+  preview.addEventListener('input', renderBack);
+&lt;/script&gt;</code></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>How it works</h2>
+        <p>
+          When <code>bidirectional: true</code> is set (which <code>quikdown_bd</code> sets by default), the parser adds <code>data-qd-*</code> attributes to the rendered HTML. These attributes record the original markdown syntax for each element — the fence marker, the list bullet character, the heading prefix, etc.
+        </p>
+        <p>
+          When you call <code>quikdown_bd.toMarkdown(htmlOrElement)</code>, it walks the DOM, reads those attributes, and reconstructs markdown that round-trips faithfully. Edit the rendered preview directly (text changes, deleted nodes, drag-and-drop) and the next reverse-conversion picks up the edits.
+        </p>
+        <p>
+          That's how the full <code>quikdown_edit</code> editor works under the hood — and you can build the same thing in your own app with just <code>quikdown_bd</code> if you want full control over the UI.
+        </p>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="/quikdown/examples/">← All examples</a>
+        <a href="/quikdown/examples/editor-embed-minimal.html">Try the full editor →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import quikdown_bd from '/quikdown/dist/quikdown_bd.esm.js';
+
+    const src     = document.getElementById('src');
+    const preview = document.getElementById('preview');
+    const back    = document.getElementById('back');
+
+    src.value = `# Round-trip demo
+
+Edit any of the three panes. **All three** stay in sync.
+
+## Features
+
+- **Bold**, *italic*, ~~strikethrough~~
+- \`inline code\`
+- [Links](https://github.com/deftio/quikdown)
+
+## Code
+
+\`\`\`javascript
+function hello() {
+  console.log('roundtrip');
+}
+\`\`\`
+
+## Tables
+
+| Feature | Status |
+|:--------|:------:|
+| Forward | ✓      |
+| Reverse | ✓      |
+
+> Edit the **middle pane** (rendered) directly. The right pane shows the
+> markdown reconstructed by toMarkdown().`;
+
+    function renderForward() {
+      preview.innerHTML = quikdown_bd(src.value);
+      renderBack();
+    }
+    function renderBack() {
+      back.textContent = quikdown_bd.toMarkdown(preview);
+    }
+
+    src.addEventListener('input', renderForward);
+    preview.addEventListener('input', renderBack);
+
+    renderForward();
+  </script>
+  <script src="/quikdown/site/scripts/example-page.js" defer></script>
+</body>
+</html>

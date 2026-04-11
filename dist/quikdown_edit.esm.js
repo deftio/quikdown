@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.2
+ * @version 1.2.3
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -18,7 +18,7 @@
  */
 
 // Version will be injected at build time  
-const quikdownVersion = '1.2.2';
+const quikdownVersion = '1.2.3';
 
 // Constants for reuse
 const CLASS_PREFIX = 'quikdown-';
@@ -66,6 +66,11 @@ function createGetAttr(inline_styles, styles) {
             // Remove default text-align if we're adding a different alignment
             if (additionalStyle && additionalStyle.includes('text-align') && style && style.includes('text-align')) {
                 style = style.replace(/text-align:[^;]+;?/, '').trim();
+                // Ensure trailing semicolon before concatenating additionalStyle.
+                // Both short-circuit paths of this guard (empty `style` or
+                // already-has-`;`) are defensive and unreachable with the
+                // current QUIKDOWN_STYLES values — istanbul ignore next.
+                /* istanbul ignore next */
                 if (style && !style.endsWith(';')) style += ';';
             }
             
@@ -97,9 +102,12 @@ function quikdown(markdown, options = {}) {
         return text.replace(/[&<>"']/g, m => ESC_MAP[m]);
     }
     
-    // Helper to add data-qd attributes for bidirectional support
+    // Helper to add data-qd attributes for bidirectional support.
+    // The non-bidirectional branch is a trivial no-op arrow; it's exercised in
+    // the core bundle but never in quikdown_bd (which always sets bidirectional=true).
+    /* istanbul ignore next - trivial no-op fallback */
     const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
-    
+
     // Sanitize URLs to prevent XSS attacks
     function sanitizeUrl(url, allowUnsafe = false) {
         /* istanbul ignore next - defensive programming, regex ensures url is never empty */
@@ -505,8 +513,13 @@ function processLists(text, getAttr, inline_styles, bidirectional) {
     const result = [];
     const listStack = []; // Track nested lists
     
-    // Helper to escape HTML for data-qd attributes
-    const escapeHtml = (text) => text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+    // Helper to escape HTML for data-qd attributes. List markers (`-`, `*`,
+    // `+`, `1.`, etc.) never contain HTML-special chars, so the replace
+    // callback is defensive-only and never actually fires in practice.
+    const escapeHtml = (text) => text.replace(/[&<>"']/g,
+        /* istanbul ignore next - defensive: list markers never contain HTML specials */
+        m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+    /* istanbul ignore next - trivial no-op fallback; not exercised via bd bundle */
     const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
     
     for (let i = 0; i < lines.length; i++) {
@@ -678,8 +691,11 @@ function quikdown_bd(markdown, options = {}) {
     return quikdown(markdown, { ...options, bidirectional: true });
 }
 
-// Copy all properties and methods from quikdown (including version)
+// Copy all properties and methods from quikdown (including version).
+// Skip `configure` — quikdown_bd provides its own override below, so the
+// inner quikdown.configure is dead code in this bundle.
 Object.keys(quikdown).forEach(key => {
+    if (key === 'configure') return;
     quikdown_bd[key] = quikdown[key];
 });
 
@@ -1043,10 +1059,13 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
     return markdown;
 };
 
-// Override the configure method to return a bidirectional version
+// Override the configure method to return a bidirectional version.
+// We delegate to the inner quikdown.configure so the shared closure
+// machinery is exercised in both bundles (no dead code).
 quikdown_bd.configure = function(options) {
+    const innerParser = quikdown.configure({ ...options, bidirectional: true });
     return function(markdown) {
-        return quikdown_bd(markdown, options);
+        return innerParser(markdown);
     };
 };
 
@@ -2552,10 +2571,73 @@ const DEFAULT_OPTIONS = {
         highlightjs: false,
         mermaid: false
     },
+    /**
+     * Preload fence-rendering libraries at construction time so the FIRST
+     * encounter with a fence type renders instantly (no lazy load delay).
+     *
+     * Accepts:
+     *   - 'all'                                — preload every known library
+     *   - ['highlightjs','mermaid','math',
+     *      'geojson','stl']                    — preload specific libraries
+     *   - [{ name: 'mylib', script: 'https://...', css: '...' }]
+     *                                          — preload an arbitrary library
+     *
+     * Without this, fence libraries are loaded on demand the first time their
+     * fence type is encountered. That keeps the editor lightweight, but the
+     * first SVG/Mermaid/Math/GeoJSON/STL fence will show "loading..." for a
+     * moment. Set `preloadFences` if you want zero-delay rendering — at the
+     * cost of a few hundred KB of upfront network.
+     *
+     * Developer's choice. The editor itself is still ~70 KB minified;
+     * `preloadFences` only affects the OPTIONAL fence renderers.
+     */
+    preloadFences: null,
     customFences: {}, // { 'language': (code, lang) => html }
     enableComplexFences: true, // Enable CSV tables, math rendering, SVG, etc.
     showUndoRedo: false,      // Show undo/redo toolbar buttons
     undoStackSize: 100        // Maximum number of undo states to keep
+};
+
+// Library catalog used by preloadFences. Each entry knows how to:
+//   - check if the library is already on the page (so we don't double-load)
+//   - load it via script (and optional CSS)
+const FENCE_LIBRARIES = {
+    highlightjs: {
+        check: () => typeof window.hljs !== 'undefined',
+        script: 'https://unpkg.com/@highlightjs/cdn-assets/highlight.min.js',
+        css: 'https://unpkg.com/@highlightjs/cdn-assets/styles/github.min.css',
+        cssDark: 'https://unpkg.com/@highlightjs/cdn-assets/styles/github-dark.min.css'
+    },
+    mermaid: {
+        check: () => typeof window.mermaid !== 'undefined',
+        script: 'https://unpkg.com/mermaid/dist/mermaid.min.js',
+        afterLoad: () => {
+            if (window.mermaid) window.mermaid.initialize({ startOnLoad: false });
+        }
+    },
+    math: {
+        check: () => typeof window.MathJax !== 'undefined',
+        script: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js',
+        beforeLoad: () => {
+            // Configure MathJax before loading (must be set on window before script runs)
+            if (!window.MathJax) {
+                window.MathJax = {
+                    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+                    svg: { fontCache: 'global' },
+                    startup: { typeset: false }
+                };
+            }
+        }
+    },
+    geojson: {
+        check: () => typeof window.L !== 'undefined',
+        script: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+        css: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+    },
+    stl: {
+        check: () => typeof window.THREE !== 'undefined',
+        script: 'https://unpkg.com/three@0.147.0/build/three.min.js'
+    }
 };
 
 /**
@@ -2641,6 +2723,7 @@ class QuikdownEditor {
         
         this.sourceTextarea = document.createElement('textarea');
         this.sourceTextarea.className = 'qde-textarea';
+        this.sourceTextarea.spellcheck = false;
         this.sourceTextarea.placeholder = this.options.placeholder;
         this.sourcePanel.appendChild(this.sourceTextarea);
         
@@ -2648,6 +2731,7 @@ class QuikdownEditor {
         this.previewPanel = document.createElement('div');
         this.previewPanel.className = 'qde-preview';
         this.previewPanel.contentEditable = true;
+        this.previewPanel.spellcheck = false;
         
         // Add panels to editor
         this.editorArea.appendChild(this.sourcePanel);
@@ -2803,24 +2887,45 @@ class QuikdownEditor {
             }
             
             .qde-source, .qde-preview {
-                flex: 1;
+                flex: 1 1 0;
+                min-width: 0;       /* allow flex shrinking below content size */
+                min-height: 0;
                 overflow: auto;
                 padding: 16px;
+                box-sizing: border-box;
             }
-            
+
             .qde-source {
                 border-right: 1px solid #ddd;
+                /* Source pane is just a container for the textarea — make it
+                   a positioning context so the textarea can fill it absolutely */
+                position: relative;
+                padding: 0;          /* textarea brings its own padding */
             }
-            
+
             .qde-textarea {
+                display: block;
+                position: absolute;
+                inset: 0;
                 width: 100%;
                 height: 100%;
                 border: none;
                 outline: none;
                 resize: none;
+                padding: 16px;
+                box-sizing: border-box;
                 font-family: 'Monaco', 'Courier New', monospace;
                 font-size: 14px;
                 line-height: 1.5;
+                background: transparent;
+                color: inherit;
+                /* Wrap long lines so the textarea only scrolls VERTICALLY.
+                   pre-wrap preserves intentional line breaks/whitespace
+                   while soft-wrapping at the right edge. */
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                overflow-x: hidden;
+                overflow-y: auto;
             }
             
             .qde-preview {
@@ -2829,14 +2934,69 @@ class QuikdownEditor {
                 line-height: 1.6;
                 outline: none;
                 cursor: text;  /* Standard text cursor */
+                overflow-x: hidden;  /* never scroll horizontally; clip wide content */
             }
-            
+
+            /* Code blocks and inline code — self-contained so the editor
+               does not depend on any external stylesheet for these. */
+            .qde-preview pre {
+                background: #f4f4f4;
+                color: #1f2937;
+                padding: 10px;
+                border-radius: 4px;
+                overflow-x: auto;
+                margin: 0.6em 0;
+                font-size: 0.9em;
+                line-height: 1.5;
+                font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code",
+                             "Roboto Mono", Consolas, "Courier New", monospace;
+            }
+            .qde-preview code {
+                padding: 2px 4px;
+                font-size: 0.9em;
+                border-radius: 3px;
+                background: #f0f0f0;
+                color: #1f2937;
+                font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code",
+                             "Roboto Mono", Consolas, "Courier New", monospace;
+            }
+            .qde-preview pre code {
+                padding: 0;
+                font-size: inherit;
+                border-radius: 0;
+                background: transparent;
+                color: inherit;
+            }
+
+            /* Wide fence content (Leaflet maps, large SVGs, STL canvases,
+               iframes, raw <img>) must never overflow the preview pane */
+            .qde-preview .geojson-container,
+            .qde-preview .qde-stl-container,
+            .qde-preview .qde-svg-container,
+            .qde-preview .leaflet-container,
+            .qde-preview iframe,
+            .qde-preview img,
+            .qde-preview > svg {
+                max-width: 100%;
+            }
+            .qde-preview .leaflet-container { box-sizing: border-box; }
+
+            /* Standard markdown tables (the .quikdown-table class) need to
+               scroll horizontally inside their own wrapper rather than
+               making the whole preview pane scroll */
+            .qde-preview table.quikdown-table,
+            .qde-preview table.qde-csv-table {
+                display: block;
+                max-width: 100%;
+                overflow-x: auto;
+            }
+
             /* Fence-specific styles */
             .qde-svg-container {
                 max-width: 100%;
                 overflow: auto;
             }
-            
+
             .qde-svg-container svg {
                 max-width: 100%;
                 height: auto;
@@ -2908,6 +3068,45 @@ class QuikdownEditor {
                 position: relative;
             }
             
+            /* Reset headings inside the preview to plain browser defaults so
+               parent-page styles (site navs, marketing pages, design systems)
+               cannot bleed in. Business-casual: black text, decreasing sizes,
+               no decorative borders. See docs/quikdown-editor.md for how
+               embedders can override these with their own stylesheet. */
+            .qde-preview h1 { font-size: 2em; }
+            .qde-preview h2 { font-size: 1.5em; }
+            .qde-preview h3 { font-size: 1.25em; }
+            .qde-preview h4 { font-size: 1em; }
+            .qde-preview h5 { font-size: 0.875em; }
+            .qde-preview h6 { font-size: 0.85em; }
+            .qde-preview h1,
+            .qde-preview h2,
+            .qde-preview h3,
+            .qde-preview h4,
+            .qde-preview h5,
+            .qde-preview h6 {
+                font-weight: bold;
+                color: inherit;
+                border: none;
+                margin: 0.6em 0 0.3em 0;
+                line-height: 1.25;
+            }
+            .qde-preview p {
+                margin: 0.35em 0;
+            }
+            .qde-preview ul,
+            .qde-preview ol {
+                padding-left: 1.8em;
+                margin: 0.4em 0;
+            }
+            .qde-preview li {
+                margin: 0.15em 0;
+            }
+            .qde-preview blockquote {
+                margin: 0.5em 0;
+                padding-left: 1em;
+            }
+
             /* Ensure proper cursor for editable text elements */
             .qde-preview p,
             .qde-preview h1,
@@ -2970,6 +3169,7 @@ class QuikdownEditor {
             .qde-dark {
                 background: #1e1e1e;
                 color: #e0e0e0;
+                border-color: #444;
             }
             
             .qde-dark .qde-toolbar {
@@ -3001,6 +3201,20 @@ class QuikdownEditor {
                 color: #e0e0e0;
             }
             
+            /* Dark mode code blocks */
+            .qde-dark .qde-preview pre {
+                background: #2d2d3a;
+                color: #e6e6f0;
+            }
+            .qde-dark .qde-preview code {
+                background: #2a2a3a;
+                color: #e6e6f0;
+            }
+            .qde-dark .qde-preview pre code {
+                background: transparent;
+                color: inherit;
+            }
+
             /* Dark mode table styles */
             .qde-dark .qde-preview table th,
             .qde-dark .qde-preview table td {
@@ -3020,10 +3234,13 @@ class QuikdownEditor {
                 .qde-mode-split .qde-editor {
                     flex-direction: column;
                 }
-                
+
                 .qde-mode-split .qde-source {
                     border-right: none;
                     border-bottom: 1px solid #ddd;
+                }
+                .qde-dark.qde-mode-split .qde-source {
+                    border-bottom-color: #444;
                 }
             }
         `;
@@ -3171,24 +3388,34 @@ class QuikdownEditor {
     updateFromHTML() {
         // Clone the preview panel to avoid modifying the actual DOM
         const clonedPanel = this.previewPanel.cloneNode(true);
-        
+
         // Pre-process special elements on the clone
         this.preprocessSpecialElements(clonedPanel);
-        
+
         this._html = this.previewPanel.innerHTML;
-        this._markdown = quikdown_bd.toMarkdown(clonedPanel, {
+        const newMarkdown = quikdown_bd.toMarkdown(clonedPanel, {
             fence_plugin: this.createFencePlugin()
         });
-        
+
+        // Push previous state to undo stack (now that we know the new markdown)
+        if (!this._isUndoRedo) {
+            this._pushUndoState(newMarkdown);
+        }
+        this._isUndoRedo = false;
+
+        this._markdown = newMarkdown;
+
         // Update source if visible
         if (this.currentMode !== 'preview') {
             this.sourceTextarea.value = this._markdown;
         }
-        
+
         // Trigger change event
         if (this.options.onChange) {
             this.options.onChange(this._markdown, this._html);
         }
+
+        this._updateUndoButtons();
     }
     
     /**
@@ -3785,18 +4012,12 @@ class QuikdownEditor {
      */
     renderSTL(code) {
         const id = `qde-stl-viewer-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        // Function to render the 3D model
+
+        // Function to render the 3D model (assumes window.THREE is loaded)
         const render3D = () => {
             const element = document.getElementById(id);
             if (!element) return;
-            
-            // Check if Three.js is available
-            if (typeof window.THREE === 'undefined') {
-                element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Three.js library not loaded. Add &lt;script src="https://unpkg.com/three@0.147.0/build/three.min.js"&gt;&lt;/script&gt; to your HTML.</div>';
-                return;
-            }
-            
+
             try {
                 const THREE = window.THREE;
                 
@@ -3854,9 +4075,34 @@ class QuikdownEditor {
             }
         };
         
-        // Render after DOM update
-        setTimeout(render3D, 0);
-        
+        // If Three.js is already loaded, render immediately. Otherwise lazy-load
+        // it from a CDN (matches the GeoJSON/Leaflet pattern).
+        if (window.THREE) {
+            setTimeout(render3D, 0);
+        } else {
+            if (!window._qde_three_loading) {
+                window._qde_three_loading = this.lazyLoadLibrary(
+                    'Three.js',
+                    () => window.THREE,
+                    'https://unpkg.com/three@0.147.0/build/three.min.js'
+                ).catch(_err => {
+                    console.warn('Failed to load Three.js for STL rendering');
+                    window._qde_three_loading = null;
+                    return false;
+                });
+            }
+            window._qde_three_loading.then(loaded => {
+                if (loaded) {
+                    render3D();
+                } else {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load Three.js for STL rendering</div>';
+                    }
+                }
+            });
+        }
+
         // Return placeholder with data-stl-id for copy functionality
         return `<div id="${id}" class="qde-stl-container" data-stl-id="${id}" data-qd-fence="\`\`\`" data-qd-lang="stl" data-qd-source="${this.escapeHtml(code)}" contenteditable="false" style="height: 400px; background: #f0f0f0; display: flex; align-items: center; justify-content: center;">Loading 3D model...</div>`;
     }
@@ -3948,30 +4194,64 @@ class QuikdownEditor {
     }
     
     /**
-     * Load plugins dynamically
+     * Load plugins dynamically — honors both `plugins: { highlightjs, mermaid }`
+     * (legacy) and the newer `preloadFences` option which can preload any
+     * combination of fence libraries (or 'all') at construction time.
      */
     async loadPlugins() {
+        const namesToLoad = new Set();
+
+        // Legacy plugins option
+        if (this.options.plugins) {
+            if (this.options.plugins.highlightjs) namesToLoad.add('highlightjs');
+            if (this.options.plugins.mermaid)     namesToLoad.add('mermaid');
+        }
+
+        // New preloadFences option
+        const pf = this.options.preloadFences;
+        if (pf === 'all') {
+            Object.keys(FENCE_LIBRARIES).forEach(n => namesToLoad.add(n));
+        } else if (Array.isArray(pf)) {
+            for (const entry of pf) {
+                if (typeof entry === 'string') {
+                    if (FENCE_LIBRARIES[entry]) namesToLoad.add(entry);
+                    else console.warn(`QuikdownEditor: unknown preloadFences entry "${entry}"`);
+                } else if (entry && typeof entry === 'object' && entry.script) {
+                    // Custom library: { name, script, css? }
+                    namesToLoad.add('__custom__:' + (entry.name || entry.script));
+                    FENCE_LIBRARIES['__custom__:' + (entry.name || entry.script)] = {
+                        check: () => false,
+                        script: entry.script,
+                        css: entry.css
+                    };
+                }
+            }
+        } else if (pf) {
+            console.warn('QuikdownEditor: preloadFences should be "all", an array, or null');
+        }
+
+        // Load each in parallel; respect already-loaded state
         const promises = [];
-        
-        // Load highlight.js (check if already loaded)
-        if (this.options.plugins.highlightjs && !window.hljs) {
-            promises.push(
-                this.loadScript('https://unpkg.com/@highlightjs/cdn-assets/highlight.min.js'),
-                this.loadCSS('https://unpkg.com/@highlightjs/cdn-assets/styles/github.min.css')
-            );
+        for (const name of namesToLoad) {
+            const lib = FENCE_LIBRARIES[name];
+            if (!lib || lib.check()) continue;
+            if (lib.beforeLoad) lib.beforeLoad();
+            const p = (async () => {
+                try {
+                    const tasks = [];
+                    if (lib.script) tasks.push(this.loadScript(lib.script));
+                    if (lib.css)    tasks.push(this.loadCSS(lib.css, 'qde-hljs-light'));
+                    if (lib.cssDark) tasks.push(this.loadCSS(lib.cssDark, 'qde-hljs-dark'));
+                    await Promise.all(tasks);
+                    if (lib.css && lib.cssDark) this._syncHljsTheme();
+                    if (lib.afterLoad) lib.afterLoad();
+                } catch (err) {
+                    console.warn(`QuikdownEditor: failed to preload ${name}:`, err);
+                }
+            })();
+            promises.push(p);
         }
-        
-        // Load mermaid (check if already loaded)
-        if (this.options.plugins.mermaid && !window.mermaid) {
-            promises.push(
-                this.loadScript('https://unpkg.com/mermaid/dist/mermaid.min.js').then(() => {
-                    if (window.mermaid) {
-                        mermaid.initialize({ startOnLoad: false });
-                    }
-                })
-            );
-        }
-        
+
         await Promise.all(promises);
     }
     
@@ -4023,18 +4303,31 @@ class QuikdownEditor {
     /**
      * Load external CSS
      */
-    loadCSS(href) {
+    loadCSS(href, id) {
         return new Promise((resolve) => {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = href;
+            if (id) link.id = id;
             link.onload = resolve;
             document.head.appendChild(link);
             // Resolve anyway after timeout (CSS doesn't always fire onload)
             setTimeout(resolve, 1000);
         });
     }
-    
+
+    /**
+     * Enable the hljs stylesheet matching the current theme and disable
+     * the other one. Called from applyTheme and after hljs CSS loads.
+     */
+    _syncHljsTheme() {
+        const isDark = this.container.classList.contains('qde-dark');
+        const light = document.getElementById('qde-hljs-light');
+        const dark  = document.getElementById('qde-hljs-dark');
+        if (light) light.disabled = isDark;
+        if (dark)  dark.disabled  = !isDark;
+    }
+
     /**
      * Apply the current theme (based on this.options.theme)
      */
@@ -4052,11 +4345,13 @@ class QuikdownEditor {
             this.container.classList.toggle('qde-dark', mq.matches);
             this._autoThemeListener = (e) => {
                 this.container.classList.toggle('qde-dark', e.matches);
+                this._syncHljsTheme();
             };
             mq.addEventListener('change', this._autoThemeListener);
         } else {
             this.container.classList.toggle('qde-dark', theme === 'dark');
         }
+        this._syncHljsTheme();
     }
 
     /**
@@ -4118,20 +4413,23 @@ class QuikdownEditor {
      */
     setMode(mode) {
         if (!['source', 'preview', 'split'].includes(mode)) return;
-        
+
+        // Preserve theme class across mode swap (the assignment to className
+        // below would otherwise wipe it out — this used to be a no-op bug
+        // where dark mode was lost on every setMode call).
+        const wasDark = this.container.classList.contains('qde-dark');
+
         this.currentMode = mode;
         this.container.className = `qde-container qde-mode-${mode}`;
-        
+        if (wasDark) {
+            this.container.classList.add('qde-dark');
+        }
+
         // Update toolbar buttons
         if (this.toolbar) {
             this.toolbar.querySelectorAll('.qde-btn[data-mode]').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.mode === mode);
             });
-        }
-        
-        // Apply theme class
-        if (this.container.classList.contains('qde-dark')) {
-            this.container.classList.add('qde-dark');
         }
         
         // Make fence blocks non-editable when showing preview
@@ -4479,94 +4777,139 @@ class QuikdownEditor {
      * @returns {string} markdown with lazy linefeeds resolved
      */
     static convertLazyLinefeeds(markdown) {
-        const lines = (markdown || '').split('\n');
-        const result = [];
+        // Two-phase approach (much cleaner than the old single pass):
+        //
+        //   Phase A: walk lines, classify each as { content, blank, fence }.
+        //            Inside fences, lines are passed through verbatim.
+        //   Phase B: emit lines with the rule:
+        //            "between two adjacent CONTENT lines, ensure exactly one
+        //             blank line — never zero, never more than one."
+        //
+        // The rule applies regardless of whether the content lines are
+        // headings, lists, blockquotes, table rows, paragraphs, or HR — any
+        // adjacent pair of non-fence non-blank lines gets exactly one blank
+        // between them. This produces the cleanest possible output for any
+        // input and is fully idempotent.
+        //
+        // Lines that are whitespace-only (e.g. "   ") are normalized to
+        // empty strings, eliminating "phantom" blank lines.
+        //
+        // Lists are a special case: adjacent list items (same marker type)
+        // should NOT get a blank line between them, otherwise we'd break
+        // tight lists.
+        //
+        // Same applies to blockquote lines and table rows — adjacent rows
+        // belong to the same block.
+
+        const inputLines = (markdown || '').split('\n');
+
+        // -------- Phase A: classify lines, normalize whitespace-only --------
+        // Each entry: { line, kind } where kind is one of:
+        //   'fence-open', 'fence-close', 'fence-body', 'blank', 'content'
+        // Plus a 'category' for content lines: 'list-ul', 'list-ol',
+        //   'blockquote', 'table', 'heading', 'hr', 'paragraph'
+        const items = [];
         let inFence = false;
         let fenceChar = null;
         let fenceLen = 0;
-        let inHTMLBlock = false;
 
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
+        for (const rawLine of inputLines) {
+            const line = rawLine;
             const trimmed = line.trim();
 
-            // Track fence open/close
+            // Fence tracking
             const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
-            if (fenceMatch) {
-                const matchChar = fenceMatch[1][0];
-                const matchLen = fenceMatch[1].length;
-                if (!inFence) {
-                    inFence = true;
-                    fenceChar = matchChar;
-                    fenceLen = matchLen;
-                    result.push(line);
-                    continue;
-                } else if (matchChar === fenceChar && matchLen >= fenceLen && /^(`{3,}|~{3,})\s*$/.test(trimmed)) {
+            if (fenceMatch && !inFence) {
+                inFence = true;
+                fenceChar = fenceMatch[1][0];
+                fenceLen  = fenceMatch[1].length;
+                items.push({ line, kind: 'fence-open' });
+                continue;
+            }
+            if (inFence) {
+                if (fenceMatch &&
+                    fenceMatch[1][0] === fenceChar &&
+                    fenceMatch[1].length >= fenceLen &&
+                    /^(`{3,}|~{3,})\s*$/.test(trimmed)) {
                     inFence = false;
                     fenceChar = null;
                     fenceLen = 0;
-                    result.push(line);
-                    continue;
+                    items.push({ line, kind: 'fence-close' });
+                } else {
+                    items.push({ line, kind: 'fence-body' });
                 }
-            }
-
-            // Inside fence — pass through
-            if (inFence) {
-                result.push(line);
                 continue;
             }
 
-            // Track HTML blocks (lines starting with < and ending with >)
-            if (/^<[a-zA-Z]/.test(trimmed)) inHTMLBlock = true;
-            if (inHTMLBlock) {
-                result.push(line);
-                if (/>$/.test(trimmed) || trimmed === '') inHTMLBlock = false;
-                continue;
-            }
-
-            // Always pass through blank lines, but never add extras
+            // Outside fence: whitespace-only lines become canonical blanks
             if (trimmed === '') {
-                // Avoid doubling: don't add blank line if the last result line is already blank
-                if (result.length === 0 || result[result.length - 1].trim() !== '') {
-                    result.push(line);
-                }
+                items.push({ line: '', kind: 'blank' });
                 continue;
             }
 
-            // Skip conversion for block-level constructs
-            const isBlockElement = (
-                /^#{1,6}\s/.test(trimmed) ||           // headings
-                /^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed) || // horizontal rules
-                /^(\d+\.|-|\*|\+)\s/.test(trimmed) ||  // list items
-                /^>/.test(trimmed) ||                   // blockquotes
-                /^\|/.test(trimmed)                     // table rows
-            );
+            // Categorize content lines so we can recognize adjacent same-kind blocks
+            let category = 'paragraph';
+            if (/^#{1,6}\s/.test(trimmed))                    category = 'heading';
+            else if (/^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed)) category = 'hr';
+            else if (/^(\d+\.)\s/.test(trimmed))              category = 'list-ol';
+            else if (/^[-*+]\s/.test(trimmed))                category = 'list-ul';
+            else if (/^>/.test(trimmed))                      category = 'blockquote';
+            else if (/^\|/.test(trimmed))                     category = 'table';
+            // Indented continuation of a list (2+ leading spaces or tab)
+            else if (/^(?: {4}|\t| {2,}[-*+]| {2,}\d+\.)/.test(line)) category = 'list-cont';
 
-            if (isBlockElement) {
-                result.push(line);
-                continue;
+            items.push({ line, kind: 'content', category });
+        }
+
+        // -------- Phase B: emit with exactly-one-blank-line normalization --------
+        // Same-block adjacent lines (lists, blockquotes, tables) stay
+        // touching; any other adjacent content pair gets exactly one blank.
+        const result = [];
+        let prev = null;   // last emitted non-blank content item
+
+        function inSameBlock(a, b) {
+            if (!a || !b) return false;
+            // Lists: same marker family OR list-content continuation
+            if ((a.category === 'list-ul' || a.category === 'list-ol' || a.category === 'list-cont') &&
+                (b.category === 'list-ul' || b.category === 'list-ol' || b.category === 'list-cont')) {
+                return true;
             }
+            // Blockquotes
+            if (a.category === 'blockquote' && b.category === 'blockquote') return true;
+            // Table rows
+            if (a.category === 'table' && b.category === 'table') return true;
+            return false;
+        }
 
-            // For plain paragraph text: if previous result line is non-blank
-            // plain text, insert a blank line between them (making the single
-            // newline into a paragraph break). This is the lazy→strict conversion.
-            if (result.length > 0) {
-                const prevLine = result[result.length - 1];
-                const prevTrimmed = prevLine.trim();
-                // Only insert blank line if prev is non-blank, non-block text
-                if (prevTrimmed !== '' &&
-                    !/^#{1,6}\s/.test(prevTrimmed) &&
-                    !/^[-_*](\s*[-_*]){2,}\s*$/.test(prevTrimmed) &&
-                    !/^(\d+\.|-|\*|\+)\s/.test(prevTrimmed) &&
-                    !/^>/.test(prevTrimmed) &&
-                    !/^\|/.test(prevTrimmed) &&
-                    !/^(`{3,}|~{3,})/.test(prevTrimmed)) {
+        for (const item of items) {
+            if (item.kind === 'fence-open' || item.kind === 'fence-body' || item.kind === 'fence-close') {
+                // Fences: ensure exactly one blank line before the fence-open
+                if (item.kind === 'fence-open' && prev && result.length > 0 && result[result.length - 1] !== '') {
                     result.push('');
                 }
+                result.push(item.line);
+                if (item.kind === 'fence-close') prev = { kind: 'content', category: 'fence' };
+                continue;
             }
 
-            result.push(line);
+            if (item.kind === 'blank') {
+                // Skip — Phase B inserts its own blank lines as needed
+                continue;
+            }
+
+            // item.kind === 'content'
+            if (prev) {
+                if (inSameBlock(prev, item)) ; else {
+                    // Different blocks (or paragraphs): exactly one blank
+                    if (result[result.length - 1] !== '') result.push('');
+                }
+            }
+            result.push(item.line);
+            prev = item;
         }
+
+        // Trim trailing blank lines so output has exactly one terminal newline
+        while (result.length > 0 && result[result.length - 1] === '') result.pop();
 
         return result.join('\n');
     }

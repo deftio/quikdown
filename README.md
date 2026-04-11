@@ -2,17 +2,17 @@
 
 [![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage Status](https://codecov.io/gh/deftio/quikdown/branch/main/graph/badge.svg)](https://codecov.io/gh/deftio/quikdown)
+[![Coverage](https://img.shields.io/badge/coverage-95.3%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/quikdown)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-9.3KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 Quikdown is a small, secure markdown parser with bidirectional conversion. Zero dependencies, XSS protection built-in, extensible via plugins for code highlighting and diagrams, and works in browser and Node.js.
 
 For small and fast projects quikdown includes built-in inline styles for a "batteries included" rendering experience, but these can be overridden with themed css (see light and dark examples).
 
-- **quikdown.js** (9.0KB) - Markdown to HTML Parser with theme support, XSS protection, fence callbacks
-- **quikdown_bd.js** (13.8KB) - Bidirectional (HTML ↔ Markdown) Parser
-- **quikdown_edit.js** (68.0KB) - Drop-in editor component with live preview, copy-as-rich-text, and lazy-loaded fence handlers
+- **quikdown.js** (9.3KB) - Markdown to HTML Parser with theme support, XSS protection, fence callbacks
+- **quikdown_bd.js** (14.1KB) - Bidirectional (HTML ↔ Markdown) Parser
+- **quikdown_edit.js** (80.0KB) - Drop-in editor component with live preview, copy-as-rich-text, and lazy-loaded fence handlers
 - **quikdown_ast.js** - Markdown to AST (Abstract Syntax Tree) Parser
 - **quikdown_json.js** - Markdown to JSON conversion
 - **quikdown_yaml.js** - Markdown to YAML conversion
@@ -26,7 +26,7 @@ For small and fast projects quikdown includes built-in inline styles for a "batt
 
 - 📦 **Zero dependencies** - No external libraries required
 - 🌐 **Universal** - Works in browsers and Node.js
-- 🚀 **Lightweight** - 9.0KB (core), 13.8KB (bidirectional), 68.0KB (editor)
+- 🚀 **Lightweight** - 9.3KB (core), 14.1KB (bidirectional), 80KB (editor)
 - 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
 - 🎨 **Flexible styling** - Inline styles or CSS classes with theme support
 - 🔌 **Plugin system** - Extensible fence block handlers

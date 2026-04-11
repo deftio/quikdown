@@ -176,7 +176,7 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);
 <tr>
 <td><code>debounceDelay</code></td>
 <td>number</td>
-<td><code>300</code></td>
+<td><code>20</code></td>
 <td>Debounce delay in milliseconds for updates</td>
 </tr>
 <tr>
@@ -195,7 +195,13 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);
 <td><code>plugins</code></td>
 <td>object</td>
 <td><code>{}</code></td>
-<td>Built-in plugin configuration</td>
+<td>Built-in plugin configuration (legacy — prefer <code>preloadFences</code>)</td>
+</tr>
+<tr>
+<td><code>preloadFences</code></td>
+<td>string | array | null</td>
+<td><code>null</code></td>
+<td>Preload fence libraries at construction (see below)</td>
 </tr>
 <tr>
 <td><code>customFences</code></td>
@@ -204,10 +210,40 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);
 <td>Custom fence plugin handlers</td>
 </tr>
 <tr>
+<td><code>showLazyLinefeeds</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>Show &quot;Fix Linefeeds&quot; button in toolbar</td>
+</tr>
+<tr>
+<td><code>showUndoRedo</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>Show undo/redo buttons in toolbar</td>
+</tr>
+<tr>
+<td><code>undoStackSize</code></td>
+<td>number</td>
+<td><code>100</code></td>
+<td>Maximum undo states to keep</td>
+</tr>
+<tr>
 <td><code>onChange</code></td>
 <td>function</td>
 <td><code>null</code></td>
 <td>Callback when content changes</td>
+</tr>
+<tr>
+<td><code>enableComplexFences</code></td>
+<td>boolean</td>
+<td><code>true</code></td>
+<td>Enable complex fence rendering (mermaid, math, geojson, stl, etc.)</td>
+</tr>
+<tr>
+<td><code>inline_styles</code></td>
+<td>boolean</td>
+<td><code>false</code></td>
+<td>Embed styles inline instead of using class-based CSS</td>
 </tr>
 <tr>
 <td><code>onModeChange</code></td>
@@ -216,12 +252,73 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);
 <td>Callback when mode changes</td>
 </tr>
 </tbody></table>
-<h3>Plugin Options</h3>
+<h3>Plugin Options (legacy)</h3>
 <pre><code class="language-javascript">plugins: {
     highlightjs: boolean,  // Enable Highlight.js for syntax highlighting
     mermaid: boolean      // Enable Mermaid for diagrams
 }
 </code></pre>
+<h3><code>preloadFences</code> — fence library preloading</h3>
+<p>Each fence type that depends on an external library (Mermaid, MathJax, Leaflet<br>for GeoJSON, Three.js for STL, highlight.js for syntax highlighting) is<br><strong>lazy-loaded by default</strong>. The first time the editor encounters a <code>mermaid</code><br>fence, it fetches <code>mermaid.min.js</code> from the CDN; the first STL fence triggers<br>the Three.js download; and so on.</p>
+<p>Lazy loading keeps the editor lightweight (~70 KB minified) but introduces a<br>small &quot;loading…&quot; delay the first time each fence type is rendered. For demo<br>pages, documentation sites, or apps where you know in advance which fence<br>types you&#39;ll need, you can preload those libraries at construction time:</p>
+<pre><code class="language-javascript">// Preload everything — first render of any fence is instant
+new QuikdownEditor(&#39;#editor&#39;, {
+  preloadFences: &#39;all&#39;
+});
+
+// Preload a specific subset
+new QuikdownEditor(&#39;#editor&#39;, {
+  preloadFences: [&#39;mermaid&#39;, &#39;math&#39;, &#39;highlightjs&#39;]
+});
+
+// Preload a custom library
+new QuikdownEditor(&#39;#editor&#39;, {
+  preloadFences: [
+    &#39;mermaid&#39;,
+    { name: &#39;mermaid-extra&#39;, script: &#39;https://my-cdn/mermaid-extra.js&#39;, css: &#39;https://my-cdn/mermaid-extra.css&#39; }
+  ]
+});
+
+// Default — lazy load on demand
+new QuikdownEditor(&#39;#editor&#39;, {});
+</code></pre>
+<p><strong>Recognized library names:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Loads</th>
+<th>Used by</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&#39;highlightjs&#39;</code></td>
+<td>highlight.js + GitHub theme</td>
+<td>code-block syntax highlighting</td>
+</tr>
+<tr>
+<td><code>&#39;mermaid&#39;</code></td>
+<td>Mermaid.js</td>
+<td><code>mermaid</code> fence</td>
+</tr>
+<tr>
+<td><code>&#39;math&#39;</code></td>
+<td>MathJax (tex-svg)</td>
+<td><code>math</code>, <code>tex</code>, <code>latex</code>, <code>katex</code> fences</td>
+</tr>
+<tr>
+<td><code>&#39;geojson&#39;</code></td>
+<td>Leaflet + Leaflet CSS</td>
+<td><code>geojson</code> fence</td>
+</tr>
+<tr>
+<td><code>&#39;stl&#39;</code></td>
+<td>Three.js</td>
+<td><code>stl</code> fence</td>
+</tr>
+</tbody></table>
+<p><strong>Trade-off</strong>: preloading uses more upfront network (a few hundred KB) but<br>eliminates per-fence load delays. Developer&#39;s choice — the editor itself<br>stays the same size either way; only the optional fence renderers are affected.</p>
+<p><strong>Recommendation</strong>: leave <code>preloadFences</code> off for production apps that handle<br>arbitrary user content (lazy loading scales better), and set it to <code>&#39;all&#39;</code><br>or a specific list for demos and apps where you know exactly which fence<br>types will appear.</p>
 <h2>API Reference</h2>
 <h3>Constructor</h3>
 <pre><code class="language-javascript">new QuikdownEditor(container, options?)
@@ -266,9 +363,51 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);
 <pre><code class="language-javascript">editor.setDebounceDelay(0); // Instant updates
 editor.setDebounceDelay(300); // Default
 </code></pre>
+<h4><code>undo()</code></h4>
+<p>Undoes the last edit.</p>
+<pre><code class="language-javascript">editor.undo();
+</code></pre>
+<h4><code>redo()</code></h4>
+<p>Redoes the last undone edit.</p>
+<pre><code class="language-javascript">editor.redo();
+</code></pre>
+<h4><code>canUndo()</code></h4>
+<p>Returns <code>true</code> if there is an edit to undo.</p>
+<pre><code class="language-javascript">if (editor.canUndo()) {
+    editor.undo();
+}
+</code></pre>
+<h4><code>canRedo()</code></h4>
+<p>Returns <code>true</code> if there is an edit to redo.</p>
+<pre><code class="language-javascript">if (editor.canRedo()) {
+    editor.redo();
+}
+</code></pre>
+<h4><code>clearHistory()</code></h4>
+<p>Clears the undo/redo history.</p>
+<pre><code class="language-javascript">editor.clearHistory();
+</code></pre>
+<h4><code>getLazyLinefeeds()</code></h4>
+<p>Returns the current lazy linefeeds state (<code>true</code> or <code>false</code>).</p>
+<pre><code class="language-javascript">const isLazy = editor.getLazyLinefeeds();
+</code></pre>
+<h4><code>convertLazyLinefeeds()</code></h4>
+<p>Converts single newlines in the current content to paragraph breaks (<code>\n\n</code>). Useful for normalizing content that was authored with lazy linefeeds enabled.</p>
+<pre><code class="language-javascript">editor.convertLazyLinefeeds();
+</code></pre>
 <h4><code>destroy()</code></h4>
 <p>Cleans up the editor and removes event listeners.</p>
 <pre><code class="language-javascript">editor.destroy();
+</code></pre>
+<h3>Static Methods</h3>
+<h4><code>QuikdownEditor.convertLazyLinefeeds(markdown)</code></h4>
+<p>Converts single newlines to paragraph breaks in the given markdown string. Returns the converted string.</p>
+<pre><code class="language-javascript">const normalized = QuikdownEditor.convertLazyLinefeeds(&#39;Line one\nLine two&#39;);
+// &quot;Line one\n\nLine two&quot;
+</code></pre>
+<h4><code>QuikdownEditor.removeHRFromMarkdown(markdown)</code></h4>
+<p>Removes all horizontal rules (<code>---</code>) from the given markdown string. Returns the cleaned string.</p>
+<pre><code class="language-javascript">const cleaned = QuikdownEditor.removeHRFromMarkdown(&#39;Some text\n\n---\n\nMore text&#39;);
 </code></pre>
 <h3>Properties</h3>
 <h4><code>markdown</code></h4>
@@ -317,6 +456,30 @@ editor.markdown = &#39;# New Content&#39;;
     theme: &#39;auto&#39;  // Default
 });
 </code></pre>
+<h2>Styling the Editor Preview</h2>
+<p>The editor ships with intentionally plain preview styles — black text (or<br>light text in dark mode), browser-default heading sizes, no decorative<br>borders. This means it blends into any parent page without clashing.</p>
+<p>To customise the preview, add CSS rules that target <code>.qde-preview</code> in your<br>own stylesheet. The editor&#39;s built-in rules have normal specificity so a<br>single-class selector in a <code>&lt;style&gt;</code> tag or external sheet is enough to<br>override them — no <code>!important</code> needed.</p>
+<pre><code class="language-css">/* Example: branded headings with an accent underline */
+.qde-preview h1 {
+  color: #6c47b8;
+  border-bottom: 2px solid #e0d4f5;
+  padding-bottom: 0.3em;
+}
+
+/* Tighter paragraph spacing */
+.qde-preview p {
+  margin: 0.25em 0;
+}
+
+/* Custom code block look */
+.qde-preview pre {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 8px;
+  padding: 1em;
+}
+</code></pre>
+<p>If the editor is embedded on a page whose own CSS targets bare element<br>selectors (<code>h1</code>, <code>p</code>, <code>pre</code>, etc.), those rules will bleed into the<br>preview. Either scope your page styles (<code>.my-page h1 { ... }</code>) or add<br>reset overrides on <code>.qde-preview</code> elements.</p>
 <h2>Headless and Minimal UI Usage</h2>
 <h3>Headless Mode (No UI)</h3>
 <p>You can use QuikdownEditor programmatically without any UI:</p>
@@ -628,6 +791,14 @@ Bob|25|London
 </tr>
 </thead>
 <tbody><tr>
+<td><code>Ctrl/Cmd + Z</code></td>
+<td>Undo</td>
+</tr>
+<tr>
+<td><code>Ctrl/Cmd + Shift + Z</code></td>
+<td>Redo</td>
+</tr>
+<tr>
 <td><code>Ctrl/Cmd + 1</code></td>
 <td>Switch to source mode</td>
 </tr>

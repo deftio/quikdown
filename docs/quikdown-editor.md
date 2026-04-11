@@ -94,15 +94,21 @@ const editor = new QuikdownEditor('#editor', {
 | `showToolbar` | boolean | `true` | Show/hide the toolbar |
 | `showRemoveHR` | boolean | `false` | Show/hide the "Remove HR" button in toolbar |
 | `lazy_linefeeds` | boolean | `false` | Enable lazy linefeeds (single \n becomes `<br>`) |
-| `debounceDelay` | number | `300` | Debounce delay in milliseconds for updates |
+| `debounceDelay` | number | `20` | Debounce delay in milliseconds for updates |
 | `placeholder` | string | `'Start typing markdown...'` | Placeholder text for empty editor |
 | `initialContent` | string | `''` | Initial markdown content |
-| `plugins` | object | `{}` | Built-in plugin configuration |
+| `plugins` | object | `{}` | Built-in plugin configuration (legacy — prefer `preloadFences`) |
+| `preloadFences` | string \| array \| null | `null` | Preload fence libraries at construction (see below) |
 | `customFences` | object | `{}` | Custom fence plugin handlers |
+| `showLazyLinefeeds` | boolean | `false` | Show "Fix Linefeeds" button in toolbar |
+| `showUndoRedo` | boolean | `false` | Show undo/redo buttons in toolbar |
+| `undoStackSize` | number | `100` | Maximum undo states to keep |
 | `onChange` | function | `null` | Callback when content changes |
+| `enableComplexFences` | boolean | `true` | Enable complex fence rendering (mermaid, math, geojson, stl, etc.) |
+| `inline_styles` | boolean | `false` | Embed styles inline instead of using class-based CSS |
 | `onModeChange` | function | `null` | Callback when mode changes |
 
-### Plugin Options
+### Plugin Options (legacy)
 
 ```javascript
 plugins: {
@@ -110,6 +116,61 @@ plugins: {
     mermaid: boolean      // Enable Mermaid for diagrams
 }
 ```
+
+### `preloadFences` — fence library preloading
+
+Each fence type that depends on an external library (Mermaid, MathJax, Leaflet
+for GeoJSON, Three.js for STL, highlight.js for syntax highlighting) is
+**lazy-loaded by default**. The first time the editor encounters a `mermaid`
+fence, it fetches `mermaid.min.js` from the CDN; the first STL fence triggers
+the Three.js download; and so on.
+
+Lazy loading keeps the editor lightweight (~70 KB minified) but introduces a
+small "loading…" delay the first time each fence type is rendered. For demo
+pages, documentation sites, or apps where you know in advance which fence
+types you'll need, you can preload those libraries at construction time:
+
+```javascript
+// Preload everything — first render of any fence is instant
+new QuikdownEditor('#editor', {
+  preloadFences: 'all'
+});
+
+// Preload a specific subset
+new QuikdownEditor('#editor', {
+  preloadFences: ['mermaid', 'math', 'highlightjs']
+});
+
+// Preload a custom library
+new QuikdownEditor('#editor', {
+  preloadFences: [
+    'mermaid',
+    { name: 'mermaid-extra', script: 'https://my-cdn/mermaid-extra.js', css: 'https://my-cdn/mermaid-extra.css' }
+  ]
+});
+
+// Default — lazy load on demand
+new QuikdownEditor('#editor', {});
+```
+
+**Recognized library names:**
+
+| Name | Loads | Used by |
+|---|---|---|
+| `'highlightjs'` | highlight.js + GitHub theme | code-block syntax highlighting |
+| `'mermaid'` | Mermaid.js | `mermaid` fence |
+| `'math'` | MathJax (tex-svg) | `math`, `tex`, `latex`, `katex` fences |
+| `'geojson'` | Leaflet + Leaflet CSS | `geojson` fence |
+| `'stl'` | Three.js | `stl` fence |
+
+**Trade-off**: preloading uses more upfront network (a few hundred KB) but
+eliminates per-fence load delays. Developer's choice — the editor itself
+stays the same size either way; only the optional fence renderers are affected.
+
+**Recommendation**: leave `preloadFences` off for production apps that handle
+arbitrary user content (lazy loading scales better), and set it to `'all'`
+or a specific list for demos and apps where you know exactly which fence
+types will appear.
 
 ## API Reference
 
@@ -192,12 +253,91 @@ editor.setDebounceDelay(0); // Instant updates
 editor.setDebounceDelay(300); // Default
 ```
 
+#### `undo()`
+
+Undoes the last edit.
+
+```javascript
+editor.undo();
+```
+
+#### `redo()`
+
+Redoes the last undone edit.
+
+```javascript
+editor.redo();
+```
+
+#### `canUndo()`
+
+Returns `true` if there is an edit to undo.
+
+```javascript
+if (editor.canUndo()) {
+    editor.undo();
+}
+```
+
+#### `canRedo()`
+
+Returns `true` if there is an edit to redo.
+
+```javascript
+if (editor.canRedo()) {
+    editor.redo();
+}
+```
+
+#### `clearHistory()`
+
+Clears the undo/redo history.
+
+```javascript
+editor.clearHistory();
+```
+
+#### `getLazyLinefeeds()`
+
+Returns the current lazy linefeeds state (`true` or `false`).
+
+```javascript
+const isLazy = editor.getLazyLinefeeds();
+```
+
+#### `convertLazyLinefeeds()`
+
+Converts single newlines in the current content to paragraph breaks (`\n\n`). Useful for normalizing content that was authored with lazy linefeeds enabled.
+
+```javascript
+editor.convertLazyLinefeeds();
+```
+
 #### `destroy()`
 
 Cleans up the editor and removes event listeners.
 
 ```javascript
 editor.destroy();
+```
+
+### Static Methods
+
+#### `QuikdownEditor.convertLazyLinefeeds(markdown)`
+
+Converts single newlines to paragraph breaks in the given markdown string. Returns the converted string.
+
+```javascript
+const normalized = QuikdownEditor.convertLazyLinefeeds('Line one\nLine two');
+// "Line one\n\nLine two"
+```
+
+#### `QuikdownEditor.removeHRFromMarkdown(markdown)`
+
+Removes all horizontal rules (`---`) from the given markdown string. Returns the cleaned string.
+
+```javascript
+const cleaned = QuikdownEditor.removeHRFromMarkdown('Some text\n\n---\n\nMore text');
 ```
 
 ### Properties
@@ -283,6 +423,44 @@ const editor = new QuikdownEditor('#editor', {
     theme: 'auto'  // Default
 });
 ```
+
+## Styling the Editor Preview
+
+The editor ships with intentionally plain preview styles — black text (or
+light text in dark mode), browser-default heading sizes, no decorative
+borders. This means it blends into any parent page without clashing.
+
+To customise the preview, add CSS rules that target `.qde-preview` in your
+own stylesheet. The editor's built-in rules have normal specificity so a
+single-class selector in a `<style>` tag or external sheet is enough to
+override them — no `!important` needed.
+
+```css
+/* Example: branded headings with an accent underline */
+.qde-preview h1 {
+  color: #6c47b8;
+  border-bottom: 2px solid #e0d4f5;
+  padding-bottom: 0.3em;
+}
+
+/* Tighter paragraph spacing */
+.qde-preview p {
+  margin: 0.25em 0;
+}
+
+/* Custom code block look */
+.qde-preview pre {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 8px;
+  padding: 1em;
+}
+```
+
+If the editor is embedded on a page whose own CSS targets bare element
+selectors (`h1`, `p`, `pre`, etc.), those rules will bleed into the
+preview. Either scope your page styles (`.my-page h1 { ... }`) or add
+reset overrides on `.qde-preview` elements.
 
 ## Headless and Minimal UI Usage
 
@@ -600,6 +778,8 @@ const editor = new QuikdownEditor('#editor', {
 
 | Shortcut | Action |
 |----------|--------|
+| `Ctrl/Cmd + Z` | Undo |
+| `Ctrl/Cmd + Shift + Z` | Redo |
 | `Ctrl/Cmd + 1` | Switch to source mode |
 | `Ctrl/Cmd + 2` | Switch to split mode |
 | `Ctrl/Cmd + 3` | Switch to preview mode |

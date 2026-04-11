@@ -68,17 +68,19 @@
 <h2>Overview</h2>
 <p>quikdown&#39;s plugin system allows you to customize how fenced code blocks are rendered. This enables syntax highlighting, diagrams, math rendering, custom components, and even trusted HTML rendering.</p>
 <h2>Basic Plugin Structure</h2>
-<p>A fence plugin is a function that receives code block content and returns HTML:</p>
-<pre><code class="language-javascript">function myPlugin(content, language) {
-  // content: Raw, unescaped content from the code block
-  // language: The language identifier (or empty string)
-  
-  // Return HTML string to render, or undefined to use default
-  return &#39;&lt;div&gt;Custom HTML&lt;/div&gt;&#39;;
-}
+<p>A fence plugin is an object with a <code>render</code> method that receives code block content and returns HTML:</p>
+<pre><code class="language-javascript">const myPlugin = {
+  render: (content, language) =&gt; {
+    // content: Raw, unescaped content from the code block
+    // language: The language identifier (or empty string)
+    
+    // Return HTML string to render, or undefined to use default
+    return &#39;&lt;div&gt;Custom HTML&lt;/div&gt;&#39;;
+  }
+};
 </code></pre>
 <h2>Plugin Contract</h2>
-<h3>Input Parameters</h3>
+<h3><code>render</code> Method Parameters</h3>
 <ol>
 <li><p><strong><code>content</code></strong> (string)</p>
 <ul>
@@ -96,19 +98,31 @@
 </ul>
 </li>
 </ol>
-<h3>Return Values</h3>
+<h3><code>render</code> Return Values</h3>
 <ul>
 <li><strong><code>string</code></strong> - HTML to render (you&#39;re responsible for escaping!)</li>
 <li><strong><code>undefined</code></strong> - Fall back to default code block rendering</li>
 </ul>
+<h3>Optional <code>reverse</code> Method</h3>
+<p>For bidirectional support with <code>quikdown_bd</code>, a plugin can include a <code>reverse</code> method that converts plugin-rendered HTML back to a fenced code block:</p>
+<pre><code class="language-javascript">const myPlugin = {
+  render: (content, language) =&gt; { /* ... */ },
+  reverse: (element) =&gt; {
+    // Return { fence: &#39;```&#39;, lang: &#39;mylang&#39;, content: &#39;...&#39; } or null
+    return null;
+  }
+};
+</code></pre>
 <h2>Simple Examples</h2>
 <h3>Hello World Plugin</h3>
-<pre><code class="language-javascript">function helloPlugin(content, language) {
-  if (language === &#39;hello&#39;) {
-    return `&lt;div class=&quot;greeting&quot;&gt;Hello, ${content}!&lt;/div&gt;`;
+<pre><code class="language-javascript">const helloPlugin = {
+  render: (content, language) =&gt; {
+    if (language === &#39;hello&#39;) {
+      return `&lt;div class=&quot;greeting&quot;&gt;Hello, ${content}!&lt;/div&gt;`;
+    }
+    return undefined; // Use default for other languages
   }
-  return undefined; // Use default for other languages
-}
+};
 
 // Usage in markdown:
 // ```hello
@@ -117,114 +131,124 @@
 // Output: &lt;div class=&quot;greeting&quot;&gt;Hello, World!&lt;/div&gt;
 </code></pre>
 <h3>JSON Viewer</h3>
-<pre><code class="language-javascript">function jsonPlugin(content, language) {
-  if (language === &#39;json&#39;) {
-    try {
-      const data = JSON.parse(content);
-      const pretty = JSON.stringify(data, null, 2);
-      return `&lt;pre class=&quot;json-viewer&quot;&gt;${escapeHtml(pretty)}&lt;/pre&gt;`;
-    } catch (e) {
-      return `&lt;pre class=&quot;json-error&quot;&gt;Invalid JSON: ${e.message}&lt;/pre&gt;`;
+<pre><code class="language-javascript">const jsonPlugin = {
+  render: (content, language) =&gt; {
+    if (language === &#39;json&#39;) {
+      try {
+        const data = JSON.parse(content);
+        const pretty = JSON.stringify(data, null, 2);
+        return `&lt;pre class=&quot;json-viewer&quot;&gt;${escapeHtml(pretty)}&lt;/pre&gt;`;
+      } catch (e) {
+        return `&lt;pre class=&quot;json-error&quot;&gt;Invalid JSON: ${e.message}&lt;/pre&gt;`;
+      }
     }
   }
-}
+};
 </code></pre>
 <h2>Advanced Examples</h2>
 <h3>Syntax Highlighting with Prism.js</h3>
-<pre><code class="language-javascript">function prismPlugin(content, language) {
-  // Check if Prism supports this language
-  if (language &amp;&amp; Prism.languages[language]) {
-    const highlighted = Prism.highlight(
-      content,
-      Prism.languages[language],
-      language
-    );
-    return `&lt;pre class=&quot;language-${language}&quot;&gt;&lt;code&gt;${highlighted}&lt;/code&gt;&lt;/pre&gt;`;
+<pre><code class="language-javascript">const prismPlugin = {
+  render: (content, language) =&gt; {
+    // Check if Prism supports this language
+    if (language &amp;&amp; Prism.languages[language]) {
+      const highlighted = Prism.highlight(
+        content,
+        Prism.languages[language],
+        language
+      );
+      return `&lt;pre class=&quot;language-${language}&quot;&gt;&lt;code&gt;${highlighted}&lt;/code&gt;&lt;/pre&gt;`;
+    }
+    // Fall back to default for unsupported languages
+    return undefined;
   }
-  // Fall back to default for unsupported languages
-  return undefined;
-}
+};
 </code></pre>
 <h3>Mermaid Diagrams</h3>
-<pre><code class="language-javascript">function mermaidPlugin(content, language) {
-  if (language === &#39;mermaid&#39;) {
-    // Generate unique ID for async rendering
-    const id = &#39;mermaid-&#39; + Math.random().toString(36).substr(2, 9);
-    
-    // Return placeholder that will be replaced
-    return `
-      &lt;div id=&quot;${id}&quot; class=&quot;mermaid-container&quot;&gt;
-        &lt;pre class=&quot;mermaid-source&quot; style=&quot;display:none&quot;&gt;${escapeHtml(content)}&lt;/pre&gt;
-        &lt;div class=&quot;mermaid-rendering&quot;&gt;Rendering diagram...&lt;/div&gt;
-      &lt;/div&gt;
-      &lt;script&gt;
-        (function() {
-          const element = document.getElementById(&#39;${id}&#39;);
-          const source = element.querySelector(&#39;.mermaid-source&#39;).textContent;
-          mermaid.render(&#39;${id}-svg&#39;, source).then(result =&gt; {
-            element.querySelector(&#39;.mermaid-rendering&#39;).innerHTML = result.svg;
-          }).catch(error =&gt; {
-            element.querySelector(&#39;.mermaid-rendering&#39;).innerHTML = 
-              &#39;&lt;div class=&quot;error&quot;&gt;Failed to render diagram: &#39; + error + &#39;&lt;/div&gt;&#39;;
-          });
-        })();
-      &lt;/script&gt;
-    `;
+<pre><code class="language-javascript">const mermaidPlugin = {
+  render: (content, language) =&gt; {
+    if (language === &#39;mermaid&#39;) {
+      // Generate unique ID for async rendering
+      const id = &#39;mermaid-&#39; + Math.random().toString(36).substr(2, 9);
+      
+      // Return placeholder that will be replaced
+      return `
+        &lt;div id=&quot;${id}&quot; class=&quot;mermaid-container&quot;&gt;
+          &lt;pre class=&quot;mermaid-source&quot; style=&quot;display:none&quot;&gt;${escapeHtml(content)}&lt;/pre&gt;
+          &lt;div class=&quot;mermaid-rendering&quot;&gt;Rendering diagram...&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;script&gt;
+          (function() {
+            const element = document.getElementById(&#39;${id}&#39;);
+            const source = element.querySelector(&#39;.mermaid-source&#39;).textContent;
+            mermaid.render(&#39;${id}-svg&#39;, source).then(result =&gt; {
+              element.querySelector(&#39;.mermaid-rendering&#39;).innerHTML = result.svg;
+            }).catch(error =&gt; {
+              element.querySelector(&#39;.mermaid-rendering&#39;).innerHTML = 
+                &#39;&lt;div class=&quot;error&quot;&gt;Failed to render diagram: &#39; + error + &#39;&lt;/div&gt;&#39;;
+            });
+          })();
+        &lt;/script&gt;
+      `;
+    }
   }
-}
+};
 </code></pre>
 <h3>Math with KaTeX</h3>
-<pre><code class="language-javascript">function mathPlugin(content, language) {
-  if (language === &#39;math&#39; || language === &#39;latex&#39;) {
-    try {
-      const html = katex.renderToString(content, {
-        displayMode: true,
-        throwOnError: false,
-        errorColor: &#39;#cc0000&#39;
-      });
-      return `&lt;div class=&quot;math-block&quot;&gt;${html}&lt;/div&gt;`;
-    } catch (e) {
-      return `&lt;div class=&quot;math-error&quot;&gt;Invalid math: ${escapeHtml(e.message)}&lt;/div&gt;`;
+<pre><code class="language-javascript">const mathPlugin = {
+  render: (content, language) =&gt; {
+    if (language === &#39;math&#39; || language === &#39;latex&#39;) {
+      try {
+        const html = katex.renderToString(content, {
+          displayMode: true,
+          throwOnError: false,
+          errorColor: &#39;#cc0000&#39;
+        });
+        return `&lt;div class=&quot;math-block&quot;&gt;${html}&lt;/div&gt;`;
+      } catch (e) {
+        return `&lt;div class=&quot;math-error&quot;&gt;Invalid math: ${escapeHtml(e.message)}&lt;/div&gt;`;
+      }
     }
   }
-}
+};
 </code></pre>
 <h3>Custom Components</h3>
-<pre><code class="language-javascript">function componentPlugin(content, language) {
-  if (language === &#39;component&#39;) {
-    try {
-      const config = JSON.parse(content);
-      
-      // Validate component type
-      if (![&#39;alert&#39;, &#39;card&#39;, &#39;tabs&#39;].includes(config.type)) {
-        throw new Error(`Unknown component type: ${config.type}`);
+<pre><code class="language-javascript">const componentPlugin = {
+  render: (content, language) =&gt; {
+    if (language === &#39;component&#39;) {
+      try {
+        const config = JSON.parse(content);
+        
+        // Validate component type
+        if (![&#39;alert&#39;, &#39;card&#39;, &#39;tabs&#39;].includes(config.type)) {
+          throw new Error(`Unknown component type: ${config.type}`);
+        }
+        
+        // Render based on type
+        switch (config.type) {
+          case &#39;alert&#39;:
+            return `
+              &lt;div class=&quot;alert alert-${config.level || &#39;info&#39;}&quot;&gt;
+                ${escapeHtml(config.message)}
+              &lt;/div&gt;
+            `;
+            
+          case &#39;card&#39;:
+            return `
+              &lt;div class=&quot;card&quot;&gt;
+                &lt;h3&gt;${escapeHtml(config.title)}&lt;/h3&gt;
+                &lt;p&gt;${escapeHtml(config.content)}&lt;/p&gt;
+              &lt;/div&gt;
+            `;
+            
+          default:
+            return `&lt;div&gt;Unsupported component&lt;/div&gt;`;
+        }
+      } catch (e) {
+        return `&lt;div class=&quot;component-error&quot;&gt;Invalid component: ${escapeHtml(e.message)}&lt;/div&gt;`;
       }
-      
-      // Render based on type
-      switch (config.type) {
-        case &#39;alert&#39;:
-          return `
-            &lt;div class=&quot;alert alert-${config.level || &#39;info&#39;}&quot;&gt;
-              ${escapeHtml(config.message)}
-            &lt;/div&gt;
-          `;
-          
-        case &#39;card&#39;:
-          return `
-            &lt;div class=&quot;card&quot;&gt;
-              &lt;h3&gt;${escapeHtml(config.title)}&lt;/h3&gt;
-              &lt;p&gt;${escapeHtml(config.content)}&lt;/p&gt;
-            &lt;/div&gt;
-          `;
-          
-        default:
-          return `&lt;div&gt;Unsupported component&lt;/div&gt;`;
-      }
-    } catch (e) {
-      return `&lt;div class=&quot;component-error&quot;&gt;Invalid component: ${escapeHtml(e.message)}&lt;/div&gt;`;
     }
   }
-}
+};
 
 // Usage:
 // ```component
@@ -239,14 +263,18 @@
 <h3>⚠️ Critical: Escape User Content</h3>
 <p>Plugins receive <strong>raw, unescaped content</strong>. You MUST escape it unless you explicitly trust it:</p>
 <pre><code class="language-javascript">// ❌ DANGEROUS - XSS vulnerability!
-function badPlugin(content, language) {
-  return `&lt;div&gt;${content}&lt;/div&gt;`; // content could contain &lt;script&gt;!
-}
+const badPlugin = {
+  render: (content, language) =&gt; {
+    return `&lt;div&gt;${content}&lt;/div&gt;`; // content could contain &lt;script&gt;!
+  }
+};
 
 // ✅ SAFE - Content is escaped
-function goodPlugin(content, language) {
-  return `&lt;div&gt;${escapeHtml(content)}&lt;/div&gt;`;
-}
+const goodPlugin = {
+  render: (content, language) =&gt; {
+    return `&lt;div&gt;${escapeHtml(content)}&lt;/div&gt;`;
+  }
+};
 
 // Helper function
 function escapeHtml(text) {
@@ -262,138 +290,148 @@ function escapeHtml(text) {
 </code></pre>
 <h3>Trusted HTML Rendering</h3>
 <p>If you need to render trusted HTML:</p>
-<pre><code class="language-javascript">function trustedHtmlPlugin(content, language) {
-  // Only allow for specific, trusted sources
-  if (language === &#39;html-preview&#39; &amp;&amp; isAdminUser()) {
-    // Sanitize even trusted content for defense-in-depth
-    return DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: [&#39;div&#39;, &#39;span&#39;, &#39;p&#39;, &#39;a&#39;, &#39;img&#39;],
-      ALLOWED_ATTR: [&#39;class&#39;, &#39;href&#39;, &#39;src&#39;, &#39;alt&#39;]
-    });
+<pre><code class="language-javascript">const trustedHtmlPlugin = {
+  render: (content, language) =&gt; {
+    // Only allow for specific, trusted sources
+    if (language === &#39;html-preview&#39; &amp;&amp; isAdminUser()) {
+      // Sanitize even trusted content for defense-in-depth
+      return DOMPurify.sanitize(content, {
+        ALLOWED_TAGS: [&#39;div&#39;, &#39;span&#39;, &#39;p&#39;, &#39;a&#39;, &#39;img&#39;],
+        ALLOWED_ATTR: [&#39;class&#39;, &#39;href&#39;, &#39;src&#39;, &#39;alt&#39;]
+      });
+    }
   }
-}
+};
 </code></pre>
 <h3>Validation Best Practices</h3>
 <p>Always validate and sanitize:</p>
-<pre><code class="language-javascript">function robustPlugin(content, language) {
-  // 1. Check language
-  if (![&#39;myformat&#39;].includes(language)) {
-    return undefined;
-  }
-  
-  // 2. Validate content
-  if (content.length &gt; 10000) {
-    return &#39;&lt;div class=&quot;error&quot;&gt;Content too large&lt;/div&gt;&#39;;
-  }
-  
-  // 3. Parse safely
-  try {
-    const data = parseContent(content);
-    
-    // 4. Validate parsed data
-    if (!isValidData(data)) {
-      throw new Error(&#39;Invalid data format&#39;);
+<pre><code class="language-javascript">const robustPlugin = {
+  render: (content, language) =&gt; {
+    // 1. Check language
+    if (![&#39;myformat&#39;].includes(language)) {
+      return undefined;
     }
     
-    // 5. Escape when rendering
-    return renderData(data, escapeHtml);
+    // 2. Validate content
+    if (content.length &gt; 10000) {
+      return &#39;&lt;div class=&quot;error&quot;&gt;Content too large&lt;/div&gt;&#39;;
+    }
     
-  } catch (error) {
-    // 6. Safe error handling
-    return `&lt;div class=&quot;error&quot;&gt;${escapeHtml(error.message)}&lt;/div&gt;`;
+    // 3. Parse safely
+    try {
+      const data = parseContent(content);
+      
+      // 4. Validate parsed data
+      if (!isValidData(data)) {
+        throw new Error(&#39;Invalid data format&#39;);
+      }
+      
+      // 5. Escape when rendering
+      return renderData(data, escapeHtml);
+      
+    } catch (error) {
+      // 6. Safe error handling
+      return `&lt;div class=&quot;error&quot;&gt;${escapeHtml(error.message)}&lt;/div&gt;`;
+    }
   }
-}
+};
 </code></pre>
 <h2>Multi-Language Plugin</h2>
 <p>Handle multiple languages in one plugin:</p>
-<pre><code class="language-javascript">function multiPlugin(content, language) {
-  switch (language) {
-    case &#39;graph&#39;:
-      return renderGraph(content);
-      
-    case &#39;music&#39;:
-      return renderMusicNotation(content);
-      
-    case &#39;csv&#39;:
-      return renderCSVTable(content);
-      
-    case &#39;diff&#39;:
-      return renderDiff(content);
-      
-    default:
-      // Check if it&#39;s a programming language
-      if (Prism.languages[language]) {
-        return renderSyntaxHighlight(content, language);
-      }
-      
-      // Fall back to default
-      return undefined;
+<pre><code class="language-javascript">const multiPlugin = {
+  render: (content, language) =&gt; {
+    switch (language) {
+      case &#39;graph&#39;:
+        return renderGraph(content);
+        
+      case &#39;music&#39;:
+        return renderMusicNotation(content);
+        
+      case &#39;csv&#39;:
+        return renderCSVTable(content);
+        
+      case &#39;diff&#39;:
+        return renderDiff(content);
+        
+      default:
+        // Check if it&#39;s a programming language
+        if (Prism.languages[language]) {
+          return renderSyntaxHighlight(content, language);
+        }
+        
+        // Fall back to default
+        return undefined;
+    }
   }
-}
+};
 </code></pre>
 <h2>Async Rendering</h2>
 <p>For async operations, return a placeholder and update later:</p>
-<pre><code class="language-javascript">function asyncPlugin(content, language) {
-  if (language === &#39;async-content&#39;) {
-    const id = &#39;async-&#39; + Date.now();
-    
-    // Schedule async operation
-    setTimeout(() =&gt; {
-      fetchContent(content).then(result =&gt; {
-        const element = document.getElementById(id);
-        if (element) {
-          element.innerHTML = result;
-        }
-      });
-    }, 0);
-    
-    // Return placeholder immediately
-    return `&lt;div id=&quot;${id}&quot; class=&quot;loading&quot;&gt;Loading...&lt;/div&gt;`;
+<pre><code class="language-javascript">const asyncPlugin = {
+  render: (content, language) =&gt; {
+    if (language === &#39;async-content&#39;) {
+      const id = &#39;async-&#39; + Date.now();
+      
+      // Schedule async operation
+      setTimeout(() =&gt; {
+        fetchContent(content).then(result =&gt; {
+          const element = document.getElementById(id);
+          if (element) {
+            element.innerHTML = result;
+          }
+        });
+      }, 0);
+      
+      // Return placeholder immediately
+      return `&lt;div id=&quot;${id}&quot; class=&quot;loading&quot;&gt;Loading...&lt;/div&gt;`;
+    }
   }
-}
+};
 </code></pre>
 <h2>Error Handling</h2>
 <p>Always handle errors gracefully:</p>
-<pre><code class="language-javascript">function safePlugin(content, language) {
-  try {
-    // Attempt to process
-    return processContent(content, language);
-    
-  } catch (error) {
-    // Log for debugging
-    console.error(`Plugin error for language &#39;${language}&#39;:`, error);
-    
-    // Return safe error message
-    return `
-      &lt;div class=&quot;plugin-error&quot;&gt;
-        &lt;strong&gt;Error rendering ${escapeHtml(language)} block:&lt;/strong&gt;
-        &lt;pre&gt;${escapeHtml(error.message)}&lt;/pre&gt;
-      &lt;/div&gt;
-    `;
+<pre><code class="language-javascript">const safePlugin = {
+  render: (content, language) =&gt; {
+    try {
+      // Attempt to process
+      return processContent(content, language);
+      
+    } catch (error) {
+      // Log for debugging
+      console.error(`Plugin error for language &#39;${language}&#39;:`, error);
+      
+      // Return safe error message
+      return `
+        &lt;div class=&quot;plugin-error&quot;&gt;
+          &lt;strong&gt;Error rendering ${escapeHtml(language)} block:&lt;/strong&gt;
+          &lt;pre&gt;${escapeHtml(error.message)}&lt;/pre&gt;
+        &lt;/div&gt;
+      `;
+    }
   }
-}
+};
 </code></pre>
 <h2>Testing Plugins</h2>
 <h3>Unit Testing</h3>
 <pre><code class="language-javascript">describe(&#39;myPlugin&#39;, () =&gt; {
   test(&#39;renders correct language&#39;, () =&gt; {
-    const result = myPlugin(&#39;content&#39;, &#39;mylang&#39;);
+    const result = myPlugin.render(&#39;content&#39;, &#39;mylang&#39;);
     expect(result).toContain(&#39;content&#39;);
   });
   
   test(&#39;returns undefined for unknown language&#39;, () =&gt; {
-    const result = myPlugin(&#39;content&#39;, &#39;unknown&#39;);
+    const result = myPlugin.render(&#39;content&#39;, &#39;unknown&#39;);
     expect(result).toBeUndefined();
   });
   
   test(&#39;escapes HTML in content&#39;, () =&gt; {
-    const result = myPlugin(&#39;&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;&#39;, &#39;mylang&#39;);
+    const result = myPlugin.render(&#39;&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;&#39;, &#39;mylang&#39;);
     expect(result).not.toContain(&#39;&lt;script&gt;&#39;);
     expect(result).toContain(&#39;&amp;lt;script&amp;gt;&#39;);
   });
   
   test(&#39;handles errors gracefully&#39;, () =&gt; {
-    const result = myPlugin(&#39;invalid{{content&#39;, &#39;mylang&#39;);
+    const result = myPlugin.render(&#39;invalid{{content&#39;, &#39;mylang&#39;);
     expect(result).toContain(&#39;error&#39;);
     expect(result).not.toThrow();
   });
@@ -408,52 +446,60 @@ function escapeHtml(text) {
 </code></pre>
 <h2>Performance Tips</h2>
 <h3>1. Early Returns</h3>
-<pre><code class="language-javascript">function fastPlugin(content, language) {
-  // Check language first (fast)
-  if (language !== &#39;mylang&#39;) return undefined;
-  
-  // Then validate content (slower)
-  if (!isValid(content)) return undefined;
-  
-  // Finally process (slowest)
-  return process(content);
-}
+<pre><code class="language-javascript">const fastPlugin = {
+  render: (content, language) =&gt; {
+    // Check language first (fast)
+    if (language !== &#39;mylang&#39;) return undefined;
+    
+    // Then validate content (slower)
+    if (!isValid(content)) return undefined;
+    
+    // Finally process (slowest)
+    return process(content);
+  }
+};
 </code></pre>
 <h3>2. Cache Expensive Operations</h3>
 <pre><code class="language-javascript">const cache = new Map();
 
-function cachedPlugin(content, language) {
-  if (language !== &#39;expensive&#39;) return undefined;
-  
-  const key = `${language}:${content}`;
-  if (cache.has(key)) {
-    return cache.get(key);
+const cachedPlugin = {
+  render: (content, language) =&gt; {
+    if (language !== &#39;expensive&#39;) return undefined;
+    
+    const key = `${language}:${content}`;
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    
+    const result = expensiveOperation(content);
+    cache.set(key, result);
+    return result;
   }
-  
-  const result = expensiveOperation(content);
-  cache.set(key, result);
-  return result;
-}
+};
 </code></pre>
 <h3>3. Limit Content Size</h3>
-<pre><code class="language-javascript">function limitedPlugin(content, language) {
-  if (content.length &gt; 50000) {
-    return &#39;&lt;div class=&quot;error&quot;&gt;Content too large&lt;/div&gt;&#39;;
+<pre><code class="language-javascript">const limitedPlugin = {
+  render: (content, language) =&gt; {
+    if (content.length &gt; 50000) {
+      return &#39;&lt;div class=&quot;error&quot;&gt;Content too large&lt;/div&gt;&#39;;
+    }
+    return processContent(content, language);
   }
-  return processContent(content, language);
-}
+};
 </code></pre>
 <h2>Plugin Composition</h2>
 <p>Combine multiple plugins:</p>
 <pre><code class="language-javascript">function combinePlugins(...plugins) {
-  return (content, language) =&gt; {
-    for (const plugin of plugins) {
-      const result = plugin(content, language);
-      if (result !== undefined) {
-        return result;
+  return {
+    render: (content, language) =&gt; {
+      for (const plugin of plugins) {
+        const result = plugin.render(content, language);
+        if (result !== undefined) {
+          return result;
+        }
       }
+      return undefined;
     }
-    return undefined;
   };
 }
 
@@ -467,29 +513,32 @@ const myPlugin = combinePlugins(
 </code></pre>
 <h2>Debugging Plugins</h2>
 <p>Add debug output:</p>
-<pre><code class="language-javascript">function debugPlugin(content, language) {
-  console.group(`Plugin called: ${language}`);
-  console.log(&#39;Content length:&#39;, content.length);
-  console.log(&#39;First 100 chars:&#39;, content.substring(0, 100));
-  
-  try {
-    const result = actualPlugin(content, language);
-    console.log(&#39;Result:&#39;, result ? &#39;HTML generated&#39; : &#39;undefined&#39;);
-    console.groupEnd();
-    return result;
-  } catch (error) {
-    console.error(&#39;Plugin error:&#39;, error);
-    console.groupEnd();
-    throw error;
+<pre><code class="language-javascript">const debugPlugin = {
+  render: (content, language) =&gt; {
+    console.group(`Plugin called: ${language}`);
+    console.log(&#39;Content length:&#39;, content.length);
+    console.log(&#39;First 100 chars:&#39;, content.substring(0, 100));
+    
+    try {
+      const result = actualPlugin.render(content, language);
+      console.log(&#39;Result:&#39;, result ? &#39;HTML generated&#39; : &#39;undefined&#39;);
+      console.groupEnd();
+      return result;
+    } catch (error) {
+      console.error(&#39;Plugin error:&#39;, error);
+      console.groupEnd();
+      throw error;
+    }
   }
-}
+};
 </code></pre>
 <h2>Real-World Example: Complete Plugin</h2>
 <p>Here&#39;s a production-ready plugin example:</p>
 <pre><code class="language-javascript">/**
  * Advanced code block plugin with multiple features
  */
-function advancedCodePlugin(content, language) {
+const advancedCodePlugin = {
+  render: (content, language) =&gt; {
   // Configuration
   const config = {
     maxSize: 100000,
@@ -559,7 +608,8 @@ function advancedCodePlugin(content, language) {
   html += &#39;&lt;/div&gt;&#39;;
   
   return html;
-}
+  }
+};
 
 // Helper function (should be in global scope)
 window.copyCode = function(id) {

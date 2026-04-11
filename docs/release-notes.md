@@ -1,6 +1,75 @@
 # Release Notes
 
-## v1.1.1 (Unreleased)
+## v1.2.3 (2026-04-08)
+
+### 🎯 New Features
+
+#### Editor Enhancements
+- **Preload fences**: New `preloadFences` constructor option for eager loading of fence libraries instead of lazy loading on first use
+- **Undo/Redo support**: Added undo/redo with configurable history via `showUndoRedo` and `undoStackSize` options; works for both source and preview-side (HTML) edits
+- **Lazy linefeeds toolbar button**: `showLazyLinefeeds` option adds a toolbar toggle for lazy linefeed mode
+- **Remove HR toolbar button**: `showRemoveHR` option adds a toolbar button to strip horizontal rules
+- **`convertLazyLinefeeds()` method**: Available as both an instance method and a static method for converting lazy linefeeds in markdown text
+- **`setTheme()` / `getTheme()` API**: Runtime theme switching without re-creating the editor
+- **Spellcheck disabled by default**: Both source and preview panes now have spellcheck off by default to avoid red squiggles in code
+
+#### Self-Contained Editor Styling
+- **Built-in CSS for headings, code, and pre**: Editor ships its own heading/code/pre styles so it is immune to parent page CSS bleed
+- **Highlight.js dark theme**: Automatically switches to `github-dark` when the editor is in dark mode
+- **Dark mode border fix**: Borders are now visible in dark mode
+
+### 🌐 Website Redesign
+- **7-page site**: Home, Edit, Examples, Docs, Downloads, Frameworks, Changelog
+- **Landing page editor**: Editor is mounted directly on the page (no iframe)
+- **Downloads page**: Build-generated file sizes, SRI hashes, and `.gz` files
+- **Frameworks page**: Integration patterns for React, Vue, Svelte, Angular, and vanilla JS
+- **Removed all CSS custom properties** from the site stylesheet for maximum browser compatibility
+
+### 🧹 Code Quality
+- **100% test coverage** on `quikdown.js` and `quikdown_bd.js` across all four metrics (statements, branches, functions, lines)
+- **Static badge pipeline**: Coverage badges generated from test results
+- **CI improvements**: Graceful tag-skip on unchanged version, OIDC-capable npm publish, workflow_dispatch support
+
+---
+
+## v1.2.2 (2025-12-15)
+
+### 🔧 CI/CD
+- Upgraded npm for OIDC publishing support
+- Added `workflow_dispatch` trigger for manual releases
+- Fixed release job for `workflow_dispatch` (tag_name and build step)
+- Fail loudly on duplicate version tag
+
+---
+
+## v1.2.1 (2025-12-14)
+
+### 🔧 CI/CD
+- Release pipeline refinements and version bump
+
+---
+
+## v1.2.0 (2025-12-13)
+
+### 🎯 New Features
+
+#### AST Companion Libraries
+- **`quikdown_ast`**: Parses markdown into a structured Abstract Syntax Tree (AST) representing headings, paragraphs, lists, code blocks, tables, and inline formatting
+- **`quikdown_ast_html`**: Converts a quikdown AST back to HTML, providing a two-stage parse-then-render pipeline
+- **`quikdown_json`**: Outputs markdown as a JSON structure for programmatic consumption and storage
+- **`quikdown_yaml`**: Outputs markdown as YAML for human-readable structured data
+
+#### TypeScript Support
+- TypeScript definitions (`.d.ts`) for all four new AST/JSON/YAML modules
+- Full type safety for AST node types and conversion options
+
+### 📦 Bundle Sizes
+- All four companion libraries are lightweight, zero-dependency modules
+- Designed to complement the core quikdown parser without increasing its bundle size
+
+---
+
+## v1.1.1
 
 ### 🎯 New Features
 

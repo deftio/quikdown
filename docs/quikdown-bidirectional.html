@@ -217,7 +217,7 @@ const markdown = quikdown_bd.toMarkdown(html);
 </ul>
 <h2>Performance</h2>
 <ul>
-<li><strong>Bundle Size</strong>: 12.5KB minified</li>
+<li><strong>Bundle Size</strong>: 14.1KB minified</li>
 <li><strong>Speed</strong>: ~1000 documents/second on modern hardware</li>
 <li><strong>Memory</strong>: Minimal overhead with DOM walking approach</li>
 <li><strong>Round-trip</strong>: &lt;5ms for typical documents</li>
@@ -244,10 +244,12 @@ editor.html.addEventListener(&#39;input&#39;, () =&gt; editor.updateMarkdown());
 </code></pre>
 <h3>With Syntax Highlighting</h3>
 <pre><code class="language-javascript">const options = {
-  fence_plugin: (code, lang) =&gt; {
-    if (lang &amp;&amp; window.hljs) {
-      const highlighted = hljs.highlight(code, { language: lang }).value;
-      return `&lt;pre&gt;&lt;code class=&quot;language-${lang}&quot;&gt;${highlighted}&lt;/code&gt;&lt;/pre&gt;`;
+  fence_plugin: {
+    render: (code, lang) =&gt; {
+      if (lang &amp;&amp; window.hljs) {
+        const highlighted = hljs.highlight(code, { language: lang }).value;
+        return `&lt;pre&gt;&lt;code class=&quot;language-${lang}&quot;&gt;${highlighted}&lt;/code&gt;&lt;/pre&gt;`;
+      }
     }
   }
 };
@@ -278,8 +280,10 @@ import type { QuikdownBDOptions } from &#39;quikdown/bd&#39;;
 
 const options: QuikdownBDOptions = {
   inline_styles: true,
-  fence_plugin: (code: string, lang: string) =&gt; {
-    return `&lt;pre class=&quot;${lang}&quot;&gt;${code}&lt;/pre&gt;`;
+  fence_plugin: {
+    render: (code: string, lang: string) =&gt; {
+      return `&lt;pre class=&quot;${lang}&quot;&gt;${code}&lt;/pre&gt;`;
+    }
   }
 };
 
@@ -287,7 +291,7 @@ const html: string = quikdown_bd(markdown, options);
 const md: string = quikdown_bd.toMarkdown(html);
 </code></pre>
 <h2>Version</h2>
-<p>quikdown_bd uses the same version as core quikdown: <strong>1.0.5</strong></p>
+<p>quikdown_bd uses the same version as core quikdown: <strong>1.2.3</strong></p>
 <h2>License</h2>
 <p>BSD-2-Clause - Same as quikdown core</p>
 

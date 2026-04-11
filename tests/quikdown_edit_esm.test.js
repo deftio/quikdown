@@ -1001,20 +1001,23 @@ This has \`inline code\` in it.
             customEditor.destroy();
         });
 
-        test('should handle resize observer and responsive behavior', async () => {
-            // Create an editor and trigger resize
+        test('should handle resize gracefully', async () => {
             const resizeEditor = new QuikdownEditor('#test-editor');
             await resizeEditor.initPromise;
-            
-            // Simulate container resize
-            Object.defineProperty(resizeEditor.container, 'offsetWidth', {
-                value: 500,
-                configurable: true
-            });
-            
-            // The editor should handle resize gracefully
+
+            // Simulate multiple container width changes
+            for (const w of [1440, 1024, 768, 375, 320]) {
+                Object.defineProperty(resizeEditor.container, 'offsetWidth', {
+                    value: w, configurable: true
+                });
+                // Mode transitions at each width should not throw
+                resizeEditor.setMode('split');
+                resizeEditor.setMode('source');
+                resizeEditor.setMode('preview');
+                resizeEditor.setMode('split');
+            }
+
             expect(resizeEditor.container).toBeDefined();
-            
             resizeEditor.destroy();
         });
 
@@ -1035,6 +1038,162 @@ This has \`inline code\` in it.
             }
             
             toolbarEditor.destroy();
+        });
+    });
+
+    describe('Responsiveness and parent-overflow', () => {
+        // Helper: create a fixed-size parent, mount editor inside it, return both.
+        function createSizedParent(width, height) {
+            const parent = document.createElement('div');
+            parent.id = 'sized-parent';
+            // Give the parent explicit dimensions so we can assert the editor
+            // stays within them.
+            Object.defineProperty(parent, 'offsetWidth',  { value: width,  configurable: true });
+            Object.defineProperty(parent, 'offsetHeight', { value: height, configurable: true });
+            Object.defineProperty(parent, 'clientWidth',  { value: width,  configurable: true });
+            Object.defineProperty(parent, 'clientHeight', { value: height, configurable: true });
+            const target = document.createElement('div');
+            target.id = 'resp-editor';
+            parent.appendChild(target);
+            document.body.appendChild(parent);
+            return { parent, target };
+        }
+
+        afterEach(() => {
+            const el = document.getElementById('sized-parent');
+            if (el) el.remove();
+        });
+
+        test('editor container dimensions do not exceed parent', async () => {
+            const { parent } = createSizedParent(800, 500);
+            const ed = new QuikdownEditor('#resp-editor', { mode: 'split' });
+            await ed.initPromise;
+
+            const qde = parent.querySelector('.qde-container');
+            expect(qde).not.toBeNull();
+
+            // The editor mounts inside the target element (or replaces its
+            // content). Either way, the parent must contain the editor.
+            expect(parent.contains(qde)).toBe(true);
+            ed.destroy();
+        });
+
+        test('mode transitions produce valid DOM structure at each width', async () => {
+            for (const width of [375, 768, 1024, 1440]) {
+                const { parent } = createSizedParent(width, 600);
+                const ed = new QuikdownEditor('#resp-editor', { mode: 'split' });
+                await ed.initPromise;
+
+                const qde = parent.querySelector('.qde-container');
+
+                // Split mode: both panes present
+                ed.setMode('split');
+                expect(qde.classList.contains('qde-mode-split')).toBe(true);
+                expect(qde.querySelector('.qde-source')).not.toBeNull();
+                expect(qde.querySelector('.qde-preview')).not.toBeNull();
+
+                // Source-only: preview hidden
+                ed.setMode('source');
+                expect(qde.classList.contains('qde-mode-source')).toBe(true);
+
+                // Preview-only: source hidden
+                ed.setMode('preview');
+                expect(qde.classList.contains('qde-mode-preview')).toBe(true);
+
+                // Back to split
+                ed.setMode('split');
+                expect(qde.classList.contains('qde-mode-split')).toBe(true);
+
+                ed.destroy();
+                document.getElementById('sized-parent')?.remove();
+            }
+        });
+
+        test('setMode does not wipe theme class', async () => {
+            const { parent } = createSizedParent(1024, 600);
+            const ed = new QuikdownEditor('#resp-editor', { mode: 'split', theme: 'dark' });
+            await ed.initPromise;
+
+            const qde = parent.querySelector('.qde-container');
+            expect(qde.classList.contains('qde-dark')).toBe(true);
+
+            ed.setMode('source');
+            expect(qde.classList.contains('qde-dark')).toBe(true);
+
+            ed.setMode('preview');
+            expect(qde.classList.contains('qde-dark')).toBe(true);
+
+            ed.setMode('split');
+            expect(qde.classList.contains('qde-dark')).toBe(true);
+
+            ed.destroy();
+        });
+
+        test('setTheme toggles dark class correctly', async () => {
+            const { parent } = createSizedParent(1024, 600);
+            const ed = new QuikdownEditor('#resp-editor', { mode: 'split', theme: 'light' });
+            await ed.initPromise;
+
+            const qde = parent.querySelector('.qde-container');
+            expect(qde.classList.contains('qde-dark')).toBe(false);
+
+            ed.setTheme('dark');
+            expect(qde.classList.contains('qde-dark')).toBe(true);
+
+            ed.setTheme('light');
+            expect(qde.classList.contains('qde-dark')).toBe(false);
+
+            ed.destroy();
+        });
+
+        test('editor injected CSS contains self-contained pre/code/heading styles', async () => {
+            const { parent } = createSizedParent(800, 500);
+            const ed = new QuikdownEditor('#resp-editor');
+            await ed.initPromise;
+
+            const styleEl = document.getElementById('qde-styles');
+            expect(styleEl).not.toBeNull();
+            const css = styleEl.textContent;
+
+            // Pre/code styles are self-contained (no external dependency)
+            expect(css).toContain('.qde-preview pre');
+            expect(css).toContain('.qde-preview code');
+            expect(css).toContain('.qde-preview pre code');
+
+            // Dark mode pre/code
+            expect(css).toContain('.qde-dark .qde-preview pre');
+            expect(css).toContain('.qde-dark .qde-preview code');
+
+            // Heading resets
+            expect(css).toContain('.qde-preview h1');
+            expect(css).toContain('.qde-preview h2');
+            expect(css).toContain('.qde-preview h3');
+
+            // Headings use plain styling (no border, color inherit)
+            expect(css).toContain('color: inherit');
+            expect(css).toContain('border: none');
+
+            ed.destroy();
+        });
+
+        test('editor with content does not change container structure on setMarkdown', async () => {
+            const { parent } = createSizedParent(1024, 600);
+            const ed = new QuikdownEditor('#resp-editor', { mode: 'split' });
+            await ed.initPromise;
+
+            const qde = parent.querySelector('.qde-container');
+            const childCountBefore = qde.children.length;
+
+            // Set a large amount of content
+            ed.setMarkdown('# Big doc\n\n' + 'paragraph\n\n'.repeat(100) +
+                '```js\nconsole.log("code");\n```\n\n' +
+                '| a | b |\n|---|---|\n| 1 | 2 |\n');
+
+            // Container structure should not change
+            expect(qde.children.length).toBe(childCountBefore);
+            expect(qde.classList.contains('qde-mode-split')).toBe(true);
+
+            ed.destroy();
         });
     });
 });

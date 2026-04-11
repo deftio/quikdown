@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reverse fence handlers — Bidirectional example 6 · quikdown</title>
+  <meta name="description" content="Implement a fence plugin with both render and reverse so a custom fence type round-trips through bidirectional editing without losing its source.">
+  <meta name="keywords" content="quikdown_bd reverse, fence reverse handler, markdown round trip plugin, bidirectional fence">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/examples/bd-fence-reverse.html">
+  <link rel="icon" type="image/svg+xml" href="/quikdown/favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Reverse fence handlers — quikdown_bd">
+  <meta property="og:description" content="Bidirectional fence plugins: render + reverse for round-trip safety.">
+
+  <link rel="stylesheet" href="/quikdown/site/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header h1 {
+      font-size: 1.8rem; margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98); border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 { margin: 0 0 0.75rem 0; font-size: 1.05rem; }
+    .three-pane { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+    @media (max-width: 1000px) { .three-pane { grid-template-columns: 1fr; } }
+    .pane-source-textarea {
+      width: 100%; min-height: 320px; padding: 1rem;
+      border: 1px solid #e6e8ee; border-radius: 6px;
+      font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; font-size: 0.82rem;
+      background: #ffffff; color: #1f2937; outline: none; resize: vertical;
+    }
+    .pane-output {
+      min-height: 320px; max-height: 50vh; overflow-y: auto;
+      padding: 1rem; border: 1px solid #e6e8ee;
+      border-radius: 6px; background: white; font-size: 0.85rem;
+    }
+    body.qd-theme-dark .pane-output { background: #181828; }
+    .pane-output[contenteditable="true"]:focus {
+      border-color: #9550bb;
+      box-shadow: 0 0 0 3px #f3e6ff;
+      outline: none;
+    }
+    .quote-card {
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin: 0.8rem 0;
+      background: linear-gradient(135deg, #f3e6ff, #e6d1ff);
+      border-left: 4px solid #9550bb;
+      font-style: italic;
+      color: #4a2d8f;
+    }
+    .quote-card-author {
+      display: block; margin-top: 0.4rem;
+      font-style: normal; font-size: 0.85rem;
+      color: #6b7280;
+    }
+    body.qd-theme-dark .quote-card {
+      background: rgba(149, 80, 187, 0.18); color: #d9b3ff;
+    }
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="/quikdown/examples/">Examples</a> › Track 2 — Bidirectional › Example 6</div>
+        <h1>Reverse fence handlers</h1>
+        <p style="color: #4b5563;">
+          A fence plugin with <code>render</code> alone is forward-only — once the fence is rendered to HTML, the source is lost. Add a <code>reverse(node)</code> handler and the fence round-trips through <code>quikdown_bd</code> safely. Below: a custom <code>quote</code> fence that round-trips.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>Live three-pane round-trip</h2>
+        <div class="three-pane">
+          <div>
+            <h3 style="font-size:0.78rem; color:#9550bb; text-transform:uppercase; letter-spacing:0.08em; margin:0 0 0.4rem 0;">1. Source</h3>
+            <textarea id="src" class="pane-source-textarea" spellcheck="false"></textarea>
+          </div>
+          <div>
+            <h3 style="font-size:0.78rem; color:#9550bb; text-transform:uppercase; letter-spacing:0.08em; margin:0 0 0.4rem 0;">2. Rendered (editable)</h3>
+            <div id="preview" class="pane-output" contenteditable="true"></div>
+          </div>
+          <div>
+            <h3 style="font-size:0.78rem; color:#9550bb; text-transform:uppercase; letter-spacing:0.08em; margin:0 0 0.4rem 0;">3. Markdown back</h3>
+            <pre id="back" style="font-family:ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; font-size:0.82rem; min-height:320px; max-height:50vh; overflow:auto; padding:1rem; background:#ffffff; border:1px solid #e6e8ee; border-radius:6px; margin:0; white-space:pre-wrap;"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>The plugin</h2>
+<pre><code>const quoteFencePlugin = {
+  // Forward: render the fence to HTML.
+  // Stash the original source on data-qd-source so reverse() can find it.
+  render(content, lang) {
+    if (lang !== 'quote') return undefined;
+    const escaped = content.replace(/"/g, '&amp;quot;');
+    return `&lt;blockquote class="quote-card" data-qd-fence="\`\`\`" data-qd-lang="quote" data-qd-source="${escaped}"&gt;` +
+      content.trim() +
+      `&lt;/blockquote&gt;`;
+  },
+
+  // Reverse: read the source attribute and reconstruct the fence.
+  reverse(node) {
+    if (!node.classList?.contains('quote-card')) return null;
+    const source = node.getAttribute('data-qd-source') || node.textContent;
+    return { fence: '\`\`\`', lang: 'quote', content: source };
+  }
+};
+
+// Use it on both forward and reverse calls — same plugin object.
+const html = quikdown_bd(md, { fence_plugin: quoteFencePlugin });
+const md2  = quikdown_bd.toMarkdown(htmlOrEl, { fence_plugin: quoteFencePlugin });</code></pre>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="/quikdown/examples/bd-roundtrip.html">← Previous: Round-trip basics</a>
+        <a href="/quikdown/examples/bd-tables-and-fences.html">Next: Tables &amp; fences →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import quikdown_bd from '/quikdown/dist/quikdown_bd.esm.js';
+
+    const quoteFencePlugin = {
+      render(content, lang) {
+        if (lang !== 'quote') return undefined;
+        const escaped = content.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        return '<blockquote class="quote-card" data-qd-fence="```" data-qd-lang="quote" data-qd-source="' + escaped + '">' +
+          content.trim().replace(/</g, '&lt;') +
+          '</blockquote>';
+      },
+      reverse(node) {
+        if (!node.classList || !node.classList.contains('quote-card')) return null;
+        const source = node.getAttribute('data-qd-source') || node.textContent;
+        return { fence: '```', lang: 'quote', content: source };
+      }
+    };
+
+    const src = document.getElementById('src');
+    const preview = document.getElementById('preview');
+    const back = document.getElementById('back');
+
+    src.value = `# Reverse-aware fence
+
+A custom **quote** fence with both render and reverse handlers.
+
+\`\`\`quote
+The best way to predict the future is to invent it.
+— Alan Kay
+\`\`\`
+
+\`\`\`quote
+Make it work, make it right, make it fast.
+— Kent Beck
+\`\`\`
+
+Edit the middle pane — even reword the rendered quote — and the right pane will reconstruct the markdown including the \`quote\` fences.`;
+
+    function renderForward() {
+      preview.innerHTML = quikdown_bd(src.value, { fence_plugin: quoteFencePlugin });
+      renderBack();
+    }
+    function renderBack() {
+      back.textContent = quikdown_bd.toMarkdown(preview, { fence_plugin: quoteFencePlugin });
+    }
+    src.addEventListener('input', renderForward);
+    preview.addEventListener('input', renderBack);
+    renderForward();
+  </script>
+  <script src="/quikdown/site/scripts/example-page.js" defer></script>
+</body>
+</html>

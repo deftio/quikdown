@@ -52,12 +52,8 @@ jobs:
         test -f dist/quikdown_yaml.esm.js
         test -f dist/quikdown_ast_html.esm.js
 
-    - name: Upload coverage to Codecov
-      if: matrix.node-version == '20.x'
-      uses: codecov/codecov-action@v4
-      with:
-        fail_ci_if_error: false
-        verbose: true
+    # Coverage is baked into the README badge by `npm test` via
+    # tools/updateBadges.js — no external coverage service needed.
 
   # Auto-tag job: creates a vX.Y.Z git tag if package.json version is new.
   # Skips gracefully (does NOT fail) when the version is unchanged — this lets

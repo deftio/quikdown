@@ -197,7 +197,7 @@ const markdown = quikdown_bd.toMarkdown(html);
 
 ## Performance
 
-- **Bundle Size**: 12.5KB minified
+- **Bundle Size**: 14.1KB minified
 - **Speed**: ~1000 documents/second on modern hardware
 - **Memory**: Minimal overhead with DOM walking approach
 - **Round-trip**: <5ms for typical documents
@@ -228,10 +228,12 @@ editor.html.addEventListener('input', () => editor.updateMarkdown());
 ### With Syntax Highlighting
 ```javascript
 const options = {
-  fence_plugin: (code, lang) => {
-    if (lang && window.hljs) {
-      const highlighted = hljs.highlight(code, { language: lang }).value;
-      return `<pre><code class="language-${lang}">${highlighted}</code></pre>`;
+  fence_plugin: {
+    render: (code, lang) => {
+      if (lang && window.hljs) {
+        const highlighted = hljs.highlight(code, { language: lang }).value;
+        return `<pre><code class="language-${lang}">${highlighted}</code></pre>`;
+      }
     }
   }
 };
@@ -268,8 +270,10 @@ import type { QuikdownBDOptions } from 'quikdown/bd';
 
 const options: QuikdownBDOptions = {
   inline_styles: true,
-  fence_plugin: (code: string, lang: string) => {
-    return `<pre class="${lang}">${code}</pre>`;
+  fence_plugin: {
+    render: (code: string, lang: string) => {
+      return `<pre class="${lang}">${code}</pre>`;
+    }
   }
 };
 
@@ -279,7 +283,7 @@ const md: string = quikdown_bd.toMarkdown(html);
 
 ## Version
 
-quikdown_bd uses the same version as core quikdown: **1.0.5**
+quikdown_bd uses the same version as core quikdown: **1.2.3**
 
 ## License
 

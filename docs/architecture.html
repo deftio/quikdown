@@ -68,7 +68,7 @@
 <h2>Design Philosophy</h2>
 <p>quikdown is designed with these core principles:</p>
 <ol>
-<li><strong>Small &amp; Fast</strong> - Optimized for size (~8.5KB minified) and performance</li>
+<li><strong>Small &amp; Fast</strong> - Optimized for size (~9.3KB minified) and performance</li>
 <li><strong>Secure by Default</strong> - All HTML is escaped unless explicitly trusted</li>
 <li><strong>Zero Dependencies</strong> - No external libraries required</li>
 <li><strong>Extensible</strong> - Plugin system for custom rendering</li>
@@ -96,8 +96,8 @@ Output HTML
 <h3>Phase 1: Extract &amp; Protect</h3>
 <p>Before any processing, we extract code blocks and inline code, replacing them with placeholders:</p>
 <ul>
-<li><strong>Fenced code blocks</strong> → <code>%%%CODEBLOCK0%%%</code>, <code>%%%CODEBLOCK1%%%</code>, etc.</li>
-<li><strong>Inline code</strong> → <code>%%%INLINECODE0%%%</code>, <code>%%%INLINECODE1%%%</code>, etc.</li>
+<li><strong>Fenced code blocks</strong> → <code>§CB0§</code>, <code>§CB1§</code>, etc.</li>
+<li><strong>Inline code</strong> → <code>§IC0§</code>, <code>§IC1§</code>, etc.</li>
 </ul>
 <p>This prevents code content from being processed as markdown and ensures special characters remain intact.</p>
 <h3>Phase 2: HTML Escaping</h3>
@@ -152,11 +152,13 @@ Output HTML
 <h3>Why No HTML Passthrough?</h3>
 <p>By default, all HTML is escaped for security. However, trusted HTML can be rendered using the fence plugin system:</p>
 <pre><code class="language-javascript">// Controlled HTML rendering via fence blocks
-const plugin = (content, lang) =&gt; {
-  if (lang === &#39;html-render&#39;) {
-    return content; // Trust this specific block
+const plugin = {
+  render: (content, lang) =&gt; {
+    if (lang === &#39;html-render&#39;) {
+      return content; // Trust this specific block
+    }
+    return undefined; // Use default escaping
   }
-  return undefined; // Use default escaping
 };
 </code></pre>
 <p>This makes trust explicit and granular.</p>
@@ -190,11 +192,13 @@ const plugin = (content, lang) =&gt; {
 <h2>Extensibility Points</h2>
 <h3>1. Fence Plugin System</h3>
 <p>Custom renderers for fenced code blocks:</p>
-<pre><code class="language-javascript">function myPlugin(content, language) {
-  // content: Raw, unescaped content
-  // language: The language identifier (if any)
-  // Return: HTML string or undefined (fall back to default)
-}
+<pre><code class="language-javascript">const myPlugin = {
+  render: (content, language) =&gt; {
+    // content: Raw, unescaped content
+    // language: The language identifier (if any)
+    // Return: HTML string or undefined (fall back to default)
+  }
+};
 </code></pre>
 <h3>2. Style Options</h3>
 <ul>

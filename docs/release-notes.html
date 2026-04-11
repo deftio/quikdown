@@ -65,7 +65,75 @@
 <body>
     <article class="markdown-body">
         <h1>Release Notes</h1>
-<h2>v1.1.1 (Unreleased)</h2>
+<h2>v1.2.3 (2026-04-08)</h2>
+<h3>🎯 New Features</h3>
+<h4>Editor Enhancements</h4>
+<ul>
+<li><strong>Preload fences</strong>: New <code>preloadFences</code> constructor option for eager loading of fence libraries instead of lazy loading on first use</li>
+<li><strong>Undo/Redo support</strong>: Added undo/redo with configurable history via <code>showUndoRedo</code> and <code>undoStackSize</code> options; works for both source and preview-side (HTML) edits</li>
+<li><strong>Lazy linefeeds toolbar button</strong>: <code>showLazyLinefeeds</code> option adds a toolbar toggle for lazy linefeed mode</li>
+<li><strong>Remove HR toolbar button</strong>: <code>showRemoveHR</code> option adds a toolbar button to strip horizontal rules</li>
+<li><strong><code>convertLazyLinefeeds()</code> method</strong>: Available as both an instance method and a static method for converting lazy linefeeds in markdown text</li>
+<li><strong><code>setTheme()</code> / <code>getTheme()</code> API</strong>: Runtime theme switching without re-creating the editor</li>
+<li><strong>Spellcheck disabled by default</strong>: Both source and preview panes now have spellcheck off by default to avoid red squiggles in code</li>
+</ul>
+<h4>Self-Contained Editor Styling</h4>
+<ul>
+<li><strong>Built-in CSS for headings, code, and pre</strong>: Editor ships its own heading/code/pre styles so it is immune to parent page CSS bleed</li>
+<li><strong>Highlight.js dark theme</strong>: Automatically switches to <code>github-dark</code> when the editor is in dark mode</li>
+<li><strong>Dark mode border fix</strong>: Borders are now visible in dark mode</li>
+</ul>
+<h3>🌐 Website Redesign</h3>
+<ul>
+<li><strong>7-page site</strong>: Home, Edit, Examples, Docs, Downloads, Frameworks, Changelog</li>
+<li><strong>Landing page editor</strong>: Editor is mounted directly on the page (no iframe)</li>
+<li><strong>Downloads page</strong>: Build-generated file sizes, SRI hashes, and <code>.gz</code> files</li>
+<li><strong>Frameworks page</strong>: Integration patterns for React, Vue, Svelte, Angular, and vanilla JS</li>
+<li><strong>Removed all CSS custom properties</strong> from the site stylesheet for maximum browser compatibility</li>
+</ul>
+<h3>🧹 Code Quality</h3>
+<ul>
+<li><strong>100% test coverage</strong> on <code>quikdown.js</code> and <code>quikdown_bd.js</code> across all four metrics (statements, branches, functions, lines)</li>
+<li><strong>Static badge pipeline</strong>: Coverage badges generated from test results</li>
+<li><strong>CI improvements</strong>: Graceful tag-skip on unchanged version, OIDC-capable npm publish, workflow_dispatch support</li>
+</ul>
+<hr>
+<h2>v1.2.2 (2025-12-15)</h2>
+<h3>🔧 CI/CD</h3>
+<ul>
+<li>Upgraded npm for OIDC publishing support</li>
+<li>Added <code>workflow_dispatch</code> trigger for manual releases</li>
+<li>Fixed release job for <code>workflow_dispatch</code> (tag_name and build step)</li>
+<li>Fail loudly on duplicate version tag</li>
+</ul>
+<hr>
+<h2>v1.2.1 (2025-12-14)</h2>
+<h3>🔧 CI/CD</h3>
+<ul>
+<li>Release pipeline refinements and version bump</li>
+</ul>
+<hr>
+<h2>v1.2.0 (2025-12-13)</h2>
+<h3>🎯 New Features</h3>
+<h4>AST Companion Libraries</h4>
+<ul>
+<li><strong><code>quikdown_ast</code></strong>: Parses markdown into a structured Abstract Syntax Tree (AST) representing headings, paragraphs, lists, code blocks, tables, and inline formatting</li>
+<li><strong><code>quikdown_ast_html</code></strong>: Converts a quikdown AST back to HTML, providing a two-stage parse-then-render pipeline</li>
+<li><strong><code>quikdown_json</code></strong>: Outputs markdown as a JSON structure for programmatic consumption and storage</li>
+<li><strong><code>quikdown_yaml</code></strong>: Outputs markdown as YAML for human-readable structured data</li>
+</ul>
+<h4>TypeScript Support</h4>
+<ul>
+<li>TypeScript definitions (<code>.d.ts</code>) for all four new AST/JSON/YAML modules</li>
+<li>Full type safety for AST node types and conversion options</li>
+</ul>
+<h3>📦 Bundle Sizes</h3>
+<ul>
+<li>All four companion libraries are lightweight, zero-dependency modules</li>
+<li>Designed to complement the core quikdown parser without increasing its bundle size</li>
+</ul>
+<hr>
+<h2>v1.1.1</h2>
 <h3>🎯 New Features</h3>
 <h4>Enhanced Copy-as-Rich-Text</h4>
 <ul>

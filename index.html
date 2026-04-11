@@ -1,268 +1,485 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>quikdown - Lightweight Markdown Parser - quikdown Documentation</title>
-    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
-    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
-    <style>
-        body {
-            box-sizing: border-box;
-            min-width: 200px;
-            max-width: 980px;
-            margin: 0 auto;
-            padding: 45px;
-        }
-        .markdown-body {
-            box-sizing: border-box;
-            min-width: 200px;
-            max-width: 980px;
-            margin: 0 auto;
-        }
-        @media (max-width: 767px) {
-            body { padding: 15px; }
-        }
-        /* Ensure emojis display properly */
-        .markdown-body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-        }
-        /* Code block styling */
-        pre {
-            background-color: #f6f8fa;
-            border-radius: 6px;
-            padding: 16px;
-            overflow: auto;
-        }
-        code {
-            background-color: rgba(175, 184, 193, 0.2);
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
-            font-size: 85%;
-        }
-        pre code {
-            background-color: transparent;
-            padding: 0;
-        }
-        /* Table styling */
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 16px;
-            margin-bottom: 16px;
-        }
-        table th, table td {
-            border: 1px solid #d0d7de;
-            padding: 6px 13px;
-        }
-        table tr:nth-child(2n) {
-            background-color: #f6f8fa;
-        }
-    </style>
-    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
-    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>quikdown — Markdown done right. From parser to editor.</title>
+  <meta name="description" content="Tiny, secure markdown for browsers and Node — with a drop-in editor that handles everything from Mermaid diagrams to MathJax equations to GeoJSON maps. Parser and bidirectional modules have zero runtime dependencies.">
+  <meta name="keywords" content="markdown parser, markdown editor, javascript markdown, secure markdown, xss protection, mermaid editor, mathjax editor, dillinger alternative, embedded markdown editor, headless markdown editor, bidirectional markdown">
+  <meta name="author" content="deftio@deftio.com">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/">
+  <link rel="icon" type="image/svg+xml" href="/quikdown/favicon.svg">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="quikdown">
+  <meta property="og:title" content="quikdown — Markdown done right. From parser to editor.">
+  <meta property="og:description" content="Tiny, secure markdown for browsers and Node. Includes a drop-in editor with bidirectional editing, Mermaid, MathJax, GeoJSON, and more.">
+  <meta property="og:url" content="https://deftio.github.io/quikdown/">
+  <meta property="og:image" content="https://deftio.github.io/quikdown/site/assets/og-landing.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="quikdown — Markdown done right">
+  <meta name="twitter:description" content="A tiny markdown parser with a drop-in editor for browsers and Node. Mermaid, MathJax, SVG, GeoJSON. Zero deps.">
+  <meta name="twitter:image" content="https://deftio.github.io/quikdown/site/assets/og-landing.png">
+
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareSourceCode",
+    "name": "quikdown",
+    "description": "Tiny, secure markdown parser and drop-in editor for browsers and Node.",
+    "codeRepository": "https://github.com/deftio/quikdown",
+    "programmingLanguage": "JavaScript",
+    "license": "https://opensource.org/licenses/BSD-2-Clause",
+    "softwareVersion": "1.2.3",
+    "author": { "@type": "Person", "name": "deftio" }
+  }
+  </script>
+
+  <link rel="stylesheet" href="/quikdown/site/styles/quikdown-site.css">
 </head>
-<body>
-    <article class="markdown-body">
-        <h1>quikdown</h1>
-<p><a href="https://github.com/deftio/quikdown/actions/workflows/ci.yml"><img src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" alt="CI"></a><br><a href="https://www.npmjs.com/package/quikdown"><img src="https://img.shields.io/npm/v/quikdown.svg" alt="npm version"></a><br><a href="https://github.com/deftio/quikdown"><img src="https://img.shields.io/badge/coverage-99%25-blue.svg" alt="Coverage Status"></a><br><a href="https://opensource.org/licenses/BSD-2-Clause"><img src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" alt="License: BSD-2-Clause"></a></p>
-<p>Quikdown is a small, secure markdown parser with bidirectional conversion. Zero dependencies, XSS protection built-in, extensible via plugins for code highlighting and diagrams, and works in browser and Node.js.</p>
-<p>For small and fast projects quikdown includes built-in inline styles for a &quot;batteries included&quot; rendering experience, but these can be overridden with themed css (see light and dark examples).</p>
-<ul>
-<li><strong>quikdown.js</strong> (9.0KB) - Markdown to HTML Parser with theme support, XSS protection, fence callbacks</li>
-<li><strong>quikdown_bd.js</strong> (13.8KB) - Bidirectional (HTML ↔ Markdown) Parser</li>
-<li><strong>quikdown_edit.js</strong> (68.0KB) - Drop-in editor component with live preview, copy-as-rich-text, and lazy-loaded fence handlers</li>
-</ul>
-<p>🚀 <strong><a href="https://deftio.github.io/quikdown/examples/quikdown-live.html">Live Demo</a></strong> | <strong><a href="https://deftio.github.io/quikdown/examples/qde/">Editor Demo</a></strong> | <strong><a href="docs/">Documentation</a></strong></p>
-<p>📍 <strong>Quick Links:</strong> <a href="#installation">Installation</a> • <a href="#quick-start">Quick Start</a> • <a href="#api-reference">API</a> • <a href="#typescript-support">TypeScript</a> • <a href="#fence-plugins">Plugins</a> • <a href="examples/">Examples</a></p>
-<h2>Features</h2>
-<ul>
-<li>📦 <strong>Zero dependencies</strong> - No external libraries required</li>
-<li>🌐 <strong>Universal</strong> - Works in browsers and Node.js</li>
-<li>🚀 <strong>Lightweight</strong> - 9.0KB (core), 13.8KB (bidirectional), 68.0KB (editor)</li>
-<li>🔒 <strong>Secure by default</strong> - Built-in XSS protection with URL sanitization</li>
-<li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes with theme support</li>
-<li>🔌 <strong>Plugin system</strong> - Extensible fence block handlers</li>
-<li>⚡ <strong>Fast</strong> - Optimized regex-based parsing</li>
-<li>📝 <strong>CommonMark subset</strong> - Essential markdown features</li>
-<li>✅ <strong>Task Lists</strong> - GitHub-style checkboxes</li>
-<li>🔗 <strong>Autolinks</strong> - Automatic URL detection</li>
-<li>🔄 <strong>Bidirectional</strong> - Convert HTML back to Markdown (quikdown_bd)</li>
-<li>💬 <strong>Lazy linefeeds</strong> - Single newlines become line breaks (configurable)</li>
-<li>📱 <strong>Editor component</strong> - Drop-in markdown editor with live preview</li>
-</ul>
-<h2>Installation</h2>
-<p>Quikdown is available via <a href="https://www.npmjs.com/package/quikdown">NPM</a> and related <a href="https://unpkg.com/quikdown">unpkg</a> and <a href="https://cdn.jsdelivr.net/npm/quikdown">jsdelivr</a></p>
-<h3>NPM package</h3>
-<pre><code class="language-bash">npm install quikdown
-</code></pre>
-<h3>CDN using UNPKG</h3>
-<p><strong>CDN (ES Modules):</strong></p>
-<pre><code class="language-html">&lt;script type=&quot;module&quot;&gt;
-  import quikdown from &#39;https://unpkg.com/quikdown/dist/quikdown.esm.min.js&#39;;
-  document.body.innerHTML = quikdown(&#39;# Hello World&#39;);
-&lt;/script&gt;
-</code></pre>
-<p><strong>CDN (UMD):</strong></p>
-<pre><code class="language-html">&lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown.umd.min.js&quot;&gt;&lt;/script&gt;
-&lt;script&gt;
-  document.body.innerHTML = quikdown(&#39;# Hello World&#39;);
-&lt;/script&gt;
-</code></pre>
-<h2>Quick Start</h2>
-<p>Quikdown is built in 3 versions. The smallest (quikdown) provides markdown to html conversion only.  The next (quikdown_bd) provides markdown to html and html to markdown support.  The lightweight editor quikdown_edit allows a bidirectional editor with lazy loading for common fences such as codeblocks, svg, and mermaid diagrams is also provided.</p>
-<h3>Markdown → HTML (quikdown.js)</h3>
-<pre><code class="language-javascript">// Basic conversion
-const html = quikdown(&#39;# Hello World&#39;,
-    {inline_styles: true}  // Use inline styles,  more options in API docs
-);
+<body class="qd-theme-dark">
+  <nav class="qd-nav" aria-label="Main navigation">
+  <div class="qd-nav-inner">
+    <a class="qd-nav-brand" href="/quikdown/" aria-label="quikdown home">
+      <img class="qd-nav-brand-icon" src="/quikdown/site/assets/logo-nav.svg" alt="" aria-hidden="true">
+      <span class="qd-nav-brand-text">quikdown</span>
+      <span class="qd-nav-brand-version">v1.2.3</span>
+    </a>
+    <div class="qd-nav-links">
+      <a class="qd-nav-link" data-nav="home" href="/quikdown/">Home</a>
+      <a class="qd-nav-link" data-nav="examples" href="/quikdown/examples/">Examples</a>
+      <a class="qd-nav-link" data-nav="frameworks" href="/quikdown/frameworks/">Frameworks</a>
+      <a class="qd-nav-link" data-nav="docs" href="/quikdown/docs/">Docs</a>
+      <a class="qd-nav-link" data-nav="downloads" href="/quikdown/downloads/">Downloads</a>
+      <a class="qd-nav-link" data-nav="changelog" href="/quikdown/changelog/">Changelog</a>
+      <a class="qd-nav-link" href="https://github.com/deftio/quikdown" rel="noopener" target="_blank">GitHub</a>
+      <a class="qd-nav-link qd-nav-cta" data-nav="edit" href="/quikdown/edit/">Try Editor</a>
+      <button class="qd-nav-theme-btn" id="qd-theme-toggle" type="button" aria-label="Toggle theme" title="Cycle theme: dark → light → auto">
+        <span id="qd-theme-icon">🌙</span>
+      </button>
+    </div>
+  </div>
+</nav>
 
-document.body.innerHTML = html;
-</code></pre>
-<h3>Bidirectional Markdown ↔  HTML (quikdown_bd.js)</h3>
-<pre><code class="language-javascript">// Convert with source tracking
-const htmlString = quikdown_bd(markdown, options);
 
-// Convert HTML back to Markdown
-const markdown = quikdown_bd.toMarkdown(htmlString);
-</code></pre>
-<p>Note: quikdown does not provide a <em>generic</em> html to markdown conversion but uses special tags and limited DOM parsing for HTML to markdown conversion.  Standard markdown components such as headings, text styles, tables, quotes, etc are supported.  For custom fences quikdown relies on its tag system or 3rd party handlers to provide reverse (html to md) conversion.</p>
-<h3>Editor (quikdown_edit.js)</h3>
-<pre><code class="language-javascript">const editor = new QuikdownEditor(&#39;#container&#39;, {
-  mode: &#39;split&#39;,           // &#39;source&#39;, &#39;split&#39;, &#39;preview&#39; 
-  theme: &#39;auto&#39;,           // &#39;light&#39;, &#39;dark&#39;, &#39;auto&#39;
-  plugins: { highlightjs: true, mermaid: true } // built-in fence handlers, see API docs for custom plugins
-});
+  <main>
 
-editor.setMarkdown(&#39;# Content  \nTo be quik or not to be.&#39;);  // provide default content
-const content = editor.getMarkdown(); // get source content, see APIs for getting / setting HTML 
-</code></pre>
-<p><strong>Note:</strong> The editor automatically lazy-loads plugin libraries from CDNs when needed:</p>
-<ul>
-<li><strong>highlight.js</strong> - Loaded when code blocks are encountered and <code>highlightjs: true</code></li>
-<li><strong>mermaid</strong> - Loaded when mermaid diagrams are found and <code>mermaid: true</code></li>
-<li><strong>DOMPurify</strong> - Loaded when HTML fence blocks are rendered</li>
-<li><strong>KaTeX</strong> - Loaded when math/tex fence blocks are encountered</li>
-</ul>
-<p>This keeps the initial bundle small while providing rich functionality on-demand.</p>
-<h2>Other Configuration Options</h2>
-<p>quikdown supports built-in styles for a &quot;batteries included&quot; experience or you can bring your own CSS themes.  Example css files are provided for basic light and dark themes to get started.</p>
-<pre><code class="language-javascript">const html = quikdown(markdown, {
-  lazy_linefeeds: true,    // Single newlines become &lt;br&gt;
-  inline_styles: false,    // Use class based CSS instead of inline styles
-  fence_plugin: {          // Custom code block processor (v1.1.0+ API)
-    render: myHandler      // Function to render fence blocks
-  }
-});
-</code></pre>
-<h3>Styling Options</h3>
-<p><strong>Inline styles:</strong> All formatting uses inline CSS</p>
-<pre><code class="language-javascript">quikdown(&#39;**bold**&#39;, { inline_styles: true });
-// &lt;strong style=&quot;font-weight: bold;&quot;&gt;bold&lt;/strong&gt;
-</code></pre>
-<p><strong>Class-based styling:</strong> Uses CSS classes (default)</p>
-<pre><code class="language-javascript">quikdown(&#39;**bold**&#39;);
-// &lt;strong&gt;bold&lt;/strong&gt;
-// Requires CSS: .quikdown strong { font-weight: bold; }
-// see included dist/quikdown.light.css or quikdown.dark.css
-</code></pre>
-<h3>Fence Plugins</h3>
-<p>Quikdown provides a callback for all fenced text such as code blocks, math, svg etc.</p>
-<p>Handle code blocks with custom languages:</p>
-<pre><code class="language-javascript">const fencePlugin = {
-  render: (code, language) =&gt; {
-    if (language === &#39;mermaid&#39;) {
-      // Process with mermaid library and return rendered diagram
-      const id = &#39;mermaid-&#39; + Math.random().toString(36).substr(2, 9);
-      setTimeout(() =&gt; mermaid.render(id + &#39;-svg&#39;, code).then(result =&gt; {
-        document.getElementById(id).innerHTML = result.svg;
-      }), 0);
-      return `&lt;div id=&quot;${id}&quot; class=&quot;mermaid&quot;&gt;Loading diagram...&lt;/div&gt;`;
+    <!-- ============================================================
+         Hero (compact — leaves more room for the embedded editor below)
+         ============================================================ -->
+    <section class="qd-hero qd-hero-compact">
+      <div class="qd-hero-inner">
+        <h1>Lightweight Bidirectional Markdown Parser/Editor</h1>
+        <p class="qd-hero-sub">
+          Tiny, secure markdown for browsers and Node. Drop-in editor with fence plugins for code, SVG, Mermaid, MathJax, CSV, GeoJSON, and STL. Pick the layer you need.
+        </p>
+        <div class="qd-hero-meta">
+          <span><strong>9.3 KB</strong> parser</span>
+          <span class="qd-hero-meta-dot">•</span>
+          <span><strong>14.1 KB</strong> bidirectional</span>
+          <span class="qd-hero-meta-dot">•</span>
+          <span><strong>80.6 KB</strong> editor</span>
+          <span class="qd-hero-meta-dot">•</span>
+          <span><strong>BSD-2</strong> · parser &amp; bd have <strong>zero deps</strong></span>
+        </div>
+        <div class="qd-hero-cta-row">
+          <a class="qd-cta-primary" href="/quikdown/edit/">
+            <span>Try the Editor</span>
+            <span aria-hidden="true">→</span>
+          </a>
+          <button
+            class="qd-cta-secondary"
+            type="button"
+            data-copy="npm install quikdown"
+            data-copied-label="✓ copied"
+            title="Click to copy"
+          >
+            <span class="qd-copy-icon" aria-hidden="true">⧉</span>
+            <span>npm install quikdown</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         Embedded mini editor (sits right under the hero) — mounted
+         directly into this document, NOT in an iframe. One scroll
+         context, one theme class, no postMessage dance.
+         ============================================================ -->
+    <section class="qd-section qd-section-tight">
+      <div class="qd-container">
+        <div class="qd-editor-wrap">
+          <div id="landing-demo-editor"></div>
+        </div>
+        <p class="qd-text-center" style="margin-top: 0.75rem; font-size: 0.85rem; color: #6b7280;">
+          ↑ live editor — edit either pane.
+          <a href="/quikdown/edit/">Open full editor →</a>
+          ·
+          <a href="/quikdown/examples/">Browse examples →</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         Three tier cards
+         ============================================================ -->
+    <section class="qd-section qd-section-soft">
+      <div class="qd-container">
+        <h2 style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 0.5rem 0;">Use only what you need</h2>
+        <p style="color: #4b5563; margin: 0 0 1.5rem 0;">Three modules, each a superset of the previous. Install just the layer your app needs.</p>
+        <div class="qd-grid qd-grid-3">
+          <div class="qd-card">
+            <h3>quikdown <span class="qd-card-size">9.3 KB</span></h3>
+            <p class="qd-card-desc">
+              Markdown → HTML parser. XSS-safe by default. Fence callbacks for
+              custom rendering. Themed CSS or inline styles. Use it when you
+              just need to render markdown.
+            </p>
+            <pre class="qd-card-code"><code>import quikdown from 'quikdown';
+
+const html = quikdown('# Hello\n\n**world**');
+document.body.innerHTML = html;</code></pre>
+            <a class="qd-card-link" href="/quikdown/examples/parser-hello.html">
+              Parser examples →
+            </a>
+          </div>
+
+          <div class="qd-card">
+            <h3>quikdown_bd <span class="qd-card-size">14.1 KB</span></h3>
+            <p class="qd-card-desc">
+              Everything in <code>quikdown</code>, plus HTML → Markdown
+              round-trip. Use this when users edit a rendered preview and you
+              need the markdown back.
+            </p>
+            <pre class="qd-card-code"><code>import quikdown_bd from 'quikdown/bd';
+
+const md = quikdown_bd.toMarkdown(
+  document.querySelector('#preview')
+);</code></pre>
+            <a class="qd-card-link" href="/quikdown/examples/bd-roundtrip.html">
+              Bidirectional examples →
+            </a>
+          </div>
+
+          <div class="qd-card">
+            <h3>quikdown_edit <span class="qd-card-size">80.6 KB</span></h3>
+            <p class="qd-card-desc">
+              A complete markdown editor in one <code>&lt;div&gt;</code>. Live
+              preview, bidirectional editing, fence plugins, toolbar, themes,
+              undo/redo. Or run it headless and supply your own UI.
+            </p>
+            <pre class="qd-card-code"><code>import QuikdownEditor from 'quikdown/edit';
+
+new QuikdownEditor('#editor', {
+  mode: 'split', showUndoRedo: true
+});</code></pre>
+            <a class="qd-card-link" href="/quikdown/examples/editor-embed-minimal.html">
+              Editor examples →
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         Killer features
+         ============================================================ -->
+    <section class="qd-section">
+      <div class="qd-container">
+        <h2 style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 0.5rem 0;">Capabilities</h2>
+        <p style="color: #4b5563; margin: 0 0 1.5rem 0;">Shaped by real use: streaming LLM output, in-app document editors, and standalone markdown tools.</p>
+        <div class="qd-grid qd-grid-3">
+          <div class="qd-feature">
+            <div class="qd-feature-icon">↔</div>
+            <h4>Bidirectional editing</h4>
+            <p>Edit either pane. Both stay in sync. Round-trip preserves formatting, fences, and tables. Nobody else does this well.</p>
+          </div>
+          <div class="qd-feature">
+            <div class="qd-feature-icon">⚙</div>
+            <h4>Headless mode</h4>
+            <p><code>showToolbar: false</code> and the editor becomes a pure component. Wire your own buttons to <code>editor.undo()</code>, <code>editor.removeHR()</code>, <code>editor.setTheme()</code>. Embed it in your app shell, your design system, your keyboard map.</p>
+          </div>
+          <div class="qd-feature">
+            <div class="qd-feature-icon">⊞</div>
+            <h4>Deep fence support</h4>
+            <p>Code (with hljs), SVG, MathJax, Mermaid, CSV/TSV/PSV tables, GeoJSON maps, STL 3D, raw HTML. All bidirectional.</p>
+          </div>
+          <div class="qd-feature">
+            <div class="qd-feature-icon">⧉</div>
+            <h4>Copy as rich text</h4>
+            <p>Copies the rendered preview to your clipboard with images, tables, and rendered fences intact. Paste into Gmail, Word, Slack, Notion — it just works.</p>
+          </div>
+          <div class="qd-feature">
+            <div class="qd-feature-icon">◑</div>
+            <h4>Light, dark, auto</h4>
+            <p>Built-in theme support with runtime <code>setTheme('dark')</code>. Honors system preference. CSS custom properties or inline styles, your choice.</p>
+          </div>
+          <div class="qd-feature">
+            <div class="qd-feature-icon">TS</div>
+            <h4>TypeScript ready</h4>
+            <p>Hand-maintained <code>.d.ts</code> files for all six modules. Complete API surface, no <code>any</code>.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         In production
+         ============================================================ -->
+    <section class="qd-section qd-section-soft">
+      <div class="qd-container">
+        <h2 style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 1.5rem 0;">Real apps, real markdown</h2>
+        <div class="qd-callout">
+          <div>
+            <h3>quikchat — themable chat with built-in markdown</h3>
+            <p>
+              <a href="https://deftio.github.io/quikchat/" target="_blank" rel="noopener">quikchat</a>
+              uses quikdown to render inline fenced markdown in LLM chat
+              widgets. When an LLM streams back a code block, table, or
+              diagram, quikdown turns it into HTML in milliseconds — without a
+              heavyweight framework dragging down a chat bubble.
+            </p>
+            <p>
+              <a class="qd-card-link" href="/quikdown/examples/integration-quikchat.html">
+                See the integration example →
+              </a>
+            </p>
+          </div>
+          <div>
+            <div style="background: linear-gradient(135deg, #667eea, #764ba2); aspect-ratio: 4/3; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+              quikchat<br>screenshot
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         Feature summary (two-column, just facts)
+         ============================================================ -->
+    <section class="qd-section">
+      <div class="qd-container">
+        <h2 style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 1.5rem 0;">Quikdown At a Glance</h2>
+        <div class="qd-grid qd-grid-2">
+          <div class="qd-feature-list">
+            <h4>Parser &amp; editor</h4>
+            <ul>
+              <li>Markdown → HTML in one function call</li>
+              <li>HTML → Markdown round-trip (bidirectional)</li>
+              <li>Drop-in editor with source, split, and preview modes</li>
+              <li>Headless mode — bring your own UI</li>
+              <li>Undo / redo with configurable history</li>
+              <li>Copy rendered preview as rich text</li>
+              <li>Light, dark, and auto themes at runtime</li>
+              <li>TypeScript definitions for all modules</li>
+            </ul>
+          </div>
+          <div class="qd-feature-list">
+            <h4>Fence plugins</h4>
+            <ul>
+              <li>Syntax-highlighted code blocks (highlight.js)</li>
+              <li>Mermaid diagrams</li>
+              <li>MathJax / LaTeX equations</li>
+              <li>Inline SVG rendering</li>
+              <li>CSV, TSV, and PSV → HTML tables</li>
+              <li>GeoJSON → interactive Leaflet maps</li>
+              <li>STL → 3D model viewer (Three.js)</li>
+              <li>Raw HTML pass-through</li>
+            </ul>
+          </div>
+        </div>
+        <p style="text-align: center; margin-top: 2rem; font-size: 0.95rem; color: #4b5563;">
+          Open source, BSD-2 licensed. <a href="https://github.com/deftio/quikdown">Contributions welcome →</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         Code samples in tabs
+         ============================================================ -->
+    <section class="qd-section">
+      <div class="qd-container">
+        <h2 style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 0.5rem 0;">One import, no build step</h2>
+        <p style="color: #4b5563; margin: 0 0 1.5rem 0;">Pick the layer, drop a script tag (or import), and you're done.</p>
+        <div class="qd-tabs">
+          <div class="qd-tabs-header">
+            <button class="qd-tab-btn active" data-tab-target="parser">Parser</button>
+            <button class="qd-tab-btn" data-tab-target="bd">Bidirectional</button>
+            <button class="qd-tab-btn" data-tab-target="edit">Editor</button>
+          </div>
+          <div class="qd-tab-pane active" data-tab-pane="parser">
+<pre><code>&lt;script type="module"&gt;
+  import quikdown from 'https://unpkg.com/quikdown';
+
+  // Render markdown into a div — that's it.
+  document.getElementById('out').innerHTML = quikdown(`
+# Hello
+
+This is **markdown**, parsed in the browser.
+
+\`\`\`js
+console.log('with syntax highlighting via fence_plugin');
+\`\`\`
+  `);
+&lt;/script&gt;</code></pre>
+          </div>
+          <div class="qd-tab-pane" data-tab-pane="bd">
+<pre><code>&lt;script type="module"&gt;
+  import quikdown_bd from 'https://unpkg.com/quikdown/dist/quikdown_bd.esm.min.js';
+
+  // Render markdown to HTML
+  preview.innerHTML = quikdown_bd('# Editable\n\nClick to edit me.');
+
+  // Round-trip: convert the (possibly edited) HTML back to markdown
+  document.getElementById('save').onclick = () =&gt; {
+    const markdown = quikdown_bd.toMarkdown(preview);
+    console.log(markdown);
+  };
+&lt;/script&gt;</code></pre>
+          </div>
+          <div class="qd-tab-pane" data-tab-pane="edit">
+<pre><code>&lt;div id="editor" style="height: 500px;"&gt;&lt;/div&gt;
+
+&lt;script type="module"&gt;
+  import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
+
+  const editor = new QuikdownEditor('#editor', {
+    mode: 'split',           // 'source' | 'split' | 'preview'
+    theme: 'auto',           // 'light' | 'dark' | 'auto'
+    showRemoveHR: true,
+    showLazyLinefeeds: true,
+    showUndoRedo: true,
+    plugins: { highlightjs: true, mermaid: true }
+  });
+
+  editor.setMarkdown('# Welcome\n\nStart typing...');
+&lt;/script&gt;</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         Install strip
+         ============================================================ -->
+    <section class="qd-section">
+      <div class="qd-container">
+        <div class="qd-install-strip">
+          <div class="qd-install-strip-cmd">npm install quikdown</div>
+          <div class="qd-install-strip-actions">
+            <button
+              type="button"
+              data-copy="npm install quikdown"
+              data-copied-label="✓ copied"
+            >⧉ Copy npm</button>
+            <a href="https://unpkg.com/quikdown" rel="noopener" target="_blank">unpkg</a>
+            <a href="https://www.jsdelivr.com/package/npm/quikdown" rel="noopener" target="_blank">jsdelivr</a>
+            <a href="https://github.com/deftio/quikdown" rel="noopener" target="_blank">GitHub →</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="qd-footer">
+  <div class="qd-footer-inner">
+    <div class="qd-footer-cols">
+      <div class="qd-footer-col">
+        <a class="qd-footer-brand" href="/quikdown/">
+          <img class="qd-nav-brand-icon" src="/quikdown/site/assets/logo-nav.svg" alt="" aria-hidden="true">
+          <span>quikdown</span>
+        </a>
+        <p style="margin-top: 0.6rem; max-width: 36ch; color: #4b5563;">
+          Tiny, secure markdown for browsers and Node — with a drop-in editor that handles everything from Mermaid to MathJax to GeoJSON.
+        </p>
+      </div>
+      <div class="qd-footer-col">
+        <h5>Project</h5>
+        <ul>
+          <li><a href="/quikdown/">Home</a></li>
+          <li><a href="/quikdown/examples/">Examples</a></li>
+          <li><a href="/quikdown/docs/">Documentation</a></li>
+          <li><a href="/quikdown/changelog/">Changelog</a></li>
+          <li><a href="/quikdown/edit/">Editor App</a></li>
+        </ul>
+      </div>
+      <div class="qd-footer-col">
+        <h5>Code</h5>
+        <ul>
+          <li><a href="https://github.com/deftio/quikdown" rel="noopener" target="_blank">GitHub</a></li>
+          <li><a href="https://www.npmjs.com/package/quikdown" rel="noopener" target="_blank">npm</a></li>
+          <li><a href="https://github.com/deftio/quikdown/issues" rel="noopener" target="_blank">Issues</a></li>
+          <li><a href="https://github.com/deftio/quikdown/blob/main/LICENSE.txt" rel="noopener" target="_blank">License (BSD-2)</a></li>
+        </ul>
+      </div>
+      <div class="qd-footer-col">
+        <h5>Related</h5>
+        <ul>
+          <li><a href="https://deftio.github.io/quikchat/" rel="noopener" target="_blank">quikchat</a></li>
+          <li><a href="https://deftio.github.io/triepack/" rel="noopener" target="_blank">triepack</a></li>
+          <li><a href="https://deftio.github.io/bitwrench/" rel="noopener" target="_blank">bitwrench</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="qd-footer-bottom">
+      <div>quikdown v1.2.3 — © deftio · BSD-2 licensed</div>
+      <div>Built with HTML, CSS, and JavaScript. Zero runtime dependencies.</div>
+    </div>
+  </div>
+</footer>
+
+  <script src="/quikdown/site/scripts/site.js" defer></script>
+
+  <!-- Landing page mini-editor: directly mounted, shares the document with
+       the rest of the page so theme + scroll context just work. -->
+  <script type="module">
+    import QuikdownEditor from '/quikdown/dist/quikdown_edit.esm.js';
+
+    function detectPageTheme() {
+      const cls = document.body.classList;
+      if (cls.contains('qd-theme-dark'))  return 'dark';
+      if (cls.contains('qd-theme-light')) return 'light';
+      if (cls.contains('qd-theme-auto'))  return 'auto';
+      return 'dark';
     }
-    // Return undefined for default handling
-  }
-};
 
-const html = quikdown(markdown, { fence_plugin: fencePlugin });
-</code></pre>
-<h2>TypeScript Support</h2>
-<p>quikdown includes TypeScript definitions for better IDE support and type safety:</p>
-<pre><code class="language-typescript">import quikdown, { QuikdownOptions, FencePlugin } from &#39;quikdown&#39;;
+    const editor = new QuikdownEditor('#landing-demo-editor', {
+      mode: 'split',
+      theme: detectPageTheme(),
+      showRemoveHR: true,
+      showLazyLinefeeds: true,
+      showUndoRedo: true,
+      preloadFences: 'all'
+    });
+    window.landingEditor = editor;
 
-const fencePlugin: FencePlugin = {
-  render: (content: string, language: string) =&gt; {
-    return `&lt;pre class=&quot;hljs ${language}&quot;&gt;${content}&lt;/pre&gt;`;
-  }
-};
+    // Sync editor theme with the site nav theme toggle. site.js does
+    // body.classList.remove(...all) then add(theme) which fires the
+    // observer twice — debounce so we read the FINAL state.
+    let themeSyncTimer = null;
+    new MutationObserver(() => {
+      clearTimeout(themeSyncTimer);
+      themeSyncTimer = setTimeout(() => {
+        const cls = document.body.classList;
+        if (cls.contains('qd-theme-dark'))       editor.setTheme('dark');
+        else if (cls.contains('qd-theme-light')) editor.setTheme('light');
+        else if (cls.contains('qd-theme-auto'))  editor.setTheme('auto');
+      }, 0);
+    }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
-const options: QuikdownOptions = {
-  inline_styles: true,
-  fence_plugin: fencePlugin
-};
-
-const html: string = quikdown(markdown, options);
-</code></pre>
-<h2>Supported Markdown</h2>
-<p><strong>Text formatting:</strong> <code>**bold**</code>, <code>*italic*</code>, <code>~~strikethrough~~</code>, <code>`code`</code></p>
-<p><strong>Headings:</strong> <code># H1</code> through <code>###### H6</code></p>
-<p><strong>Lists:</strong></p>
-<ul>
-<li>Unordered lists</li>
-</ul>
-<ol>
-<li>Ordered lists</li>
-</ol>
-<ul>
-<li><input checked="" disabled="" type="checkbox"> Task lists</li>
-</ul>
-<p><strong>Links:</strong> <code>[text](url)</code> and automatic URL detection</p>
-<p><strong>Code blocks:</strong>  </p>
-<pre><code class="language-javascript">console.log(&#39;syntax highlighting support via plugins&#39;);
-</code></pre>
-<p><strong>Tables, blockquotes, horizontal rules</strong> - See <a href="docs/">documentation</a> for complete syntax reference</p>
-<h2>API Reference</h2>
-<p>For complete API documentation, see <a href="docs/api-reference.md">docs/api-reference.md</a></p>
-<h2>Security</h2>
-<p>All HTML is escaped by default. Only safe markdown constructs become HTML:</p>
-<pre><code class="language-javascript">const unsafe = &#39;&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; **bold**&#39;;
-const safe = quikdown(unsafe);
-// &amp;lt;script&amp;gt;alert(&quot;XSS&quot;)&amp;lt;/script&amp;gt; &lt;strong&gt;bold&lt;/strong&gt;
-</code></pre>
-<h2>Framework Integration</h2>
-<p>Works with React, Vue, Svelte, Angular. See <a href="docs/framework-integration.md">Framework Integration Guide</a> for examples.</p>
-<h2>Limitations</h2>
-<p>For size and security, quikdown doesn&#39;t support:</p>
-<ul>
-<li>Reference-style links  </li>
-<li>Footnotes</li>
-<li>Definition lists</li>
-</ul>
-<p>Note that raw html, svg, etc can be rendered using appropriate fences</p>
-<pre><code class="language-html">&lt;h1&gt;My HTML Content&lt;/h1&gt;
-&lt;p&gt;Some HTML&lt;/p&gt;
-</code></pre>
-<p>as long as an appropriate fence plugin is provided.  See API docs for example or try out in quikdown_edit.js which has built-in support for HTML with XSS prevention.</p>
-<h2>License</h2>
-<p>BSD 2-Clause - see <a href="LICENSE.txt">LICENSE.txt</a></p>
-<h2>Acknowledgments</h2>
-<ul>
-<li>Inspired by the simplicity of early markdown parsers</li>
-<li>Built for the <a href="https://github.com/deftio/quikchat">QuikChat</a> project</li>
-<li>CommonMark spec for markdown standardization</li>
-</ul>
-<h2>Support</h2>
-<ul>
-<li>📖 <a href="docs/">Documentation</a></li>
-<li>🐛 <a href="https://github.com/deftio/quikdown/issues">Issues</a></li>
-<li>📦 <a href="examples/">Examples</a></li>
-</ul>
-
-    </article>
-    <script>
-        // Syntax highlighting
-        if (typeof Prism !== 'undefined') {
-            Prism.highlightAll();
-        }
-    </script>
+    // Load the shared demo content (same as /edit/)
+    fetch('/quikdown/site/demo_content.md')
+      .then(r => r.ok ? r.text() : Promise.reject())
+      .then(md => editor.setMarkdown(md))
+      .catch(() => editor.setMarkdown('# quikdown_edit\n\nLive demo. Start typing.'));
+  </script>
 </body>
 </html>
