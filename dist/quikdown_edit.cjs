@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.3
+ * @version 1.2.4
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -20,7 +20,7 @@
  */
 
 // Version will be injected at build time  
-const quikdownVersion = '1.2.3';
+const quikdownVersion = '1.2.4';
 
 // Constants for reuse
 const CLASS_PREFIX = 'quikdown-';
@@ -95,7 +95,7 @@ function quikdown(markdown, options = {}) {
         return '';
     }
     
-    const { fence_plugin, inline_styles = false, bidirectional = false, lazy_linefeeds = false } = options;
+    const { fence_plugin, inline_styles = false, bidirectional = false, lazy_linefeeds = false, allow_unsafe_html = false } = options;
     const styles = QUIKDOWN_STYLES; // Use module-level styles
     const getAttr = createGetAttr(inline_styles, styles); // Create getAttr once
 
@@ -181,8 +181,11 @@ function quikdown(markdown, options = {}) {
         return placeholder;
     });
     
-    // Now escape HTML in the rest of the content
-    html = escapeHtml(html);
+    // Escape HTML in the rest of the content (skip if allow_unsafe_html is on —
+    // useful for trusted pipelines where the markdown contains intentional HTML)
+    if (!allow_unsafe_html) {
+        html = escapeHtml(html);
+    }
     
     // Phase 2: Process block elements
     
@@ -2841,6 +2844,7 @@ class QuikdownEditor {
                 border-radius: 4px;
                 overflow: hidden;
                 background: white;
+                color: #1f2937;
             }
             
             .qde-toolbar {

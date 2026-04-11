@@ -145,6 +145,10 @@ kbd {
 .qd-section {
   padding: 4rem 0;
 }
+/* Use on the first section after a hero to reduce the gap */
+.qd-hero + .qd-section {
+  padding-top: 1.5rem;
+}
 .qd-section-tight {
   padding: 1.5rem 0;
 }

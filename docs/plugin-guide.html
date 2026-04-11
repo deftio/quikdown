@@ -64,12 +64,10 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1>Plugin Development Guide</h1>
-<h2>Overview</h2>
-<p>quikdown&#39;s plugin system allows you to customize how fenced code blocks are rendered. This enables syntax highlighting, diagrams, math rendering, custom components, and even trusted HTML rendering.</p>
-<h2>Basic Plugin Structure</h2>
-<p>A fence plugin is an object with a <code>render</code> method that receives code block content and returns HTML:</p>
-<pre><code class="language-javascript">const myPlugin = {
+        <h1 class="quikdown-h1">Plugin Development Guide</h1>
+<h2 class="quikdown-h2">Overview</h2>
+<p>quikdown's plugin system allows you to customize how fenced code blocks are rendered. This enables syntax highlighting, diagrams, math rendering, custom components, and even trusted HTML rendering.</p><h2 class="quikdown-h2">Basic Plugin Structure</h2>
+<p>A fence plugin is an object with a <code class="quikdown-code">render</code> method that receives code block content and returns HTML:</p><pre class="quikdown-pre"><code class="language-javascript">const myPlugin = {
   render: (content, language) =&gt; {
     // content: Raw, unescaped content from the code block
     // language: The language identifier (or empty string)
@@ -77,45 +75,37 @@
     // Return HTML string to render, or undefined to use default
     return &#39;&lt;div&gt;Custom HTML&lt;/div&gt;&#39;;
   }
-};
-</code></pre>
-<h2>Plugin Contract</h2>
-<h3><code>render</code> Method Parameters</h3>
-<ol>
-<li><p><strong><code>content</code></strong> (string)</p>
-<ul>
-<li>Raw content from the fence block</li>
-<li><strong>NOT HTML-escaped</strong> when plugin is active</li>
-<li>Trimmed of trailing whitespace</li>
-<li>Preserves internal spacing and newlines</li>
+};</code></pre><h2 class="quikdown-h2">Plugin Contract</h2>
+<h3 class="quikdown-h3"><code class="quikdown-code">render</code> Method Parameters</h3>
+<ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong"><code class="quikdown-code">content</code></strong> (string)</li>
+<ul class="quikdown-ul">
+<li class="quikdown-li">Raw content from the fence block</li>
+<li class="quikdown-li"><strong class="quikdown-strong">NOT HTML-escaped</strong> when plugin is active</li>
+<li class="quikdown-li">Trimmed of trailing whitespace</li>
+<li class="quikdown-li">Preserves internal spacing and newlines</li>
 </ul>
-</li>
-<li><p><strong><code>language</code></strong> (string)</p>
-<ul>
-<li>Language identifier after <code>```</code></li>
-<li>Empty string if no language specified</li>
-<li>Can be any string (not limited to programming languages)</li>
+</ol><ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong"><code class="quikdown-code">language</code></strong> (string)</li>
+<ul class="quikdown-ul">
+<li class="quikdown-li">Language identifier after <code class="quikdown-code"> </code>`<code class="quikdown-code"> </code></li>
+<li class="quikdown-li">Empty string if no language specified</li>
+<li class="quikdown-li">Can be any string (not limited to programming languages)</li>
 </ul>
-</li>
-</ol>
-<h3><code>render</code> Return Values</h3>
-<ul>
-<li><strong><code>string</code></strong> - HTML to render (you&#39;re responsible for escaping!)</li>
-<li><strong><code>undefined</code></strong> - Fall back to default code block rendering</li>
-</ul>
-<h3>Optional <code>reverse</code> Method</h3>
-<p>For bidirectional support with <code>quikdown_bd</code>, a plugin can include a <code>reverse</code> method that converts plugin-rendered HTML back to a fenced code block:</p>
-<pre><code class="language-javascript">const myPlugin = {
+</ol><h3 class="quikdown-h3"><code class="quikdown-code">render</code> Return Values</h3>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong"><code class="quikdown-code">string</code></strong> - HTML to render (you're responsible for escaping!)</li>
+<li class="quikdown-li"><strong class="quikdown-strong"><code class="quikdown-code">undefined</code></strong> - Fall back to default code block rendering</li>
+</ul><h3 class="quikdown-h3">Optional <code class="quikdown-code">reverse</code> Method</h3>
+<p>For bidirectional support with <code class="quikdown-code">quikdown_bd</code>, a plugin can include a <code class="quikdown-code">reverse</code> method that converts plugin-rendered HTML back to a fenced code block:</p><pre class="quikdown-pre"><code class="language-javascript">const myPlugin = {
   render: (content, language) =&gt; { /* ... */ },
   reverse: (element) =&gt; {
     // Return { fence: &#39;```&#39;, lang: &#39;mylang&#39;, content: &#39;...&#39; } or null
     return null;
   }
-};
-</code></pre>
-<h2>Simple Examples</h2>
-<h3>Hello World Plugin</h3>
-<pre><code class="language-javascript">const helloPlugin = {
+};</code></pre><h2 class="quikdown-h2">Simple Examples</h2>
+<h3 class="quikdown-h3">Hello World Plugin</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">const helloPlugin = {
   render: (content, language) =&gt; {
     if (language === &#39;hello&#39;) {
       return `&lt;div class=&quot;greeting&quot;&gt;Hello, ${content}!&lt;/div&gt;`;
@@ -128,10 +118,8 @@
 // ```hello
 // World
 // ```
-// Output: &lt;div class=&quot;greeting&quot;&gt;Hello, World!&lt;/div&gt;
-</code></pre>
-<h3>JSON Viewer</h3>
-<pre><code class="language-javascript">const jsonPlugin = {
+// Output: &lt;div class=&quot;greeting&quot;&gt;Hello, World!&lt;/div&gt;</code></pre></p><h3 class="quikdown-h3">JSON Viewer</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">const jsonPlugin = {
   render: (content, language) =&gt; {
     if (language === &#39;json&#39;) {
       try {
@@ -143,11 +131,9 @@
       }
     }
   }
-};
-</code></pre>
-<h2>Advanced Examples</h2>
-<h3>Syntax Highlighting with Prism.js</h3>
-<pre><code class="language-javascript">const prismPlugin = {
+};</code></pre></p><h2 class="quikdown-h2">Advanced Examples</h2>
+<h3 class="quikdown-h3">Syntax Highlighting with Prism.js</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">const prismPlugin = {
   render: (content, language) =&gt; {
     // Check if Prism supports this language
     if (language &amp;&amp; Prism.languages[language]) {
@@ -161,10 +147,8 @@
     // Fall back to default for unsupported languages
     return undefined;
   }
-};
-</code></pre>
-<h3>Mermaid Diagrams</h3>
-<pre><code class="language-javascript">const mermaidPlugin = {
+};</code></pre></p><h3 class="quikdown-h3">Mermaid Diagrams</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">const mermaidPlugin = {
   render: (content, language) =&gt; {
     if (language === &#39;mermaid&#39;) {
       // Generate unique ID for async rendering
@@ -191,10 +175,8 @@
       `;
     }
   }
-};
-</code></pre>
-<h3>Math with KaTeX</h3>
-<pre><code class="language-javascript">const mathPlugin = {
+};</code></pre></p><h3 class="quikdown-h3">Math with KaTeX</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">const mathPlugin = {
   render: (content, language) =&gt; {
     if (language === &#39;math&#39; || language === &#39;latex&#39;) {
       try {
@@ -209,10 +191,8 @@
       }
     }
   }
-};
-</code></pre>
-<h3>Custom Components</h3>
-<pre><code class="language-javascript">const componentPlugin = {
+};</code></pre></p><h3 class="quikdown-h3">Custom Components</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">const componentPlugin = {
   render: (content, language) =&gt; {
     if (language === &#39;component&#39;) {
       try {
@@ -257,12 +237,9 @@
 //   &quot;level&quot;: &quot;warning&quot;,
 //   &quot;message&quot;: &quot;This is a warning!&quot;
 // }
-// ```
-</code></pre>
-<h2>Security Considerations</h2>
-<h3>⚠️ Critical: Escape User Content</h3>
-<p>Plugins receive <strong>raw, unescaped content</strong>. You MUST escape it unless you explicitly trust it:</p>
-<pre><code class="language-javascript">// ❌ DANGEROUS - XSS vulnerability!
+// ```</code></pre></p><h2 class="quikdown-h2">Security Considerations</h2>
+<h3 class="quikdown-h3">⚠️ Critical: Escape User Content</h3>
+<p>Plugins receive <strong class="quikdown-strong">raw, unescaped content</strong>. You MUST escape it unless you explicitly trust it:</p><pre class="quikdown-pre"><code class="language-javascript">// ❌ DANGEROUS - XSS vulnerability!
 const badPlugin = {
   render: (content, language) =&gt; {
     return `&lt;div&gt;${content}&lt;/div&gt;`; // content could contain &lt;script&gt;!
@@ -286,11 +263,8 @@ function escapeHtml(text) {
     &quot;&#39;&quot;: &#39;&amp;#39;&#39;
   };
   return text.replace(/[&amp;&lt;&gt;&quot;&#39;]/g, m =&gt; map[m]);
-}
-</code></pre>
-<h3>Trusted HTML Rendering</h3>
-<p>If you need to render trusted HTML:</p>
-<pre><code class="language-javascript">const trustedHtmlPlugin = {
+}</code></pre><h3 class="quikdown-h3">Trusted HTML Rendering</h3>
+<p>If you need to render trusted HTML:</p><pre class="quikdown-pre"><code class="language-javascript">const trustedHtmlPlugin = {
   render: (content, language) =&gt; {
     // Only allow for specific, trusted sources
     if (language === &#39;html-preview&#39; &amp;&amp; isAdminUser()) {
@@ -301,11 +275,8 @@ function escapeHtml(text) {
       });
     }
   }
-};
-</code></pre>
-<h3>Validation Best Practices</h3>
-<p>Always validate and sanitize:</p>
-<pre><code class="language-javascript">const robustPlugin = {
+};</code></pre><h3 class="quikdown-h3">Validation Best Practices</h3>
+<p>Always validate and sanitize:</p><pre class="quikdown-pre"><code class="language-javascript">const robustPlugin = {
   render: (content, language) =&gt; {
     // 1. Check language
     if (![&#39;myformat&#39;].includes(language)) {
@@ -334,11 +305,8 @@ function escapeHtml(text) {
       return `&lt;div class=&quot;error&quot;&gt;${escapeHtml(error.message)}&lt;/div&gt;`;
     }
   }
-};
-</code></pre>
-<h2>Multi-Language Plugin</h2>
-<p>Handle multiple languages in one plugin:</p>
-<pre><code class="language-javascript">const multiPlugin = {
+};</code></pre><h2 class="quikdown-h2">Multi-Language Plugin</h2>
+<p>Handle multiple languages in one plugin:</p><pre class="quikdown-pre"><code class="language-javascript">const multiPlugin = {
   render: (content, language) =&gt; {
     switch (language) {
       case &#39;graph&#39;:
@@ -363,11 +331,8 @@ function escapeHtml(text) {
         return undefined;
     }
   }
-};
-</code></pre>
-<h2>Async Rendering</h2>
-<p>For async operations, return a placeholder and update later:</p>
-<pre><code class="language-javascript">const asyncPlugin = {
+};</code></pre><h2 class="quikdown-h2">Async Rendering</h2>
+<p>For async operations, return a placeholder and update later:</p><pre class="quikdown-pre"><code class="language-javascript">const asyncPlugin = {
   render: (content, language) =&gt; {
     if (language === &#39;async-content&#39;) {
       const id = &#39;async-&#39; + Date.now();
@@ -386,11 +351,8 @@ function escapeHtml(text) {
       return `&lt;div id=&quot;${id}&quot; class=&quot;loading&quot;&gt;Loading...&lt;/div&gt;`;
     }
   }
-};
-</code></pre>
-<h2>Error Handling</h2>
-<p>Always handle errors gracefully:</p>
-<pre><code class="language-javascript">const safePlugin = {
+};</code></pre><h2 class="quikdown-h2">Error Handling</h2>
+<p>Always handle errors gracefully:</p><pre class="quikdown-pre"><code class="language-javascript">const safePlugin = {
   render: (content, language) =&gt; {
     try {
       // Attempt to process
@@ -409,11 +371,9 @@ function escapeHtml(text) {
       `;
     }
   }
-};
-</code></pre>
-<h2>Testing Plugins</h2>
-<h3>Unit Testing</h3>
-<pre><code class="language-javascript">describe(&#39;myPlugin&#39;, () =&gt; {
+};</code></pre><h2 class="quikdown-h2">Testing Plugins</h2>
+<h3 class="quikdown-h3">Unit Testing</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">describe(&#39;myPlugin&#39;, () =&gt; {
   test(&#39;renders correct language&#39;, () =&gt; {
     const result = myPlugin.render(&#39;content&#39;, &#39;mylang&#39;);
     expect(result).toContain(&#39;content&#39;);
@@ -435,18 +395,14 @@ function escapeHtml(text) {
     expect(result).toContain(&#39;error&#39;);
     expect(result).not.toThrow();
   });
-});
-</code></pre>
-<h3>Integration Testing</h3>
-<pre><code class="language-javascript">test(&#39;plugin works with quikdown&#39;, () =&gt; {
+});</code></pre></p><h3 class="quikdown-h3">Integration Testing</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">test(&#39;plugin works with quikdown&#39;, () =&gt; {
   const markdown = &#39;```mylang\ntest content\n```&#39;;
   const html = quikdown(markdown, { fence_plugin: myPlugin });
   expect(html).toContain(&#39;test content&#39;);
-});
-</code></pre>
-<h2>Performance Tips</h2>
-<h3>1. Early Returns</h3>
-<pre><code class="language-javascript">const fastPlugin = {
+});</code></pre></p><h2 class="quikdown-h2">Performance Tips</h2>
+<h3 class="quikdown-h3">1. Early Returns</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">const fastPlugin = {
   render: (content, language) =&gt; {
     // Check language first (fast)
     if (language !== &#39;mylang&#39;) return undefined;
@@ -457,10 +413,8 @@ function escapeHtml(text) {
     // Finally process (slowest)
     return process(content);
   }
-};
-</code></pre>
-<h3>2. Cache Expensive Operations</h3>
-<pre><code class="language-javascript">const cache = new Map();
+};</code></pre></p><h3 class="quikdown-h3">2. Cache Expensive Operations</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">const cache = new Map();
 
 const cachedPlugin = {
   render: (content, language) =&gt; {
@@ -475,21 +429,16 @@ const cachedPlugin = {
     cache.set(key, result);
     return result;
   }
-};
-</code></pre>
-<h3>3. Limit Content Size</h3>
-<pre><code class="language-javascript">const limitedPlugin = {
+};</code></pre></p><h3 class="quikdown-h3">3. Limit Content Size</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">const limitedPlugin = {
   render: (content, language) =&gt; {
     if (content.length &gt; 50000) {
       return &#39;&lt;div class=&quot;error&quot;&gt;Content too large&lt;/div&gt;&#39;;
     }
     return processContent(content, language);
   }
-};
-</code></pre>
-<h2>Plugin Composition</h2>
-<p>Combine multiple plugins:</p>
-<pre><code class="language-javascript">function combinePlugins(...plugins) {
+};</code></pre></p><h2 class="quikdown-h2">Plugin Composition</h2>
+<p>Combine multiple plugins:</p><pre class="quikdown-pre"><code class="language-javascript">function combinePlugins(...plugins) {
   return {
     render: (content, language) =&gt; {
       for (const plugin of plugins) {
@@ -509,11 +458,8 @@ const myPlugin = combinePlugins(
   diagramPlugin,
   mathPlugin,
   customPlugin
-);
-</code></pre>
-<h2>Debugging Plugins</h2>
-<p>Add debug output:</p>
-<pre><code class="language-javascript">const debugPlugin = {
+);</code></pre><h2 class="quikdown-h2">Debugging Plugins</h2>
+<p>Add debug output:</p><pre class="quikdown-pre"><code class="language-javascript">const debugPlugin = {
   render: (content, language) =&gt; {
     console.group(`Plugin called: ${language}`);
     console.log(&#39;Content length:&#39;, content.length);
@@ -530,11 +476,8 @@ const myPlugin = combinePlugins(
       throw error;
     }
   }
-};
-</code></pre>
-<h2>Real-World Example: Complete Plugin</h2>
-<p>Here&#39;s a production-ready plugin example:</p>
-<pre><code class="language-javascript">/**
+};</code></pre><h2 class="quikdown-h2">Real-World Example: Complete Plugin</h2>
+<p>Here's a production-ready plugin example:</p><pre class="quikdown-pre"><code class="language-javascript">/**
  * Advanced code block plugin with multiple features
  */
 const advancedCodePlugin = {
@@ -622,23 +565,19 @@ window.copyCode = function(id) {
       button.textContent = &#39;Copy&#39;;
     }, 2000);
   });
-};
-</code></pre>
-<h2>Summary</h2>
-<p>Key points for plugin development:</p>
-<ol>
-<li><strong>Always escape user content</strong> unless explicitly trusted</li>
-<li><strong>Return <code>undefined</code></strong> to fall back to default rendering</li>
-<li><strong>Handle errors gracefully</strong> - never throw</li>
-<li><strong>Validate input</strong> before processing</li>
-<li><strong>Keep plugins focused</strong> - one plugin per concern</li>
-<li><strong>Test thoroughly</strong> - including security and edge cases</li>
-<li><strong>Document requirements</strong> - what libraries/setup needed</li>
-<li><strong>Consider performance</strong> - cache expensive operations</li>
-<li><strong>Provide feedback</strong> - loading states, error messages</li>
-<li><strong>Be defensive</strong> - assume content could be malicious</li>
+};</code></pre><h2 class="quikdown-h2">Summary</h2>
+<p>Key points for plugin development:</p><ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">Always escape user content</strong> unless explicitly trusted</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Return <code class="quikdown-code">undefined</code></strong> to fall back to default rendering</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Handle errors gracefully</strong> - never throw</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Validate input</strong> before processing</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Keep plugins focused</strong> - one plugin per concern</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Test thoroughly</strong> - including security and edge cases</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Document requirements</strong> - what libraries/setup needed</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Consider performance</strong> - cache expensive operations</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Provide feedback</strong> - loading states, error messages</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Be defensive</strong> - assume content could be malicious</li>
 </ol>
-
     </article>
     <script>
         // Syntax highlighting

@@ -1363,4 +1363,70 @@ code3
             expect(result).toContain('background:#f0f0f0');
         });
     });
+
+    describe('allow_unsafe_html option', () => {
+        test('should escape HTML by default', () => {
+            const input = 'Text with <div class="custom">HTML content</div> here';
+            const result = quikdown(input);
+            expect(result).toContain('&lt;div');
+            expect(result).toContain('&gt;');
+            expect(result).not.toContain('<div class="custom">');
+        });
+
+        test('should preserve raw HTML when allow_unsafe_html is true', () => {
+            const input = 'Text with <div class="custom">HTML content</div> here';
+            const result = quikdown(input, { allow_unsafe_html: true });
+            expect(result).toContain('<div class="custom">HTML content</div>');
+            expect(result).not.toContain('&lt;div');
+        });
+
+        test('should preserve inline HTML elements', () => {
+            const input = 'This has a <span style="color:red">red span</span> inside';
+            const result = quikdown(input, { allow_unsafe_html: true });
+            expect(result).toContain('<span style="color:red">red span</span>');
+        });
+
+        test('should preserve HTML tables', () => {
+            const input = '<table><tr><th>Header</th></tr><tr><td>Cell</td></tr></table>';
+            const result = quikdown(input, { allow_unsafe_html: true });
+            expect(result).toContain('<table>');
+            expect(result).toContain('<th>Header</th>');
+            expect(result).toContain('<td>Cell</td>');
+        });
+
+        test('should preserve details/summary elements', () => {
+            const input = '<details><summary>Click me</summary>\n\nHidden content\n\n</details>';
+            const result = quikdown(input, { allow_unsafe_html: true });
+            expect(result).toContain('<details>');
+            expect(result).toContain('<summary>Click me</summary>');
+        });
+
+        test('should still process markdown alongside raw HTML', () => {
+            const input = '# Heading\n\n<div class="box">content</div>\n\n**bold text**';
+            const result = quikdown(input, { allow_unsafe_html: true });
+            expect(result).toContain('<h1');
+            expect(result).toContain('<div class="box">content</div>');
+            expect(result).toContain('<strong');
+        });
+
+        test('should still escape HTML inside code blocks even with allow_unsafe_html', () => {
+            const input = '```\n<div>code example</div>\n```';
+            const result = quikdown(input, { allow_unsafe_html: true });
+            expect(result).toContain('&lt;div&gt;');
+        });
+
+        test('should default to false', () => {
+            const input = '<script>alert("xss")</script>';
+            const result = quikdown(input);
+            expect(result).toContain('&lt;script&gt;');
+            expect(result).not.toContain('<script>');
+        });
+
+        test('should work with other options combined', () => {
+            const input = '<div>html</div>\n\n# Heading';
+            const result = quikdown(input, { allow_unsafe_html: true, inline_styles: true });
+            expect(result).toContain('<div>html</div>');
+            expect(result).toContain('font-size:2em');
+        });
+    });
 });

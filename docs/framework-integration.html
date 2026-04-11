@@ -64,20 +64,18 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1>Framework Integration Guide</h1>
-<p>This guide shows how to integrate quikdown into popular JavaScript frameworks.</p>
-<h2>Table of Contents</h2>
-<ul>
-<li><a href="#react">React</a></li>
-<li><a href="#vuejs">Vue.js</a></li>
-<li><a href="#svelte">Svelte</a></li>
-<li><a href="#angular">Angular</a></li>
-<li><a href="#nextjs">Next.js</a></li>
-<li><a href="#nuxt">Nuxt</a></li>
-</ul>
-<h2>React</h2>
-<h3>Basic Usage</h3>
-<pre><code class="language-jsx">import React, { useState, useMemo } from &#39;react&#39;;
+        <h1 class="quikdown-h1">Framework Integration Guide</h1>
+<p>This guide shows how to integrate quikdown into popular JavaScript frameworks.</p><h2 class="quikdown-h2">Table of Contents</h2>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><a class="quikdown-a" href="#react">React</a></li>
+<li class="quikdown-li"><a class="quikdown-a" href="#vuejs">Vue.js</a></li>
+<li class="quikdown-li"><a class="quikdown-a" href="#svelte">Svelte</a></li>
+<li class="quikdown-li"><a class="quikdown-a" href="#angular">Angular</a></li>
+<li class="quikdown-li"><a class="quikdown-a" href="#nextjs">Next.js</a></li>
+<li class="quikdown-li"><a class="quikdown-a" href="#nuxt">Nuxt</a></li>
+</ul><h2 class="quikdown-h2">React</h2>
+<h3 class="quikdown-h3">Basic Usage</h3>
+<p><pre class="quikdown-pre"><code class="language-jsx">import React, { useState, useMemo } from &#39;react&#39;;
 import quikdown from &#39;quikdown&#39;;
 
 function MarkdownEditor() {
@@ -102,11 +100,8 @@ function MarkdownEditor() {
   );
 }
 
-export default MarkdownEditor;
-</code></pre>
-<h3>With Bidirectional Support</h3>
-<p><strong>⚠️ Note:</strong> Bidirectional support requires <code>quikdown_bd</code>, not regular <code>quikdown</code>.</p>
-<pre><code class="language-jsx">import React, { useState, useEffect, useRef } from &#39;react&#39;;
+export default MarkdownEditor;</code></pre></p><h3 class="quikdown-h3">With Bidirectional Support</h3>
+<strong class="quikdown-strong">⚠️ Note:</strong> Bidirectional support requires <code class="quikdown-code">quikdown_bd</code>, not regular <code class="quikdown-code">quikdown</code>.</p><pre class="quikdown-pre"><code class="language-jsx">import React, { useState, useEffect, useRef } from &#39;react&#39;;
 // Use quikdown_bd for bidirectional support, NOT regular quikdown
 import quikdown_bd from &#39;quikdown/bd&#39;;
 
@@ -148,10 +143,8 @@ function BidirectionalEditor() {
       /&gt;
     &lt;/div&gt;
   );
-}
-</code></pre>
-<h3>Custom Hook</h3>
-<pre><code class="language-jsx">import { useState, useMemo } from &#39;react&#39;;
+}</code></pre><h3 class="quikdown-h3">Custom Hook</h3>
+<p><pre class="quikdown-pre"><code class="language-jsx">import { useState, useMemo } from &#39;react&#39;;
 import quikdown from &#39;quikdown&#39;;
 
 export function useMarkdown(initialMarkdown = &#39;&#39;, options = {}) {
@@ -168,11 +161,9 @@ export function useMarkdown(initialMarkdown = &#39;&#39;, options = {}) {
 function MyComponent() {
   const { markdown, setMarkdown, html } = useMarkdown(&#39;# Hello&#39;);
   // ...
-}
-</code></pre>
-<h2>Vue.js</h2>
-<h3>Vue 3 Composition API</h3>
-<pre><code class="language-vue">&lt;template&gt;
+}</code></pre></p><h2 class="quikdown-h2">Vue.js</h2>
+<h3 class="quikdown-h3">Vue 3 Composition API</h3>
+<p><pre class="quikdown-pre"><code class="language-vue">&lt;template&gt;
   &lt;div class=&quot;markdown-editor&quot;&gt;
     &lt;textarea 
       v-model=&quot;markdown&quot; 
@@ -207,10 +198,8 @@ const html = computed(() =&gt; {
   padding: 10px;
   border: 1px solid #ccc;
 }
-&lt;/style&gt;
-</code></pre>
-<h3>Vue 2 Options API</h3>
-<pre><code class="language-vue">&lt;template&gt;
+&lt;/style&gt;</code></pre></p><h3 class="quikdown-h3">Vue 2 Options API</h3>
+<p><pre class="quikdown-pre"><code class="language-vue">&lt;template&gt;
   &lt;div class=&quot;markdown-editor&quot;&gt;
     &lt;textarea 
       v-model=&quot;markdown&quot; 
@@ -238,10 +227,8 @@ export default {
     }
   }
 };
-&lt;/script&gt;
-</code></pre>
-<h3>Vue Component with Bidirectional Support</h3>
-<pre><code class="language-vue">&lt;template&gt;
+&lt;/script&gt;</code></pre></p><h3 class="quikdown-h3">Vue Component with Bidirectional Support</h3>
+<p><pre class="quikdown-pre"><code class="language-vue">&lt;template&gt;
   &lt;div class=&quot;bidirectional-editor&quot;&gt;
     &lt;textarea 
       v-model=&quot;markdown&quot; 
@@ -284,11 +271,9 @@ const syncFromHtml = () =&gt; {
 onMounted(() =&gt; {
   syncFromMarkdown();
 });
-&lt;/script&gt;
-</code></pre>
-<h2>Svelte</h2>
-<h3>Basic Svelte Component</h3>
-<pre><code class="language-svelte">&lt;script&gt;
+&lt;/script&gt;</code></pre></p><h2 class="quikdown-h2">Svelte</h2>
+<h3 class="quikdown-h3">Basic Svelte Component</h3>
+<p><pre class="quikdown-pre"><code class="language-svelte">&lt;script&gt;
   import quikdown from &#39;quikdown&#39;;
   
   let markdown = &#39;# Hello Svelte\n\n**Bold** and *italic* text&#39;;
@@ -314,10 +299,8 @@ onMounted(() =&gt; {
     padding: 10px;
     border: 1px solid #ccc;
   }
-&lt;/style&gt;
-</code></pre>
-<h3>Svelte Store Integration</h3>
-<pre><code class="language-javascript">// markdownStore.js
+&lt;/style&gt;</code></pre></p><h3 class="quikdown-h3">Svelte Store Integration</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">// markdownStore.js
 import { writable, derived } from &#39;svelte/store&#39;;
 import quikdown from &#39;quikdown&#39;;
 
@@ -334,9 +317,7 @@ export function createMarkdownStore(initialValue = &#39;&#39;) {
     setMarkdown: markdown.set,
     updateMarkdown: markdown.update
   };
-}
-</code></pre>
-<pre><code class="language-svelte">&lt;!-- Component.svelte --&gt;
+}</code></pre></p><pre class="quikdown-pre"><code class="language-svelte">&lt;!-- Component.svelte --&gt;
 &lt;script&gt;
   import { createMarkdownStore } from &#39;./markdownStore.js&#39;;
   
@@ -344,10 +325,8 @@ export function createMarkdownStore(initialValue = &#39;&#39;) {
 &lt;/script&gt;
 
 &lt;textarea value={$markdown} on:input={(e) =&gt; setMarkdown(e.target.value)} /&gt;
-&lt;div&gt;{@html $html}&lt;/div&gt;
-</code></pre>
-<h3>Bidirectional Svelte Component</h3>
-<pre><code class="language-svelte">&lt;script&gt;
+&lt;div&gt;{@html $html}&lt;/div&gt;</code></pre><h3 class="quikdown-h3">Bidirectional Svelte Component</h3>
+<p><pre class="quikdown-pre"><code class="language-svelte">&lt;script&gt;
   import { onMount } from &#39;svelte&#39;;
   import quikdown_bd from &#39;quikdown/bd&#39;;
   
@@ -386,11 +365,9 @@ export function createMarkdownStore(initialValue = &#39;&#39;) {
     on:blur={updateMarkdown}
     class=&quot;preview&quot;
   /&gt;
-&lt;/div&gt;
-</code></pre>
-<h2>Angular</h2>
-<h3>Angular Component</h3>
-<pre><code class="language-typescript">// markdown-editor.component.ts
+&lt;/div&gt;</code></pre></p><h2 class="quikdown-h2">Angular</h2>
+<h3 class="quikdown-h3">Angular Component</h3>
+<p><pre class="quikdown-pre"><code class="language-typescript">// markdown-editor.component.ts
 import { Component, OnInit } from &#39;@angular/core&#39;;
 import quikdown from &#39;quikdown&#39;;
 
@@ -433,10 +410,8 @@ export class MarkdownEditorComponent implements OnInit {
   updateHtml() {
     this.html = quikdown(this.markdown, { inline_styles: true });
   }
-}
-</code></pre>
-<h3>Angular Service</h3>
-<pre><code class="language-typescript">// markdown.service.ts
+}</code></pre></p><h3 class="quikdown-h3">Angular Service</h3>
+<p><pre class="quikdown-pre"><code class="language-typescript">// markdown.service.ts
 import { Injectable } from &#39;@angular/core&#39;;
 import quikdown from &#39;quikdown&#39;;
 import quikdown_bd from &#39;quikdown/bd&#39;;
@@ -457,10 +432,8 @@ export class MarkdownService {
   toMarkdown(html: string | HTMLElement): string {
     return quikdown_bd.toMarkdown(html);
   }
-}
-</code></pre>
-<h3>Angular Pipe</h3>
-<pre><code class="language-typescript">// markdown.pipe.ts
+}</code></pre></p><h3 class="quikdown-h3">Angular Pipe</h3>
+<p><pre class="quikdown-pre"><code class="language-typescript">// markdown.pipe.ts
 import { Pipe, PipeTransform } from &#39;@angular/core&#39;;
 import quikdown from &#39;quikdown&#39;;
 
@@ -474,11 +447,9 @@ export class MarkdownPipe implements PipeTransform {
 }
 
 // Usage in template
-// &lt;div [innerHTML]=&quot;markdownContent | markdown&quot;&gt;&lt;/div&gt;
-</code></pre>
-<h2>Next.js</h2>
-<h3>Next.js Page with SSR</h3>
-<pre><code class="language-jsx">// pages/markdown-demo.js
+// &lt;div [innerHTML]=&quot;markdownContent | markdown&quot;&gt;&lt;/div&gt;</code></pre></p><h2 class="quikdown-h2">Next.js</h2>
+<h3 class="quikdown-h3">Next.js Page with SSR</h3>
+<p><pre class="quikdown-pre"><code class="language-jsx">// pages/markdown-demo.js
 import { useState } from &#39;react&#39;;
 import quikdown from &#39;quikdown&#39;;
 
@@ -518,10 +489,8 @@ export default function MarkdownDemo({ initialMarkdown, initialHtml }) {
       /&gt;
     &lt;/div&gt;
   );
-}
-</code></pre>
-<h3>Next.js API Route</h3>
-<pre><code class="language-javascript">// pages/api/markdown.js
+}</code></pre></p><h3 class="quikdown-h3">Next.js API Route</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">// pages/api/markdown.js
 import quikdown from &#39;quikdown&#39;;
 
 export default function handler(req, res) {
@@ -537,11 +506,9 @@ export default function handler(req, res) {
   } else {
     res.status(405).json({ error: &#39;Method not allowed&#39; });
   }
-}
-</code></pre>
-<h2>Nuxt</h2>
-<h3>Nuxt 3 Component</h3>
-<pre><code class="language-vue">&lt;!-- components/MarkdownEditor.vue --&gt;
+}</code></pre></p><h2 class="quikdown-h2">Nuxt</h2>
+<h3 class="quikdown-h3">Nuxt 3 Component</h3>
+<p><pre class="quikdown-pre"><code class="language-vue">&lt;!-- components/MarkdownEditor.vue --&gt;
 &lt;template&gt;
   &lt;div class=&quot;markdown-editor&quot;&gt;
     &lt;textarea 
@@ -561,10 +528,8 @@ import quikdown from &#39;quikdown&#39;;
 
 const markdown = ref(&#39;# Hello Nuxt 3&#39;);
 const html = computed(() =&gt; quikdown(markdown.value, { inline_styles: true }));
-&lt;/script&gt;
-</code></pre>
-<h3>Nuxt Plugin</h3>
-<pre><code class="language-javascript">// plugins/quikdown.client.js
+&lt;/script&gt;</code></pre></p><h3 class="quikdown-h3">Nuxt Plugin</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">// plugins/quikdown.client.js
 import quikdown from &#39;quikdown&#39;;
 import quikdown_bd from &#39;quikdown/bd&#39;;
 
@@ -579,20 +544,15 @@ export default defineNuxtPlugin(() =&gt; {
 
 // Usage in component
 // const { $quikdown } = useNuxtApp();
-// const html = $quikdown(markdown);
-</code></pre>
-<h2>Common Patterns</h2>
-<h3>Debounced Updates</h3>
-<p>For better performance with large documents:</p>
-<pre><code class="language-javascript">import { debounce } from &#39;lodash-es&#39;; // or your debounce implementation
+// const html = $quikdown(markdown);</code></pre></p><h2 class="quikdown-h2">Common Patterns</h2>
+<h3 class="quikdown-h3">Debounced Updates</h3>
+<p>For better performance with large documents:</p><pre class="quikdown-pre"><code class="language-javascript">import { debounce } from &#39;lodash-es&#39;; // or your debounce implementation
 
 const debouncedConvert = debounce((markdown, callback) =&gt; {
   const html = quikdown(markdown);
   callback(html);
-}, 300);
-</code></pre>
-<h3>Syntax Highlighting Integration</h3>
-<pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
+}, 300);</code></pre><h3 class="quikdown-h3">Syntax Highlighting Integration</h3>
+<p><pre class="quikdown-pre"><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
 import hljs from &#39;highlight.js&#39;;
 
 const highlightPlugin = {
@@ -611,21 +571,15 @@ const highlightPlugin = {
 
 const html = quikdown(markdown, { 
   fence_plugin: highlightPlugin 
-});
-</code></pre>
-<h3>Sanitization</h3>
-<p>While quikdown has built-in XSS protection, you can add extra sanitization:</p>
-<pre><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
+});</code></pre></p><h3 class="quikdown-h3">Sanitization</h3>
+<p>While quikdown has built-in XSS protection, you can add extra sanitization:</p><pre class="quikdown-pre"><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
 import DOMPurify from &#39;dompurify&#39;;
 
 function safeRender(markdown) {
   const html = quikdown(markdown);
   return DOMPurify.sanitize(html);
-}
-</code></pre>
-<h2>TypeScript Support</h2>
-<p>All frameworks can benefit from quikdown&#39;s TypeScript definitions:</p>
-<pre><code class="language-typescript">import quikdown, { QuikdownOptions } from &#39;quikdown&#39;;
+}</code></pre><h2 class="quikdown-h2">TypeScript Support</h2>
+<p>All frameworks can benefit from quikdown's TypeScript definitions:</p><pre class="quikdown-pre"><code class="language-typescript">import quikdown, { QuikdownOptions } from &#39;quikdown&#39;;
 import quikdown_bd from &#39;quikdown/bd&#39;;
 
 const options: QuikdownOptions = {
@@ -639,28 +593,22 @@ const options: QuikdownOptions = {
 };
 
 const html: string = quikdown(markdown, options);
-const backToMarkdown: string = quikdown_bd.toMarkdown(html);
-</code></pre>
-<h2>Performance Tips</h2>
-<ol>
-<li><strong>Memoize conversions</strong> - Use React.useMemo, Vue computed, or Svelte reactive statements</li>
-<li><strong>Debounce updates</strong> - For live editors, debounce the conversion by 200-300ms</li>
-<li><strong>Virtual scrolling</strong> - For very long documents, consider virtual scrolling</li>
-<li><strong>Web Workers</strong> - For large documents, consider moving conversion to a Web Worker</li>
-<li><strong>Lazy loading</strong> - Load quikdown dynamically when needed:</li>
-</ol>
-<pre><code class="language-javascript">// Dynamic import
+const backToMarkdown: string = quikdown_bd.toMarkdown(html);</code></pre><h2 class="quikdown-h2">Performance Tips</h2>
+<ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">Memoize conversions</strong> - Use React.useMemo, Vue computed, or Svelte reactive statements</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Debounce updates</strong> - For live editors, debounce the conversion by 200-300ms</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Virtual scrolling</strong> - For very long documents, consider virtual scrolling</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Web Workers</strong> - For large documents, consider moving conversion to a Web Worker</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Lazy loading</strong> - Load quikdown dynamically when needed:</li>
+</ol><pre class="quikdown-pre"><code class="language-javascript">// Dynamic import
 const quikdown = await import(&#39;quikdown&#39;);
-const html = quikdown.default(markdown);
-</code></pre>
-<h2>See Also</h2>
-<ul>
-<li><a href="./api-reference.md">API Reference</a></li>
-<li><a href="./plugin-guide.md">Plugin Guide</a></li>
-<li><a href="./quikdown-bidirectional.md">Bidirectional Documentation</a></li>
-<li><a href="../examples/">Examples</a></li>
+const html = quikdown.default(markdown);</code></pre><h2 class="quikdown-h2">See Also</h2>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><a class="quikdown-a" href="./api-reference.md">API Reference</a></li>
+<li class="quikdown-li"><a class="quikdown-a" href="./plugin-guide.md">Plugin Guide</a></li>
+<li class="quikdown-li"><a class="quikdown-a" href="./quikdown-bidirectional.md">Bidirectional Documentation</a></li>
+<li class="quikdown-li"><a class="quikdown-a" href="../examples/">Examples</a></li>
 </ul>
-
     </article>
     <script>
         // Syntax highlighting

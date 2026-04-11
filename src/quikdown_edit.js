@@ -290,6 +290,7 @@ class QuikdownEditor {
                 border-radius: 4px;
                 overflow: hidden;
                 background: white;
+                color: #1f2937;
             }
             
             .qde-toolbar {
