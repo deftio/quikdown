@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.5
+ * @version 1.2.6
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -18,7 +18,7 @@
  */
 
 // Version will be injected at build time  
-const quikdownVersion = '1.2.5';
+const quikdownVersion = '1.2.6';
 
 // Constants for reuse
 const CLASS_PREFIX = 'quikdown-';

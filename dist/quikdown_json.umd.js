@@ -1,6 +1,6 @@
 /**
  * quikdown_json - JSON Markdown Parser
- * @version 1.2.5
+ * @version 1.2.6
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -19,7 +19,7 @@
      */
 
     // Version will be injected at build time
-    const quikdownVersion$1 = '1.2.5';
+    const quikdownVersion$1 = '1.2.6';
 
     // Safety limit to prevent infinite loops in list parsing
     const MAX_LOOP_ITERATIONS = 1000;
@@ -525,7 +525,7 @@
 
 
     // Version will be injected at build time
-    const quikdownVersion = '1.2.5';
+    const quikdownVersion = '1.2.6';
 
     /**
      * Convert markdown to JSON
