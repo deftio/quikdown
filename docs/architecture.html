@@ -64,20 +64,17 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1>quikdown Architecture</h1>
-<h2>Design Philosophy</h2>
-<p>quikdown is designed with these core principles:</p>
-<ol>
-<li><strong>Small &amp; Fast</strong> - Optimized for size (~9.3KB minified) and performance</li>
-<li><strong>Secure by Default</strong> - All HTML is escaped unless explicitly trusted</li>
-<li><strong>Zero Dependencies</strong> - No external libraries required</li>
-<li><strong>Extensible</strong> - Plugin system for custom rendering</li>
-<li><strong>Practical</strong> - Focused on the markdown subset actually used in chat/LLM outputs</li>
-</ol>
-<h2>Parser Architecture</h2>
-<h3>Overview</h3>
-<p>quikdown uses a multi-phase regex-based parser that prioritizes safety and simplicity:</p>
-<pre><code>Input Markdown
+        <h1 class="quikdown-h1">quikdown Architecture</h1>
+<h2 class="quikdown-h2">Design Philosophy</h2>
+<p>quikdown is designed with these core principles:</p><ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">Small & Fast</strong> - Optimized for size (~9.3KB minified) and performance</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Secure by Default</strong> - All HTML is escaped unless explicitly trusted</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Zero Dependencies</strong> - No external libraries required</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Extensible</strong> - Plugin system for custom rendering</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Practical</strong> - Focused on the markdown subset actually used in chat/LLM outputs</li>
+</ol><h2 class="quikdown-h2">Parser Architecture</h2>
+<h3 class="quikdown-h3">Overview</h3>
+<p>quikdown uses a multi-phase regex-based parser that prioritizes safety and simplicity:</p><pre class="quikdown-pre"><code>Input Markdown
     ↓
 Phase 1: Extract &amp; Protect (Code blocks, inline code)
     ↓
@@ -91,67 +88,53 @@ Phase 5: Create Paragraphs
     ↓
 Phase 6: Restore Protected Content
     ↓
-Output HTML
-</code></pre>
-<h3>Phase 1: Extract &amp; Protect</h3>
-<p>Before any processing, we extract code blocks and inline code, replacing them with placeholders:</p>
-<ul>
-<li><strong>Fenced code blocks</strong> → <code>§CB0§</code>, <code>§CB1§</code>, etc.</li>
-<li><strong>Inline code</strong> → <code>§IC0§</code>, <code>§IC1§</code>, etc.</li>
-</ul>
-<p>This prevents code content from being processed as markdown and ensures special characters remain intact.</p>
-<h3>Phase 2: HTML Escaping</h3>
-<p>All remaining content is HTML-escaped to prevent XSS attacks:</p>
-<ul>
-<li><code>&lt;</code> → <code>&amp;lt;</code></li>
-<li><code>&gt;</code> → <code>&amp;gt;</code></li>
-<li><code>&amp;</code> → <code>&amp;amp;</code></li>
-<li><code>&quot;</code> → <code>&amp;quot;</code></li>
-<li><code>&#39;</code> → <code>&amp;#39;</code></li>
-</ul>
-<p>This is done BEFORE markdown processing, ensuring no user input can inject HTML tags.</p>
-<h3>Phase 3: Block Elements</h3>
-<p>Process larger structural elements:</p>
-<ol>
-<li><strong>Tables</strong> - Multi-line processing with alignment support</li>
-<li><strong>Headings</strong> - ATX-style headers (<code>#</code> through <code>######</code>)</li>
-<li><strong>Blockquotes</strong> - Line-by-line <code>&gt;</code> prefixes</li>
-<li><strong>Horizontal rules</strong> - Three or more hyphens</li>
-<li><strong>Lists</strong> - Both ordered and unordered with nesting</li>
-</ol>
-<h3>Phase 4: Inline Elements</h3>
-<p>Process text formatting within blocks:</p>
-<ol>
-<li><strong>Images</strong> - Processed before links to avoid conflicts</li>
-<li><strong>Links</strong> - Standard markdown link syntax</li>
-<li><strong>Bold</strong> - <code>**text**</code> or <code>__text__</code></li>
-<li><strong>Italic</strong> - <code>*text*</code> or <code>_text_</code></li>
-<li><strong>Strikethrough</strong> - <code>~~text~~</code></li>
-<li><strong>Line breaks</strong> - Two trailing spaces</li>
-</ol>
-<h3>Phase 5: Paragraphs</h3>
-<p>Double newlines are converted to paragraph breaks, then we unwrap block elements that shouldn&#39;t be inside <code>&lt;p&gt;</code> tags.</p>
-<h3>Phase 6: Restore Protected Content</h3>
-<p>Finally, we replace the placeholders with the actual code content, properly formatted.</p>
-<h2>Key Design Decisions</h2>
-<h3>Why Regex Instead of AST?</h3>
-<ol>
-<li><strong>Size</strong> - No parser/lexer overhead</li>
-<li><strong>Speed</strong> - Single pass for most operations</li>
-<li><strong>Simplicity</strong> - Easier to audit and understand</li>
-<li><strong>Good enough</strong> - Handles 95% of real-world markdown</li>
-</ol>
-<h3>Why Extract-Escape-Process-Restore?</h3>
-<p>This pattern ensures:</p>
-<ol>
-<li>Code blocks are never modified</li>
-<li>HTML is always escaped (security)</li>
-<li>Markdown syntax inside code is preserved</li>
-<li>Processing order is predictable</li>
-</ol>
-<h3>Why No HTML Passthrough?</h3>
-<p>By default, all HTML is escaped for security. However, trusted HTML can be rendered using the fence plugin system:</p>
-<pre><code class="language-javascript">// Controlled HTML rendering via fence blocks
+Output HTML</code></pre><h3 class="quikdown-h3">Phase 1: Extract & Protect</h3>
+<p>Before any processing, we extract code blocks and inline code, replacing them with placeholders:</p><ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong">Fenced code blocks</strong> → <code class="quikdown-code">§CB0§</code>, <code class="quikdown-code">§CB1§</code>, etc.</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Inline code</strong> → <code class="quikdown-code">§IC0§</code>, <code class="quikdown-code">§IC1§</code>, etc.</li>
+</ul><p>This prevents code content from being processed as markdown and ensures special characters remain intact.</p><h3 class="quikdown-h3">Phase 2: HTML Escaping</h3>
+<p>All remaining content is HTML-escaped to prevent XSS attacks:
+<ul class="quikdown-ul">
+<li class="quikdown-li"><code class="quikdown-code">&lt;</code> → <code class="quikdown-code">&amp;lt;</code></li>
+<li class="quikdown-li"><code class="quikdown-code">&gt;</code> → <code class="quikdown-code">&amp;gt;</code></li>
+<li class="quikdown-li"><code class="quikdown-code">&amp;</code> → <code class="quikdown-code">&amp;amp;</code></li>
+<li class="quikdown-li"><code class="quikdown-code">&quot;</code> → <code class="quikdown-code">&amp;quot;</code></li>
+<li class="quikdown-li"><code class="quikdown-code">&#39;</code> → <code class="quikdown-code">&amp;#39;</code></li>
+</ul><p>This is done BEFORE markdown processing, ensuring no user input can inject HTML tags.</p><h3 class="quikdown-h3">Phase 3: Block Elements</h3>
+<p>Process larger structural elements:
+<ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">Tables</strong> - Multi-line processing with alignment support</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Headings</strong> - ATX-style headers (<code class="quikdown-code">#</code> through <code class="quikdown-code">######</code>)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Blockquotes</strong> - Line-by-line <code class="quikdown-code">&gt;</code> prefixes</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Horizontal rules</strong> - Three or more hyphens</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Lists</strong> - Both ordered and unordered with nesting</li>
+</ol><h3 class="quikdown-h3">Phase 4: Inline Elements</h3>
+<p>Process text formatting within blocks:
+<ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">Images</strong> - Processed before links to avoid conflicts</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Links</strong> - Standard markdown link syntax</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Bold</strong> - <code class="quikdown-code">**text**</code> or <code class="quikdown-code">__text__</code></li>
+<li class="quikdown-li"><strong class="quikdown-strong">Italic</strong> - <code class="quikdown-code">*text*</code> or <code class="quikdown-code">_text_</code></li>
+<li class="quikdown-li"><strong class="quikdown-strong">Strikethrough</strong> - <code class="quikdown-code">~~text~~</code></li>
+<li class="quikdown-li"><strong class="quikdown-strong">Line breaks</strong> - Two trailing spaces</li>
+</ol><h3 class="quikdown-h3">Phase 5: Paragraphs</h3>
+<p>Double newlines are converted to paragraph breaks, then we unwrap block elements that shouldn't be inside <code class="quikdown-code">&lt;p&gt;</code> tags.</p><h3 class="quikdown-h3">Phase 6: Restore Protected Content</h3>
+<p>Finally, we replace the placeholders with the actual code content, properly formatted.</p><h2 class="quikdown-h2">Key Design Decisions</h2>
+<h3 class="quikdown-h3">Why Regex Instead of AST?</h3>
+<ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">Size</strong> - No parser/lexer overhead</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Speed</strong> - Single pass for most operations</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Simplicity</strong> - Easier to audit and understand</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Good enough</strong> - Handles 95% of real-world markdown</li>
+</ol><h3 class="quikdown-h3">Why Extract-Escape-Process-Restore?</h3>
+<p>This pattern ensures:
+<ol class="quikdown-ol">
+<li class="quikdown-li">Code blocks are never modified</li>
+<li class="quikdown-li">HTML is always escaped (security)</li>
+<li class="quikdown-li">Markdown syntax inside code is preserved</li>
+<li class="quikdown-li">Processing order is predictable</li>
+</ol><h3 class="quikdown-h3">Why No HTML Passthrough?</h3>
+<p>By default, all HTML is escaped for security. However, trusted HTML can be rendered using the fence plugin system:</p><pre class="quikdown-pre"><code class="language-javascript">// Controlled HTML rendering via fence blocks
 const plugin = {
   render: (content, lang) =&gt; {
     if (lang === &#39;html-render&#39;) {
@@ -159,101 +142,80 @@ const plugin = {
     }
     return undefined; // Use default escaping
   }
-};
-</code></pre>
-<p>This makes trust explicit and granular.</p>
-<h2>Performance Considerations</h2>
-<h3>Optimizations</h3>
-<ol>
-<li><strong>Single-pass regex</strong> where possible</li>
-<li><strong>Pre-compiled patterns</strong> (via JavaScript&#39;s regex literals)</li>
-<li><strong>Minimal string concatenation</strong></li>
-<li><strong>Early returns</strong> for empty/invalid input</li>
-</ol>
-<h3>Trade-offs</h3>
-<ul>
-<li><strong>No streaming</strong> - Entire document processed at once</li>
-<li><strong>Regex limitations</strong> - Some edge cases in deeply nested structures</li>
-<li><strong>No incremental updates</strong> - Full re-parse on change</li>
-</ul>
-<p>These trade-offs are acceptable for the target use case (chat messages, LLM outputs) where documents are typically small.</p>
-<h2>Memory Usage</h2>
-<ul>
-<li><strong>Linear with input size</strong> - No exponential growth</li>
-<li><strong>Temporary arrays</strong> for code blocks and placeholders</li>
-<li><strong>No AST</strong> - No intermediate tree structure</li>
-</ul>
-<h2>Browser Compatibility</h2>
-<ul>
-<li><strong>ES6 features used</strong>: Template literals, arrow functions, const/let</li>
-<li><strong>No polyfills needed</strong> for modern browsers (2017+)</li>
-<li><strong>Regex compatibility</strong>: Avoided lookbehind for older Safari</li>
-</ul>
-<h2>Extensibility Points</h2>
-<h3>1. Fence Plugin System</h3>
-<p>Custom renderers for fenced code blocks:</p>
-<pre><code class="language-javascript">const myPlugin = {
+};</code></pre><p>This makes trust explicit and granular.</p><h2 class="quikdown-h2">Performance Considerations</h2>
+<h3 class="quikdown-h3">Optimizations</h3>
+<ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">Single-pass regex</strong> where possible</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Pre-compiled patterns</strong> (via JavaScript's regex literals)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Minimal string concatenation</strong></li>
+<li class="quikdown-li"><strong class="quikdown-strong">Early returns</strong> for empty/invalid input</li>
+</ol><h3 class="quikdown-h3">Trade-offs</h3>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong">No streaming</strong> - Entire document processed at once</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Regex limitations</strong> - Some edge cases in deeply nested structures</li>
+<li class="quikdown-li"><strong class="quikdown-strong">No incremental updates</strong> - Full re-parse on change</li>
+</ul><p>These trade-offs are acceptable for the target use case (chat messages, LLM outputs) where documents are typically small.</p><h2 class="quikdown-h2">Memory Usage</h2>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong">Linear with input size</strong> - No exponential growth</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Temporary arrays</strong> for code blocks and placeholders</li>
+<li class="quikdown-li"><strong class="quikdown-strong">No AST</strong> - No intermediate tree structure</li>
+</ul><h2 class="quikdown-h2">Browser Compatibility</h2>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong">ES6 features used</strong>: Template literals, arrow functions, const/let</li>
+<li class="quikdown-li"><strong class="quikdown-strong">No polyfills needed</strong> for modern browsers (2017+)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Regex compatibility</strong>: Avoided lookbehind for older Safari</li>
+</ul><h2 class="quikdown-h2">Extensibility Points</h2>
+<h3 class="quikdown-h3">1. Fence Plugin System</h3>
+<p>Custom renderers for fenced code blocks:</p><pre class="quikdown-pre"><code class="language-javascript">const myPlugin = {
   render: (content, language) =&gt; {
     // content: Raw, unescaped content
     // language: The language identifier (if any)
     // Return: HTML string or undefined (fall back to default)
   }
-};
-</code></pre>
-<h3>2. Style Options</h3>
-<ul>
-<li><strong>Inline styles</strong>: Embed CSS directly in elements</li>
-<li><strong>CSS classes</strong>: Use external stylesheets</li>
-<li><strong>Custom prefix</strong>: Avoid class name collisions</li>
-</ul>
-<h3>3. Configuration</h3>
-<p>The <code>configure()</code> method creates reusable configured instances:</p>
-<pre><code class="language-javascript">const myParser = quikdown.configure({
+};</code></pre><h3 class="quikdown-h3">2. Style Options</h3>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong">Inline styles</strong>: Embed CSS directly in elements</li>
+<li class="quikdown-li"><strong class="quikdown-strong">CSS classes</strong>: Use external stylesheets</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Custom prefix</strong>: Avoid class name collisions</li>
+</ul><h3 class="quikdown-h3">3. Configuration</h3>
+<p>The <code class="quikdown-code">configure()</code> method creates reusable configured instances:</p><pre class="quikdown-pre"><code class="language-javascript">const myParser = quikdown.configure({
   inline_styles: true,
   fence_plugin: myPlugin
-});
-</code></pre>
-<h2>Security Model</h2>
-<h3>Default Protections</h3>
-<ol>
-<li><strong>HTML Escaping</strong> - All user input is escaped</li>
-<li><strong>No Script Execution</strong> - No <code>eval()</code> or dynamic code</li>
-<li><strong>No HTML Parsing</strong> - No innerHTML on untrusted content</li>
-<li><strong>Protected Code Blocks</strong> - Code content is preserved exactly</li>
-</ol>
-<h3>Trust Boundaries</h3>
-<ul>
-<li><strong>Input</strong>: Untrusted markdown text</li>
-<li><strong>Output</strong>: Safe HTML (escaped)</li>
-<li><strong>Plugins</strong>: Trusted code (developer-provided)</li>
-<li><strong>Plugin Content</strong>: Potentially unsafe (plugin&#39;s responsibility)</li>
-</ul>
-<h3>Recommended Practices</h3>
-<ol>
-<li>Only use fence plugins from trusted sources</li>
-<li>Validate plugin output if accepting third-party plugins</li>
-<li>Use Content Security Policy (CSP) headers</li>
-<li>Sanitize URLs in production applications</li>
-</ol>
-<h2>Limitations by Design</h2>
-<h3>Not Supported</h3>
-<ul>
-<li>Full CommonMark specification</li>
-<li>HTML blocks (security)</li>
-<li>Reference-style links (complexity)</li>
-<li>Footnotes (uncommon in chat)</li>
-<li>Definition lists (uncommon)</li>
-<li>Nested blockquotes with different markers</li>
-</ul>
-<h3>Edge Cases</h3>
-<ul>
-<li>Mixed emphasis markers can mis-parse</li>
-<li>Deeply nested lists beyond 10 levels</li>
-<li>Tables without proper separator rows</li>
-<li>Unclosed fenced code blocks</li>
-</ul>
-<p>These limitations keep the parser small, fast, and secure.</p>
-
+});</code></pre><h2 class="quikdown-h2">Security Model</h2>
+<h3 class="quikdown-h3">Default Protections</h3>
+<ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">HTML Escaping</strong> - All user input is escaped</li>
+<li class="quikdown-li"><strong class="quikdown-strong">No Script Execution</strong> - No <code class="quikdown-code">eval()</code> or dynamic code</li>
+<li class="quikdown-li"><strong class="quikdown-strong">No HTML Parsing</strong> - No innerHTML on untrusted content</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Protected Code Blocks</strong> - Code content is preserved exactly</li>
+</ol><h3 class="quikdown-h3">Trust Boundaries</h3>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong">Input</strong>: Untrusted markdown text</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Output</strong>: Safe HTML (escaped)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Plugins</strong>: Trusted code (developer-provided)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Plugin Content</strong>: Potentially unsafe (plugin's responsibility)</li>
+</ul><h3 class="quikdown-h3">Recommended Practices</h3>
+<ol class="quikdown-ol">
+<li class="quikdown-li">Only use fence plugins from trusted sources</li>
+<li class="quikdown-li">Validate plugin output if accepting third-party plugins</li>
+<li class="quikdown-li">Use Content Security Policy (CSP) headers</li>
+<li class="quikdown-li">Sanitize URLs in production applications</li>
+</ol><h2 class="quikdown-h2">Limitations by Design</h2>
+<h3 class="quikdown-h3">Not Supported</h3>
+<ul class="quikdown-ul">
+<li class="quikdown-li">Full CommonMark specification</li>
+<li class="quikdown-li">HTML blocks (security)</li>
+<li class="quikdown-li">Reference-style links (complexity)</li>
+<li class="quikdown-li">Footnotes (uncommon in chat)</li>
+<li class="quikdown-li">Definition lists (uncommon)</li>
+<li class="quikdown-li">Nested blockquotes with different markers</li>
+</ul><h3 class="quikdown-h3">Edge Cases</h3>
+<ul class="quikdown-ul">
+<li class="quikdown-li">Mixed emphasis markers can mis-parse</li>
+<li class="quikdown-li">Deeply nested lists beyond 10 levels</li>
+<li class="quikdown-li">Tables without proper separator rows</li>
+<li class="quikdown-li">Unclosed fenced code blocks</li>
+</ul><p>These limitations keep the parser small, fast, and secure.</p>
     </article>
     <script>
         // Syntax highlighting

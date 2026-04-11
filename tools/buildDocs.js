@@ -9,12 +9,14 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { marked } from 'marked';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.join(__dirname, '..');
+
+// Use quikdown itself to render its own docs
+const { default: quikdown } = await import(path.join(projectRoot, 'dist', 'quikdown.esm.js'));
 
 // HTML template for documentation pages
 const htmlTemplate = (title, content, cssPath = 'https://unpkg.com/github-markdown-css@5/github-markdown.css') => `<!DOCTYPE html>
@@ -94,17 +96,9 @@ const htmlTemplate = (title, content, cssPath = 'https://unpkg.com/github-markdo
 </body>
 </html>`;
 
-// Configure marked options
-marked.setOptions({
-    gfm: true,           // GitHub Flavored Markdown
-    breaks: true,        // Convert \n to <br>
-    headerIds: true,     // Add IDs to headers for navigation
-    mangle: false,       // Don't mangle email addresses
-    sanitize: false,     // Allow HTML in markdown
-    smartLists: true,    // Better list behavior
-    smartypants: false,  // Don't convert quotes and dashes
-    xhtml: false         // Use HTML5
-});
+// quikdown options for docs rendering — allow_unsafe_html because these are
+// our own trusted doc files that contain intentional raw HTML
+const qdOpts = { lazy_linefeeds: true, allow_unsafe_html: true };
 
 /**
  * Convert a markdown file to HTML
@@ -114,9 +108,10 @@ async function convertMarkdownToHtml(mdPath, htmlPath, title) {
         // Read markdown file
         const markdown = await fs.readFile(mdPath, 'utf8');
         
-        // Convert to HTML
-        const htmlContent = marked(markdown);
-        
+        // Convert to HTML. allow_unsafe_html is on because these are our own
+        // trusted doc files that contain raw HTML (tables, details, etc.)
+        const htmlContent = quikdown(markdown, qdOpts);
+
         // Wrap in template
         const fullHtml = htmlTemplate(title, htmlContent);
         
@@ -207,7 +202,7 @@ console.log(html);
     
     const docsIndexHtml = htmlTemplate(
         'Documentation Hub',
-        marked(docsIndexContent)
+        quikdown(docsIndexContent, qdOpts)
     );
     
     // Note: buildSite.js owns docs/index.html now (the new chrome-wrapped hub).

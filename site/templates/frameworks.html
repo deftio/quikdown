@@ -63,7 +63,7 @@
     body.qd-theme-dark .fw-note li { color: #b8b8c8; }
   </style>
 </head>
-<body class="qd-theme-dark">
+<body class="qd-theme-light">
   {{NAV_HTML}}
 
   <main>
@@ -79,6 +79,7 @@
     <section class="qd-section">
       <div class="fw-wrap">
 
+        <h2 style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 0.5rem 0;">Framework Integration</h2>
         <p class="fw-intro">
           quikdown works in any framework. The parser is a pure function (markdown in, HTML out). The editor manages its own DOM, so you mount it in a lifecycle hook and clean it up on unmount. Here are copy-paste patterns for the most common frameworks.
         </p>

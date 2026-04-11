@@ -18,7 +18,7 @@
     const THEMES = ['qd-theme-dark', 'qd-theme-light', 'qd-theme-auto'];
     const ICONS  = { 'qd-theme-dark': '🌙', 'qd-theme-light': '☀️', 'qd-theme-auto': '🖥️' };
     const STORAGE_KEY = 'quikdown-site-theme';
-    const DEFAULT_THEME = 'qd-theme-dark';
+    const DEFAULT_THEME = 'qd-theme-light';
 
     function applyTheme(theme) {
         document.body.classList.remove(...THEMES);

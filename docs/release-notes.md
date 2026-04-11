@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.2.4 (2026-04-11)
+## v1.2.4
 
 ### CI / Release pipeline
 - Merged tag creation and npm publish into a single CI workflow — fixes the issue where tags created by `GITHUB_TOKEN` could not trigger the publish workflow
@@ -15,7 +15,7 @@
 - Updated links to include Frameworks, Downloads pages
 - Cleaned stale dev/ files (deleted 5 implemented proposals and oldest lexer experiment)
 
-## v1.2.3 (2026-04-08)
+## v1.2.3
 
 ### 🎯 New Features
 
@@ -47,7 +47,7 @@
 
 ---
 
-## v1.2.2 (2025-12-15)
+## v1.2.2
 
 ### 🔧 CI/CD
 - Upgraded npm for OIDC publishing support
@@ -57,14 +57,14 @@
 
 ---
 
-## v1.2.1 (2025-12-14)
+## v1.2.1
 
 ### 🔧 CI/CD
 - Release pipeline refinements and version bump
 
 ---
 
-## v1.2.0 (2025-12-13)
+## v1.2.0
 
 ### 🎯 New Features
 
@@ -135,7 +135,7 @@
 - **Updated fence types**: Added GeoJSON and STL to supported fence types list
 - **API documentation**: Added new methods and options
 
-## v1.1.0 (2025-08-23)
+## v1.1.0
 
 ### 💥 Breaking Changes
 
@@ -243,7 +243,7 @@ const plugin = {
 - **Fence plugin test migration**: All tests updated to use new v1.1.0 object format
 - **Bidirectional coverage**: Added tests for fence plugins with and without reverse handlers
 
-## v1.0.5 (2025-08-19)
+## v1.0.5
 
 ### 🚀 New: Quikdown Editor
 
@@ -388,7 +388,7 @@ const plugin = {
 - Reorganized examples index page with clear sections for each module
 - Added individual size badges for all three modules in README
 
-## v1.0.4 (2025-08-18)
+## v1.0.4
 
 ### 🎉 Major Feature: Bidirectional Conversion Support
 
@@ -531,7 +531,7 @@ const plugin = {
 - Round-trip conversion may normalize some markdown formatting
 - Mermaid diagrams are preserved but not editable in rendered view
 
-## v1.0.3 (2025-08-17)
+## v1.0.3
 
 ### Major Size Optimizations
 - **Achieved 24% size reduction**: Bundle now ~7.0KB (down from 9.2KB)
@@ -621,7 +621,7 @@ const plugin = {
 - Added quikdown icon/favicon to all example pages
 - Updated todo.md with current feature set
 
-## v1.0.1 (2025-08-09)
+## v1.0.1
 
 ### Bug Fixes
 - Fixed README demo URL
