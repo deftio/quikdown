@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Release Process - quikdown Documentation</title>
+    <link rel="stylesheet" href="https://unpkg.com/github-markdown-css@5/github-markdown.css">
+    <link rel="stylesheet" href="https://unpkg.com/prismjs@1/themes/prism.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+        }
+        .markdown-body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            body { padding: 15px; }
+        }
+        /* Ensure emojis display properly */
+        .markdown-body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        /* Code block styling */
+        pre {
+            background-color: #f6f8fa;
+            border-radius: 6px;
+            padding: 16px;
+            overflow: auto;
+        }
+        code {
+            background-color: rgba(175, 184, 193, 0.2);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 85%;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 16px;
+            margin-bottom: 16px;
+        }
+        table th, table td {
+            border: 1px solid #d0d7de;
+            padding: 6px 13px;
+        }
+        table tr:nth-child(2n) {
+            background-color: #f6f8fa;
+        }
+    </style>
+    <script src="https://unpkg.com/prismjs@1/components/prism-core.min.js"></script>
+    <script src="https://unpkg.com/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+</head>
+<body>
+    <article class="markdown-body">
+        <h1 class="quikdown-h1">Release Process</h1>
+<h2 class="quikdown-h2">Overview</h2>
+<p>Releases are automated. When a commit lands on <code class="quikdown-code">main</code> with a new version in <code class="quikdown-code">package.json</code>, CI creates the git tag, publishes to npm, and creates a GitHub Release. You just need to bump the version, get the PR merged, and CI does the rest.</p><h2 class="quikdown-h2">Steps</h2>
+<h3 class="quikdown-h3">1. Create a feature branch</h3>
+<p><pre class="quikdown-pre"><code class="language-bash">git checkout main
+git pull
+git checkout -b feature/your-change-name</code></pre></p><h3 class="quikdown-h3">2. Make changes, bump version</h3>
+<p><pre class="quikdown-pre"><code class="language-bash"># Make your changes, then bump the version
+npm version patch --no-git-tag-version   # or minor / major
+
+# Build and test (also runs on commit via husky pre-commit hook)
+npm run build
+npm test</code></pre></p><h3 class="quikdown-h3">3. Commit</h3>
+<p><pre class="quikdown-pre"><code class="language-bash">git add -A
+git commit -m &quot;v1.2.5: description of changes&quot;</code></pre></p><p>The pre-commit hook runs <code class="quikdown-code">npm run lint</code> and <code class="quikdown-code">npm test</code> automatically. If either fails, the commit is blocked — fix the issue and try again.</p><h3 class="quikdown-h3">4. Push and create a PR</h3>
+<p><pre class="quikdown-pre"><code class="language-bash">git push -u origin feature/your-change-name
+
+gh pr create \
+  --title &quot;v1.2.5: short description&quot; \
+  --body &quot;- change 1
+- change 2
+- change 3&quot;</code></pre></p><h3 class="quikdown-h3">5. Wait for CI, then merge</h3>
+<p>CI runs the <code class="quikdown-code">build</code> job (lint, test, build verification). Branch protection requires this to pass.</p><pre class="quikdown-pre"><code class="language-bash"># Check CI status
+gh pr checks
+
+# Merge when green
+gh pr merge --squash</code></pre><h3 class="quikdown-h3">6. CI handles the rest</h3>
+<p>After merge to main, CI automatically:
+<ol class="quikdown-ol">
+<li class="quikdown-li">Runs tests again</li>
+<li class="quikdown-li">Reads the version from <code class="quikdown-code">package.json</code></li>
+<li class="quikdown-li">Checks if that git tag already exists</li>
+<li class="quikdown-li">If new: creates and pushes the <code class="quikdown-code">vX.Y.Z</code> tag</li>
+<li class="quikdown-li">Publishes to npm (OIDC trusted publisher, no token needed)</li>
+<li class="quikdown-li">Creates a GitHub Release with dist files attached</li>
+</ol><h3 class="quikdown-h3">7. Verify</h3>
+<p><pre class="quikdown-pre"><code class="language-bash"># Check the release appeared
+gh release list --limit 3
+
+# Check npm
+npm view quikdown version</code></pre></p><h2 class="quikdown-h2">If something goes wrong</h2>
+<h3 class="quikdown-h3">Publish job failed after tagging</h3>
+<p>The tag exists but npm/GitHub Release didn't happen. Use the manual fallback:</p><pre class="quikdown-pre"><code class="language-bash">gh workflow run publish.yml -f tag=v1.2.5</code></pre><h3 class="quikdown-h3">Pre-commit hook is too slow</h3>
+<p>The hook runs full lint + tests. This is intentional — it prevents broken commits. If you need to bypass it temporarily (not recommended):</p><pre class="quikdown-pre"><code class="language-bash">git commit --no-verify -m &quot;wip: temporary&quot;</code></pre><h3 class="quikdown-h3">Version already exists on npm</h3>
+<p><code class="quikdown-code">tools/checkVersion.cjs</code> catches this before tagging. Bump to the next version and try again.</p><h2 class="quikdown-h2">What CI does (detail)</h2>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong">On PR:</strong> runs the <code class="quikdown-code">build</code> job only (test + build verification)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">On push to main:</strong> runs <code class="quikdown-code">build</code>, then <code class="quikdown-code">publish</code> (conditional — only if the version tag is new)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Manual dispatch:</strong> <code class="quikdown-code">publish.yml</code> can be triggered manually for retrying failed publishes</li>
+</ul><h2 class="quikdown-h2">Branch protection</h2>
+<ul class="quikdown-ul">
+<li class="quikdown-li"><code class="quikdown-code">main</code> requires the <code class="quikdown-code">build</code> status check to pass before merge</li>
+<li class="quikdown-li">Direct pushes to <code class="quikdown-code">main</code> are discouraged — use PRs</li>
+<li class="quikdown-li"><code class="quikdown-code">v*</code> tags are created by CI, not manually</li>
+</ul>
+</p>
+    </article>
+    <script>
+        // Syntax highlighting
+        if (typeof Prism !== 'undefined') {
+            Prism.highlightAll();
+        }
+    </script>
+</body>
+</html>
