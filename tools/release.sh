@@ -81,50 +81,40 @@ info "  Commits: $COMMIT_COUNT since main"
 echo ""
 
 warn "This will:"
-warn "  1. Switch to main"
-warn "  2. Pull latest from origin"
-warn "  3. Squash-merge $BRANCH into main"
-warn "  4. Push main to origin"
-warn "  5. CI will auto-tag $TAG and publish to npm"
+warn "  1. Push $BRANCH to origin"
+warn "  2. Create a PR to main"
+warn "  3. Auto-merge after CI passes (squash)"
+warn "  4. CI will auto-tag $TAG and publish to npm"
 echo ""
 
 read -r -p "Proceed? [y/N] " CONFIRM
 [[ "$CONFIRM" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
 
-# --- merge to main -----------------------------------------------------------
+# --- push branch and create PR -----------------------------------------------
 
-info "\nSwitching to main..."
-git checkout main
+info "\nPushing $BRANCH to origin..."
+git push -u origin "$BRANCH" || die "Push failed."
 
-info "Pulling latest main from origin..."
-git pull origin main || warn "Pull failed — continuing with local main (may need force push)"
+info "\nCreating PR..."
+PR_URL=$(gh pr create \
+  --title "release ${TAG}" \
+  --body "Automated release from \`${BRANCH}\`.
 
-info "Squash-merging $BRANCH into main..."
-git merge "$BRANCH" --squash || die "Merge failed. Resolve conflicts and try again."
+## Changes
+$(git log --oneline main..HEAD | sed 's/^/- /')" \
+  2>&1) || die "PR creation failed: $PR_URL"
 
-git commit -m "release ${TAG}
+info "PR created: $PR_URL"
 
-Squash-merged from ${BRANCH}.
-See feature branch for individual commits."
+info "\nEnabling auto-merge (squash)..."
+gh pr merge --squash --auto || warn "Auto-merge not available — merge manually after CI passes."
 
-# --- push --------------------------------------------------------------------
-
-info "\nPushing main to origin..."
-if git push origin main; then
-  info "\n=== Release $TAG pushed ==="
-  info "CI will now:"
-  info "  1. Run tests + build"
-  info "  2. Create tag $TAG"
-  info "  3. Publish to npm with provenance"
-  info "  4. Create GitHub Release"
-  echo ""
-  info "Verify at:"
-  echo "  https://github.com/deftio/quikdown/actions"
-  echo "  https://github.com/deftio/quikdown/releases"
-  echo "  npm view quikdown version"
-else
-  warn "\nPush failed. This may happen if local main diverged from origin."
-  warn "If you're sure this is correct, force push:"
-  echo "  git push origin main --force"
-  warn "\nOnly force push if you are the sole maintainer and understand the consequences."
-fi
+info "\n=== Release $TAG submitted ==="
+info "CI will run on the PR. After merge, CI will:"
+info "  1. Create tag $TAG"
+info "  2. Publish to npm with provenance"
+info "  3. Create GitHub Release"
+echo ""
+info "Monitor at:"
+echo "  $PR_URL"
+echo "  https://github.com/deftio/quikdown/actions"

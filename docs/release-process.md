@@ -2,9 +2,34 @@
 
 ## Overview
 
-Releases are automated. When a commit lands on `main` with a new version in `package.json`, CI creates the git tag, publishes to npm, and creates a GitHub Release. You just need to bump the version, get the PR merged, and CI does the rest.
+Releases are automated. When a commit lands on `main` with a new version in `package.json`, CI creates the git tag, publishes to npm, and creates a GitHub Release. You just need to bump the version, get it onto main, and CI does the rest.
 
-## Steps
+There are two ways to release:
+
+- **`npm run release`** — guided script that runs preflight checks, squash-merges your feature branch into main, and pushes. One command, fully automated. Best for solo maintainers.
+- **Manual PR workflow** — push the branch, create a PR via `gh pr create`, wait for CI, merge via `gh pr merge`. Better for teams or when you want a review step.
+
+Both end the same way: a push to main triggers CI which handles tagging and publishing.
+
+## Option A: `npm run release`
+
+From your feature branch with everything committed:
+
+```bash
+npm run release
+```
+
+The script will:
+1. Verify you're on a feature branch (not main)
+2. Check for clean working tree
+3. Run tests and build
+4. Auto-commit any badge/dist drift
+5. Show a summary and ask for confirmation
+6. Squash-merge into main and push
+
+CI takes over from there.
+
+## Option B: Manual PR workflow
 
 ### 1. Create a feature branch
 
