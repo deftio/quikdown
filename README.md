@@ -6,37 +6,32 @@
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![Bundle Size](https://img.shields.io/badge/minified-9.3KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
-Quikdown is a small, secure markdown parser with bidirectional conversion. Zero dependencies, XSS protection built-in, extensible via plugins for code highlighting and diagrams, and works in browser and Node.js.
+A small, secure markdown parser and editor for browsers and Node.js. Three modules — use only what you need.
 
-For small and fast projects quikdown includes built-in inline styles for a "batteries included" rendering experience, but these can be overridden with themed css (see light and dark examples).
+- **quikdown.js** (9.3 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.
+- **quikdown_bd.js** (14.1 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.
+- **quikdown_edit.js** (80 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.
+- **quikdown_ast.js** / **quikdown_json.js** / **quikdown_yaml.js** / **quikdown_ast_html.js** — AST companion libraries for structured output.
 
-- **quikdown.js** (9.3KB) - Markdown to HTML Parser with theme support, XSS protection, fence callbacks
-- **quikdown_bd.js** (14.1KB) - Bidirectional (HTML ↔ Markdown) Parser
-- **quikdown_edit.js** (80.0KB) - Drop-in editor component with live preview, copy-as-rich-text, and lazy-loaded fence handlers
-- **quikdown_ast.js** - Markdown to AST (Abstract Syntax Tree) Parser
-- **quikdown_json.js** - Markdown to JSON conversion
-- **quikdown_yaml.js** - Markdown to YAML conversion
-- **quikdown_ast_html.js** - AST/JSON/YAML to HTML renderer
+**[Try the Editor](https://deftio.github.io/quikdown/edit/)** | **[Examples](https://deftio.github.io/quikdown/examples/)** | **[Frameworks](https://deftio.github.io/quikdown/frameworks/)** | **[Downloads](https://deftio.github.io/quikdown/downloads/)** | **[Docs](docs/)**
 
-🚀 **[Live Demo](https://deftio.github.io/quikdown/examples/quikdown-live.html)** | **[Editor Demo](https://deftio.github.io/quikdown/examples/qde/)** | **[Documentation](docs/)**
-
-📍 **Quick Links:** [Installation](#installation) • [Quick Start](#quick-start) • [API](#api-reference) • [TypeScript](#typescript-support) • [Plugins](#fence-plugins) • [Examples](examples/)
+![quikdown editor in split mode with Mermaid diagram rendering](site/assets/editor-screenshot.png)
+*quikdown_edit in split mode — markdown source on the left, live rendered preview with Mermaid diagram on the right. Toolbar shows mode switching, undo/redo, copy, and linefeed controls.*
 
 ## Features
 
-- 📦 **Zero dependencies** - No external libraries required
-- 🌐 **Universal** - Works in browsers and Node.js
-- 🚀 **Lightweight** - 9.3KB (core), 14.1KB (bidirectional), 80KB (editor)
-- 🔒 **Secure by default** - Built-in XSS protection with URL sanitization
-- 🎨 **Flexible styling** - Inline styles or CSS classes with theme support
-- 🔌 **Plugin system** - Extensible fence block handlers
-- ⚡ **Fast** - Optimized regex-based parsing
-- 📝 **CommonMark subset** - Essential markdown features
-- ✅ **Task Lists** - GitHub-style checkboxes
-- 🔗 **Autolinks** - Automatic URL detection
-- 🔄 **Bidirectional** - Convert HTML back to Markdown (quikdown_bd)
-- 💬 **Lazy linefeeds** - Single newlines become line breaks (configurable)
-- 📱 **Editor component** - Drop-in markdown editor with live preview
+- **Regex-based parser** — single-pass, no AST intermediate. Handles headings, lists, tables, code blocks, inline formatting, task lists, autolinks, and lazy linefeeds.
+- **Bidirectional editing** — edit the rendered HTML and get markdown back. Round-trip preserves formatting, fences, and tables.
+- **Drop-in editor** — one `<div>`, one import. Source, split, and preview modes. Undo/redo, toolbar, copy as rich text, light/dark/auto themes.
+- **Fence plugins** — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, raw HTML. All bidirectional.
+- **XSS-safe** — HTML entities escaped by default. URL sanitization blocks `javascript:`, `vbscript:`, and non-image `data:` URIs.
+- **Browser and Node.js** — parser and bidirectional modules work in both. Editor requires DOM.
+- **Zero runtime deps** — parser and bidirectional modules have no dependencies. Editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, etc.) from CDN on demand.
+- **TypeScript definitions** — hand-maintained `.d.ts` files for all modules.
+- **Inline styles or CSS classes** — built-in light/dark themes, or bring your own CSS.
+- **Copy as rich text** — copies the rendered preview to clipboard with images, tables, and rendered fences. Paste into Gmail, Word, Slack, Notion.
+- **Headless mode** — run the editor without a toolbar. Wire `undo()`, `setTheme()`, `setMode()` to your own UI.
+- **Structured output** — parse markdown into AST, JSON, or YAML via companion libraries.
 
 ## Installation
 

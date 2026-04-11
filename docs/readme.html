@@ -66,34 +66,26 @@
     <article class="markdown-body">
         <h1>quikdown</h1>
 <p><a href="https://github.com/deftio/quikdown/actions/workflows/ci.yml"><img src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" alt="CI"></a><br><a href="https://www.npmjs.com/package/quikdown"><img src="https://img.shields.io/npm/v/quikdown.svg" alt="npm version"></a><br><a href="https://github.com/deftio/quikdown"><img src="https://img.shields.io/badge/coverage-95.3%25-brightgreen" alt="Coverage"></a><br><a href="https://opensource.org/licenses/BSD-2-Clause"><img src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" alt="License: BSD-2-Clause"></a><br><a href="https://bundlephobia.com/package/quikdown"><img src="https://img.shields.io/badge/minified-9.3KB-green.svg" alt="Bundle Size"></a></p>
-<p>Quikdown is a small, secure markdown parser with bidirectional conversion. Zero dependencies, XSS protection built-in, extensible via plugins for code highlighting and diagrams, and works in browser and Node.js.</p>
-<p>For small and fast projects quikdown includes built-in inline styles for a &quot;batteries included&quot; rendering experience, but these can be overridden with themed css (see light and dark examples).</p>
+<p>A small, secure markdown parser and editor for browsers and Node.js. Three modules — use only what you need.</p>
 <ul>
-<li><strong>quikdown.js</strong> (9.3KB) - Markdown to HTML Parser with theme support, XSS protection, fence callbacks</li>
-<li><strong>quikdown_bd.js</strong> (14.1KB) - Bidirectional (HTML ↔ Markdown) Parser</li>
-<li><strong>quikdown_edit.js</strong> (80.0KB) - Drop-in editor component with live preview, copy-as-rich-text, and lazy-loaded fence handlers</li>
-<li><strong>quikdown_ast.js</strong> - Markdown to AST (Abstract Syntax Tree) Parser</li>
-<li><strong>quikdown_json.js</strong> - Markdown to JSON conversion</li>
-<li><strong>quikdown_yaml.js</strong> - Markdown to YAML conversion</li>
-<li><strong>quikdown_ast_html.js</strong> - AST/JSON/YAML to HTML renderer</li>
+<li><strong>quikdown.js</strong> (9.3 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.</li>
+<li><strong>quikdown_bd.js</strong> (14.1 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.</li>
+<li><strong>quikdown_edit.js</strong> (80 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.</li>
+<li><strong>quikdown_ast.js</strong> / <strong>quikdown_json.js</strong> / <strong>quikdown_yaml.js</strong> / <strong>quikdown_ast_html.js</strong> — AST companion libraries for structured output.</li>
 </ul>
-<p>🚀 <strong><a href="https://deftio.github.io/quikdown/examples/quikdown-live.html">Live Demo</a></strong> | <strong><a href="https://deftio.github.io/quikdown/examples/qde/">Editor Demo</a></strong> | <strong><a href="docs/">Documentation</a></strong></p>
-<p>📍 <strong>Quick Links:</strong> <a href="#installation">Installation</a> • <a href="#quick-start">Quick Start</a> • <a href="#api-reference">API</a> • <a href="#typescript-support">TypeScript</a> • <a href="#fence-plugins">Plugins</a> • <a href="examples/">Examples</a></p>
+<p><img src="site/assets/editor-screenshot.png" alt="quikdown editor in split mode with Mermaid diagram rendering"><br><em>quikdown_edit in split mode — markdown source on the left, live rendered preview with Mermaid diagram on the right. Toolbar shows mode switching, undo/redo, copy, and linefeed controls.</em></p>
+<p><strong><a href="https://deftio.github.io/quikdown/edit/">Try the Editor</a></strong> | <strong><a href="https://deftio.github.io/quikdown/examples/">Examples</a></strong> | <strong><a href="https://deftio.github.io/quikdown/frameworks/">Frameworks</a></strong> | <strong><a href="https://deftio.github.io/quikdown/downloads/">Downloads</a></strong> | <strong><a href="docs/">Docs</a></strong></p>
 <h2>Features</h2>
 <ul>
-<li>📦 <strong>Zero dependencies</strong> - No external libraries required</li>
-<li>🌐 <strong>Universal</strong> - Works in browsers and Node.js</li>
-<li>🚀 <strong>Lightweight</strong> - 9.3KB (core), 14.1KB (bidirectional), 80KB (editor)</li>
-<li>🔒 <strong>Secure by default</strong> - Built-in XSS protection with URL sanitization</li>
-<li>🎨 <strong>Flexible styling</strong> - Inline styles or CSS classes with theme support</li>
-<li>🔌 <strong>Plugin system</strong> - Extensible fence block handlers</li>
-<li>⚡ <strong>Fast</strong> - Optimized regex-based parsing</li>
-<li>📝 <strong>CommonMark subset</strong> - Essential markdown features</li>
-<li>✅ <strong>Task Lists</strong> - GitHub-style checkboxes</li>
-<li>🔗 <strong>Autolinks</strong> - Automatic URL detection</li>
-<li>🔄 <strong>Bidirectional</strong> - Convert HTML back to Markdown (quikdown_bd)</li>
-<li>💬 <strong>Lazy linefeeds</strong> - Single newlines become line breaks (configurable)</li>
-<li>📱 <strong>Editor component</strong> - Drop-in markdown editor with live preview</li>
+<li><strong>Regex-based parser</strong> — single-pass, no AST intermediate. Handles headings, lists, tables, code blocks, inline formatting, task lists, autolinks, and lazy linefeeds.</li>
+<li><strong>Bidirectional editing</strong> — edit the rendered HTML and get markdown back. Round-trip preserves formatting, fences, and tables.</li>
+<li><strong>Drop-in editor</strong> — one <code>&lt;div&gt;</code>, one import. Source, split, and preview modes. Undo/redo, toolbar, copy as rich text, light/dark/auto themes.</li>
+<li><strong>Fence plugins</strong> — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, raw HTML. All bidirectional.</li>
+<li><strong>XSS-safe</strong> — HTML entities escaped by default. URL sanitization blocks <code>javascript:</code>, <code>vbscript:</code>, and non-image <code>data:</code> URIs.</li>
+<li><strong>Browser and Node.js</strong> — parser and bidirectional modules work in both. Editor requires DOM.</li>
+<li><strong>Zero runtime deps</strong> — parser and bidirectional modules have no dependencies. Editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, etc.) from CDN on demand.</li>
+<li><strong>TypeScript definitions</strong> — hand-maintained <code>.d.ts</code> files for all modules.</li>
+<li><strong>Inline styles or CSS classes</strong> — built-in light/dark themes, or bring your own CSS.</li>
 </ul>
 <h2>Installation</h2>
 <p>Quikdown is available via <a href="https://www.npmjs.com/package/quikdown">NPM</a> and related <a href="https://unpkg.com/quikdown">unpkg</a> and <a href="https://cdn.jsdelivr.net/npm/quikdown">jsdelivr</a></p>

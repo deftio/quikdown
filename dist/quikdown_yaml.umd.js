@@ -1,6 +1,6 @@
 /**
  * quikdown_yaml - YAML Markdown Parser
- * @version 1.2.3
+ * @version 1.2.4
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -19,7 +19,7 @@
      */
 
     // Version will be injected at build time
-    const quikdownVersion$1 = '1.2.3';
+    const quikdownVersion$1 = '1.2.4';
 
     // Safety limit to prevent infinite loops in list parsing
     const MAX_LOOP_ITERATIONS = 1000;
@@ -524,7 +524,7 @@
 
 
     // Version will be injected at build time
-    const quikdownVersion = '1.2.3';
+    const quikdownVersion = '1.2.4';
 
     /**
      * Convert markdown to YAML

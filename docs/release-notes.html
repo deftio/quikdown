@@ -65,6 +65,22 @@
 <body>
     <article class="markdown-body">
         <h1>Release Notes</h1>
+<h2>v1.2.4 (2026-04-11)</h2>
+<h3>CI / Release pipeline</h3>
+<ul>
+<li>Merged tag creation and npm publish into a single CI workflow — fixes the issue where tags created by <code>GITHUB_TOKEN</code> could not trigger the publish workflow</li>
+<li><code>publish.yml</code> is now manual-only (for retrying failed publishes)</li>
+<li>Branch protection enabled on <code>main</code> — requires CI to pass before merge</li>
+<li>Upgraded CI from Node.js 20.x to 22.x (addresses upcoming Node 20 deprecation in GitHub Actions)</li>
+</ul>
+<h3>README / Documentation</h3>
+<ul>
+<li>Rewrote features section for accuracy — describes regex-based parser, bidirectional editing, editor capabilities, and fence plugins without overstatement</li>
+<li>Added editor split-view screenshot to README</li>
+<li>Scoped &quot;zero deps&quot; claim to parser and bidirectional modules (editor lazy-loads fence libraries)</li>
+<li>Updated links to include Frameworks, Downloads pages</li>
+<li>Cleaned stale dev/ files (deleted 5 implemented proposals and oldest lexer experiment)</li>
+</ul>
 <h2>v1.2.3 (2026-04-08)</h2>
 <h3>🎯 New Features</h3>
 <h4>Editor Enhancements</h4>
