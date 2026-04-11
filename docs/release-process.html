@@ -66,7 +66,19 @@
     <article class="markdown-body">
         <h1 class="quikdown-h1">Release Process</h1>
 <h2 class="quikdown-h2">Overview</h2>
-<p>Releases are automated. When a commit lands on <code class="quikdown-code">main</code> with a new version in <code class="quikdown-code">package.json</code>, CI creates the git tag, publishes to npm, and creates a GitHub Release. You just need to bump the version, get the PR merged, and CI does the rest.</p><h2 class="quikdown-h2">Steps</h2>
+<p>Releases are automated. When a commit lands on <code class="quikdown-code">main</code> with a new version in <code class="quikdown-code">package.json</code>, CI creates the git tag, publishes to npm, and creates a GitHub Release. You just need to bump the version, get it onto main, and CI does the rest.</p><p>There are two ways to release:</p><ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong"><code class="quikdown-code">npm run release</code></strong> — guided script that runs preflight checks, squash-merges your feature branch into main, and pushes. One command, fully automated. Best for solo maintainers.</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Manual PR workflow</strong> — push the branch, create a PR via <code class="quikdown-code">gh pr create</code>, wait for CI, merge via <code class="quikdown-code">gh pr merge</code>. Better for teams or when you want a review step.</li>
+</ul><p>Both end the same way: a push to main triggers CI which handles tagging and publishing.</p><h2 class="quikdown-h2">Option A: <code class="quikdown-code">npm run release</code></h2>
+<p>From your feature branch with everything committed:</p><pre class="quikdown-pre"><code class="language-bash">npm run release</code></pre><p>The script will:
+<ol class="quikdown-ol">
+<li class="quikdown-li">Verify you're on a feature branch (not main)</li>
+<li class="quikdown-li">Check for clean working tree</li>
+<li class="quikdown-li">Run tests and build</li>
+<li class="quikdown-li">Auto-commit any badge/dist drift</li>
+<li class="quikdown-li">Show a summary and ask for confirmation</li>
+<li class="quikdown-li">Squash-merge into main and push</li>
+</ol><p>CI takes over from there.</p><h2 class="quikdown-h2">Option B: Manual PR workflow</h2>
 <h3 class="quikdown-h3">1. Create a feature branch</h3>
 <p><pre class="quikdown-pre"><code class="language-bash">git checkout main
 git pull
