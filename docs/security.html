@@ -64,21 +64,15 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1 class="quikdown-h1">Security Guide</h1>
-<h2 class="quikdown-h2">Overview</h2>
-<p>quikdown is designed with security as a primary concern. This document explains our security model, design choices, and best practices for safe usage.</p><h2 class="quikdown-h2">Core Security Principles</h2>
-<h3 class="quikdown-h3">1. Escape by Default</h3>
-<strong class="quikdown-strong">All HTML in markdown input is escaped</strong>, preventing XSS attacks:</p><pre class="quikdown-pre"><code class="language-javascript">const markdown = &#39;&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; Hello **world**&#39;;
+        <h1 class="quikdown-h1">Security Guide</h1><h2 class="quikdown-h2">Overview</h2><p>quikdown is designed with security as a primary concern. This document explains our security model, design choices, and best practices for safe usage.</p><h2 class="quikdown-h2">Core Security Principles</h2><h3 class="quikdown-h3">1. Escape by Default</h3><p><strong class="quikdown-strong">All HTML in markdown input is escaped</strong>, preventing XSS attacks:</p><pre class="quikdown-pre"><code class="language-javascript">const markdown = &#39;&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; Hello **world**&#39;;
 const html = quikdown(markdown);
-// Output: &amp;lt;script&amp;gt;alert(&quot;XSS&quot;)&amp;lt;/script&amp;gt; Hello &lt;strong&gt;world&lt;/strong&gt;</code></pre><h3 class="quikdown-h3">2. No HTML Passthrough</h3>
-<p>Unlike some markdown parsers, quikdown does <strong class="quikdown-strong">not</strong> allow raw HTML to pass through by default. This is an intentional security decision.</p><p><strong class="quikdown-strong">Why?</strong>
+// Output: &amp;lt;script&amp;gt;alert(&quot;XSS&quot;)&amp;lt;/script&amp;gt; Hello &lt;strong&gt;world&lt;/strong&gt;</code></pre><h3 class="quikdown-h3">2. No HTML Passthrough</h3><p>Unlike some markdown parsers, quikdown does <strong class="quikdown-strong">not</strong> allow raw HTML to pass through by default. This is an intentional security decision.</p><p><strong class="quikdown-strong">Why?</strong>
 <ul class="quikdown-ul">
 <li class="quikdown-li">Prevents XSS attacks</li>
 <li class="quikdown-li">Eliminates stored XSS vulnerabilities</li>
 <li class="quikdown-li">Reduces security audit complexity</li>
 <li class="quikdown-li">Makes the parser safe for untrusted input</li>
-</ul><h3 class="quikdown-h3">3. Trusted HTML via Fence Plugins</h3>
-<p>When you need to render trusted HTML, use the fence plugin system:</p><pre class="quikdown-pre"><code class="language-javascript">const trustedHtmlPlugin = {
+</ul><h3 class="quikdown-h3">3. Trusted HTML via Fence Plugins</h3><p>When you need to render trusted HTML, use the fence plugin system:</p><pre class="quikdown-pre"><code class="language-javascript">const trustedHtmlPlugin = {
   render: (content, lang) =&gt; {
     // Only allow HTML from explicitly marked blocks
     if (lang === &#39;html-render&#39; &amp;&amp; isSourceTrusted()) {
@@ -90,11 +84,8 @@ const html = quikdown(markdown);
 
 const html = quikdown(markdown, { 
   fence_plugin: trustedHtmlPlugin 
-});</code></pre><p>This approach makes trust <strong class="quikdown-strong">explicit and granular</strong>.</p><h2 class="quikdown-h2">HTML Handling Strategies</h2>
-<h3 class="quikdown-h3">Strategy 1: Never Trust (Recommended)</h3>
-<p>The safest approach - all HTML is always escaped:</p><pre class="quikdown-pre"><code class="language-javascript">// Safe for any user input
-const html = quikdown(untrustedMarkdown);</code></pre><h3 class="quikdown-h3">Strategy 2: Trusted Fence Blocks</h3>
-<p>Allow HTML only in specially marked fence blocks:</p><p><pre class="quikdown-pre"><code class="language-`markdown">Regular text with &lt;script&gt;escaped HTML&lt;/script&gt;
+});</code></pre><p>This approach makes trust <strong class="quikdown-strong">explicit and granular</strong>.</p><h2 class="quikdown-h2">HTML Handling Strategies</h2><h3 class="quikdown-h3">Strategy 1: Never Trust (Recommended)</h3><p>The safest approach - all HTML is always escaped:</p><pre class="quikdown-pre"><code class="language-javascript">// Safe for any user input
+const html = quikdown(untrustedMarkdown);</code></pre><h3 class="quikdown-h3">Strategy 2: Trusted Fence Blocks</h3><p>Allow HTML only in specially marked fence blocks:</p><p><pre class="quikdown-pre"><code class="language-`markdown">Regular text with &lt;script&gt;escaped HTML&lt;/script&gt;
 
 ```html-render
 &lt;div class=&quot;custom-widget&quot;&gt;
@@ -109,9 +100,7 @@ If you need inline HTML, sanitize server-side before parsing:
 // Server-side
 const sanitized = DOMPurify.sanitize(userInput);
 const markdown = preprocessToMarkdown(sanitized);
-const html = quikdown(markdown);</code></pre></p><h2 class="quikdown-h2">XSS Prevention</h2>
-<h3 class="quikdown-h3">Attack Vectors Prevented</h3>
-<ol class="quikdown-ol">
+const html = quikdown(markdown);</code></pre></p><h2 class="quikdown-h2">XSS Prevention</h2><h3 class="quikdown-h3">Attack Vectors Prevented</h3><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Script Tag Injection</strong></li>
 </ol>
 <p>   ``<code class="quikdown-code">markdown
@@ -167,15 +156,12 @@ Use CSP headers to add defense-in-depth:
 
 §CB6§
 
-Note: </code>unsafe-inline<code class="quikdown-code"> for styles is needed if using </code>inline_styles: true`.</p><h2 class="quikdown-h2">Safe Usage Patterns</h2>
-<h3 class="quikdown-h3">Pattern 1: User Comments</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">// Safe for user-generated content
+Note: </code>unsafe-inline<code class="quikdown-code"> for styles is needed if using </code>inline_styles: true`.</p><h2 class="quikdown-h2">Safe Usage Patterns</h2><h3 class="quikdown-h3">Pattern 1: User Comments</h3><pre class="quikdown-pre"><code class="language-javascript">// Safe for user-generated content
 function renderComment(userMarkdown) {
   return quikdown(userMarkdown, {
     inline_styles: false  // Use CSS classes
   });
-}</code></pre></p><h3 class="quikdown-h3">Pattern 2: Admin Content with Widgets</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">// Admin users can embed widgets
+}</code></pre><h3 class="quikdown-h3">Pattern 2: Admin Content with Widgets</h3><pre class="quikdown-pre"><code class="language-javascript">// Admin users can embed widgets
 function renderAdminContent(markdown, isAdmin) {
   const options = {};
   
@@ -190,8 +176,7 @@ function renderAdminContent(markdown, isAdmin) {
   }
   
   return quikdown(markdown, options);
-}</code></pre></p><h3 class="quikdown-h3">Pattern 3: Mixed Trust Levels</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">// Different trust for different parts
+}</code></pre><h3 class="quikdown-h3">Pattern 3: Mixed Trust Levels</h3><pre class="quikdown-pre"><code class="language-javascript">// Different trust for different parts
 function renderMixedContent(markdown, trustMap) {
   return quikdown(markdown, {
     fence_plugin: {
@@ -206,8 +191,7 @@ function renderMixedContent(markdown, trustMap) {
       }
     }
   });
-}</code></pre></p><h2 class="quikdown-h2">Security Checklist</h2>
-<p>Before deploying quikdown:</p><ul class="quikdown-ul">
+}</code></pre><h2 class="quikdown-h2">Security Checklist</h2><p>Before deploying quikdown:</p><ul class="quikdown-ul">
 <li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Never pass untrusted HTML</strong> to fence plugins without sanitization</li>
 <li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Use CSP headers</strong> for defense-in-depth</li>
 <li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Validate plugin output</strong> if accepting third-party plugins</li>
@@ -217,8 +201,7 @@ function renderMixedContent(markdown, trustMap) {
 <li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Test with malicious input</strong> - Try XSS payloads in testing</li>
 <li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Use HTTPS</strong> - Prevent MITM attacks on delivered content</li>
 <li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Sanitize URLs</strong> (until built-in support is added)</li>
-</ul><h2 class="quikdown-h2">Reporting Security Issues</h2>
-<p>If you discover a security vulnerability:</p><ol class="quikdown-ol">
+</ul><h2 class="quikdown-h2">Reporting Security Issues</h2><p>If you discover a security vulnerability:</p><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">DO NOT</strong> open a public issue</li>
 <li class="quikdown-li">Email security details to [security contact]</li>
 <li class="quikdown-li">Include:</li>
@@ -228,14 +211,12 @@ function renderMixedContent(markdown, trustMap) {
 <li class="quikdown-li">Potential impact</li>
 <li class="quikdown-li">Suggested fix (if any)</li>
 </ul>
-</ol><h2 class="quikdown-h2">Future Security Enhancements</h2>
-<p>Planned security improvements:</p><ol class="quikdown-ol">
+</ol><h2 class="quikdown-h2">Future Security Enhancements</h2><p>Planned security improvements:</p><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Configurable URL Allowlist</strong> - Only allow specific URL schemes</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Plugin Sandboxing</strong> - Optional plugin output validation</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Security Headers Helper</strong> - Generate recommended CSP headers</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Built-in DOMPurify Integration</strong> - Optional HTML sanitization</li>
-</ol><h2 class="quikdown-h2">Summary</h2>
-<p>quikdown's security model:</p><ol class="quikdown-ol">
+</ol><h2 class="quikdown-h2">Summary</h2><p>quikdown's security model:</p><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Safe by default</strong> - No XSS without explicit opt-in</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Explicit trust</strong> - Trusted HTML requires fence plugins</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Granular control</strong> - Trust specific blocks, not everything</li>

@@ -64,35 +64,28 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1 class="quikdown-h1">QuikDown Lexer Implementation (Experimental)</h1>
-<h2 class="quikdown-h2">Overview</h2>
-<p>The QuikDown lexer implementation (<code class="quikdown-code">quikdown-lex</code>) is an experimental alternative parser that uses a hand-coded state machine approach instead of regular expressions. While the primary regex-based implementation remains the recommended version, the lexer provides an interesting alternative architecture that may become the foundation for future versions.</p><p><strong class="quikdown-strong">Current Status:</strong> Experimental - passes some tests but is a little larger and 4-8% slower than the regex version.</p><p>NOT SUPPORTED</p><h2 class="quikdown-h2">Installation and Usage</h2>
-<p>The lexer implementation is built separately from the main distribution:</p><pre class="quikdown-pre"><code class="language-bash"># Build the lexer implementation
+        <h1 class="quikdown-h1">QuikDown Lexer Implementation (Experimental)</h1><h2 class="quikdown-h2">Overview</h2><p>The QuikDown lexer implementation (<code class="quikdown-code">quikdown-lex</code>) is an experimental alternative parser that uses a hand-coded state machine approach instead of regular expressions. While the primary regex-based implementation remains the recommended version, the lexer provides an interesting alternative architecture that may become the foundation for future versions.</p><p><strong class="quikdown-strong">Current Status:</strong> Experimental - passes some tests but is a little larger and 4-8% slower than the regex version.</p><p>NOT SUPPORTED</p><h2 class="quikdown-h2">Installation and Usage</h2><p>The lexer implementation is built separately from the main distribution:</p><pre class="quikdown-pre"><code class="language-bash"># Build the lexer implementation
 npm run build:lex
 
 # Run performance comparison
-npm run test:perf</code></pre><h3 class="quikdown-h3">Using the Lexer Version</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">// ESM
+npm run test:perf</code></pre><h3 class="quikdown-h3">Using the Lexer Version</h3><pre class="quikdown-pre"><code class="language-javascript">// ESM
 import quikdown from &#39;quikdown/dist/quikdown-lex.esm.js&#39;;
 
 // CommonJS
 const quikdown = require(&#39;quikdown/dist/quikdown-lex.cjs&#39;);
 
 // Browser (UMD)
-&lt;script src=&quot;quikdown/dist/quikdown-lex.umd.min.js&quot;&gt;&lt;/script&gt;</code></pre></p><p>The API is identical to the main implementation:</p><pre class="quikdown-pre"><code class="language-javascript">const html = quikdown(markdownText, {
+&lt;script src=&quot;quikdown/dist/quikdown-lex.umd.min.js&quot;&gt;&lt;/script&gt;</code></pre><p>The API is identical to the main implementation:</p><pre class="quikdown-pre"><code class="language-javascript">const html = quikdown(markdownText, {
   inline_styles: false,
   class_prefix: &#39;quikdown-&#39;,
   allow_unsafe_urls: false,
   fence_plugin: null
-});</code></pre><h2 class="quikdown-h2">Architecture Deep Dive</h2>
-<h3 class="quikdown-h3">State Machine Design</h3>
-<p>The lexer implementation processes markdown line-by-line using a finite state machine with the following states:</p><pre class="quikdown-pre"><code class="language-javascript">const STATE_NORMAL = 0;      // Default state, ready for any block element
+});</code></pre><h2 class="quikdown-h2">Architecture Deep Dive</h2><h3 class="quikdown-h3">State Machine Design</h3><p>The lexer implementation processes markdown line-by-line using a finite state machine with the following states:</p><pre class="quikdown-pre"><code class="language-javascript">const STATE_NORMAL = 0;      // Default state, ready for any block element
 const STATE_FENCE = 1;       // Inside a code fence block
 const STATE_LIST = 2;        // Processing list items (unused - lists handled atomically)
 const STATE_TABLE = 3;       // Processing table rows (unused - tables handled atomically)
 const STATE_BLOCKQUOTE = 4;  // Inside a blockquote
-const STATE_PARAGRAPH = 5;   // Accumulating paragraph lines</code></pre><h3 class="quikdown-h3">Line Classification</h3>
-<p>Each line is classified into one of these types:</p><pre class="quikdown-pre"><code class="language-javascript">const LINE_BLANK = 0;           // Empty line
+const STATE_PARAGRAPH = 5;   // Accumulating paragraph lines</code></pre><h3 class="quikdown-h3">Line Classification</h3><p>Each line is classified into one of these types:</p><pre class="quikdown-pre"><code class="language-javascript">const LINE_BLANK = 0;           // Empty line
 const LINE_HEADING = 1;         // # Heading
 const LINE_HR = 2;              // --- horizontal rule
 const LINE_FENCE = 3;           // ``` code fence
@@ -101,8 +94,7 @@ const LINE_LIST_UNORDERED = 5;  // - list item
 const LINE_LIST_ORDERED = 6;    // 1. list item
 const LINE_TABLE = 7;           // | table | row |
 const LINE_TABLE_SEP = 8;       // |---|---|
-const LINE_TEXT = 9;            // Regular text</code></pre><h3 class="quikdown-h3">Processing Flow</h3>
-<ol class="quikdown-ol">
+const LINE_TEXT = 9;            // Regular text</code></pre><h3 class="quikdown-h3">Processing Flow</h3><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Line-by-Line Parsing</strong></li>
 </ol>
 <p>   ``<code class="quikdown-code">javascript
@@ -196,8 +188,7 @@ const LINE_TEXT = 9;            // Regular text</code></pre><h3 class="quikdown-
 <li class="quikdown-li">Control characters (\x01, \x02) as placeholders</li>
 <li class="quikdown-li">Sequential regex replacements for formatting</li>
 </ul>
-</ol><h3 class="quikdown-h3">Key Optimizations</h3>
-<ol class="quikdown-ol">
+</ol><h3 class="quikdown-h3">Key Optimizations</h3><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Character-Based Line Classification</strong></li>
 <ul class="quikdown-ul">
 <li class="quikdown-li">First character discrimination reduces regex usage</li>
@@ -218,8 +209,7 @@ const LINE_TEXT = 9;            // Regular text</code></pre><h3 class="quikdown-
 <li class="quikdown-li">Sequential replacements without re-parsing</li>
 <li class="quikdown-li">Efficient placeholder system</li>
 </ul>
-</ol><h2 class="quikdown-h2">Performance Comparison</h2>
-<p>Based on benchmark testing with both small (400 char) and large (22KB) documents:</p><table class="quikdown-table">
+</ol><h2 class="quikdown-h2">Performance Comparison</h2><p>Based on benchmark testing with both small (400 char) and large (22KB) documents:</p><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Metric</th>
@@ -254,8 +244,7 @@ const LINE_TEXT = 9;            // Regular text</code></pre><h3 class="quikdown-
 <td class="quikdown-td">~0%</td>
 </tr>
 </tbody>
-</table><h3 class="quikdown-h3">Performance Analysis</h3>
-<p>The lexer is slightly slower due to:
+</table><h3 class="quikdown-h3">Performance Analysis</h3><p>The lexer is slightly slower due to:
 <ul class="quikdown-ul">
 <li class="quikdown-li">Additional function call overhead for state transitions</li>
 <li class="quikdown-li">More granular line-by-line processing</li>
@@ -266,8 +255,7 @@ const LINE_TEXT = 9;            // Regular text</code></pre><h3 class="quikdown-
 <li class="quikdown-li">Predictable performance characteristics</li>
 <li class="quikdown-li">Easier to extend with new features</li>
 <li class="quikdown-li">Better error recovery potential</li>
-</ul><h2 class="quikdown-h2">Advantages of the Lexer Approach</h2>
-<ol class="quikdown-ol">
+</ul><h2 class="quikdown-h2">Advantages of the Lexer Approach</h2><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Maintainability</strong></li>
 <ul class="quikdown-ul">
 <li class="quikdown-li">Clear state machine logic</li>
@@ -295,8 +283,7 @@ const LINE_TEXT = 9;            // Regular text</code></pre><h3 class="quikdown-
 <li class="quikdown-li">No catastrophic backtracking</li>
 <li class="quikdown-li">Consistent performance across input types</li>
 </ul>
-</ol><h2 class="quikdown-h2">Disadvantages</h2>
-<ol class="quikdown-ol">
+</ol><h2 class="quikdown-h2">Disadvantages</h2><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Code Size</strong></li>
 <ul class="quikdown-ul">
 <li class="quikdown-li">More verbose than regex patterns</li>
@@ -317,8 +304,7 @@ const LINE_TEXT = 9;            // Regular text</code></pre><h3 class="quikdown-
 <li class="quikdown-li">More moving parts than regex approach</li>
 <li class="quikdown-li">Harder to make quick fixes</li>
 </ul>
-</ol><h2 class="quikdown-h2">Future Potential</h2>
-<p>The lexer implementation could become the primary version if:</p><ol class="quikdown-ol">
+</ol><h2 class="quikdown-h2">Future Potential</h2><p>The lexer implementation could become the primary version if:</p><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Performance improvements</strong> through:</li>
 <ul class="quikdown-ul">
 <li class="quikdown-li">WebAssembly compilation</li>
@@ -340,24 +326,20 @@ const LINE_TEXT = 9;            // Regular text</code></pre><h3 class="quikdown-
 <li class="quikdown-li">Better error messages</li>
 <li class="quikdown-li">AST generation</li>
 </ul>
-</ol><h2 class="quikdown-h2">Testing</h2>
-<p>The lexer implementation passes all 107 tests in the QuikDown test suite:</p><pre class="quikdown-pre"><code class="language-bash"># Run tests against lexer implementation
+</ol><h2 class="quikdown-h2">Testing</h2><p>The lexer implementation passes all 107 tests in the QuikDown test suite:</p><pre class="quikdown-pre"><code class="language-bash"># Run tests against lexer implementation
 npm run build:lex
 npm test  # Uses main implementation
-# To test lexer specifically, import it in test files</code></pre><h2 class="quikdown-h2">Migration Guide</h2>
-<p>If the lexer becomes the primary implementation, migration would be seamless:</p><ol class="quikdown-ol">
+# To test lexer specifically, import it in test files</code></pre><h2 class="quikdown-h2">Migration Guide</h2><p>If the lexer becomes the primary implementation, migration would be seamless:</p><ol class="quikdown-ol">
 <li class="quikdown-li">The API is 100% compatible</li>
 <li class="quikdown-li">All options work identically</li>
 <li class="quikdown-li">Output HTML is identical (except whitespace)</li>
 <li class="quikdown-li">No code changes required</li>
-</ol><h2 class="quikdown-h2">Contributing</h2>
-<p>If you're interested in improving the lexer implementation:</p><ol class="quikdown-ol">
+</ol><h2 class="quikdown-h2">Contributing</h2><p>If you're interested in improving the lexer implementation:</p><ol class="quikdown-ol">
 <li class="quikdown-li">Focus on performance optimizations</li>
 <li class="quikdown-li">Maintain 100% test compatibility</li>
 <li class="quikdown-li">Document any architectural changes</li>
 <li class="quikdown-li">Run performance benchmarks before/after</li>
-</ol><h2 class="quikdown-h2">Conclusion</h2>
-<p>The lexer implementation represents a different architectural approach to markdown parsing. While currently experimental and slightly slower, it provides a solid foundation for future development and demonstrates that QuikDown's test suite and API can support multiple implementation strategies.</p><p>For production use, continue using the main regex-based implementation. The lexer is available for experimentation and evaluation by developers interested in alternative parsing strategies.</p>
+</ol><h2 class="quikdown-h2">Conclusion</h2><p>The lexer implementation represents a different architectural approach to markdown parsing. While currently experimental and slightly slower, it provides a solid foundation for future development and demonstrates that QuikDown's test suite and API can support multiple implementation strategies.</p><p>For production use, continue using the main regex-based implementation. The lexer is available for experimentation and evaluation by developers interested in alternative parsing strategies.</p>
     </article>
     <script>
         // Syntax highlighting

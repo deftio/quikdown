@@ -64,9 +64,7 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1 class="quikdown-h1">Release Notes</h1>
-<h2 class="quikdown-h2">v1.2.4</h2>
-<h3 class="quikdown-h3">CI / Release pipeline</h3>
+        <h1 class="quikdown-h1">Release Notes</h1><h2 class="quikdown-h2">v1.2.4</h2><h3 class="quikdown-h3">CI / Release pipeline</h3>
 <ul class="quikdown-ul">
 <li class="quikdown-li">Merged tag creation and npm publish into a single CI workflow — fixes the issue where tags created by <code class="quikdown-code">GITHUB_TOKEN</code> could not trigger the publish workflow</li>
 <li class="quikdown-li"><code class="quikdown-code">publish.yml</code> is now manual-only (for retrying failed publishes)</li>
@@ -79,9 +77,7 @@
 <li class="quikdown-li">Scoped "zero deps" claim to parser and bidirectional modules (editor lazy-loads fence libraries)</li>
 <li class="quikdown-li">Updated links to include Frameworks, Downloads pages</li>
 <li class="quikdown-li">Cleaned stale dev/ files (deleted 5 implemented proposals and oldest lexer experiment)</li>
-</ul><h2 class="quikdown-h2">v1.2.3</h2>
-<h3 class="quikdown-h3">🎯 New Features</h3>
-<h4 class="quikdown-h4">Editor Enhancements</h4>
+</ul><h2 class="quikdown-h2">v1.2.3</h2><h3 class="quikdown-h3">🎯 New Features</h3><h4 class="quikdown-h4">Editor Enhancements</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Preload fences</strong>: New <code class="quikdown-code">preloadFences</code> constructor option for eager loading of fence libraries instead of lazy loading on first use</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Undo/Redo support</strong>: Added undo/redo with configurable history via <code class="quikdown-code">showUndoRedo</code> and <code class="quikdown-code">undoStackSize</code> options; works for both source and preview-side (HTML) edits</li>
@@ -107,23 +103,16 @@
 <li class="quikdown-li"><strong class="quikdown-strong">100% test coverage</strong> on <code class="quikdown-code">quikdown.js</code> and <code class="quikdown-code">quikdown_bd.js</code> across all four metrics (statements, branches, functions, lines)</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Static badge pipeline</strong>: Coverage badges generated from test results</li>
 <li class="quikdown-li"><strong class="quikdown-strong">CI improvements</strong>: Graceful tag-skip on unchanged version, OIDC-capable npm publish, workflow_dispatch support</li>
-</ul><p><hr class="quikdown-hr">
-<h2 class="quikdown-h2">v1.2.2</h2>
-<h3 class="quikdown-h3">🔧 CI/CD</h3>
+</ul><hr class="quikdown-hr"><h2 class="quikdown-h2">v1.2.2</h2><h3 class="quikdown-h3">🔧 CI/CD</h3>
 <ul class="quikdown-ul">
 <li class="quikdown-li">Upgraded npm for OIDC publishing support</li>
 <li class="quikdown-li">Added <code class="quikdown-code">workflow_dispatch</code> trigger for manual releases</li>
 <li class="quikdown-li">Fixed release job for <code class="quikdown-code">workflow_dispatch</code> (tag_name and build step)</li>
 <li class="quikdown-li">Fail loudly on duplicate version tag</li>
-</ul><p><hr class="quikdown-hr">
-<h2 class="quikdown-h2">v1.2.1</h2>
-<h3 class="quikdown-h3">🔧 CI/CD</h3>
+</ul><hr class="quikdown-hr"><h2 class="quikdown-h2">v1.2.1</h2><h3 class="quikdown-h3">🔧 CI/CD</h3>
 <ul class="quikdown-ul">
 <li class="quikdown-li">Release pipeline refinements and version bump</li>
-</ul><p><hr class="quikdown-hr">
-<h2 class="quikdown-h2">v1.2.0</h2>
-<h3 class="quikdown-h3">🎯 New Features</h3>
-<h4 class="quikdown-h4">AST Companion Libraries</h4>
+</ul><hr class="quikdown-hr"><h2 class="quikdown-h2">v1.2.0</h2><h3 class="quikdown-h3">🎯 New Features</h3><h4 class="quikdown-h4">AST Companion Libraries</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong"><code class="quikdown-code">quikdown_ast</code></strong>: Parses markdown into a structured Abstract Syntax Tree (AST) representing headings, paragraphs, lists, code blocks, tables, and inline formatting</li>
 <li class="quikdown-li"><strong class="quikdown-strong"><code class="quikdown-code">quikdown_ast_html</code></strong>: Converts a quikdown AST back to HTML, providing a two-stage parse-then-render pipeline</li>
@@ -137,10 +126,7 @@
 <ul class="quikdown-ul">
 <li class="quikdown-li">All four companion libraries are lightweight, zero-dependency modules</li>
 <li class="quikdown-li">Designed to complement the core quikdown parser without increasing its bundle size</li>
-</ul><p><hr class="quikdown-hr">
-<h2 class="quikdown-h2">v1.1.1</h2>
-<h3 class="quikdown-h3">🎯 New Features</h3>
-<h4 class="quikdown-h4">Enhanced Copy-as-Rich-Text</h4>
+</ul><hr class="quikdown-hr"><h2 class="quikdown-h2">v1.1.1</h2><h3 class="quikdown-h3">🎯 New Features</h3><h4 class="quikdown-h4">Enhanced Copy-as-Rich-Text</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Math equation rendering</strong>: MathJax equations now convert to high-quality PNG images when copying</li>
 <li class="quikdown-li"><strong class="quikdown-strong">GeoJSON map capture</strong>: Interactive Leaflet maps convert to static images for pasting</li>
@@ -155,8 +141,7 @@
 <li class="quikdown-li"><strong class="quikdown-strong"><code class="quikdown-code">getDebounceDelay()</code></strong>: Get current debounce setting</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Headless mode</strong>: Full documentation for using editor without UI</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Minimal UI mode</strong>: Documentation for creating custom toolbar experiences</li>
-</ul><h3 class="quikdown-h3">🐛 Bug Fixes</h3>
-<h4 class="quikdown-h4">Copy-Paste System</h4>
+</ul><h3 class="quikdown-h3">🐛 Bug Fixes</h3><h4 class="quikdown-h4">Copy-Paste System</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Fixed macOS clipboard fallback</strong>: Changed from textarea to div for HTML preservation</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Added StartFragment/EndFragment markers</strong>: Ensures proper formatting in Google Docs</li>
@@ -186,9 +171,7 @@
 <li class="quikdown-li"><strong class="quikdown-strong">Minimal UI examples</strong>: Shows how to create custom toolbar experiences</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Updated fence types</strong>: Added GeoJSON and STL to supported fence types list</li>
 <li class="quikdown-li"><strong class="quikdown-strong">API documentation</strong>: Added new methods and options</li>
-</ul><h2 class="quikdown-h2">v1.1.0</h2>
-<h3 class="quikdown-h3">💥 Breaking Changes</h3>
-<h4 class="quikdown-h4">Fence Plugin API Redesign</h4>
+</ul><h2 class="quikdown-h2">v1.1.0</h2><h3 class="quikdown-h3">💥 Breaking Changes</h3><h4 class="quikdown-h4">Fence Plugin API Redesign</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Object format required</strong>: Fence plugins must now use object format with <code class="quikdown-code">render</code> function (breaking change from v1.0.x)</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Bidirectional support</strong>: Added optional <code class="quikdown-code">reverse</code> handler for HTML-to-markdown conversion</li>
@@ -205,8 +188,7 @@ const plugin = {
     lang: &#39;custom&#39;,
     content: element.textContent
   })
-};</code></pre></p><h3 class="quikdown-h3">🎯 New Features</h3>
-<h4 class="quikdown-h4">Bidirectional Fence Plugins</h4>
+};</code></pre></p><h3 class="quikdown-h3">🎯 New Features</h3><h4 class="quikdown-h4">Bidirectional Fence Plugins</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Reverse handlers</strong>: Custom fence plugins can now convert HTML back to markdown</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Perfect roundtrips</strong>: Maintain custom content through edit cycles</li>
@@ -224,15 +206,13 @@ const plugin = {
 <li class="quikdown-li"><strong class="quikdown-strong">QuikDown Bidirectional</strong>: 13.8 KB minified</li>
 <li class="quikdown-li"><strong class="quikdown-strong">QuikDown Editor</strong>: 37.8 KB minified</li>
 <li class="quikdown-li"><strong class="quikdown-strong">CSS Themes</strong>: Light 1.9 KB, Dark 2.6 KB minified</li>
-</ul><h3 class="quikdown-h3">🔬 Experimental Features</h3>
-<h4 class="quikdown-h4">Lexer/Grammar-Based Parser Achievement</h4>
+</ul><h3 class="quikdown-h3">🔬 Experimental Features</h3><h4 class="quikdown-h4">Lexer/Grammar-Based Parser Achievement</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">100% Test Parity</strong>: The experimental trie-based lexer parser in <code class="quikdown-code">dev/lex/</code> now passes all 20 core tests</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Compact Implementation</strong>: Achieved 9.9KB minified size using a compiled trie/DFA structure</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Grammar-Driven Architecture</strong>: Formal EBNF grammar compiled to efficient state machine</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Future Foundation</strong>: Provides basis for future extensibility and custom grammar rules</li>
-</ul><h3 class="quikdown-h3">🐛 Bug Fixes</h3>
-<h4 class="quikdown-h4">Horizontal Rule Parsing</h4>
+</ul><h3 class="quikdown-h3">🐛 Bug Fixes</h3><h4 class="quikdown-h4">Horizontal Rule Parsing</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Fixed HR with trailing spaces</strong>: HR pattern now accepts trailing whitespace (e.g., <code class="quikdown-code">---  </code>)</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Prevents editor jumping</strong>: Fixes cursor jumping when typing <code class="quikdown-code">---</code> in the editor</li>
@@ -243,8 +223,7 @@ const plugin = {
 <li class="quikdown-li"><strong class="quikdown-strong">Preserved blank lines</strong>: Fixed issue where blank lines between paragraphs and headings were lost during roundtrip conversion</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Improved paragraph handling</strong>: Added proper detection of trailing whitespace lines within paragraphs to maintain formatting intent</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Perfect roundtrip fidelity</strong>: The bidirectional module now maintains exact markdown formatting through HTML and back</li>
-</ul><h3 class="quikdown-h3">🔧 QuikdownEditor Improvements</h3>
-<h4 class="quikdown-h4">Performance and Responsiveness</h4>
+</ul><h3 class="quikdown-h3">🔧 QuikdownEditor Improvements</h3><h4 class="quikdown-h4">Performance and Responsiveness</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Reduced debounce delay</strong>: Changed default from 100ms to 20ms for much snappier editor response</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Configurable debounce</strong>: Added <code class="quikdown-code">setDebounceDelay()</code> and <code class="quikdown-code">getDebounceDelay()</code> API methods</li>
@@ -254,8 +233,7 @@ const plugin = {
 <li class="quikdown-li"><strong class="quikdown-strong">Inline styles support</strong>: Added <code class="quikdown-code">inline_styles</code> option pass-through to quikdown_bd</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Parent div styling</strong>: Enables CSS cascade from parent containers when using class-based styles</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Choice of styling</strong>: Users can now choose between CSS classes (default) or inline styles</li>
-</ul><h3 class="quikdown-h3">🧪 Testing & Quality Improvements</h3>
-<h4 class="quikdown-h4">Comprehensive Test Coverage Boost</h4>
+</ul><h3 class="quikdown-h3">🧪 Testing & Quality Improvements</h3><h4 class="quikdown-h4">Comprehensive Test Coverage Boost</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">QuikDown Core</strong>: Achieved <strong class="quikdown-strong">100% line coverage</strong>, 99.26% statement coverage, 99.42% branch coverage</li>
 <li class="quikdown-li"><strong class="quikdown-strong">QuikDown Editor</strong>: Improved from 47% to <strong class="quikdown-strong">62% statement coverage</strong>, 75.8% function coverage</li>
@@ -288,9 +266,7 @@ const plugin = {
 <li class="quikdown-li"><strong class="quikdown-strong">Automated compatibility</strong>: Tests automatically work with any version number without manual updates</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Fence plugin test migration</strong>: All tests updated to use new v1.1.0 object format</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Bidirectional coverage</strong>: Added tests for fence plugins with and without reverse handlers</li>
-</ul><h2 class="quikdown-h2">v1.0.5</h2>
-<h3 class="quikdown-h3">🚀 New: Quikdown Editor</h3>
-<h4 class="quikdown-h4">Drop-in Markdown Editor Control</h4>
+</ul><h2 class="quikdown-h2">v1.0.5</h2><h3 class="quikdown-h3">🚀 New: Quikdown Editor</h3><h4 class="quikdown-h4">Drop-in Markdown Editor Control</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">New <code class="quikdown-code">QuikdownEditor</code> class</strong>: Complete markdown editor that can be embedded in any webpage</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Three view modes</strong>: Source-only, Split view, and Preview-only modes</li>
@@ -331,8 +307,7 @@ const plugin = {
 <li class="quikdown-li"><strong class="quikdown-strong">Fixed ESM imports</strong>: Added CommonJS exports to support Jest testing of ESM builds</li>
 <li class="quikdown-li"><strong class="quikdown-strong">CI/CD ready</strong>: All tests pass with no console errors, Playwright tests properly excluded from Jest</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Coverage thresholds</strong>: Set realistic targets (60% statements, 70% functions) for editor module</li>
-</ul><h3 class="quikdown-h3">🎉 Major Architecture Refactor</h3>
-<h4 class="quikdown-h4">Complete Bidirectional Module Refactoring</h4>
+</ul><h3 class="quikdown-h3">🎉 Major Architecture Refactor</h3><h4 class="quikdown-h4">Complete Bidirectional Module Refactoring</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Successfully refactored <code class="quikdown-code">quikdown_bd</code></strong> to import and extend core <code class="quikdown-code">quikdown</code> module</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Eliminated ~800 lines of duplicate code</strong> by using core module as base</li>
@@ -372,8 +347,7 @@ const plugin = {
 <li class="quikdown-li">Quikdown BD: 13 KB minified (includes core)</li>
 <li class="quikdown-li">Quikdown Editor: 36 KB minified (includes quikdown_bd and fence plugins)</li>
 </ul>
-</ul><h3 class="quikdown-h3">🎯 New Features</h3>
-<h4 class="quikdown-h4">NPM Discoverability</h4>
+</ul><h3 class="quikdown-h3">🎯 New Features</h3><h4 class="quikdown-h4">NPM Discoverability</h4>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Added comprehensive keywords</strong> to package.json for better NPM search visibility</li>
 <li class="quikdown-li">Keywords cover: markdown parsing, chat/LLM use cases, bidirectional editing, and more</li>

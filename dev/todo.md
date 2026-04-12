@@ -16,10 +16,10 @@ A small markdown to html parser with fence plugin support
   - Document usage patterns (built-in styles vs custom styles)
 * [ ] Add a quikdown-cli.js standalone tool that converts markdown to html. Should support all quikdown features like inline styles or passing in your own css (assumes quikdown classes)
 * [x] ~~Add reverse fence callback~~ — implemented in quikdown_bd.js (fence_plugin.reverse)
-* [ ] FUTURE Move to quikdown_lex as main build (move away from regex)
-  - allows broader range of grammers
-  - allows full spec compliance
-  - easier to debug
+* [x] ~~Move to quikdown_lex as main build (move away from regex)~~ — v1.2.8: replaced multi-pass regex with line-scanning block parser (`scanLineBlocks`) + structured line-walkers for tables/lists
+  - allows broader range of grammars
+  - easier to debug (each block type is a separate branch)
+  - 50-100% faster on benchmarks
 
 ### List Improvements
 * [ ] Treat tabs as 4 spaces for indentation

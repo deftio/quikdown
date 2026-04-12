@@ -64,9 +64,7 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1 class="quikdown-h1">Quikdown Editor Documentation</h1>
-<p>Quikdown Editor is a drop-in markdown editor control that provides a complete editing experience with live preview, bidirectional editing, and plugin support.</p><h2 class="quikdown-h2">Table of Contents</h2>
-<ul class="quikdown-ul">
+        <h1 class="quikdown-h1">Quikdown Editor Documentation</h1><p>Quikdown Editor is a drop-in markdown editor control that provides a complete editing experience with live preview, bidirectional editing, and plugin support.</p><h2 class="quikdown-h2">Table of Contents</h2><ul class="quikdown-ul">
 <li class="quikdown-li"><a class="quikdown-a" href="#installation">Installation</a></li>
 <li class="quikdown-li"><a class="quikdown-a" href="#basic-usage">Basic Usage</a></li>
 <li class="quikdown-li"><a class="quikdown-a" href="#configuration-options">Configuration Options</a></li>
@@ -78,22 +76,17 @@
 <li class="quikdown-li"><a class="quikdown-a" href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
 <li class="quikdown-li"><a class="quikdown-a" href="#examples">Examples</a></li>
 <li class="quikdown-li"><a class="quikdown-a" href="#browser-support">Browser Support</a></li>
-</ul><h2 class="quikdown-h2">Installation</h2>
-<h3 class="quikdown-h3">CDN</h3>
-<p><pre class="quikdown-pre"><code class="language-html">&lt;!-- ES Module --&gt;
+</ul><h2 class="quikdown-h2">Installation</h2><h3 class="quikdown-h3">CDN</h3><pre class="quikdown-pre"><code class="language-html">&lt;!-- ES Module --&gt;
 &lt;script type=&quot;module&quot;&gt;
   import QuikdownEditor from &#39;https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js&#39;;
 &lt;/script&gt;
 
 &lt;!-- UMD --&gt;
-&lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown_edit.umd.min.js&quot;&gt;&lt;/script&gt;</code></pre></p><h3 class="quikdown-h3">NPM</h3>
-<p><pre class="quikdown-pre"><code class="language-bash">npm install quikdown</code></pre></p><pre class="quikdown-pre"><code class="language-javascript">// ES Module
+&lt;script src=&quot;https://unpkg.com/quikdown/dist/quikdown_edit.umd.min.js&quot;&gt;&lt;/script&gt;</code></pre><h3 class="quikdown-h3">NPM</h3><pre class="quikdown-pre"><code class="language-bash">npm install quikdown</code></pre><pre class="quikdown-pre"><code class="language-javascript">// ES Module
 import QuikdownEditor from &#39;quikdown/edit&#39;;
 
 // CommonJS
-const QuikdownEditor = require(&#39;quikdown/edit&#39;);</code></pre><h2 class="quikdown-h2">Basic Usage</h2>
-<h3 class="quikdown-h3">Minimal Setup</h3>
-<p><pre class="quikdown-pre"><code class="language-html">&lt;!DOCTYPE html&gt;
+const QuikdownEditor = require(&#39;quikdown/edit&#39;);</code></pre><h2 class="quikdown-h2">Basic Usage</h2><h3 class="quikdown-h3">Minimal Setup</h3><pre class="quikdown-pre"><code class="language-html">&lt;!DOCTYPE html&gt;
 &lt;html&gt;
 &lt;head&gt;
     &lt;meta charset=&quot;UTF-8&quot;&gt;
@@ -109,8 +102,7 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);</code></pre><h2 class="
         editor.setMarkdown(&#39;# Hello World\n\nStart editing!&#39;);
     &lt;/script&gt;
 &lt;/body&gt;
-&lt;/html&gt;</code></pre></p><h3 class="quikdown-h3">With Options</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+&lt;/html&gt;</code></pre><h3 class="quikdown-h3">With Options</h3><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     mode: &#39;split&#39;,           // View mode
     theme: &#39;dark&#39;,           // Theme
     showToolbar: true,       // Show toolbar
@@ -121,8 +113,7 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);</code></pre><h2 class="
         highlightjs: true,   // Enable syntax highlighting
         mermaid: true        // Enable Mermaid diagrams
     }
-});</code></pre></p><h2 class="quikdown-h2">Configuration Options</h2>
-<table class="quikdown-table">
+});</code></pre><h2 class="quikdown-h2">Configuration Options</h2><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Option</th>
@@ -243,12 +234,10 @@ const QuikdownEditor = require(&#39;quikdown/edit&#39;);</code></pre><h2 class="
 <td class="quikdown-td">Callback when mode changes</td>
 </tr>
 </tbody>
-</table><h3 class="quikdown-h3">Plugin Options (legacy)</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">plugins: {
+</table><h3 class="quikdown-h3">Plugin Options (legacy)</h3><pre class="quikdown-pre"><code class="language-javascript">plugins: {
     highlightjs: boolean,  // Enable Highlight.js for syntax highlighting
     mermaid: boolean      // Enable Mermaid for diagrams
-}</code></pre></p><h3 class="quikdown-h3"><code class="quikdown-code">preloadFences</code> — fence library preloading</h3>
-<p>Each fence type that depends on an external library (Mermaid, MathJax, Leaflet<br class="quikdown-br">for GeoJSON, Three.js for STL, highlight.js for syntax highlighting) is<br class="quikdown-br"><strong class="quikdown-strong">lazy-loaded by default</strong>. The first time the editor encounters a <code class="quikdown-code">mermaid</code><br class="quikdown-br">fence, it fetches <code class="quikdown-code">mermaid.min.js</code> from the CDN; the first STL fence triggers<br class="quikdown-br">the Three.js download; and so on.</p><p>Lazy loading keeps the editor lightweight (~70 KB minified) but introduces a<br class="quikdown-br">small "loading…" delay the first time each fence type is rendered. For demo<br class="quikdown-br">pages, documentation sites, or apps where you know in advance which fence<br class="quikdown-br">types you'll need, you can preload those libraries at construction time:</p><pre class="quikdown-pre"><code class="language-javascript">// Preload everything — first render of any fence is instant
+}</code></pre><h3 class="quikdown-h3"><code class="quikdown-code">preloadFences</code> — fence library preloading</h3><p>Each fence type that depends on an external library (Mermaid, MathJax, Leaflet<br class="quikdown-br">for GeoJSON, Three.js for STL, highlight.js for syntax highlighting) is<br class="quikdown-br"><strong class="quikdown-strong">lazy-loaded by default</strong>. The first time the editor encounters a <code class="quikdown-code">mermaid</code><br class="quikdown-br">fence, it fetches <code class="quikdown-code">mermaid.min.js</code> from the CDN; the first STL fence triggers<br class="quikdown-br">the Three.js download; and so on.</p><p>Lazy loading keeps the editor lightweight (~70 KB minified) but introduces a<br class="quikdown-br">small "loading…" delay the first time each fence type is rendered. For demo<br class="quikdown-br">pages, documentation sites, or apps where you know in advance which fence<br class="quikdown-br">types you'll need, you can preload those libraries at construction time:</p><pre class="quikdown-pre"><code class="language-javascript">// Preload everything — first render of any fence is instant
 new QuikdownEditor(&#39;#editor&#39;, {
   preloadFences: &#39;all&#39;
 });
@@ -302,62 +291,27 @@ new QuikdownEditor(&#39;#editor&#39;, {});</code></pre><p><strong class="quikdow
 <td class="quikdown-td"><code class="quikdown-code">stl</code> fence</td>
 </tr>
 </tbody>
-</table><p><strong class="quikdown-strong">Trade-off</strong>: preloading uses more upfront network (a few hundred KB) but<br class="quikdown-br">eliminates per-fence load delays. Developer's choice — the editor itself<br class="quikdown-br">stays the same size either way; only the optional fence renderers are affected.</p><p><strong class="quikdown-strong">Recommendation</strong>: leave <code class="quikdown-code">preloadFences</code> off for production apps that handle<br class="quikdown-br">arbitrary user content (lazy loading scales better), and set it to <code class="quikdown-code">&#39;all&#39;</code><br class="quikdown-br">or a specific list for demos and apps where you know exactly which fence<br class="quikdown-br">types will appear.</p><h2 class="quikdown-h2">API Reference</h2>
-<h3 class="quikdown-h3">Constructor</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">new QuikdownEditor(container, options?)</code></pre></p><p><strong class="quikdown-strong">Parameters:</strong>
+</table><p><strong class="quikdown-strong">Trade-off</strong>: preloading uses more upfront network (a few hundred KB) but<br class="quikdown-br">eliminates per-fence load delays. Developer's choice — the editor itself<br class="quikdown-br">stays the same size either way; only the optional fence renderers are affected.</p><p><strong class="quikdown-strong">Recommendation</strong>: leave <code class="quikdown-code">preloadFences</code> off for production apps that handle<br class="quikdown-br">arbitrary user content (lazy loading scales better), and set it to <code class="quikdown-code">&#39;all&#39;</code><br class="quikdown-br">or a specific list for demos and apps where you know exactly which fence<br class="quikdown-br">types will appear.</p><h2 class="quikdown-h2">API Reference</h2><h3 class="quikdown-h3">Constructor</h3><pre class="quikdown-pre"><code class="language-javascript">new QuikdownEditor(container, options?)</code></pre><p><strong class="quikdown-strong">Parameters:</strong>
 <ul class="quikdown-ul">
 <li class="quikdown-li"><code class="quikdown-code">container</code> (string | HTMLElement): CSS selector or DOM element</li>
 <li class="quikdown-li"><code class="quikdown-code">options</code> (object): Configuration options</li>
-</ul><p><strong class="quikdown-strong">Returns:</strong> QuikdownEditor instance</p><h3 class="quikdown-h3">Methods</h3>
-<h4 class="quikdown-h4"><code class="quikdown-code">setMarkdown(markdown)</code></h4>
-<p>Sets the markdown content.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMarkdown(&#39;# New Content&#39;);</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">getMarkdown()</code></h4>
-<p>Returns the current markdown content.</p><pre class="quikdown-pre"><code class="language-javascript">const markdown = editor.getMarkdown();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">getHTML()</code></h4>
-<p>Returns the rendered HTML.</p><pre class="quikdown-pre"><code class="language-javascript">const html = editor.getHTML();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">setMode(mode)</code></h4>
-<p>Changes the view mode.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMode(&#39;preview&#39;); // &#39;source&#39;, &#39;split&#39;, or &#39;preview&#39;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">removeHR()</code></h4>
-<p>Removes all horizontal rules (---) from the markdown content.</p><pre class="quikdown-pre"><code class="language-javascript">editor.removeHR();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">copyRendered()</code></h4>
-<p>Copies the rendered HTML content to clipboard as rich text. Converts math equations to images and GeoJSON maps to static images for better paste compatibility.</p><pre class="quikdown-pre"><code class="language-javascript">editor.copyRendered();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">setLazyLinefeeds(enabled)</code></h4>
-<p>Enables or disables lazy linefeeds (single \n becomes <code class="quikdown-code">&lt;br&gt;</code>).</p><pre class="quikdown-pre"><code class="language-javascript">editor.setLazyLinefeeds(true);</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">setDebounceDelay(delay)</code></h4>
-<p>Sets the debounce delay for input updates (in milliseconds). Use 0 for instant updates.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setDebounceDelay(0); // Instant updates
-editor.setDebounceDelay(300); // Default</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">undo()</code></h4>
-<p>Undoes the last edit.</p><pre class="quikdown-pre"><code class="language-javascript">editor.undo();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">redo()</code></h4>
-<p>Redoes the last undone edit.</p><pre class="quikdown-pre"><code class="language-javascript">editor.redo();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">canUndo()</code></h4>
-<p>Returns <code class="quikdown-code">true</code> if there is an edit to undo.</p><pre class="quikdown-pre"><code class="language-javascript">if (editor.canUndo()) {
+</ul><p><strong class="quikdown-strong">Returns:</strong> QuikdownEditor instance</p><h3 class="quikdown-h3">Methods</h3><h4 class="quikdown-h4"><code class="quikdown-code">setMarkdown(markdown)</code></h4><p>Sets the markdown content.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMarkdown(&#39;# New Content&#39;);</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">getMarkdown()</code></h4><p>Returns the current markdown content.</p><pre class="quikdown-pre"><code class="language-javascript">const markdown = editor.getMarkdown();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">getHTML()</code></h4><p>Returns the rendered HTML.</p><pre class="quikdown-pre"><code class="language-javascript">const html = editor.getHTML();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">setMode(mode)</code></h4><p>Changes the view mode.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMode(&#39;preview&#39;); // &#39;source&#39;, &#39;split&#39;, or &#39;preview&#39;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">removeHR()</code></h4><p>Removes all horizontal rules (---) from the markdown content.</p><pre class="quikdown-pre"><code class="language-javascript">editor.removeHR();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">copyRendered()</code></h4><p>Copies the rendered HTML content to clipboard as rich text. Converts math equations to images and GeoJSON maps to static images for better paste compatibility.</p><pre class="quikdown-pre"><code class="language-javascript">editor.copyRendered();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">setLazyLinefeeds(enabled)</code></h4><p>Enables or disables lazy linefeeds (single \n becomes <code class="quikdown-code">&lt;br&gt;</code>).</p><pre class="quikdown-pre"><code class="language-javascript">editor.setLazyLinefeeds(true);</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">setDebounceDelay(delay)</code></h4><p>Sets the debounce delay for input updates (in milliseconds). Use 0 for instant updates.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setDebounceDelay(0); // Instant updates
+editor.setDebounceDelay(300); // Default</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">undo()</code></h4><p>Undoes the last edit.</p><pre class="quikdown-pre"><code class="language-javascript">editor.undo();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">redo()</code></h4><p>Redoes the last undone edit.</p><pre class="quikdown-pre"><code class="language-javascript">editor.redo();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">canUndo()</code></h4><p>Returns <code class="quikdown-code">true</code> if there is an edit to undo.</p><pre class="quikdown-pre"><code class="language-javascript">if (editor.canUndo()) {
     editor.undo();
-}</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">canRedo()</code></h4>
-<p>Returns <code class="quikdown-code">true</code> if there is an edit to redo.</p><pre class="quikdown-pre"><code class="language-javascript">if (editor.canRedo()) {
+}</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">canRedo()</code></h4><p>Returns <code class="quikdown-code">true</code> if there is an edit to redo.</p><pre class="quikdown-pre"><code class="language-javascript">if (editor.canRedo()) {
     editor.redo();
-}</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">clearHistory()</code></h4>
-<p>Clears the undo/redo history.</p><pre class="quikdown-pre"><code class="language-javascript">editor.clearHistory();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">getLazyLinefeeds()</code></h4>
-<p>Returns the current lazy linefeeds state (<code class="quikdown-code">true</code> or <code class="quikdown-code">false</code>).</p><pre class="quikdown-pre"><code class="language-javascript">const isLazy = editor.getLazyLinefeeds();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">convertLazyLinefeeds()</code></h4>
-<p>Converts single newlines in the current content to paragraph breaks (<code class="quikdown-code">\n\n</code>). Useful for normalizing content that was authored with lazy linefeeds enabled.</p><pre class="quikdown-pre"><code class="language-javascript">editor.convertLazyLinefeeds();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">destroy()</code></h4>
-<p>Cleans up the editor and removes event listeners.</p><pre class="quikdown-pre"><code class="language-javascript">editor.destroy();</code></pre><h3 class="quikdown-h3">Static Methods</h3>
-<h4 class="quikdown-h4"><code class="quikdown-code">QuikdownEditor.convertLazyLinefeeds(markdown)</code></h4>
-<p>Converts single newlines to paragraph breaks in the given markdown string. Returns the converted string.</p><pre class="quikdown-pre"><code class="language-javascript">const normalized = QuikdownEditor.convertLazyLinefeeds(&#39;Line one\nLine two&#39;);
-// &quot;Line one\n\nLine two&quot;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">QuikdownEditor.removeHRFromMarkdown(markdown)</code></h4>
-<p>Removes all horizontal rules (<code class="quikdown-code">---</code>) from the given markdown string. Returns the cleaned string.</p><pre class="quikdown-pre"><code class="language-javascript">const cleaned = QuikdownEditor.removeHRFromMarkdown(&#39;Some text\n\n---\n\nMore text&#39;);</code></pre><h3 class="quikdown-h3">Properties</h3>
-<h4 class="quikdown-h4"><code class="quikdown-code">markdown</code></h4>
-<p>Get or set markdown content.</p><pre class="quikdown-pre"><code class="language-javascript">// Get
+}</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">clearHistory()</code></h4><p>Clears the undo/redo history.</p><pre class="quikdown-pre"><code class="language-javascript">editor.clearHistory();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">getLazyLinefeeds()</code></h4><p>Returns the current lazy linefeeds state (<code class="quikdown-code">true</code> or <code class="quikdown-code">false</code>).</p><pre class="quikdown-pre"><code class="language-javascript">const isLazy = editor.getLazyLinefeeds();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">convertLazyLinefeeds()</code></h4><p>Converts single newlines in the current content to paragraph breaks (<code class="quikdown-code">\n\n</code>). Useful for normalizing content that was authored with lazy linefeeds enabled.</p><pre class="quikdown-pre"><code class="language-javascript">editor.convertLazyLinefeeds();</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">destroy()</code></h4><p>Cleans up the editor and removes event listeners.</p><pre class="quikdown-pre"><code class="language-javascript">editor.destroy();</code></pre><h3 class="quikdown-h3">Static Methods</h3><h4 class="quikdown-h4"><code class="quikdown-code">QuikdownEditor.convertLazyLinefeeds(markdown)</code></h4><p>Converts single newlines to paragraph breaks in the given markdown string. Returns the converted string.</p><pre class="quikdown-pre"><code class="language-javascript">const normalized = QuikdownEditor.convertLazyLinefeeds(&#39;Line one\nLine two&#39;);
+// &quot;Line one\n\nLine two&quot;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">QuikdownEditor.removeHRFromMarkdown(markdown)</code></h4><p>Removes all horizontal rules (<code class="quikdown-code">---</code>) from the given markdown string. Returns the cleaned string.</p><pre class="quikdown-pre"><code class="language-javascript">const cleaned = QuikdownEditor.removeHRFromMarkdown(&#39;Some text\n\n---\n\nMore text&#39;);</code></pre><h3 class="quikdown-h3">Properties</h3><h4 class="quikdown-h4"><code class="quikdown-code">markdown</code></h4><p>Get or set markdown content.</p><pre class="quikdown-pre"><code class="language-javascript">// Get
 const content = editor.markdown;
 
 // Set
-editor.markdown = &#39;# New Content&#39;;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">html</code> (read-only)</h4>
-<p>Get the rendered HTML.</p><pre class="quikdown-pre"><code class="language-javascript">const html = editor.html;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">mode</code> (read-only)</h4>
-<p>Get the current view mode.</p><pre class="quikdown-pre"><code class="language-javascript">const currentMode = editor.mode; // &#39;source&#39;, &#39;split&#39;, or &#39;preview&#39;</code></pre><h2 class="quikdown-h2">View Modes</h2>
-<h3 class="quikdown-h3">Source Mode</h3>
-<p>Shows only the markdown source editor.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMode(&#39;source&#39;);</code></pre><h3 class="quikdown-h3">Split Mode</h3>
-<p>Shows markdown source and preview side-by-side.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMode(&#39;split&#39;);</code></pre><h3 class="quikdown-h3">Preview Mode</h3>
-<p>Shows only the rendered preview (still editable).</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMode(&#39;preview&#39;);</code></pre><h2 class="quikdown-h2">Themes</h2>
-<h3 class="quikdown-h3">Light Theme</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+editor.markdown = &#39;# New Content&#39;;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">html</code> (read-only)</h4><p>Get the rendered HTML.</p><pre class="quikdown-pre"><code class="language-javascript">const html = editor.html;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">mode</code> (read-only)</h4><p>Get the current view mode.</p><pre class="quikdown-pre"><code class="language-javascript">const currentMode = editor.mode; // &#39;source&#39;, &#39;split&#39;, or &#39;preview&#39;</code></pre><h2 class="quikdown-h2">View Modes</h2><h3 class="quikdown-h3">Source Mode</h3><p>Shows only the markdown source editor.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMode(&#39;source&#39;);</code></pre><h3 class="quikdown-h3">Split Mode</h3><p>Shows markdown source and preview side-by-side.</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMode(&#39;split&#39;);</code></pre><h3 class="quikdown-h3">Preview Mode</h3><p>Shows only the rendered preview (still editable).</p><pre class="quikdown-pre"><code class="language-javascript">editor.setMode(&#39;preview&#39;);</code></pre><h2 class="quikdown-h2">Themes</h2><h3 class="quikdown-h3">Light Theme</h3><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     theme: &#39;light&#39;
-});</code></pre></p><h3 class="quikdown-h3">Dark Theme</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+});</code></pre><h3 class="quikdown-h3">Dark Theme</h3><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     theme: &#39;dark&#39;
-});</code></pre></p><h3 class="quikdown-h3">Auto Theme</h3>
-<p>Follows system preference.</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+});</code></pre><h3 class="quikdown-h3">Auto Theme</h3><p>Follows system preference.</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     theme: &#39;auto&#39;  // Default
-});</code></pre><h2 class="quikdown-h2">Styling the Editor Preview</h2>
-<p>The editor ships with intentionally plain preview styles — black text (or<br class="quikdown-br">light text in dark mode), browser-default heading sizes, no decorative<br class="quikdown-br">borders. This means it blends into any parent page without clashing.</p><p>To customise the preview, add CSS rules that target <code class="quikdown-code">.qde-preview</code> in your<br class="quikdown-br">own stylesheet. The editor's built-in rules have normal specificity so a<br class="quikdown-br">single-class selector in a <code class="quikdown-code">&lt;style&gt;</code> tag or external sheet is enough to<br class="quikdown-br">override them — no <code class="quikdown-code">!important</code> needed.</p><pre class="quikdown-pre"><code class="language-css">/* Example: branded headings with an accent underline */
+});</code></pre><h2 class="quikdown-h2">Styling the Editor Preview</h2><p>The editor ships with intentionally plain preview styles — black text (or<br class="quikdown-br">light text in dark mode), browser-default heading sizes, no decorative<br class="quikdown-br">borders. This means it blends into any parent page without clashing.</p><p>To customise the preview, add CSS rules that target <code class="quikdown-code">.qde-preview</code> in your<br class="quikdown-br">own stylesheet. The editor's built-in rules have normal specificity so a<br class="quikdown-br">single-class selector in a <code class="quikdown-code">&lt;style&gt;</code> tag or external sheet is enough to<br class="quikdown-br">override them — no <code class="quikdown-code">!important</code> needed.</p><pre class="quikdown-pre"><code class="language-css">/* Example: branded headings with an accent underline */
 .qde-preview h1 {
   color: #6c47b8;
   border-bottom: 2px solid #e0d4f5;
@@ -375,9 +329,7 @@ editor.markdown = &#39;# New Content&#39;;</code></pre><h4 class="quikdown-h4"><
   color: #cdd6f4;
   border-radius: 8px;
   padding: 1em;
-}</code></pre><p>If the editor is embedded on a page whose own CSS targets bare element<br class="quikdown-br">selectors (<code class="quikdown-code">h1</code>, <code class="quikdown-code">p</code>, <code class="quikdown-code">pre</code>, etc.), those rules will bleed into the<br class="quikdown-br">preview. Either scope your page styles (<code class="quikdown-code">.my-page h1 { ... }</code>) or add<br class="quikdown-br">reset overrides on <code class="quikdown-code">.qde-preview</code> elements.</p><h2 class="quikdown-h2">Headless and Minimal UI Usage</h2>
-<h3 class="quikdown-h3">Headless Mode (No UI)</h3>
-<p>You can use QuikdownEditor programmatically without any UI:</p><pre class="quikdown-pre"><code class="language-javascript">// Create editor without toolbar
+}</code></pre><p>If the editor is embedded on a page whose own CSS targets bare element<br class="quikdown-br">selectors (<code class="quikdown-code">h1</code>, <code class="quikdown-code">p</code>, <code class="quikdown-code">pre</code>, etc.), those rules will bleed into the<br class="quikdown-br">preview. Either scope your page styles (<code class="quikdown-code">.my-page h1 { ... }</code>) or add<br class="quikdown-br">reset overrides on <code class="quikdown-code">.qde-preview</code> elements.</p><h2 class="quikdown-h2">Headless and Minimal UI Usage</h2><h3 class="quikdown-h3">Headless Mode (No UI)</h3><p>You can use QuikdownEditor programmatically without any UI:</p><pre class="quikdown-pre"><code class="language-javascript">// Create editor without toolbar
 const editor = new QuikdownEditor(&#39;#hidden-container&#39;, {
     showToolbar: false,
     mode: &#39;source&#39;  // Use source mode for direct text manipulation
@@ -390,14 +342,12 @@ editor.setMarkdown(&#39;# My Document&#39;);
 const html = editor.getHTML();
 
 // Convert and transform markdown
-const processedMarkdown = editor.getMarkdown();</code></pre><h3 class="quikdown-h3">Minimal UI</h3>
-<p>For a minimal interface with just essential buttons:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+const processedMarkdown = editor.getMarkdown();</code></pre><h3 class="quikdown-h3">Minimal UI</h3><p>For a minimal interface with just essential buttons:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     showToolbar: true,
     showRemoveHR: false,  // Hide special buttons
     mode: &#39;split&#39;,
     theme: &#39;light&#39;
-});</code></pre><h3 class="quikdown-h3">Custom Toolbar</h3>
-<p>You can hide the built-in toolbar and create your own:</p><pre class="quikdown-pre"><code class="language-javascript">// Create editor without toolbar
+});</code></pre><h3 class="quikdown-h3">Custom Toolbar</h3><p>You can hide the built-in toolbar and create your own:</p><pre class="quikdown-pre"><code class="language-javascript">// Create editor without toolbar
 const editor = new QuikdownEditor(&#39;#editor&#39;, {
     showToolbar: false
 });
@@ -409,9 +359,7 @@ document.getElementById(&#39;my-preview-btn&#39;).onclick = () =&gt; {
 
 document.getElementById(&#39;my-copy-btn&#39;).onclick = () =&gt; {
     editor.copyRendered();
-};</code></pre><h2 class="quikdown-h2">Plugin Integration</h2>
-<h3 class="quikdown-h3">Built-in Fence Types (Lazy Loaded)</h3>
-<p>The editor includes built-in handlers for common fence types that automatically load required libraries:</p><table class="quikdown-table">
+};</code></pre><h2 class="quikdown-h2">Plugin Integration</h2><h3 class="quikdown-h3">Built-in Fence Types (Lazy Loaded)</h3><p>The editor includes built-in handlers for common fence types that automatically load required libraries:</p><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Fence Type</th>
@@ -482,13 +430,11 @@ document.getElementById(&#39;my-copy-btn&#39;).onclick = () =&gt; {
 <td class="quikdown-td">Yes</td>
 </tr>
 </tbody>
-</table><h3 class="quikdown-h3">Highlight.js</h3>
-<p>Enable syntax highlighting for code blocks:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+</table><h3 class="quikdown-h3">Highlight.js</h3><p>Enable syntax highlighting for code blocks:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     plugins: {
         highlightjs: true
     }
-});</code></pre><p>The editor will automatically load Highlight.js from CDN if not already present.</p><h3 class="quikdown-h3">Mermaid</h3>
-<p>Enable Mermaid diagram rendering:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+});</code></pre><p>The editor will automatically load Highlight.js from CDN if not already present.</p><h3 class="quikdown-h3">Mermaid</h3><p>Enable Mermaid diagram rendering:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     plugins: {
         mermaid: true
     }
@@ -552,8 +498,7 @@ const editor = new QuikdownEditor(&#39;#editor&#39;, {
             return `&lt;div class=&quot;math&quot;&gt;$${code}$&lt;/div&gt;`;
         }
     }
-});</code></pre></p><h4 class="quikdown-h4">MathJax Integration</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+});</code></pre></p><h4 class="quikdown-h4">MathJax Integration</h4><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     customFences: {
         &#39;math&#39;: (code, lang) =&gt; {
             if (window.MathJax) {
@@ -570,8 +515,7 @@ const editor = new QuikdownEditor(&#39;#editor&#39;, {
             return `&lt;pre class=&quot;math-source&quot;&gt;${code}&lt;/pre&gt;`;
         }
     }
-});</code></pre></p><h4 class="quikdown-h4">KaTeX Integration</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+});</code></pre><h4 class="quikdown-h4">KaTeX Integration</h4><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     customFences: {
         &#39;math&#39;: (code, lang) =&gt; {
             if (window.katex) {
@@ -587,8 +531,7 @@ const editor = new QuikdownEditor(&#39;#editor&#39;, {
             return `&lt;pre&gt;${code}&lt;/pre&gt;`;
         }
     }
-});</code></pre></p><h4 class="quikdown-h4">Multiple Custom Plugins</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+});</code></pre><h4 class="quikdown-h4">Multiple Custom Plugins</h4><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     customFences: {
         // Math rendering
         &#39;math&#39;: (code, lang) =&gt; {
@@ -627,20 +570,16 @@ const editor = new QuikdownEditor(&#39;#editor&#39;, {
         highlightjs: true,  // For other code blocks
         mermaid: true      // Built-in mermaid support
     }
-});</code></pre></p><p><strong class="quikdown-strong">Note:</strong> Custom fences are checked first, before built-in plugins. If a custom fence returns <code class="quikdown-code">undefined</code>, it falls back to built-in behavior.</p><h2 class="quikdown-h2">Events and Callbacks</h2>
-<h3 class="quikdown-h3">onChange</h3>
-<p>Called when content changes:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+});</code></pre><p><strong class="quikdown-strong">Note:</strong> Custom fences are checked first, before built-in plugins. If a custom fence returns <code class="quikdown-code">undefined</code>, it falls back to built-in behavior.</p><h2 class="quikdown-h2">Events and Callbacks</h2><h3 class="quikdown-h3">onChange</h3><p>Called when content changes:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     onChange: (markdown, html) =&gt; {
         console.log(&#39;Markdown:&#39;, markdown);
         console.log(&#39;HTML:&#39;, html);
     }
-});</code></pre><h3 class="quikdown-h3">onModeChange</h3>
-<p>Called when view mode changes:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
+});</code></pre><h3 class="quikdown-h3">onModeChange</h3><p>Called when view mode changes:</p><pre class="quikdown-pre"><code class="language-javascript">const editor = new QuikdownEditor(&#39;#editor&#39;, {
     onModeChange: (mode) =&gt; {
         console.log(&#39;Mode changed to:&#39;, mode);
     }
-});</code></pre><h2 class="quikdown-h2">Keyboard Shortcuts</h2>
-<table class="quikdown-table">
+});</code></pre><h2 class="quikdown-h2">Keyboard Shortcuts</h2><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Shortcut</th>
@@ -669,9 +608,7 @@ const editor = new QuikdownEditor(&#39;#editor&#39;, {
 <td class="quikdown-td">Switch to preview mode</td>
 </tr>
 </tbody>
-</table><h2 class="quikdown-h2">Examples</h2>
-<h3 class="quikdown-h3">Complete Example with All Features</h3>
-<p><pre class="quikdown-pre"><code class="language-html">&lt;!DOCTYPE html&gt;
+</table><h2 class="quikdown-h2">Examples</h2><h3 class="quikdown-h3">Complete Example with All Features</h3><pre class="quikdown-pre"><code class="language-html">&lt;!DOCTYPE html&gt;
 &lt;html&gt;
 &lt;head&gt;
     &lt;meta charset=&quot;UTF-8&quot;&gt;
@@ -723,8 +660,7 @@ const editor = new QuikdownEditor(&#39;#editor&#39;, {
         });
     &lt;/script&gt;
 &lt;/body&gt;
-&lt;/html&gt;</code></pre></p><h3 class="quikdown-h3">Integration with Form</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">const form = document.getElementById(&#39;myForm&#39;);
+&lt;/html&gt;</code></pre><h3 class="quikdown-h3">Integration with Form</h3><pre class="quikdown-pre"><code class="language-javascript">const form = document.getElementById(&#39;myForm&#39;);
 const editor = new QuikdownEditor(&#39;#editor&#39;);
 
 form.addEventListener(&#39;submit&#39;, (e) =&gt; {
@@ -737,8 +673,7 @@ form.addEventListener(&#39;submit&#39;, (e) =&gt; {
         method: &#39;POST&#39;,
         body: formData
     });
-});</code></pre></p><h3 class="quikdown-h3">Multiple Editors</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">const editor1 = new QuikdownEditor(&#39;#editor1&#39;, {
+});</code></pre><h3 class="quikdown-h3">Multiple Editors</h3><pre class="quikdown-pre"><code class="language-javascript">const editor1 = new QuikdownEditor(&#39;#editor1&#39;, {
     mode: &#39;source&#39;,
     theme: &#39;light&#39;
 });
@@ -751,8 +686,7 @@ const editor2 = new QuikdownEditor(&#39;#editor2&#39;, {
 // Sync content between editors
 editor1.onChange = (markdown) =&gt; {
     editor2.setMarkdown(markdown);
-};</code></pre></p><h3 class="quikdown-h3">With Custom Styling</h3>
-<p><pre class="quikdown-pre"><code class="language-html">&lt;style&gt;
+};</code></pre><h3 class="quikdown-h3">With Custom Styling</h3><pre class="quikdown-pre"><code class="language-html">&lt;style&gt;
     #custom-editor {
         border: 2px solid #007bff;
         border-radius: 8px;
@@ -778,8 +712,7 @@ editor1.onChange = (markdown) =&gt; {
         mode: &#39;split&#39;,
         theme: &#39;light&#39;
     });
-&lt;/script&gt;</code></pre></p><h3 class="quikdown-h3">Complete Example with MathJax</h3>
-<p><pre class="quikdown-pre"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;/script&gt;</code></pre><h3 class="quikdown-h3">Complete Example with MathJax</h3><pre class="quikdown-pre"><code class="language-html">&lt;!DOCTYPE html&gt;
 &lt;html&gt;
 &lt;head&gt;
     &lt;meta charset=&quot;UTF-8&quot;&gt;
@@ -885,26 +818,19 @@ function fibonacci(n) {
         });
     &lt;/script&gt;
 &lt;/body&gt;
-&lt;/html&gt;</code></pre></p><h2 class="quikdown-h2">Browser Support</h2>
-<p>Quikdown Editor supports all modern browsers:</p><ul class="quikdown-ul">
+&lt;/html&gt;</code></pre><h2 class="quikdown-h2">Browser Support</h2><p>Quikdown Editor supports all modern browsers:</p><ul class="quikdown-ul">
 <li class="quikdown-li">Chrome/Edge 88+</li>
 <li class="quikdown-li">Firefox 78+</li>
 <li class="quikdown-li">Safari 14+</li>
 <li class="quikdown-li">iOS Safari 14+</li>
 <li class="quikdown-li">Chrome for Android 88+</li>
-</ul><p>For older browsers, use the UMD build which includes necessary polyfills.</p><h2 class="quikdown-h2">Troubleshooting</h2>
-<h3 class="quikdown-h3">Editor not appearing</h3>
-<p>Ensure the container element has a defined height:</p><pre class="quikdown-pre"><code class="language-css">#editor {
+</ul><p>For older browsers, use the UMD build which includes necessary polyfills.</p><h2 class="quikdown-h2">Troubleshooting</h2><h3 class="quikdown-h3">Editor not appearing</h3><p>Ensure the container element has a defined height:</p><pre class="quikdown-pre"><code class="language-css">#editor {
     height: 400px; /* or min-height */
-}</code></pre><h3 class="quikdown-h3">Plugins not loading</h3>
-<p>The editor automatically loads plugins from CDN. If you're behind a firewall or offline, load them manually:</p><pre class="quikdown-pre"><code class="language-html">&lt;!-- Load before creating editor --&gt;
+}</code></pre><h3 class="quikdown-h3">Plugins not loading</h3><p>The editor automatically loads plugins from CDN. If you're behind a firewall or offline, load them manually:</p><pre class="quikdown-pre"><code class="language-html">&lt;!-- Load before creating editor --&gt;
 &lt;link rel=&quot;stylesheet&quot; href=&quot;path/to/highlight.css&quot;&gt;
 &lt;script src=&quot;path/to/highlight.js&quot;&gt;&lt;/script&gt;
-&lt;script src=&quot;path/to/mermaid.js&quot;&gt;&lt;/script&gt;</code></pre><h3 class="quikdown-h3">Content not syncing</h3>
-<p>Ensure you're using the bidirectional build of quikdown:</p><pre class="quikdown-pre"><code class="language-javascript">// The editor automatically uses quikdown_bd for bidirectional support
-// This is built into quikdown_edit.js</code></pre><h2 class="quikdown-h2">Advanced Usage</h2>
-<h3 class="quikdown-h3">Custom Toolbar Actions</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">// After editor creation
+&lt;script src=&quot;path/to/mermaid.js&quot;&gt;&lt;/script&gt;</code></pre><h3 class="quikdown-h3">Content not syncing</h3><p>Ensure you're using the bidirectional build of quikdown:</p><pre class="quikdown-pre"><code class="language-javascript">// The editor automatically uses quikdown_bd for bidirectional support
+// This is built into quikdown_edit.js</code></pre><h2 class="quikdown-h2">Advanced Usage</h2><h3 class="quikdown-h3">Custom Toolbar Actions</h3><pre class="quikdown-pre"><code class="language-javascript">// After editor creation
 const toolbar = editor.container.querySelector(&#39;.qde-toolbar&#39;);
 
 const customBtn = document.createElement(&#39;button&#39;);
@@ -919,8 +845,7 @@ customBtn.onclick = () =&gt; {
     a.click();
 };
 
-toolbar.appendChild(customBtn);</code></pre></p><h3 class="quikdown-h3">Programmatic Content Manipulation</h3>
-<p><pre class="quikdown-pre"><code class="language-javascript">// Insert at cursor position
+toolbar.appendChild(customBtn);</code></pre><h3 class="quikdown-h3">Programmatic Content Manipulation</h3><pre class="quikdown-pre"><code class="language-javascript">// Insert at cursor position
 const insertAtCursor = (text) =&gt; {
     const textarea = editor.sourceTextarea;
     const start = textarea.selectionStart;
@@ -935,14 +860,12 @@ const insertAtCursor = (text) =&gt; {
 };
 
 // Usage
-insertAtCursor(&#39;**bold text**&#39;);</code></pre></p><h2 class="quikdown-h2">Performance Tips</h2>
-<ol class="quikdown-ol">
+insertAtCursor(&#39;**bold text**&#39;);</code></pre><h2 class="quikdown-h2">Performance Tips</h2><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Debouncing</strong>: Adjust <code class="quikdown-code">debounceDelay</code> for large documents</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Lazy Loading</strong>: Plugins are loaded on-demand</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Mode Selection</strong>: Use source mode for large documents to improve performance</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Memory Management</strong>: Call <code class="quikdown-code">destroy()</code> when removing editors</li>
-</ol><h2 class="quikdown-h2">License</h2>
-<p>BSD 2-Clause License - see <a class="quikdown-a" href="../LICENSE.txt">LICENSE.txt</a> for details.</p>
+</ol><h2 class="quikdown-h2">License</h2><p>BSD 2-Clause License - see <a class="quikdown-a" href="../LICENSE.txt">LICENSE.txt</a> for details.</p>
     </article>
     <script>
         // Syntax highlighting
