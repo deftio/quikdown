@@ -70,21 +70,22 @@
 <li class="quikdown-li"><strong class="quikdown-strong">Zero Dependencies</strong> - No external libraries required</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Extensible</strong> - Plugin system for custom rendering</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Practical</strong> - Focused on the markdown subset actually used in chat/LLM outputs</li>
-</ol><h2 class="quikdown-h2">Parser Architecture</h2><h3 class="quikdown-h3">Overview</h3><p>quikdown uses a multi-phase regex-based parser that prioritizes safety and simplicity:</p><pre class="quikdown-pre"><code>Input Markdown
+</ol><h2 class="quikdown-h2">Parser Architecture</h2><h3 class="quikdown-h3">Overview</h3><p>As of v1.2.8, quikdown uses a <strong class="quikdown-strong">line-scanning</strong> approach for block detection<br class="quikdown-br">combined with per-block inline formatting. The overall pipeline is:</p><pre class="quikdown-pre"><code>Input Markdown
     ↓
-Phase 1: Extract &amp; Protect (Code blocks, inline code)
+Phase 1: Extract &amp; Protect (Code blocks, inline code → §CB§ / §IC§ placeholders)
     ↓
 Phase 2: Escape HTML (XSS protection)
     ↓
-Phase 3: Process Block Elements (Tables, headings, lists)
+Phase 3: Block Scanning + Inline Formatting + Paragraph Wrapping
+    ├── 3a: Table detection (line walker — multi-line lookahead)
+    ├── 3b: Line scanner (headings, HR, blockquotes — single pass)
+    ├── 3c: List detection (line walker — indent tracking)
+    ├── 3d: Inline formatting (bold, italic, links, autolinks, images)
+    └── 3e: Paragraph wrapping + lazy linefeeds
     ↓
-Phase 4: Process Inline Elements (Bold, italic, links)
+Phase 4: Restore Protected Content (§CB§ → &lt;pre&gt;, §IC§ → &lt;code&gt;)
     ↓
-Phase 5: Create Paragraphs
-    ↓
-Phase 6: Restore Protected Content
-    ↓
-Output HTML</code></pre><h3 class="quikdown-h3">Phase 1: Extract & Protect</h3><p>Before any processing, we extract code blocks and inline code, replacing them with placeholders:</p><ul class="quikdown-ul">
+Output HTML</code></pre><p>Prior to v1.2.8 the parser applied 10+ sequential regex passes over the full<br class="quikdown-br">document. The v1.2.8 rewrite replaced that with structured line-walkers: each<br class="quikdown-br">line is classified once, and inline formatting is applied per-block rather than<br class="quikdown-br">globally. This makes the parser easier to debug, extend, and reason about.</p><h3 class="quikdown-h3">Phase 1: Extract & Protect</h3><p>Before any processing, we extract code blocks and inline code, replacing them with placeholders:</p><ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Fenced code blocks</strong> → <code class="quikdown-code">§CB0§</code>, <code class="quikdown-code">§CB1§</code>, etc.</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Inline code</strong> → <code class="quikdown-code">§IC0§</code>, <code class="quikdown-code">§IC1§</code>, etc.</li>
 </ul><p>This prevents code content from being processed as markdown and ensures special characters remain intact.</p><h3 class="quikdown-h3">Phase 2: HTML Escaping</h3><p>All remaining content is HTML-escaped to prevent XSS attacks:
@@ -94,26 +95,22 @@ Output HTML</code></pre><h3 class="quikdown-h3">Phase 1: Extract & Protect</h3><
 <li class="quikdown-li"><code class="quikdown-code">&amp;</code> → <code class="quikdown-code">&amp;amp;</code></li>
 <li class="quikdown-li"><code class="quikdown-code">&quot;</code> → <code class="quikdown-code">&amp;quot;</code></li>
 <li class="quikdown-li"><code class="quikdown-code">&#39;</code> → <code class="quikdown-code">&amp;#39;</code></li>
-</ul><p>This is done BEFORE markdown processing, ensuring no user input can inject HTML tags.</p><h3 class="quikdown-h3">Phase 3: Block Elements</h3><p>Process larger structural elements:
+</ul><p>This is done BEFORE markdown processing, ensuring no user input can inject HTML tags.</p><h3 class="quikdown-h3">Phase 3: Block Scanning + Inline + Paragraphs</h3><p>This is the core of the lexer rewrite. Three line-walkers process the text:</p><ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">Table walker</strong> — scans for runs of pipe-containing lines, validates the</li>
+</ol>
+<p>   separator row, and renders <code class="quikdown-code">&lt;table&gt;</code> HTML. Invalid runs are left as text.
 <ol class="quikdown-ol">
-<li class="quikdown-li"><strong class="quikdown-strong">Tables</strong> - Multi-line processing with alignment support</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Headings</strong> - ATX-style headers (<code class="quikdown-code">#</code> through <code class="quikdown-code">######</code>)</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Blockquotes</strong> - Line-by-line <code class="quikdown-code">&gt;</code> prefixes</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Horizontal rules</strong> - Three or more hyphens</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Lists</strong> - Both ordered and unordered with nesting</li>
-</ol><h3 class="quikdown-h3">Phase 4: Inline Elements</h3><p>Process text formatting within blocks:
+<li class="quikdown-li"><strong class="quikdown-strong">Line scanner</strong> (<code class="quikdown-code">scanLineBlocks</code>) — a single pass that identifies</li>
+</ol>
+<p>   headings (<code class="quikdown-code">#</code>), horizontal rules (<code class="quikdown-code">---</code>), and blockquotes (<code class="quikdown-code">&amp;gt;</code>).<br class="quikdown-br">   Each matched line is replaced with its HTML inline.
 <ol class="quikdown-ol">
-<li class="quikdown-li"><strong class="quikdown-strong">Images</strong> - Processed before links to avoid conflicts</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Links</strong> - Standard markdown link syntax</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Bold</strong> - <code class="quikdown-code">**text**</code> or <code class="quikdown-code">__text__</code></li>
-<li class="quikdown-li"><strong class="quikdown-strong">Italic</strong> - <code class="quikdown-code">*text*</code> or <code class="quikdown-code">_text_</code></li>
-<li class="quikdown-li"><strong class="quikdown-strong">Strikethrough</strong> - <code class="quikdown-code">~~text~~</code></li>
-<li class="quikdown-li"><strong class="quikdown-strong">Line breaks</strong> - Two trailing spaces</li>
-</ol><h3 class="quikdown-h3">Phase 5: Paragraphs</h3><p>Double newlines are converted to paragraph breaks, then we unwrap block elements that shouldn't be inside <code class="quikdown-code">&lt;p&gt;</code> tags.</p><h3 class="quikdown-h3">Phase 6: Restore Protected Content</h3><p>Finally, we replace the placeholders with the actual code content, properly formatted.</p><h2 class="quikdown-h2">Key Design Decisions</h2><h3 class="quikdown-h3">Why Regex Instead of AST?</h3><ol class="quikdown-ol">
-<li class="quikdown-li"><strong class="quikdown-strong">Size</strong> - No parser/lexer overhead</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Speed</strong> - Single pass for most operations</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Simplicity</strong> - Easier to audit and understand</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Good enough</strong> - Handles 95% of real-world markdown</li>
+<li class="quikdown-li"><strong class="quikdown-strong">List walker</strong> — tracks indentation levels to build nested <code class="quikdown-code">&lt;ul&gt;</code>/<code class="quikdown-code">&lt;ol&gt;</code></li>
+</ol>
+<p>   structures, including task-list checkboxes.</p><p>After block scanning, <strong class="quikdown-strong">inline formatting</strong> is applied globally:<br class="quikdown-br">images, links, autolinks, bold/italic/strikethrough.</p><p>Finally, <strong class="quikdown-strong">paragraph wrapping</strong> converts double newlines to <code class="quikdown-code">&lt;/p&gt;&lt;p&gt;</code> breaks,<br class="quikdown-br">wraps the result in <code class="quikdown-code">&lt;p&gt;…&lt;/p&gt;</code>, and removes spurious <code class="quikdown-code">&lt;p&gt;</code> tags around block<br class="quikdown-br">elements. Lazy linefeeds mode converts single <code class="quikdown-code">\n</code> to <code class="quikdown-code">&lt;br&gt;</code> while preserving<br class="quikdown-br">block boundaries.</p><h3 class="quikdown-h3">Phase 4: Restore Protected Content</h3><p>Replace placeholders with rendered HTML: <code class="quikdown-code">§CB0§</code> → <code class="quikdown-code">&lt;pre&gt;&lt;code&gt;…&lt;/code&gt;&lt;/pre&gt;</code><br class="quikdown-br">(or fence-plugin output), <code class="quikdown-code">§IC0§</code> → <code class="quikdown-code">&lt;code&gt;…&lt;/code&gt;</code>.</p><h2 class="quikdown-h2">Key Design Decisions</h2><h3 class="quikdown-h3">Why Line Scanning Instead of Full AST?</h3><ol class="quikdown-ol">
+<li class="quikdown-li"><strong class="quikdown-strong">Size</strong> — No separate tokenizer/AST/renderer layers (~9.5 KB minified)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Speed</strong> — Each line is classified once; inline formatting per-block</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Simplicity</strong> — Easy to add a new block type (add a branch in the scanner)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Good enough</strong> — Handles 95%+ of real-world markdown used in chat/LLM output</li>
 </ol><h3 class="quikdown-h3">Why Extract-Escape-Process-Restore?</h3><p>This pattern ensures:
 <ol class="quikdown-ol">
 <li class="quikdown-li">Code blocks are never modified</li>
@@ -129,14 +126,14 @@ const plugin = {
     return undefined; // Use default escaping
   }
 };</code></pre><p>This makes trust explicit and granular.</p><h2 class="quikdown-h2">Performance Considerations</h2><h3 class="quikdown-h3">Optimizations</h3><ol class="quikdown-ol">
-<li class="quikdown-li"><strong class="quikdown-strong">Single-pass regex</strong> where possible</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Pre-compiled patterns</strong> (via JavaScript's regex literals)</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Line-scanning</strong> — each line classified once, not re-scanned by multiple regex passes</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Pre-compiled patterns</strong> (via JavaScript's regex literals for inline formatting)</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Minimal string concatenation</strong></li>
 <li class="quikdown-li"><strong class="quikdown-strong">Early returns</strong> for empty/invalid input</li>
 </ol><h3 class="quikdown-h3">Trade-offs</h3><ul class="quikdown-ul">
-<li class="quikdown-li"><strong class="quikdown-strong">No streaming</strong> - Entire document processed at once</li>
-<li class="quikdown-li"><strong class="quikdown-strong">Regex limitations</strong> - Some edge cases in deeply nested structures</li>
-<li class="quikdown-li"><strong class="quikdown-strong">No incremental updates</strong> - Full re-parse on change</li>
+<li class="quikdown-li"><strong class="quikdown-strong">No streaming</strong> — entire document processed at once</li>
+<li class="quikdown-li"><strong class="quikdown-strong">No incremental updates</strong> — full re-parse on change</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Placeholder-based code extraction</strong> — adds two array lookups per code block</li>
 </ul><p>These trade-offs are acceptable for the target use case (chat messages, LLM outputs) where documents are typically small.</p><h2 class="quikdown-h2">Memory Usage</h2><ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Linear with input size</strong> - No exponential growth</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Temporary arrays</strong> for code blocks and placeholders</li>
