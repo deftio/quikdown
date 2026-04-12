@@ -14,25 +14,32 @@ quikdown is designed with these core principles:
 
 ### Overview
 
-quikdown uses a multi-phase regex-based parser that prioritizes safety and simplicity:
+As of v1.2.8, quikdown uses a **line-scanning** approach for block detection
+combined with per-block inline formatting. The overall pipeline is:
 
 ```
 Input Markdown
     ↓
-Phase 1: Extract & Protect (Code blocks, inline code)
+Phase 1: Extract & Protect (Code blocks, inline code → §CB§ / §IC§ placeholders)
     ↓
 Phase 2: Escape HTML (XSS protection)
     ↓
-Phase 3: Process Block Elements (Tables, headings, lists)
+Phase 3: Block Scanning + Inline Formatting + Paragraph Wrapping
+    ├── 3a: Table detection (line walker — multi-line lookahead)
+    ├── 3b: Line scanner (headings, HR, blockquotes — single pass)
+    ├── 3c: List detection (line walker — indent tracking)
+    ├── 3d: Inline formatting (bold, italic, links, autolinks, images)
+    └── 3e: Paragraph wrapping + lazy linefeeds
     ↓
-Phase 4: Process Inline Elements (Bold, italic, links)
-    ↓
-Phase 5: Create Paragraphs
-    ↓
-Phase 6: Restore Protected Content
+Phase 4: Restore Protected Content (§CB§ → <pre>, §IC§ → <code>)
     ↓
 Output HTML
 ```
+
+Prior to v1.2.8 the parser applied 10+ sequential regex passes over the full
+document. The v1.2.8 rewrite replaced that with structured line-walkers: each
+line is classified once, and inline formatting is applied per-block rather than
+globally. This makes the parser easier to debug, extend, and reason about.
 
 ### Phase 1: Extract & Protect
 
@@ -54,41 +61,39 @@ All remaining content is HTML-escaped to prevent XSS attacks:
 
 This is done BEFORE markdown processing, ensuring no user input can inject HTML tags.
 
-### Phase 3: Block Elements
+### Phase 3: Block Scanning + Inline + Paragraphs
 
-Process larger structural elements:
-1. **Tables** - Multi-line processing with alignment support
-2. **Headings** - ATX-style headers (`#` through `######`)
-3. **Blockquotes** - Line-by-line `>` prefixes
-4. **Horizontal rules** - Three or more hyphens
-5. **Lists** - Both ordered and unordered with nesting
+This is the core of the lexer rewrite. Three line-walkers process the text:
 
-### Phase 4: Inline Elements
+1. **Table walker** — scans for runs of pipe-containing lines, validates the
+   separator row, and renders `<table>` HTML. Invalid runs are left as text.
+2. **Line scanner** (`scanLineBlocks`) — a single pass that identifies
+   headings (`#`), horizontal rules (`---`), and blockquotes (`&gt;`).
+   Each matched line is replaced with its HTML inline.
+3. **List walker** — tracks indentation levels to build nested `<ul>`/`<ol>`
+   structures, including task-list checkboxes.
 
-Process text formatting within blocks:
-1. **Images** - Processed before links to avoid conflicts
-2. **Links** - Standard markdown link syntax
-3. **Bold** - `**text**` or `__text__`
-4. **Italic** - `*text*` or `_text_`
-5. **Strikethrough** - `~~text~~`
-6. **Line breaks** - Two trailing spaces
+After block scanning, **inline formatting** is applied globally:
+images, links, autolinks, bold/italic/strikethrough.
 
-### Phase 5: Paragraphs
+Finally, **paragraph wrapping** converts double newlines to `</p><p>` breaks,
+wraps the result in `<p>…</p>`, and removes spurious `<p>` tags around block
+elements. Lazy linefeeds mode converts single `\n` to `<br>` while preserving
+block boundaries.
 
-Double newlines are converted to paragraph breaks, then we unwrap block elements that shouldn't be inside `<p>` tags.
+### Phase 4: Restore Protected Content
 
-### Phase 6: Restore Protected Content
-
-Finally, we replace the placeholders with the actual code content, properly formatted.
+Replace placeholders with rendered HTML: `§CB0§` → `<pre><code>…</code></pre>`
+(or fence-plugin output), `§IC0§` → `<code>…</code>`.
 
 ## Key Design Decisions
 
-### Why Regex Instead of AST?
+### Why Line Scanning Instead of Full AST?
 
-1. **Size** - No parser/lexer overhead
-2. **Speed** - Single pass for most operations
-3. **Simplicity** - Easier to audit and understand
-4. **Good enough** - Handles 95% of real-world markdown
+1. **Size** — No separate tokenizer/AST/renderer layers (~9.5 KB minified)
+2. **Speed** — Each line is classified once; inline formatting per-block
+3. **Simplicity** — Easy to add a new block type (add a branch in the scanner)
+4. **Good enough** — Handles 95%+ of real-world markdown used in chat/LLM output
 
 ### Why Extract-Escape-Process-Restore?
 
@@ -120,16 +125,16 @@ This makes trust explicit and granular.
 
 ### Optimizations
 
-1. **Single-pass regex** where possible
-2. **Pre-compiled patterns** (via JavaScript's regex literals)
+1. **Line-scanning** — each line classified once, not re-scanned by multiple regex passes
+2. **Pre-compiled patterns** (via JavaScript's regex literals for inline formatting)
 3. **Minimal string concatenation**
 4. **Early returns** for empty/invalid input
 
 ### Trade-offs
 
-- **No streaming** - Entire document processed at once
-- **Regex limitations** - Some edge cases in deeply nested structures
-- **No incremental updates** - Full re-parse on change
+- **No streaming** — entire document processed at once
+- **No incremental updates** — full re-parse on change
+- **Placeholder-based code extraction** — adds two array lookups per code block
 
 These trade-offs are acceptable for the target use case (chat messages, LLM outputs) where documents are typically small.
 

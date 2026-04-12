@@ -64,11 +64,7 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1 class="quikdown-h1">API Reference</h1>
-<h2 class="quikdown-h2">Core Function</h2>
-<h3 class="quikdown-h3"><code class="quikdown-code">quikdown(markdown, options?)</code></h3>
-<p>Converts markdown text to HTML.</p><h4 class="quikdown-h4">Parameters</h4>
-<table class="quikdown-table">
+        <h1 class="quikdown-h1">API Reference</h1><h2 class="quikdown-h2">Core Function</h2><h3 class="quikdown-h3"><code class="quikdown-code">quikdown(markdown, options?)</code></h3><p>Converts markdown text to HTML.</p><h4 class="quikdown-h4">Parameters</h4><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Parameter</th>
@@ -91,8 +87,7 @@
 <td class="quikdown-td">Configuration options</td>
 </tr>
 </tbody>
-</table><h4 class="quikdown-h4">Options</h4>
-<table class="quikdown-table">
+</table><h4 class="quikdown-h4">Options</h4><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Option</th>
@@ -133,17 +128,12 @@
 <td class="quikdown-td">Allow javascript: and other potentially unsafe URLs</td>
 </tr>
 </tbody>
-</table><h4 class="quikdown-h4">Returns</h4>
-<p><code class="quikdown-code">string</code> - The converted HTML</p><h4 class="quikdown-h4">Example</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
+</table><h4 class="quikdown-h4">Returns</h4><p><code class="quikdown-code">string</code> - The converted HTML</p><h4 class="quikdown-h4">Example</h4><pre class="quikdown-pre"><code class="language-javascript">import quikdown from &#39;quikdown&#39;;
 
 const markdown = &#39;# Hello World\n\nThis is **bold** text.&#39;;
 const html = quikdown(markdown);
 console.log(html);
-// &lt;h1 class=&quot;quikdown-h1&quot;&gt;Hello World&lt;/h1&gt;&lt;p&gt;This is &lt;strong class=&quot;quikdown-strong&quot;&gt;bold&lt;/strong&gt; text.&lt;/p&gt;</code></pre></p><h2 class="quikdown-h2">Configuration Methods</h2>
-<h3 class="quikdown-h3"><code class="quikdown-code">quikdown.configure(options)</code></h3>
-<p>Creates a pre-configured parser function with default options.</p><h4 class="quikdown-h4">Parameters</h4>
-<table class="quikdown-table">
+// &lt;h1 class=&quot;quikdown-h1&quot;&gt;Hello World&lt;/h1&gt;&lt;p&gt;This is &lt;strong class=&quot;quikdown-strong&quot;&gt;bold&lt;/strong&gt; text.&lt;/p&gt;</code></pre><h2 class="quikdown-h2">Configuration Methods</h2><h3 class="quikdown-h3"><code class="quikdown-code">quikdown.configure(options)</code></h3><p>Creates a pre-configured parser function with default options.</p><h4 class="quikdown-h4">Parameters</h4><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Parameter</th>
@@ -160,24 +150,17 @@ console.log(html);
 <td class="quikdown-td">Default configuration options</td>
 </tr>
 </tbody>
-</table><h4 class="quikdown-h4">Returns</h4>
-<p><code class="quikdown-code">function</code> - A configured parser function</p><h4 class="quikdown-h4">Example</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">const myParser = quikdown.configure({
+</table><h4 class="quikdown-h4">Returns</h4><p><code class="quikdown-code">function</code> - A configured parser function</p><h4 class="quikdown-h4">Example</h4><pre class="quikdown-pre"><code class="language-javascript">const myParser = quikdown.configure({
   inline_styles: true,
   fence_plugin: myPlugin
 });
 
 // Use the configured parser
 const html = myParser(&#39;# Heading&#39;);
-// No need to pass options each time</code></pre></p><h2 class="quikdown-h2">Style Methods</h2>
-<h3 class="quikdown-h3"><code class="quikdown-code">quikdown.emitStyles(prefix?, theme?)</code></h3>
-<p>Returns CSS styles for quikdown HTML output when not using inline styles.</p><h4 class="quikdown-h4">Parameters</h4>
-<ul class="quikdown-ul">
+// No need to pass options each time</code></pre><h2 class="quikdown-h2">Style Methods</h2><h3 class="quikdown-h3"><code class="quikdown-code">quikdown.emitStyles(prefix?, theme?)</code></h3><p>Returns CSS styles for quikdown HTML output when not using inline styles.</p><h4 class="quikdown-h4">Parameters</h4><ul class="quikdown-ul">
 <li class="quikdown-li"><code class="quikdown-code">prefix</code> (string, optional) - CSS class prefix. Default: <code class="quikdown-code">&#39;quikdown-&#39;</code></li>
 <li class="quikdown-li"><code class="quikdown-code">theme</code> (string, optional) - Theme name: <code class="quikdown-code">&#39;light&#39;</code> (default) or <code class="quikdown-code">&#39;dark&#39;</code></li>
-</ul><h4 class="quikdown-h4">Returns</h4>
-<p><code class="quikdown-code">string</code> - CSS stylesheet content with theme-appropriate colors</p><h4 class="quikdown-h4">Example</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">// Generate light theme CSS
+</ul><h4 class="quikdown-h4">Returns</h4><p><code class="quikdown-code">string</code> - CSS stylesheet content with theme-appropriate colors</p><h4 class="quikdown-h4">Example</h4><pre class="quikdown-pre"><code class="language-javascript">// Generate light theme CSS
 const lightStyles = quikdown.emitStyles(&#39;quikdown-&#39;, &#39;light&#39;);
 
 // Generate dark theme CSS  
@@ -190,14 +173,12 @@ document.head.appendChild(styleElement);
 
 // Or use pre-generated theme files
 // dist/quikdown.light.css - Light theme with explicit colors
-// dist/quikdown.dark.css - Dark theme with auto dark mode support</code></pre></p><h4 class="quikdown-h4">Theme Features</h4>
-<ul class="quikdown-ul">
+// dist/quikdown.dark.css - Dark theme with auto dark mode support</code></pre><h4 class="quikdown-h4">Theme Features</h4><ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">Container-based scoping</strong>: Use <code class="quikdown-code">.quikdown-light</code> or <code class="quikdown-code">.quikdown-dark</code> containers</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Explicit colors</strong>: Both themes specify text colors for robustness</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Auto dark mode</strong>: Dark CSS includes <code class="quikdown-code">.quikdown-auto</code> for system preferences</li>
 <li class="quikdown-li"><strong class="quikdown-strong">No conflicts</strong>: Multiple themes can coexist on the same page</li>
-</ul><h4 class="quikdown-h4">Generated CSS Classes</h4>
-<p><pre class="quikdown-pre"><code class="language-css">.quikdown-h1 { margin-top: 0.5em; margin-bottom: 0.3em }
+</ul><h4 class="quikdown-h4">Generated CSS Classes</h4><pre class="quikdown-pre"><code class="language-css">.quikdown-h1 { margin-top: 0.5em; margin-bottom: 0.3em }
 .quikdown-h2 { margin-top: 0.5em; margin-bottom: 0.3em }
 .quikdown-h3 { margin-top: 0.5em; margin-bottom: 0.3em }
 .quikdown-h4 { margin-top: 0.5em; margin-bottom: 0.3em }
@@ -217,17 +198,10 @@ document.head.appendChild(styleElement);
 .quikdown-del { text-decoration: line-through }
 .quikdown-ul { margin: 0.5em 0; padding-left: 2em }
 .quikdown-ol { margin: 0.5em 0; padding-left: 2em }
-.quikdown-li { margin: 0.25em 0 }</code></pre></p><h2 class="quikdown-h2">Properties</h2>
-<h3 class="quikdown-h3"><code class="quikdown-code">quikdown.version</code></h3>
-<p>The version of quikdown.</p><h4 class="quikdown-h4">Type</h4>
-<p><code class="quikdown-code">string</code></p><h4 class="quikdown-h4">Example</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">console.log(quikdown.version); // &quot;1.2.3&quot;</code></pre></p><h2 class="quikdown-h2">Fence Plugin API</h2>
-<h3 class="quikdown-h3">Plugin Object Structure</h3>
-<p><pre class="quikdown-pre"><code class="language-typescript">interface FencePlugin {
+.quikdown-li { margin: 0.25em 0 }</code></pre><h2 class="quikdown-h2">Properties</h2><h3 class="quikdown-h3"><code class="quikdown-code">quikdown.version</code></h3><p>The version of quikdown.</p><h4 class="quikdown-h4">Type</h4><p><code class="quikdown-code">string</code></p><h4 class="quikdown-h4">Example</h4><pre class="quikdown-pre"><code class="language-javascript">console.log(quikdown.version); // &quot;1.2.3&quot;</code></pre><h2 class="quikdown-h2">Fence Plugin API</h2><h3 class="quikdown-h3">Plugin Object Structure</h3><pre class="quikdown-pre"><code class="language-typescript">interface FencePlugin {
   render: (content: string, language: string) =&gt; string | undefined;
   reverse?: (element: HTMLElement) =&gt; { fence: string; lang: string; content: string } | null;
-}</code></pre></p><h4 class="quikdown-h4"><code class="quikdown-code">render</code> Parameters</h4>
-<table class="quikdown-table">
+}</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">render</code> Parameters</h4><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Parameter</th>
@@ -247,13 +221,10 @@ document.head.appendChild(styleElement);
 <td class="quikdown-td">Language identifier (empty string if none)</td>
 </tr>
 </tbody>
-</table><h4 class="quikdown-h4"><code class="quikdown-code">render</code> Returns</h4>
-<ul class="quikdown-ul">
+</table><h4 class="quikdown-h4"><code class="quikdown-code">render</code> Returns</h4><ul class="quikdown-ul">
 <li class="quikdown-li"><code class="quikdown-code">string</code> - HTML to render</li>
 <li class="quikdown-li"><code class="quikdown-code">undefined</code> - Use default code block rendering</li>
-</ul><h4 class="quikdown-h4"><code class="quikdown-code">reverse</code> (optional)</h4>
-<p>Used by <code class="quikdown-code">quikdown_bd</code> to convert plugin-rendered HTML back to fenced code blocks.</p><h4 class="quikdown-h4">Example</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">const syntaxHighlightPlugin = {
+</ul><h4 class="quikdown-h4"><code class="quikdown-code">reverse</code> (optional)</h4><p>Used by <code class="quikdown-code">quikdown_bd</code> to convert plugin-rendered HTML back to fenced code blocks.</p><h4 class="quikdown-h4">Example</h4><pre class="quikdown-pre"><code class="language-javascript">const syntaxHighlightPlugin = {
   render: (content, language) =&gt; {
     if (language &amp;&amp; hljs.getLanguage(language)) {
       const highlighted = hljs.highlight(content, { language }).value;
@@ -266,9 +237,7 @@ document.head.appendChild(styleElement);
 
 const html = quikdown(markdown, {
   fence_plugin: syntaxHighlightPlugin
-});</code></pre></p><h3 class="quikdown-h3">Plugin Examples</h3>
-<h4 class="quikdown-h4">Mermaid Diagrams</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">const mermaidPlugin = {
+});</code></pre><h3 class="quikdown-h3">Plugin Examples</h3><h4 class="quikdown-h4">Mermaid Diagrams</h4><pre class="quikdown-pre"><code class="language-javascript">const mermaidPlugin = {
   render: (content, language) =&gt; {
     if (language === &#39;mermaid&#39;) {
       const id = &#39;mermaid-&#39; + Math.random().toString(36).substr(2, 9);
@@ -281,8 +250,7 @@ const html = quikdown(markdown, {
       return `&lt;div id=&quot;${id}&quot; class=&quot;mermaid-diagram&quot;&gt;Loading...&lt;/div&gt;`;
     }
   }
-};</code></pre></p><h4 class="quikdown-h4">Math Rendering</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">const mathPlugin = {
+};</code></pre><h4 class="quikdown-h4">Math Rendering</h4><pre class="quikdown-pre"><code class="language-javascript">const mathPlugin = {
   render: (content, language) =&gt; {
     if (language === &#39;math&#39; || language === &#39;latex&#39;) {
       return katex.renderToString(content, {
@@ -291,8 +259,7 @@ const html = quikdown(markdown, {
       });
     }
   }
-};</code></pre></p><h4 class="quikdown-h4">Custom Components</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">const componentPlugin = {
+};</code></pre><h4 class="quikdown-h4">Custom Components</h4><pre class="quikdown-pre"><code class="language-javascript">const componentPlugin = {
   render: (content, language) =&gt; {
     if (language === &#39;component&#39;) {
       try {
@@ -303,20 +270,15 @@ const html = quikdown(markdown, {
       }
     }
   }
-};</code></pre></p><h4 class="quikdown-h4">Trusted HTML</h4>
-<p><pre class="quikdown-pre"><code class="language-javascript">const trustedHtmlPlugin = {
+};</code></pre><h4 class="quikdown-h4">Trusted HTML</h4><pre class="quikdown-pre"><code class="language-javascript">const trustedHtmlPlugin = {
   render: (content, language) =&gt; {
     // Only allow from trusted sources!
     if (language === &#39;html-render&#39; &amp;&amp; isTrustedSource()) {
       return content; // Raw HTML - be careful!
     }
   }
-};</code></pre></p><h2 class="quikdown-h2">Options Deep Dive</h2>
-<h3 class="quikdown-h3"><code class="quikdown-code">bidirectional</code> Option</h3>
-<p>Enables preservation of original markdown syntax for HTML→Markdown conversion.</p><h4 class="quikdown-h4"><code class="quikdown-code">bidirectional: false</code> (Default)</h4>
-<p>Standard HTML output without preservation attributes:</p><pre class="quikdown-pre"><code class="language-javascript">quikdown(&#39;**bold**&#39;, { bidirectional: false });
-// Output: &lt;strong class=&quot;quikdown-strong&quot;&gt;bold&lt;/strong&gt;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">bidirectional: true</code></h4>
-<p>Adds <code class="quikdown-code">data-qd</code> attributes to preserve original markdown:</p><pre class="quikdown-pre"><code class="language-javascript">quikdown(&#39;**bold**&#39;, { bidirectional: true });
+};</code></pre><h2 class="quikdown-h2">Options Deep Dive</h2><h3 class="quikdown-h3"><code class="quikdown-code">bidirectional</code> Option</h3><p>Enables preservation of original markdown syntax for HTML→Markdown conversion.</p><h4 class="quikdown-h4"><code class="quikdown-code">bidirectional: false</code> (Default)</h4><p>Standard HTML output without preservation attributes:</p><pre class="quikdown-pre"><code class="language-javascript">quikdown(&#39;**bold**&#39;, { bidirectional: false });
+// Output: &lt;strong class=&quot;quikdown-strong&quot;&gt;bold&lt;/strong&gt;</code></pre><h4 class="quikdown-h4"><code class="quikdown-code">bidirectional: true</code></h4><p>Adds <code class="quikdown-code">data-qd</code> attributes to preserve original markdown:</p><pre class="quikdown-pre"><code class="language-javascript">quikdown(&#39;**bold**&#39;, { bidirectional: true });
 // Output: &lt;strong class=&quot;quikdown-strong&quot; data-qd=&quot;**&quot;&gt;bold&lt;/strong&gt;</code></pre><p><strong class="quikdown-strong">Use when:</strong>
 <ul class="quikdown-ul">
 <li class="quikdown-li">Building a markdown editor</li>
@@ -345,26 +307,21 @@ quikdown(&#39;Line 1  \nLine 2&#39;);  // Two spaces before \n
 <li class="quikdown-li">Double <code class="quikdown-code">\n\n</code> → Paragraph break (unchanged)</li>
 <li class="quikdown-li">Code blocks preserve newlines (no <code class="quikdown-code">&lt;br&gt;</code> conversion)</li>
 <li class="quikdown-li">Lists maintain proper structure</li>
-</ul><h3 class="quikdown-h3"><code class="quikdown-code">inline_styles</code> Option</h3>
-<p>Controls how styling is applied to generated HTML.</p><h4 class="quikdown-h4"><code class="quikdown-code">inline_styles: false</code> (Default)</h4>
-<p>Generates HTML with CSS classes:</p><pre class="quikdown-pre"><code class="language-javascript">quikdown(&#39;**bold**&#39;, { inline_styles: false });
+</ul><h3 class="quikdown-h3"><code class="quikdown-code">inline_styles</code> Option</h3><p>Controls how styling is applied to generated HTML.</p><h4 class="quikdown-h4"><code class="quikdown-code">inline_styles: false</code> (Default)</h4><p>Generates HTML with CSS classes:</p><pre class="quikdown-pre"><code class="language-javascript">quikdown(&#39;**bold**&#39;, { inline_styles: false });
 // Output: &lt;strong class=&quot;quikdown-strong&quot;&gt;bold&lt;/strong&gt;</code></pre><p><strong class="quikdown-strong">Use when:</strong>
 <ul class="quikdown-ul">
 <li class="quikdown-li">You have a stylesheet</li>
 <li class="quikdown-li">You want consistent styling</li>
 <li class="quikdown-li">You need to override styles</li>
 <li class="quikdown-li">Page has multiple quikdown instances</li>
-</ul><h4 class="quikdown-h4"><code class="quikdown-code">inline_styles: true</code></h4>
-<p>Generates HTML with inline styles:</p><pre class="quikdown-pre"><code class="language-javascript">quikdown(&#39;**bold**&#39;, { inline_styles: true });
+</ul><h4 class="quikdown-h4"><code class="quikdown-code">inline_styles: true</code></h4><p>Generates HTML with inline styles:</p><pre class="quikdown-pre"><code class="language-javascript">quikdown(&#39;**bold**&#39;, { inline_styles: true });
 // Output: &lt;strong style=&quot;font-weight: bold&quot;&gt;bold&lt;/strong&gt;</code></pre><p><strong class="quikdown-strong">Use when:</strong>
 <ul class="quikdown-ul">
 <li class="quikdown-li">Rendering in emails</li>
 <li class="quikdown-li">No stylesheet access</li>
 <li class="quikdown-li">Isolated components</li>
 <li class="quikdown-li">Quick prototypes</li>
-</ul><h2 class="quikdown-h2">Supported Markdown</h2>
-<h3 class="quikdown-h3">Block Elements</h3>
-<table class="quikdown-table">
+</ul><h2 class="quikdown-h2">Supported Markdown</h2><h3 class="quikdown-h3">Block Elements</h3><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Element</th>
@@ -414,8 +371,7 @@ quikdown(&#39;Line 1  \nLine 2&#39;);  // Two spaces before \n
 <td class="quikdown-td"><code class="quikdown-code">\|A\|B\|</code></td>
 </tr>
 </tbody>
-</table><h3 class="quikdown-h3">Inline Elements</h3>
-<table class="quikdown-table">
+</table><h3 class="quikdown-h3">Inline Elements</h3><table class="quikdown-table">
 <thead class="quikdown-thead">
 <tr class="quikdown-tr">
 <th class="quikdown-th">Element</th>
@@ -642,8 +598,7 @@ See [AST Documentation](quikdown-ast.md) for complete node type reference.
 Similar formats available for </code>quikdown<em class="quikdown-em">json<code class="quikdown-code">, </code>quikdown</em>yaml<code class="quikdown-code">, and </code>quikdown<em class="quikdown-em">ast</em>html`.</td>
 </tr>
 </tbody>
-</table><h2 class="quikdown-h2">TypeScript</h2>
-<p>TypeScript definitions are included for all modules:</p><pre class="quikdown-pre"><code class="language-typescript">declare module &#39;quikdown&#39; {
+</table><h2 class="quikdown-h2">TypeScript</h2><p>TypeScript definitions are included for all modules:</p><pre class="quikdown-pre"><code class="language-typescript">declare module &#39;quikdown&#39; {
   interface FencePlugin {
     render: (content: string, language: string) =&gt; string | undefined;
     reverse?: (element: HTMLElement) =&gt; {

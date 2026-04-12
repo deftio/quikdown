@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Fence Rendering E2E Test Page</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #editor { height: 600px; border: 2px solid #007bff; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Fence Rendering E2E Test</h1>
+    <div id="editor"></div>
+
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.min.js';
+
+        // Create editor with ALL fence types enabled and undo/redo + HR/lazy buttons
+        window.editor = new QuikdownEditor('#editor', {
+            mode: 'split',
+            showUndoRedo: true,
+            showRemoveHR: true,
+            showLazyLinefeeds: true,
+            plugins: { highlightjs: true, mermaid: true },
+            enableComplexFences: true
+        });
+
+        window.editor.setMarkdown('# Fence Test Page\n\nReady for tests.');
+    </script>
+</body>
+</html>
