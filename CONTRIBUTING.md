@@ -25,12 +25,14 @@ The files `quikdown.js` and `quikdown_bd.js` must maintain 100% test coverage
 across all four metrics (statements, branches, functions, lines). If you modify
 these files, add or update tests accordingly.
 
-`quikdown_edit.js` is currently at ~30% coverage via JSDOM unit tests. The gap
-exists because the editor is DOM-heavy (contenteditable, clipboard, fence
-rendering) and a large portion of the file is a bundled copy of quikdown_bd
-that is already covered by its own tests. The goal is 80%+. Contributions that
-improve editor test coverage — especially Playwright tests for fence rendering,
-clipboard, and contenteditable interactions — are welcome.
+`quikdown_edit.js` shows ~49% overall coverage in CI. This number is
+misleadingly low because the editor dist bundles a full copy of `quikdown_bd`
+(~2,750 lines of parser code) which is already tested to 100% in its own
+bundle. **Editor-specific code** (lines 2750+) is at **~75% coverage**.
+The remaining gap is DOM-heavy code that needs a real browser: GeoJSON maps
+(Leaflet), STL 3D rendering (Three.js), MathJax typesetting, and the rich-copy
+clipboard API. Contributions that improve editor coverage — especially
+Playwright tests for these fence renderers — are welcome.
 
 ## Pull Request Guidelines
 

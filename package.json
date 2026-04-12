@@ -102,6 +102,7 @@
     "test:coverage": "NODE_NO_WARNINGS=1 jest tests/quikdown.test.js tests/quikdown_bd.test.js tests/quikdown_edit_esm.test.js --coverage --coverageReporters=text-summary",
     "test:unit": "jest --coverage",
     "test:e2e": "npx playwright test --config=playwright.config.cjs",
+    "test:e2e:full": "npx playwright test --config=playwright.config.cjs",
     "test:editor:e2e": "npx playwright test tests/quikdown-editor.spec.js",
     "minifyCSS": "node ./tools/minifyCSS.cjs",
     "updateVersion": "node ./tools/updateVersion",
@@ -174,10 +175,10 @@
         "statements": 100
       },
       "./dist/quikdown_edit.esm.js": {
-        "lines": 29,
-        "functions": 39,
-        "branches": 24,
-        "statements": 29
+        "lines": 49,
+        "functions": 57,
+        "branches": 42,
+        "statements": 49
       },
       "./dist/quikdown_ast.esm.js": {
         "lines": 95,
