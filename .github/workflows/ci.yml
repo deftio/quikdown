@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: write
-  id-token: write
 
 jobs:
   build:
@@ -48,13 +47,15 @@ jobs:
         test -f dist/quikdown_yaml.esm.js
         test -f dist/quikdown_ast_html.esm.js
 
-  # Publish job: runs only on push to main when package.json version is new.
-  # Tags, publishes to npm, and creates a GitHub Release in one workflow —
-  # avoids the GITHUB_TOKEN limitation where tags don't trigger other workflows.
-  publish:
+  # Tag + trigger publish: runs only on push to main when the version is new.
+  # Creates the git tag, then triggers publish.yml (which npm trusts for OIDC).
+  tag-and-publish:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -77,24 +78,12 @@ jobs:
           echo "::notice::Tag $TAG already exists — not a release commit."
         else
           echo "exists=false" >> "$GITHUB_OUTPUT"
-          echo "Tag $TAG is new — will publish."
+          echo "Tag $TAG is new — will create and publish."
         fi
 
     - name: Check npm version collision
       if: steps.tag_exists.outputs.exists == 'false'
       run: node tools/checkVersion.cjs
-
-    - name: Install dependencies
-      if: steps.tag_exists.outputs.exists == 'false'
-      run: npm ci
-
-    - name: Run tests
-      if: steps.tag_exists.outputs.exists == 'false'
-      run: npm test
-
-    - name: Build project
-      if: steps.tag_exists.outputs.exists == 'false'
-      run: npm run build
 
     - name: Create and push tag
       if: steps.tag_exists.outputs.exists == 'false'
@@ -102,22 +91,9 @@ jobs:
         git tag "${{ steps.version.outputs.version }}"
         git push origin "${{ steps.version.outputs.version }}"
 
-    - name: Publish to npm (OIDC trusted publisher)
+    - name: Trigger publish workflow
       if: steps.tag_exists.outputs.exists == 'false'
-      run: npx -y npm@latest publish --provenance --access public
-
-    - name: Create GitHub Release
-      if: steps.tag_exists.outputs.exists == 'false'
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ steps.version.outputs.version }}
-        generate_release_notes: true
-        files: |
-          dist/quikdown.umd.min.js
-          dist/quikdown.esm.min.js
-          dist/quikdown.cjs
-          dist/quikdown_bd.umd.min.js
-          dist/quikdown_bd.esm.min.js
-          dist/quikdown_edit.umd.min.js
-          dist/quikdown.light.min.css
-          dist/quikdown.dark.min.css
+      run: |
+        gh workflow run publish.yml -f tag="${{ steps.version.outputs.version }}"
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

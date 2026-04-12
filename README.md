@@ -20,7 +20,7 @@ A small, secure markdown parser and editor for browsers and Node.js. Three modul
 
 ## Features
 
-- **Regex-based parser** — single-pass, no AST intermediate. Handles headings, lists, tables, code blocks, inline formatting, task lists, autolinks, and lazy linefeeds.
+- **Compact markdown parser** — single-pass markdown to HTML. Handles headings, lists, tables, code blocks, inline formatting, task lists, autolinks, and lazy linefeeds.
 - **Bidirectional editing** — edit the rendered HTML and get markdown back. Round-trip preserves formatting, fences, and tables.
 - **Drop-in editor** — one `<div>`, one import. Source, split, and preview modes. Undo/redo, toolbar, copy as rich text, light/dark/auto themes.
 - **Fence plugins** — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, raw HTML. All bidirectional.
