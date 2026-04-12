@@ -175,6 +175,36 @@
     "gzSize": 21526
   },
   {
+    "file": "quikdown_edit_standalone.esm.js",
+    "size": 9398653,
+    "format": "ESM",
+    "minified": false
+  },
+  {
+    "file": "quikdown_edit_standalone.esm.min.js",
+    "size": 3965949,
+    "format": "ESM",
+    "minified": true,
+    "sri": "sha384-/aTDEO9eJQj1FaoAMeVBryuMWZ+DGaAfptdu0AkE6IOc2GmGA0GjxL3PsG5c3e4t",
+    "gzFile": "quikdown_edit_standalone.esm.min.js.gz",
+    "gzSize": 1040514
+  },
+  {
+    "file": "quikdown_edit_standalone.umd.js",
+    "size": 9643013,
+    "format": "UMD",
+    "minified": false
+  },
+  {
+    "file": "quikdown_edit_standalone.umd.min.js",
+    "size": 3966183,
+    "format": "UMD",
+    "minified": true,
+    "sri": "sha384-Lck7T4GxypxTvsDPDbbATRsq0LQgOHWPD9KP84HuXTRh/o4hdeELdYS6CH6gmQf3",
+    "gzFile": "quikdown_edit_standalone.umd.min.js.gz",
+    "gzSize": 1040569
+  },
+  {
     "file": "quikdown_json.d.ts",
     "size": 1204,
     "type": "types"

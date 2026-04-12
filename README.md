@@ -11,6 +11,7 @@ A small, secure markdown parser and editor for browsers and Node.js. Three modul
 - **quikdown.js** (9.3 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.
 - **quikdown_bd.js** (14.1 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.
 - **quikdown_edit.js** (80 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.
+- **quikdown_edit_standalone.js** (3.8 MB) — Offline/air-gapped editor. Same as above but bundles highlight.js, Mermaid, DOMPurify, Leaflet, and Three.js — no CDN required. See [Standalone Docs](docs/standalone-editor.md).
 - **quikdown_ast.js** / **quikdown_json.js** / **quikdown_yaml.js** / **quikdown_ast_html.js** — AST companion libraries for structured output.
 
 **[Try the Editor](https://deftio.github.io/quikdown/edit/)** | **[Examples](https://deftio.github.io/quikdown/examples/)** | **[Frameworks](https://deftio.github.io/quikdown/frameworks/)** | **[Downloads](https://deftio.github.io/quikdown/downloads/)** | **[Docs](docs/)**
