@@ -1,10 +1,49 @@
 /**
  * quikdown - Lightweight Markdown Parser
- * @version 1.2.8
+ * @version 1.2.9
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
 'use strict';
+
+/**
+ * quikdown_classify — Shared line-classification utilities
+ * ═════════════════════════════════════════════════════════
+ *
+ * Pure functions for classifying markdown lines.  Used by both the main
+ * parser (quikdown.js) and the editor (quikdown_edit.js) so the logic
+ * lives in one place.
+ *
+ * All functions operate on a **trimmed** line (caller must trim).
+ * None use regexes with nested quantifiers — every check is either a
+ * simple regex or a linear scan, so there is zero ReDoS risk.
+ */
+
+
+/**
+ * Dash-only HR check — exact parity with the main parser's original
+ * regex `/^---+\s*$/`.  Only matches lines of three or more dashes
+ * with optional trailing whitespace (no interspersed spaces).
+ *
+ * @param {string} trimmed  The line, already trimmed
+ * @returns {boolean}
+ */
+function isDashHRLine(trimmed) {
+    if (trimmed.length < 3) return false;
+    for (let i = 0; i < trimmed.length; i++) {
+        const ch = trimmed[i];
+        if (ch === '-') continue;
+        // Allow trailing whitespace only
+        if (ch === ' ' || ch === '\t') {
+            for (let j = i + 1; j < trimmed.length; j++) {
+                if (trimmed[j] !== ' ' && trimmed[j] !== '\t') return false;
+            }
+            return i >= 3; // at least 3 dashes before whitespace
+        }
+        return false;
+    }
+    return true; // all dashes
+}
 
 /**
  * quikdown — A compact, scanner-based markdown parser
@@ -69,12 +108,13 @@
  * @returns {string}         Rendered HTML
  */
 
+
 // ────────────────────────────────────────────────────────────────────
 //  Constants
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.8';
+const quikdownVersion = '1.2.9';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -531,7 +571,7 @@ function scanLineBlocks(text, getAttr, dataQd) {
 
         // ── Horizontal Rule ──
         // Three or more dashes, optional trailing whitespace, nothing else.
-        if (/^---+\s*$/.test(line)) {
+        if (isDashHRLine(line)) {
             result.push(`<hr${getAttr('hr')}>`);
             i++;
             continue;

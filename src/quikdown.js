@@ -61,6 +61,8 @@
  * @returns {string}         Rendered HTML
  */
 
+import { isDashHRLine } from './quikdown_classify.js';
+
 // ────────────────────────────────────────────────────────────────────
 //  Constants
 // ────────────────────────────────────────────────────────────────────
@@ -523,7 +525,7 @@ function scanLineBlocks(text, getAttr, dataQd) {
 
         // ── Horizontal Rule ──
         // Three or more dashes, optional trailing whitespace, nothing else.
-        if (/^---+\s*$/.test(line)) {
+        if (isDashHRLine(line)) {
             result.push(`<hr${getAttr('hr')}>`);
             i++;
             continue;

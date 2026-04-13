@@ -6,6 +6,7 @@
 
 import quikdown_bd from './quikdown_bd.js';
 import { getRenderedContent } from './quikdown_edit_copy.js';
+import { isHRLine, fenceOpen, isFenceClose, classifyLine, looksLikeTableRow } from './quikdown_classify.js';
 
 // Default options
 const DEFAULT_OPTIONS = {
@@ -2136,36 +2137,29 @@ class QuikdownEditor {
         const lines = (markdown || '').split('\n');
         const result = [];
         let inFence = false;
-        let fenceChar = null;  // '`' or '~'
-        let fenceLen = 0;      // length of opening fence marker
+        let openChar = null;
+        let openLen = 0;
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmed = line.trim();
 
-            // Track fence open/close (``` or ~~~, 3+ chars)
-            const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
-            if (fenceMatch) {
-                const matchChar = fenceMatch[1][0];
-                const matchLen = fenceMatch[1].length;
-                if (!inFence) {
+            // Track fence open/close
+            if (!inFence) {
+                const fo = fenceOpen(trimmed);
+                if (fo) {
                     inFence = true;
-                    fenceChar = matchChar;
-                    fenceLen = matchLen;
-                    result.push(line);
-                    continue;
-                } else if (matchChar === fenceChar && matchLen >= fenceLen && /^(`{3,}|~{3,})\s*$/.test(trimmed)) {
-                    // Closing fence: same char, at least as many chars, no trailing content
-                    inFence = false;
-                    fenceChar = null;
-                    fenceLen = 0;
+                    openChar = fo.char;
+                    openLen = fo.len;
                     result.push(line);
                     continue;
                 }
-            }
-
-            // Inside a fence — keep everything
-            if (inFence) {
+            } else {
+                if (isFenceClose(trimmed, openChar, openLen)) {
+                    inFence = false;
+                    openChar = null;
+                    openLen = 0;
+                }
                 result.push(line);
                 continue;
             }
@@ -2176,14 +2170,13 @@ class QuikdownEditor {
                 continue;
             }
 
-            // Check if this line is a standalone HR
-            const isHR = /^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed);
-            if (isHR) {
+            // Check if this line is a standalone HR (no ReDoS — linear scan)
+            if (isHRLine(trimmed)) {
                 // Table separator heuristic: immediately adjacent lines (no blank
                 // lines between) that look like table rows protect this HR-like line
                 const prevLine = i > 0 ? lines[i - 1].trim() : '';
                 const nextLine = i < lines.length - 1 ? lines[i + 1].trim() : '';
-                if (_looksLikeTableRow(prevLine) || _looksLikeTableRow(nextLine)) {
+                if (looksLikeTableRow(prevLine) || looksLikeTableRow(nextLine)) {
                     result.push(line);
                     continue;
                 }
@@ -2262,30 +2255,28 @@ class QuikdownEditor {
         //   'blockquote', 'table', 'heading', 'hr', 'paragraph'
         const items = [];
         let inFence = false;
-        let fenceChar = null;
-        let fenceLen = 0;
+        let openChar = null;
+        let openLen = 0;
 
         for (const rawLine of inputLines) {
             const line = rawLine;
             const trimmed = line.trim();
 
-            // Fence tracking
-            const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
-            if (fenceMatch && !inFence) {
-                inFence = true;
-                fenceChar = fenceMatch[1][0];
-                fenceLen  = fenceMatch[1].length;
-                items.push({ line, kind: 'fence-open' });
-                continue;
-            }
-            if (inFence) {
-                if (fenceMatch &&
-                    fenceMatch[1][0] === fenceChar &&
-                    fenceMatch[1].length >= fenceLen &&
-                    /^(`{3,}|~{3,})\s*$/.test(trimmed)) {
+            // Fence tracking via shared utilities
+            if (!inFence) {
+                const fo = fenceOpen(trimmed);
+                if (fo) {
+                    inFence = true;
+                    openChar = fo.char;
+                    openLen  = fo.len;
+                    items.push({ line, kind: 'fence-open' });
+                    continue;
+                }
+            } else {
+                if (isFenceClose(trimmed, openChar, openLen)) {
                     inFence = false;
-                    fenceChar = null;
-                    fenceLen = 0;
+                    openChar = null;
+                    openLen = 0;
                     items.push({ line, kind: 'fence-close' });
                 } else {
                     items.push({ line, kind: 'fence-body' });
@@ -2299,16 +2290,12 @@ class QuikdownEditor {
                 continue;
             }
 
-            // Categorize content lines so we can recognize adjacent same-kind blocks
-            let category = 'paragraph';
-            if (/^#{1,6}\s/.test(trimmed))                    category = 'heading';
-            else if (/^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed)) category = 'hr';
-            else if (/^(\d+\.)\s/.test(trimmed))              category = 'list-ol';
-            else if (/^[-*+]\s/.test(trimmed))                category = 'list-ul';
-            else if (/^>/.test(trimmed))                      category = 'blockquote';
-            else if (/^\|/.test(trimmed))                     category = 'table';
+            // Categorize content lines (no ReDoS — classifyLine uses linear scan for HR)
+            let category = classifyLine(trimmed);
             // Indented continuation of a list (2+ leading spaces or tab)
-            else if (/^(?: {4}|\t| {2,}[-*+]| {2,}\d+\.)/.test(line)) category = 'list-cont';
+            if (category === 'paragraph' && /^(?: {4}|\t| {2,}[-*+]| {2,}\d+\.)/.test(line)) {
+                category = 'list-cont';
+            }
 
             items.push({ line, kind: 'content', category });
         }
@@ -2408,13 +2395,6 @@ class QuikdownEditor {
             if (style) style.remove();
         }
     }
-}
-
-// --- Internal helpers for removeHR fence/table awareness ---
-
-/** Heuristic: does this line look like a markdown table row? */
-function _looksLikeTableRow(line) {
-    return line.includes('|');
 }
 
 // Export

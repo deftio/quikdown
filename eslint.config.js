@@ -1,8 +1,10 @@
 import js from "@eslint/js";
 import globals from "globals";
+import security from "eslint-plugin-security";
 
 export default [
   js.configs.recommended,
+  security.configs.recommended,
   {
     files: ["src/**/*.js"],
     languageOptions: {
@@ -30,6 +32,8 @@ export default [
       "no-throw-literal": "error",
       // Relax rules that conflict with the parser's switch/case style
       "no-case-declarations": "off",
+      // Noisy for parsers that iterate arrays/maps by index — all bracket access is internal
+      "security/detect-object-injection": "off",
     },
   },
   {
