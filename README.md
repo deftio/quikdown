@@ -248,6 +248,10 @@ const safe = quikdown(unsafe);
 // &lt;script&gt;alert("XSS")&lt;/script&gt; <strong>bold</strong>
 ```
 
+**Static analysis** — quikdown passes ESLint with [eslint-plugin-security](https://www.npmjs.com/package/eslint-plugin-security) at error level with zero findings. All regex patterns are verified free of catastrophic backtracking (ReDoS), and no dynamic `RegExp` construction is used. Security lint is enforced in CI on every build.
+
+For the full security model, see [docs/security.md](docs/security.md).
+
 ## Framework Integration
 
 Works with React, Vue, Svelte, Angular. See [Framework Integration Guide](docs/framework-integration.md) for examples.

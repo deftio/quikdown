@@ -103,7 +103,7 @@ const markdown = preprocessToMarkdown(sanitized);
 const html = quikdown(markdown);</code></pre></p><h2 class="quikdown-h2">XSS Prevention</h2><h3 class="quikdown-h3">Attack Vectors Prevented</h3><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Script Tag Injection</strong></li>
 </ol>
-<p>   ``<code class="quikdown-code">markdown
+<p>``<code class="quikdown-code">markdown
    &lt;script&gt;alert(&#39;XSS&#39;)&lt;/script&gt;
    &lt;!-- Rendered as: &amp;lt;script&amp;gt;alert(&#39;XSS&#39;)&amp;lt;/script&amp;gt; --&gt;
    </code>`<code class="quikdown-code">
@@ -132,7 +132,7 @@ quikdown includes built-in URL sanitization via </code>sanitizeUrl()<code class=
 
 - </code>javascript:<code class="quikdown-code"> URLs are replaced with </code>#<code class="quikdown-code">
 - </code>vbscript:<code class="quikdown-code"> URLs are replaced with </code>#<code class="quikdown-code">
-- </code>data:<code class="quikdown-code"> URLs are replaced with </code>#<code class="quikdown-code"> (except </code>data:image/*<code class="quikdown-code">, which is allowed)
+- </code>data:<code class="quikdown-code"> URLs are replaced with </code>#<code class="quikdown-code"> (except </code>data:image/<em class="quikdown-em"><code class="quikdown-code">, which is allowed)
 
 ## Fence Plugin Security
 
@@ -156,62 +156,70 @@ Use CSP headers to add defense-in-depth:
 
 §CB6§
 
-Note: </code>unsafe-inline<code class="quikdown-code"> for styles is needed if using </code>inline_styles: true`.</p><h2 class="quikdown-h2">Safe Usage Patterns</h2><h3 class="quikdown-h3">Pattern 1: User Comments</h3><pre class="quikdown-pre"><code class="language-javascript">// Safe for user-generated content
-function renderComment(userMarkdown) {
-  return quikdown(userMarkdown, {
-    inline_styles: false  // Use CSS classes
-  });
-}</code></pre><h3 class="quikdown-h3">Pattern 2: Admin Content with Widgets</h3><pre class="quikdown-pre"><code class="language-javascript">// Admin users can embed widgets
-function renderAdminContent(markdown, isAdmin) {
-  const options = {};
-  
-  if (isAdmin) {
-    options.fence_plugin = {
-      render: (content, lang) =&gt; {
-        if (lang === &#39;widget&#39;) {
-          return renderWidget(JSON.parse(content));
-        }
-      }
-    };
-  }
-  
-  return quikdown(markdown, options);
-}</code></pre><h3 class="quikdown-h3">Pattern 3: Mixed Trust Levels</h3><pre class="quikdown-pre"><code class="language-javascript">// Different trust for different parts
-function renderMixedContent(markdown, trustMap) {
-  return quikdown(markdown, {
-    fence_plugin: {
-      render: (content, lang) =&gt; {
-        const trust = trustMap[lang];
-        if (trust === &#39;full&#39;) {
-          return content; // Full trust
-        } else if (trust === &#39;sanitized&#39;) {
-          return DOMPurify.sanitize(content);
-        }
-        return undefined; // Default escaping
-      }
-    }
-  });
-}</code></pre><h2 class="quikdown-h2">Security Checklist</h2><p>Before deploying quikdown:</p><ul class="quikdown-ul">
-<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Never pass untrusted HTML</strong> to fence plugins without sanitization</li>
-<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Use CSP headers</strong> for defense-in-depth</li>
-<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Validate plugin output</strong> if accepting third-party plugins</li>
-<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Escape plugin errors</strong> - Don't display raw error messages</li>
-<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Update regularly</strong> - Keep quikdown updated for security fixes</li>
-<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Audit fence plugins</strong> - Review all custom plugin code</li>
-<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Test with malicious input</strong> - Try XSS payloads in testing</li>
-<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Use HTTPS</strong> - Prevent MITM attacks on delivered content</li>
-<li class="quikdown-task-item"><input type="checkbox" class="quikdown-task-checkbox" disabled> <strong class="quikdown-strong">Sanitize URLs</strong> (until built-in support is added)</li>
-</ul><h2 class="quikdown-h2">Reporting Security Issues</h2><p>If you discover a security vulnerability:</p><ol class="quikdown-ol">
-<li class="quikdown-li"><strong class="quikdown-strong">DO NOT</strong> open a public issue</li>
-<li class="quikdown-li">Email security details to [security contact]</li>
-<li class="quikdown-li">Include:</li>
-<ul class="quikdown-ul">
-<li class="quikdown-li">Description of the vulnerability</li>
-<li class="quikdown-li">Steps to reproduce</li>
-<li class="quikdown-li">Potential impact</li>
-<li class="quikdown-li">Suggested fix (if any)</li>
-</ul>
-</ol><h2 class="quikdown-h2">Future Security Enhancements</h2><p>Planned security improvements:</p><ol class="quikdown-ol">
+Note: </code>unsafe-inline<code class="quikdown-code"> for styles is needed if using </code>inline<em class="quikdown-em">styles: true<code class="quikdown-code">.
+
+## Safe Usage Patterns
+
+### Pattern 1: User Comments
+
+§CB7§
+
+### Pattern 2: Admin Content with Widgets
+
+§CB8§
+
+### Pattern 3: Mixed Trust Levels
+
+§CB9§
+
+## Security Checklist
+
+Before deploying quikdown:
+
+- [ ] **Never pass untrusted HTML** to fence plugins without sanitization
+- [ ] **Use CSP headers** for defense-in-depth
+- [ ] **Validate plugin output** if accepting third-party plugins
+- [ ] **Escape plugin errors** - Don&#39;t display raw error messages
+- [ ] **Update regularly** - Keep quikdown updated for security fixes
+- [ ] **Audit fence plugins** - Review all custom plugin code
+- [ ] **Test with malicious input** - Try XSS payloads in testing
+- [ ] **Use HTTPS** - Prevent MITM attacks on delivered content
+- [ ] **Sanitize URLs** (until built-in support is added)
+
+## Reporting Security Issues
+
+If you discover a security vulnerability:
+
+1. **DO NOT** open a public issue
+2. Email security details to [security contact]
+3. Include:
+   - Description of the vulnerability
+   - Steps to reproduce
+   - Potential impact
+   - Suggested fix (if any)
+
+## Static Analysis &amp; ReDoS Prevention
+
+quikdown enforces automated security scanning in its build pipeline:
+
+- **ESLint + [eslint-plugin-security](https://www.npmjs.com/package/eslint-plugin-security)** runs on every build (</code>npm run build<code class="quikdown-code"> starts with </code>npm run lint<code class="quikdown-code">)
+- The </code>security/detect-unsafe-regex<code class="quikdown-code"> and </code>security/detect-non-literal-regexp<code class="quikdown-code"> rules are set to **error** level, meaning the build fails if a regex with catastrophic backtracking risk or a dynamic </code>new RegExp()<code class="quikdown-code"> is introduced
+- CI (GitHub Actions) runs the same pipeline, so security regressions block PRs
+
+### ReDoS-safe patterns
+
+All line-classification logic (HR detection, fence tracking, block categorization) uses **linear-scan functions** instead of regex where nested quantifiers would be needed. These shared utilities live in </code>src/quikdown</em>classify.js<code class="quikdown-code"> and are consumed by both the main parser and the editor, ensuring a single source of truth with zero backtracking risk.
+
+For example, CommonMark HR detection (</code>---<code class="quikdown-code">, </code>***<code class="quikdown-code">, </code><em class="quikdown-em"> </em> <em class="quikdown-em"><code class="quikdown-code">, etc.) uses an O(n) character scan rather than the traditional </code>/^<a class="quikdown-a" href="\s</em>[-</em><em class="quikdown-em">]">-_</em></a>{2,}\s<em class="quikdown-em">$/<code class="quikdown-code"> pattern, which is vulnerable to catastrophic backtracking on adversarial input like </code>"- " </em> 1000 + "x"<code class="quikdown-code">.
+
+### Current scan status
+
+| Check | Status |
+|---|---|
+| </code>security/detect-unsafe-regex<code class="quikdown-code"> | 0 findings (error level) |
+| </code>security/detect-non-literal-regexp<code class="quikdown-code"> | 0 findings (error level) |
+| </code>security/detect-object-injection<code class="quikdown-code"> | disabled (false positives on parser array iteration) |
+| All other </code>eslint-plugin-security` rules | 0 findings (warn level) |</p><h2 class="quikdown-h2">Future Security Enhancements</h2><p>Planned security improvements:</p><ol class="quikdown-ol">
 <li class="quikdown-li"><strong class="quikdown-strong">Configurable URL Allowlist</strong> - Only allow specific URL schemes</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Plugin Sandboxing</strong> - Optional plugin output validation</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Security Headers Helper</strong> - Generate recommended CSP headers</li>
@@ -222,6 +230,7 @@ function renderMixedContent(markdown, trustMap) {
 <li class="quikdown-li"><strong class="quikdown-strong">Granular control</strong> - Trust specific blocks, not everything</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Developer responsibility</strong> - Plugins must handle security</li>
 <li class="quikdown-li"><strong class="quikdown-strong">Defense in depth</strong> - Use with CSP and sanitization</li>
+<li class="quikdown-li"><strong class="quikdown-strong">Automated enforcement</strong> - Security lint at error level in CI</li>
 </ol><p>When in doubt, <strong class="quikdown-strong">don't trust the input</strong>. The safest quikdown is one that never uses fence plugins with untrusted content.</p>
     </article>
     <script>

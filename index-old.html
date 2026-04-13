@@ -64,7 +64,7 @@
 </head>
 <body>
     <article class="markdown-body">
-        <h1 class="quikdown-h1">quikdown</h1><p><a class="quikdown-a" href="https://github.com/deftio/quikdown/actions/workflows/ci.yml" rel="noopener noreferrer"><img class="quikdown-img" src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" alt="CI"></a><br class="quikdown-br"><a class="quikdown-a" href="https://www.npmjs.com/package/quikdown" rel="noopener noreferrer"><img class="quikdown-img" src="https://img.shields.io/npm/v/quikdown.svg" alt="npm version"></a><br class="quikdown-br"><a class="quikdown-a" href="https://github.com/deftio/quikdown" rel="noopener noreferrer"><img class="quikdown-img" src="https://img.shields.io/badge/coverage-95.3%25-brightgreen" alt="Coverage"></a><br class="quikdown-br"><a class="quikdown-a" href="https://opensource.org/licenses/BSD-2-Clause" rel="noopener noreferrer"><img class="quikdown-img" src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" alt="License: BSD-2-Clause"></a><br class="quikdown-br"><a class="quikdown-a" href="https://bundlephobia.com/package/quikdown" rel="noopener noreferrer"><img class="quikdown-img" src="https://img.shields.io/badge/minified-9.7KB-green.svg" alt="Bundle Size"></a></p><p>A small, secure markdown parser and editor for browsers and Node.js. Three modules — use only what you need.</p><ul class="quikdown-ul">
+        <h1 class="quikdown-h1">quikdown</h1><p><a class="quikdown-a" href="https://github.com/deftio/quikdown/actions/workflows/ci.yml" rel="noopener noreferrer"><img class="quikdown-img" src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" alt="CI"></a><br class="quikdown-br"><a class="quikdown-a" href="https://www.npmjs.com/package/quikdown" rel="noopener noreferrer"><img class="quikdown-img" src="https://img.shields.io/npm/v/quikdown.svg" alt="npm version"></a><br class="quikdown-br"><a class="quikdown-a" href="https://github.com/deftio/quikdown" rel="noopener noreferrer"><img class="quikdown-img" src="https://img.shields.io/badge/coverage-95.4%25-brightgreen" alt="Coverage"></a><br class="quikdown-br"><a class="quikdown-a" href="https://opensource.org/licenses/BSD-2-Clause" rel="noopener noreferrer"><img class="quikdown-img" src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" alt="License: BSD-2-Clause"></a><br class="quikdown-br"><a class="quikdown-a" href="https://bundlephobia.com/package/quikdown" rel="noopener noreferrer"><img class="quikdown-img" src="https://img.shields.io/badge/minified-9.7KB-green.svg" alt="Bundle Size"></a></p><p>A small, secure markdown parser and editor for browsers and Node.js. Three modules — use only what you need.</p><ul class="quikdown-ul">
 <li class="quikdown-li"><strong class="quikdown-strong">quikdown.js</strong> (9.3 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.</li>
 <li class="quikdown-li"><strong class="quikdown-strong">quikdown_bd.js</strong> (14.1 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.</li>
 <li class="quikdown-li"><strong class="quikdown-strong">quikdown_edit.js</strong> (80 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.</li>
@@ -177,9 +177,25 @@ const html: string = quikdown(markdown, options);</code></pre><h2 class="quikdow
 1. Ordered lists  
 - [x] Task lists  
 
-**Links:** </code><a class="quikdown-a" href="url">text</a>` and automatic URL detection</p><p><strong class="quikdown-strong">Code blocks:</strong>  </p><pre class="quikdown-pre"><code class="language-javascript">console.log(&#39;syntax highlighting support via plugins&#39;);</code></pre><p><strong class="quikdown-strong">Tables, blockquotes, horizontal rules</strong> - See <a class="quikdown-a" href="docs/">documentation</a> for complete syntax reference</p><h2 class="quikdown-h2">API Reference</h2><p>For complete API documentation, see <a class="quikdown-a" href="docs/api-reference.md">docs/api-reference.md</a></p><h2 class="quikdown-h2">Security</h2><p>All HTML is escaped by default. Only safe markdown constructs become HTML:</p><pre class="quikdown-pre"><code class="language-javascript">const unsafe = &#39;&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt; **bold**&#39;;
-const safe = quikdown(unsafe);
-// &amp;lt;script&amp;gt;alert(&quot;XSS&quot;)&amp;lt;/script&amp;gt; &lt;strong&gt;bold&lt;/strong&gt;</code></pre><h2 class="quikdown-h2">Framework Integration</h2><p>Works with React, Vue, Svelte, Angular. See <a class="quikdown-a" href="docs/framework-integration.md">Framework Integration Guide</a> for examples.</p><h2 class="quikdown-h2">Limitations</h2><p>For size and security, quikdown doesn't support:
+**Links:** </code><a class="quikdown-a" href="url">text</a><code class="quikdown-code"> and automatic URL detection
+
+**Code blocks:**  
+
+§CB12§
+
+**Tables, blockquotes, horizontal rules** - See [documentation](docs/) for complete syntax reference
+
+## API Reference
+
+For complete API documentation, see [docs/api-reference.md](docs/api-reference.md)
+
+## Security
+
+All HTML is escaped by default. Only safe markdown constructs become HTML:
+
+§CB13§
+
+**Static analysis** — quikdown passes ESLint with [eslint-plugin-security](https://www.npmjs.com/package/eslint-plugin-security) at error level with zero findings. All regex patterns are verified free of catastrophic backtracking (ReDoS), and no dynamic </code>RegExp` construction is used. Security lint is enforced in CI on every build.</p><p>For the full security model, see <a class="quikdown-a" href="docs/security.md">docs/security.md</a>.</p><h2 class="quikdown-h2">Framework Integration</h2><p>Works with React, Vue, Svelte, Angular. See <a class="quikdown-a" href="docs/framework-integration.md">Framework Integration Guide</a> for examples.</p><h2 class="quikdown-h2">Limitations</h2><p>For size and security, quikdown doesn't support:
 <ul class="quikdown-ul">
 <li class="quikdown-li">Reference-style links  </li>
 <li class="quikdown-li">Footnotes</li>

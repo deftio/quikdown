@@ -206,6 +206,16 @@ const myParser = quikdown.configure({
 3. Use Content Security Policy (CSP) headers
 4. Sanitize URLs in production applications
 
+### Static Analysis
+
+The build pipeline enforces security scanning via ESLint with `eslint-plugin-security` at **error** level. Key guarantees:
+
+- **No ReDoS-vulnerable regex** — `security/detect-unsafe-regex` is enforced as an error. All line-classification logic (HR detection, fence tracking, block categorization) uses linear-scan functions in `src/quikdown_classify.js` instead of regex with nested quantifiers.
+- **No dynamic RegExp** — `security/detect-non-literal-regexp` is enforced as an error. String replacements use `replaceAll()` instead of `new RegExp()`.
+- **CI-gated** — the lint step runs first in `npm run build`, and CI runs the same pipeline on every push and PR.
+
+See [Security Guide](security.md) for the full static analysis status table.
+
 ## Limitations by Design
 
 ### Not Supported

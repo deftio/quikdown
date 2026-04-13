@@ -170,7 +170,11 @@ const plugin = {
 <li class="quikdown-li">Validate plugin output if accepting third-party plugins</li>
 <li class="quikdown-li">Use Content Security Policy (CSP) headers</li>
 <li class="quikdown-li">Sanitize URLs in production applications</li>
-</ol><h2 class="quikdown-h2">Limitations by Design</h2><h3 class="quikdown-h3">Not Supported</h3><ul class="quikdown-ul">
+</ol><h3 class="quikdown-h3">Static Analysis</h3><p>The build pipeline enforces security scanning via ESLint with <code class="quikdown-code">eslint-plugin-security</code> at <strong class="quikdown-strong">error</strong> level. Key guarantees:</p><ul class="quikdown-ul">
+<li class="quikdown-li"><strong class="quikdown-strong">No ReDoS-vulnerable regex</strong> — <code class="quikdown-code">security/detect-unsafe-regex</code> is enforced as an error. All line-classification logic (HR detection, fence tracking, block categorization) uses linear-scan functions in <code class="quikdown-code">src/quikdown_classify.js</code> instead of regex with nested quantifiers.</li>
+<li class="quikdown-li"><strong class="quikdown-strong">No dynamic RegExp</strong> — <code class="quikdown-code">security/detect-non-literal-regexp</code> is enforced as an error. String replacements use <code class="quikdown-code">replaceAll()</code> instead of <code class="quikdown-code">new RegExp()</code>.</li>
+<li class="quikdown-li"><strong class="quikdown-strong">CI-gated</strong> — the lint step runs first in <code class="quikdown-code">npm run build</code>, and CI runs the same pipeline on every push and PR.</li>
+</ul><p>See <a class="quikdown-a" href="security.md">Security Guide</a> for the full static analysis status table.</p><h2 class="quikdown-h2">Limitations by Design</h2><h3 class="quikdown-h3">Not Supported</h3><ul class="quikdown-ul">
 <li class="quikdown-li">Full CommonMark specification</li>
 <li class="quikdown-li">HTML blocks (security)</li>
 <li class="quikdown-li">Reference-style links (complexity)</li>

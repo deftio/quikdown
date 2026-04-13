@@ -996,7 +996,7 @@
             if (theme === 'dark' && themeOverrides.dark) {
                 for (const [oldColor, newColor] of Object.entries(themeOverrides.dark)) {
                     if (!oldColor.startsWith('_')) {
-                        themedStyle = themedStyle.replace(new RegExp(oldColor, 'g'), newColor);
+                        themedStyle = themedStyle.replaceAll(oldColor, newColor);
                     }
                 }
                 const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];

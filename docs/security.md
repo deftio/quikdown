@@ -263,6 +263,29 @@ If you discover a security vulnerability:
    - Potential impact
    - Suggested fix (if any)
 
+## Static Analysis & ReDoS Prevention
+
+quikdown enforces automated security scanning in its build pipeline:
+
+- **ESLint + [eslint-plugin-security](https://www.npmjs.com/package/eslint-plugin-security)** runs on every build (`npm run build` starts with `npm run lint`)
+- The `security/detect-unsafe-regex` and `security/detect-non-literal-regexp` rules are set to **error** level, meaning the build fails if a regex with catastrophic backtracking risk or a dynamic `new RegExp()` is introduced
+- CI (GitHub Actions) runs the same pipeline, so security regressions block PRs
+
+### ReDoS-safe patterns
+
+All line-classification logic (HR detection, fence tracking, block categorization) uses **linear-scan functions** instead of regex where nested quantifiers would be needed. These shared utilities live in `src/quikdown_classify.js` and are consumed by both the main parser and the editor, ensuring a single source of truth with zero backtracking risk.
+
+For example, CommonMark HR detection (`---`, `***`, `_ _ _`, etc.) uses an O(n) character scan rather than the traditional `/^[-_*](\s*[-_*]){2,}\s*$/` pattern, which is vulnerable to catastrophic backtracking on adversarial input like `"- " * 1000 + "x"`.
+
+### Current scan status
+
+| Check | Status |
+|---|---|
+| `security/detect-unsafe-regex` | 0 findings (error level) |
+| `security/detect-non-literal-regexp` | 0 findings (error level) |
+| `security/detect-object-injection` | disabled (false positives on parser array iteration) |
+| All other `eslint-plugin-security` rules | 0 findings (warn level) |
+
 ## Future Security Enhancements
 
 Planned security improvements:
@@ -281,5 +304,6 @@ quikdown's security model:
 3. **Granular control** - Trust specific blocks, not everything
 4. **Developer responsibility** - Plugins must handle security
 5. **Defense in depth** - Use with CSP and sanitization
+6. **Automated enforcement** - Security lint at error level in CI
 
 When in doubt, **don't trust the input**. The safest quikdown is one that never uses fence plugins with untrusted content.

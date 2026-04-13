@@ -34,6 +34,9 @@ export default [
       "no-case-declarations": "off",
       // Noisy for parsers that iterate arrays/maps by index — all bracket access is internal
       "security/detect-object-injection": "off",
+      // Promote ReDoS and dynamic-RegExp rules to errors so CI gates on them
+      "security/detect-unsafe-regex": "error",
+      "security/detect-non-literal-regexp": "error",
     },
   },
   {
