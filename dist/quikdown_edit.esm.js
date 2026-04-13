@@ -3126,7 +3126,14 @@ class QuikdownEditor {
             btn.title = `Switch to ${modeLabels[mode]} view`;
             toolbar.appendChild(btn);
         });
-        
+
+        // Mobile split toggle (hidden by default, shown via CSS on narrow viewports)
+        const splitToggle = document.createElement('button');
+        splitToggle.className = 'qde-btn qde-split-toggle';
+        splitToggle.textContent = 'Preview';
+        splitToggle.title = 'Toggle between source and preview in split mode';
+        toolbar.appendChild(splitToggle);
+
         // Undo/Redo buttons (if enabled)
         if (this.options.showUndoRedo) {
             const undoBtn = document.createElement('button');
@@ -3596,16 +3603,46 @@ class QuikdownEditor {
                 background: #252525;
             }
             
-            /* Mobile responsive */
+            /* Mobile split toggle — hidden by default */
+            .qde-split-toggle { display: none; }
+
+            /* Mobile responsive — collapse split to single-pane with toggle */
             @media (max-width: 768px) {
-                .qde-mode-split .qde-editor {
-                    flex-direction: column;
+                .qde-toolbar {
+                    flex-wrap: wrap;
+                }
+                .qde-btn {
+                    padding: 4px 8px;
+                    font-size: 12px;
+                }
+                .qde-source, .qde-preview {
+                    padding: 10px;
+                }
+                .qde-textarea {
+                    padding: 10px;
                 }
 
+                /* In split mode on mobile: show only one pane at a time */
                 .qde-mode-split .qde-source {
                     border-right: none;
-                    border-bottom: 1px solid #ddd;
                 }
+                .qde-mode-split .qde-preview {
+                    display: none;
+                }
+                /* When the user toggles to preview-side in mobile split */
+                .qde-mode-split.qde-split-preview .qde-source {
+                    display: none;
+                }
+                .qde-mode-split.qde-split-preview .qde-preview {
+                    display: block;
+                }
+
+                /* Show the toggle button only in split mode on mobile */
+                .qde-mode-split .qde-split-toggle {
+                    display: inline-block;
+                }
+
+                /* Dark theme border override */
                 .qde-dark.qde-mode-split .qde-source {
                     border-bottom-color: #444;
                 }
@@ -3634,7 +3671,15 @@ class QuikdownEditor {
             this.toolbar.addEventListener('click', (e) => {
                 const btn = e.target.closest('.qde-btn');
                 if (!btn) return;
-                
+
+                // Mobile split-toggle button
+                if (btn.classList.contains('qde-split-toggle')) {
+                    this.container.classList.toggle('qde-split-preview');
+                    const showingPreview = this.container.classList.contains('qde-split-preview');
+                    btn.textContent = showingPreview ? 'Source' : 'Preview';
+                    return;
+                }
+
                 if (btn.dataset.mode) {
                     this.setMode(btn.dataset.mode);
                 } else if (btn.dataset.action) {
@@ -4790,6 +4835,14 @@ class QuikdownEditor {
         this.container.className = `qde-container qde-mode-${mode}`;
         if (wasDark) {
             this.container.classList.add('qde-dark');
+        }
+
+        // Reset mobile split-toggle button text
+        if (this.toolbar) {
+            const splitToggle = this.toolbar.querySelector('.qde-split-toggle');
+            if (splitToggle) {
+                splitToggle.textContent = 'Preview';
+            }
         }
 
         // Update toolbar buttons

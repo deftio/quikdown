@@ -556,29 +556,7 @@ describe('QuikdownEditor', () => {
             expect(editor.options.plugins.mermaid).toBe(true);
         });
 
-        test.skip('should load external script', async () => {
-            await editor.initPromise; // Ensure editor is initialized
-            const scriptPromise = editor.loadScript('data:text/javascript,window.testScriptLoaded=true');
-            await scriptPromise;
-            expect(window.testScriptLoaded).toBe(true);
-            delete window.testScriptLoaded; // Clean up
-        });
-
-        test.skip('should load external CSS', async () => {
-            await editor.initPromise; // Ensure editor is initialized
-            const cssPromise = editor.loadCSS('data:text/css,body{background:red}');
-            await cssPromise;
-            // CSS loads asynchronously, just verify promise resolves
-            expect(cssPromise).resolves;
-        });
-
-        test.skip('should handle script load failure', async () => {
-            await editor.initPromise; // Ensure editor is initialized
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-            await editor.loadLibrary('test', () => false, 'invalid://url');
-            expect(consoleSpy).toHaveBeenCalled();
-            consoleSpy.mockRestore();
-        });
+        // Script/CSS loading tests moved to Playwright: tests/quikdown-editor-browser.spec.js
     });
 
     describe('Advanced Features', () => {
@@ -631,39 +609,8 @@ describe('QuikdownEditor', () => {
             expect(html).toContain('<div>Test</div>');
         });
 
-        test.skip('should make fences non-editable in preview', async () => {
-            await editor.setMarkdown('```svg\n<svg></svg>\n```');
-            editor.setMode('preview');
-            
-            await new Promise(resolve => setTimeout(resolve, 50));
-            
-            const svg = editor.previewPanel.querySelector('.qde-svg-container');
-            expect(svg).toBeTruthy();
-            expect(svg.contentEditable).toBe('false');
-        });
-
-        test.skip('should handle auto theme based on system preference', async () => {
-            // Create a new container for this test
-            const darkContainer = document.createElement('div');
-            darkContainer.id = 'test-dark-editor';
-            document.body.appendChild(darkContainer);
-            
-            // Mock dark mode preference
-            window.matchMedia = jest.fn().mockImplementation(query => ({
-                matches: query === '(prefers-color-scheme: dark)',
-                media: query,
-                addEventListener: jest.fn(),
-                removeEventListener: jest.fn()
-            }));
-
-            const darkEditor = new QuikdownEditor('#test-dark-editor', { theme: 'auto' });
-            await darkEditor.initPromise;
-            
-            expect(darkEditor.container.classList.contains('qde-dark')).toBe(true);
-            
-            darkEditor.destroy();
-            darkContainer.remove();
-        });
+        // Fences non-editable + auto theme tests moved to Playwright:
+        // tests/quikdown-editor-browser.spec.js
 
         test('should parse CSV with complex quoted values', () => {
             const line = '"Hello, ""World""","Test, Value",Normal';
