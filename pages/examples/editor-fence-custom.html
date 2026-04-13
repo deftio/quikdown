@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom fences in editor — Editor example 12 · quikdown</title>
+  <meta name="description" content="Add a custom fence type to QuikdownEditor via the customFences option. Example: a chart fence that renders a CSV-like spec as a styled bar chart, no Chart.js required.">
+  <meta name="keywords" content="quikdown editor customFences, custom markdown fence editor, mermaid markdown editor, math markdown editor">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/pages/examples/editor-fence-custom.html">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Custom fences in QuikdownEditor">
+
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header h1 {
+      font-size: 1.8rem; margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98); border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 { margin: 0 0 0.75rem 0; font-size: 1.05rem; }
+    #editor { height: 540px; border-radius: 12px; overflow: hidden;
+              box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15); border: 1px solid #e6e8ee; }
+
+    /* Custom chart fence styles */
+    .qd-bar-chart {
+      padding: 1rem;
+      background: linear-gradient(135deg, #f3e6ff, #e6d1ff);
+      border-radius: 8px;
+      margin: 0.8rem 0;
+    }
+    body.qd-theme-dark .qd-bar-chart { background: rgba(149, 80, 187, 0.18); }
+    .qd-bar-chart-title { font-weight: 700; margin-bottom: 0.6rem; color: #4a2d8f; }
+    body.qd-theme-dark .qd-bar-chart-title { color: #d9b3ff; }
+    .qd-bar-row { display: flex; align-items: center; gap: 0.6rem; margin: 0.3rem 0; font-size: 0.85rem; }
+    .qd-bar-label { width: 6rem; flex-shrink: 0; font-weight: 600; color: #4a2d8f; }
+    body.qd-theme-dark .qd-bar-label { color: #d9b3ff; }
+    .qd-bar-track { flex: 1; height: 18px; background: rgba(255,255,255,0.5); border-radius: 4px; overflow: hidden; }
+    body.qd-theme-dark .qd-bar-track { background: rgba(0,0,0,0.3); }
+    .qd-bar-fill {
+      height: 100%; background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px; transition: width 0.4s;
+    }
+    .qd-bar-value { width: 3.5rem; text-align: right; font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; color: #4a2d8f; }
+    body.qd-theme-dark .qd-bar-value { color: #d9b3ff; }
+
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="../../pages/examples/">Examples</a> › Track 3 — Editor › Example 11</div>
+        <h1>Custom fences in editor</h1>
+        <p style="color: #4b5563;">
+          The editor's <code>customFences</code> option lets you register render functions for any fence type. Below: a <code>chart</code> fence that takes simple <code>label,value</code> rows and renders a styled bar chart — no Chart.js or D3 required.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>Live editor with the custom fence</h2>
+        <div id="editor"></div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>The plugin code</h2>
+<pre><code>function renderChartFence(code, _lang) {
+  // Parse "label,value" rows
+  const rows = code.trim().split('\n')
+    .map(line =&gt; line.split(',').map(s =&gt; s.trim()))
+    .filter(([label, value]) =&gt; label &amp;&amp; value);
+
+  const max = Math.max(...rows.map(([, v]) =&gt; parseFloat(v)));
+
+  const bars = rows.map(([label, value]) =&gt; {
+    const pct = (parseFloat(value) / max) * 100;
+    return `&lt;div class="qd-bar-row"&gt;
+      &lt;span class="qd-bar-label"&gt;${label}&lt;/span&gt;
+      &lt;div class="qd-bar-track"&gt;&lt;div class="qd-bar-fill" style="width:${pct}%"&gt;&lt;/div&gt;&lt;/div&gt;
+      &lt;span class="qd-bar-value"&gt;${value}&lt;/span&gt;
+    &lt;/div&gt;`;
+  }).join('');
+
+  return `&lt;div class="qd-bar-chart" data-qd-fence="\`\`\`" data-qd-lang="chart" data-qd-source="${
+    code.replace(/"/g, '&amp;quot;').replace(/&lt;/g, '&amp;lt;')
+  }"&gt;${bars}&lt;/div&gt;`;
+}
+
+new QuikdownEditor('#editor', {
+  customFences: { chart: renderChartFence }
+});</code></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>What to know</h2>
+        <ul>
+          <li>The <code>customFences</code> object maps fence language names to render functions: <code>(code, lang) =&gt; htmlString</code>.</li>
+          <li>Set <code>data-qd-source</code> on your output element so the editor's bidirectional reverse-conversion can read the original source back when the user edits other parts of the document.</li>
+          <li>Custom fence containers are marked <code>contenteditable="false"</code> automatically — clicking them won't break the editor's contenteditable preview.</li>
+          <li>This is exactly how the built-in SVG, CSV, math, mermaid, GeoJSON, and STL fence renderers work internally.</li>
+        </ul>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="../../pages/examples/editor-api-playground.html">← Previous: API playground</a>
+        <a href="../../pages/examples/editor-themes-runtime.html">Next: Runtime themes →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+
+    function renderChartFence(code, _lang) {
+      const rows = code.trim().split('\n')
+        .map(line => line.split(',').map(s => s.trim()))
+        .filter(([label, value]) => label && value);
+      if (rows.length === 0) return '<div class="qd-bar-chart">(no data)</div>';
+
+      const values = rows.map(([, v]) => parseFloat(v));
+      const max = Math.max(...values);
+
+      const bars = rows.map(([label, value]) => {
+        const pct = (parseFloat(value) / max) * 100;
+        return '<div class="qd-bar-row">' +
+          '<span class="qd-bar-label">' + label + '</span>' +
+          '<div class="qd-bar-track"><div class="qd-bar-fill" style="width:' + pct + '%"></div></div>' +
+          '<span class="qd-bar-value">' + value + '</span>' +
+          '</div>';
+      }).join('');
+
+      const escapedSource = code.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      return '<div class="qd-bar-chart" data-qd-fence="```" data-qd-lang="chart" data-qd-source="' + escapedSource + '">' +
+        '<div class="qd-bar-chart-title">📊 chart</div>' + bars + '</div>';
+    }
+
+    const editor = new QuikdownEditor('#editor', {
+      mode: 'split',
+      theme: 'auto',
+      customFences: { chart: renderChartFence },
+      showUndoRedo: true,
+    });
+    window.editor = editor;
+
+    editor.setMarkdown(`# Custom chart fence
+
+Below is a custom \`chart\` fence rendered by a tiny plugin (no charting library):
+
+\`\`\`chart
+Apples,45
+Bananas,30
+Cherries,12
+Dates,67
+Elderberries,23
+\`\`\`
+
+## How
+
+The \`customFences\` option maps \`{ language: render(code, lang) }\`. Your function returns HTML and the editor uses it instead of the default code-block rendering for that language tag.
+
+Try editing the source on the left — change a value, add a row, watch the chart update live.
+
+## Default code blocks still work
+
+\`\`\`javascript
+console.log('regular code blocks unchanged');
+\`\`\`
+`);
+  </script>
+  <script src="../../pages/scripts/example-page.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hello world — Parser example 1 · quikdown</title>
+  <meta name="description" content="The simplest possible quikdown example. Import the parser, render markdown into a div. Less than 10 lines of code.">
+  <meta name="keywords" content="quikdown, markdown parser hello world, javascript markdown example, simple markdown parser">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/pages/examples/parser-hello.html">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="quikdown">
+  <meta property="og:title" content="Hello world — Parser example 1">
+  <meta property="og:description" content="The simplest possible quikdown example. Less than 10 lines of code.">
+  <meta property="og:url" content="https://deftio.github.io/quikdown/pages/examples/parser-hello.html">
+
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 900px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header { margin-bottom: 1.5rem; }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-page-header h1 {
+      font-size: 1.8rem;
+      margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .lede { color: #4b5563; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 {
+      margin: 0 0 0.75rem 0;
+      font-size: 1.1rem;
+      color: #1f2937;
+    }
+    #ex-output {
+      padding: 1.5rem;
+      background: white;
+      border: 1px solid #e6e8ee;
+      border-radius: 6px;
+      min-height: 100px;
+    }
+    body.qd-theme-dark #ex-output { background: #181828; }
+    .ex-nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.1rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid #e6e8ee;
+      color: #1f2937;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+    .ex-nav a:hover {
+      border-color: #9550bb;
+      color: #9550bb;
+    }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs">
+          <a href="../../pages/examples/">Examples</a> ›
+          Track 1 — Parser ›
+          Example 1
+        </div>
+        <h1>Hello world</h1>
+        <p class="lede">The simplest possible quikdown example. Import the parser, render markdown into a div. Less than 10 lines of code.</p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>The complete code</h2>
+<pre><code>&lt;div id="out"&gt;&lt;/div&gt;
+
+&lt;script type="module"&gt;
+  import quikdown from 'https://unpkg.com/quikdown';
+
+  document.getElementById('out').innerHTML = quikdown(`
+# Hello, quikdown!
+
+This is **markdown**, parsed in your browser
+in less than ten lines of code.
+
+- Lists work
+- So do \`code spans\`
+- And [links](https://github.com/deftio/quikdown)
+  `);
+&lt;/script&gt;</code></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Live result</h2>
+        <div id="ex-output"></div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>What's happening</h2>
+        <p>That's it. Three steps:</p>
+        <ol>
+          <li>Import <code>quikdown</code> from a CDN (or from your bundler).</li>
+          <li>Call <code>quikdown(markdownString)</code> — returns an HTML string.</li>
+          <li>Set it as <code>innerHTML</code> on a target element.</li>
+        </ol>
+        <p>The parser is XSS-safe by default. HTML in your markdown is escaped, and URL schemes like <code>javascript:</code> in links are sanitized away.</p>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="../../pages/examples/">← All examples</a>
+        <a href="../../pages/examples/parser-options.html">Next: Parser options →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import quikdown from '../../dist/quikdown.esm.js';
+
+    document.getElementById('ex-output').innerHTML = quikdown(`# Hello, quikdown!
+
+This is **markdown**, parsed in your browser in less than ten lines of code.
+
+- Lists work
+- So do \`code spans\`
+- And [links](https://github.com/deftio/quikdown)`);
+
+  </script>
+  <script src="../../pages/scripts/example-page.js" defer></script>
+</body>
+</html>

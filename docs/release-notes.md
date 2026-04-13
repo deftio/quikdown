@@ -1,5 +1,95 @@
 # Release Notes
 
+## v1.2.9
+
+### Security
+- **Regex security hardening**: Replaced regex patterns that had potential ReDoS (catastrophic backtracking) risk with safe alternatives
+  - `emitStyles()` dark-theme color replacement now uses `replaceAll()` instead of `new RegExp(..., 'g')`
+  - HR detection in the parser replaced with a linear-scan function (`isDashHRLine`) — no regex at all
+- **ESLint security plugin**: Added `eslint-plugin-security` to the lint pipeline; resolved all flagged patterns
+
+### New: Shared line-classification module
+- **`quikdown_classify.js`**: Extracted shared line-classification logic (HR detection, fence open/close, table-row detection) into a dedicated module used by both the parser and the editor
+  - `isHRLine()` — full CommonMark HR check (supports `---`, `***`, `___` with interspersed whitespace)
+  - `isDashHRLine()` — dash-only HR check matching the parser's original behavior
+  - `fenceOpen()` / `isFenceClose()` — fence delimiter detection
+  - `classifyLine()` / `looksLikeTableRow()` — block-type classification
+  - All functions are pure, O(n), single-pass, and ReDoS-free
+- **646-line agreement test suite**: Verifies `quikdown_classify` functions match the parser's and editor's existing behavior across hundreds of edge cases
+
+### Editor
+- **Mobile responsive split mode**: On viewports under 768px, split mode now shows one pane at a time with a toggle button instead of squeezing both panes side by side
+- Editor internals refactored to use shared `quikdown_classify` functions for fence and HR detection, eliminating duplicated regex logic
+
+---
+
+## v1.2.8
+
+### Parser rewrite — line-scanning architecture
+- **Major internal rewrite** of the core parser (`quikdown.js`): replaced the multi-pass regex pipeline with a single-pass **line-scanning** block detector + per-block inline formatter
+  - Phase 1: Extract code blocks and inline code into placeholders
+  - Phase 2: HTML-escape remaining text
+  - Phase 3: Walk lines, classify each as heading / HR / blockquote / list / table / paragraph
+  - Phase 4: Restore code placeholders
+- The new architecture is easier to extend (each block type is a separate branch) and eliminates ordering bugs between regex passes
+- **No API changes** — the parser produces identical output for all existing tests
+
+### Standalone editor bundle
+- **New `quikdown_edit_standalone` module**: A single-file editor bundle (~3.8 MB minified) with all fence-rendering libraries built in: highlight.js, Mermaid, DOMPurify, Leaflet, Three.js
+- Works fully offline and in air-gapped environments — no CDN requests, no lazy loading
+- Available as both ESM and UMD: `dist/quikdown_edit_standalone.esm.min.js`
+- New Rollup config: `rollup.config.standalone.js`
+- Documentation: `docs/standalone-editor.md`
+
+### Testing
+- **1877-line editor coverage test suite** (`quikdown_edit_coverage.test.js`): comprehensive coverage of editor constructor, modes, themes, toolbar, undo/redo, fence handling, and API methods
+- **874-line malformed-input test suite** (`quikdown_malformed.test.js`): stress-tests the parser with deeply nested lists, huge tables, unclosed fences, mixed formatting, and adversarial inputs
+- **567-line fence E2E spec** (`quikdown-fences-e2e.spec.js`): Playwright tests for all fence types in the editor
+
+### Dependencies
+- Bumped bitwrench to 2.0.31 (fixes port 9000 crash and directory index.html serving)
+
+---
+
+## v1.2.7
+
+### CI / CD
+- **Split publish from CI**: Tag creation now happens in `ci.yml`; npm publish + GitHub Release moved to `publish.yml` (triggered via `gh workflow run`), fixing OIDC trust issues with `GITHUB_TOKEN`-created tags
+- Removed redundant build/test steps from the publish job — CI already validates before tagging
+- `publish.yml` now also builds dist files and attaches them to the GitHub Release
+
+---
+
+## v1.2.6
+
+### CI / CD
+- Release process validation — version bump and pipeline test, no code changes
+
+---
+
+## v1.2.5
+
+### New feature
+- **`allow_unsafe_html` option**: New parser option that skips HTML escaping for trusted pipelines where markdown contains intentional HTML. Code blocks are still escaped. Default: `false` (safe)
+  ```javascript
+  quikdown('<div class="box">content</div>', { allow_unsafe_html: true });
+  // Output: <p><div class="box">content</div></p>
+  ```
+
+### Editor
+- Fixed default text color (`color: #1f2937`) on the editor container to prevent inheritance issues from parent pages
+
+### CI / Release
+- Added CONTRIBUTING.md
+- Documented release process in `docs/release-process.md`
+- Streamlined `tools/release.sh` — simplified tag creation and push logic
+- CI now runs on PR branches, not just pushes to main
+
+### Testing
+- Added 8 tests for `allow_unsafe_html`: verifies HTML preservation, code-block escaping, combination with other options, and XSS default behavior
+
+---
+
 ## v1.2.4
 
 ### CI / Release pipeline

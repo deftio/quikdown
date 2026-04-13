@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown in LLM chat — quikchat + quikdown · Integration example</title>
+  <meta name="description" content="How quikchat uses quikdown to render inline fenced markdown in LLM chat widgets. Themable, lightweight, no framework. With a live demo of markdown in chat bubbles.">
+  <meta name="keywords" content="llm chat markdown, ai chat markdown, chatgpt markdown rendering, openai chat ui, quikchat, llm streaming markdown, chat widget markdown">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/pages/examples/integration-quikchat.html">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="quikdown">
+  <meta property="og:title" content="Markdown in LLM chat — quikchat + quikdown">
+  <meta property="og:description" content="How quikchat uses quikdown to render fenced markdown in LLM chat widgets. Themable, lightweight, no framework.">
+  <meta property="og:url" content="https://deftio.github.io/quikdown/pages/examples/integration-quikchat.html">
+
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header h1 {
+      font-size: 1.8rem;
+      margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 { margin: 0 0 0.75rem 0; font-size: 1.05rem; }
+
+    /* Simulated chat UI to demonstrate the integration */
+    .chat-demo {
+      background: #f8f9fb;
+      border-radius: 12px;
+      padding: 1rem;
+      max-height: 480px;
+      overflow-y: auto;
+    }
+    .chat-bubble {
+      margin: 0.6rem 0;
+      padding: 0.85rem 1.1rem;
+      border-radius: 14px;
+      max-width: 80%;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      line-height: 1.55;
+    }
+    .chat-bubble.user {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      margin-left: auto;
+      border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.user a { color: white; text-decoration: underline; }
+    .chat-bubble.bot {
+      background: #ffffff;
+      color: #1f2937;
+      border: 1px solid #e6e8ee;
+      margin-right: auto;
+      border-bottom-left-radius: 4px;
+    }
+    .chat-bubble.bot h1, .chat-bubble.bot h2, .chat-bubble.bot h3 {
+      font-size: 1rem;
+      margin: 0.5rem 0 0.3rem;
+    }
+    .chat-bubble.bot pre {
+      font-size: 0.78rem;
+      margin: 0.5rem 0;
+      padding: 0.6rem;
+      max-width: 100%;
+    }
+    .chat-bubble.bot table {
+      font-size: 0.85rem;
+      border-collapse: collapse;
+      margin: 0.5rem 0;
+    }
+    .chat-bubble.bot table th, .chat-bubble.bot table td {
+      border: 1px solid #e6e8ee;
+      padding: 0.3rem 0.5rem;
+    }
+    .chat-bubble.bot ul, .chat-bubble.bot ol { padding-left: 1.5rem; margin: 0.4rem 0; }
+    .chat-bubble.bot p { margin: 0.4rem 0; }
+    .chat-bubble.bot p:first-child { margin-top: 0; }
+    .chat-bubble.bot p:last-child { margin-bottom: 0; }
+    .chat-bubble.bot blockquote {
+      margin: 0.5rem 0;
+      padding: 0.4rem 0.8rem;
+      border-left: 3px solid #9550bb;
+      background: rgba(149, 80, 187, 0.08);
+      border-radius: 4px;
+      font-style: italic;
+    }
+    /* Fence plugin output styles */
+    .chat-mermaid {
+      background: white;
+      padding: 0.5rem;
+      border-radius: 8px;
+      margin: 0.5rem 0;
+      text-align: center;
+      overflow: auto;
+    }
+    .chat-mermaid svg { max-width: 100%; height: auto; }
+    .chat-math {
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      text-align: center;
+      overflow-x: auto;
+      background: rgba(149, 80, 187, 0.05);
+      border-radius: 6px;
+    }
+    body.qd-theme-dark .chat-math { background: rgba(149, 80, 187, 0.15); }
+    .chat-svg-wrap {
+      margin: 0.5rem 0;
+      text-align: center;
+      overflow-x: auto;
+    }
+    .chat-svg-wrap svg { max-width: 100%; height: auto; }
+    .chat-csv-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.5rem 0;
+      font-size: 0.85rem;
+    }
+    .chat-csv-table th {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      text-align: left;
+      padding: 0.4rem 0.6rem;
+      font-weight: 600;
+    }
+    .chat-csv-table td {
+      padding: 0.35rem 0.6rem;
+      border-bottom: 1px solid #e6e8ee;
+    }
+    .chat-csv-table tbody tr:nth-child(even) td {
+      background: rgba(149, 80, 187, 0.04);
+    }
+    body.qd-theme-dark .chat-csv-table tbody tr:nth-child(even) td {
+      background: rgba(149, 80, 187, 0.1);
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.6rem;
+    }
+    .chat-input-row input {
+      flex: 1;
+      padding: 0.6rem 0.85rem;
+      border-radius: 100px;
+      border: 1px solid #e6e8ee;
+      background: #ffffff;
+      color: #1f2937;
+      font-family: inherit;
+    }
+    .chat-input-row button {
+      padding: 0.6rem 1.2rem;
+      border-radius: 100px;
+      border: none;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .chat-input-row button:hover { transform: translateY(-1px); }
+
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+  </style>
+</head>
+<body class="qd-theme-dark">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="../../pages/examples/">Examples</a> › Track 4 — Integrations › Example 13</div>
+        <h1>Markdown in LLM chat — quikchat + quikdown</h1>
+        <p style="color: #4b5563;">
+          When an LLM streams back code blocks, tables, or bullet lists, those need to render as
+          markdown — not show up as raw text. <a href="https://deftio.github.io/quikchat/" target="_blank" rel="noopener">quikchat</a> uses quikdown to do exactly this, in chat bubbles, with no framework and minimal bundle cost.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>Live demo — simulated LLM chat with markdown rendering</h2>
+        <p style="color: #4b5563; font-size: 0.92rem; margin-bottom: 0.75rem;">
+          Type a message (or use the canned ones below) and watch markdown render inside the chat bubbles. The "bot" replies with example markdown payloads — code, tables, lists, math notation — so you can see how each fence type displays.
+        </p>
+        <div class="chat-demo" id="chat"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Type a message... (try 'code', 'table', 'list')" />
+          <button id="chat-send">Send</button>
+        </div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>The integration code</h2>
+        <p style="color: #4b5563;">
+          Here's the entire integration: a render function that uses quikdown on each incoming message, plus a small wrapper that streams chunks as they arrive from the LLM API. The same pattern works for OpenAI, Anthropic, Ollama, or any streaming text endpoint.
+        </p>
+<pre><code>import quikdown from 'quikdown';
+
+// Render a single chat message (markdown → HTML).
+// quikdown is XSS-safe by default, so it's safe to drop directly into innerHTML.
+function renderMessage(markdown) {
+  const div = document.createElement('div');
+  div.className = 'chat-bubble bot';
+  div.innerHTML = quikdown(markdown);
+  return div;
+}
+
+// Stream from an LLM. As chunks arrive, accumulate them into the buffer
+// and re-render the bubble. quikdown re-parses on every chunk — this is
+// fast enough that you can't see the re-renders.
+async function streamFromLLM(prompt, target) {
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble bot';
+  target.appendChild(bubble);
+
+  let buffer = '';
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    body: JSON.stringify({ prompt }),
+  });
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value);
+    bubble.innerHTML = quikdown(buffer);   // ← re-render on each chunk
+  }
+}</code></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Why quikdown for chat</h2>
+        <ul>
+          <li><strong>Fast re-renders.</strong> The parser is small enough (9 KB) that you can re-parse the entire buffer on every streamed chunk without performance loss. No diffing, no virtual DOM.</li>
+          <li><strong>XSS-safe by default.</strong> LLM output is untrusted input. quikdown escapes HTML and sanitizes URL schemes (no <code>javascript:</code> links).</li>
+          <li><strong>Themable.</strong> Use <code>inline_styles: true</code> for emails or dark-themed chat bubbles where you can't ship a stylesheet. Or use the default class-based output and theme it with CSS variables.</li>
+          <li><strong>Fence callbacks.</strong> Want code blocks to use highlight.js or shiki? Pass a <code>fence_plugin</code>. Want diagrams? Pipe <code>mermaid</code> fences through Mermaid.js. Same one-line hook.</li>
+          <li><strong>Zero deps.</strong> No React, no Vue, no framework wrapper. The same import works in a browser script tag, an ES module, a Node SSR pipeline, or a Web Worker.</li>
+        </ul>
+      </div>
+
+      <div class="ex-pane">
+        <h2>See quikchat in action</h2>
+        <p>quikchat is a complete vanilla JavaScript chat widget — themable, < 5 KB gzipped — and it ships markdown rendering as an optional add-on built on quikdown.</p>
+        <p style="margin-top: 0.75rem;">
+          <a href="https://deftio.github.io/quikchat/" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.7rem 1.2rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 8px; text-decoration: none; font-weight: 700;">
+            Visit the quikchat demo →
+          </a>
+          &nbsp;
+          <a href="https://github.com/deftio/quikchat" target="_blank" rel="noopener">quikchat on GitHub</a>
+        </p>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="../../pages/examples/">← All examples</a>
+        <a href="https://deftio.github.io/quikchat/" target="_blank" rel="noopener">quikchat live demo →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import quikdown from '../../dist/quikdown.esm.js';
+
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('chat-input');
+    const send = document.getElementById('chat-send');
+
+    // ---- Load mermaid + MathJax up front so chat fences render instantly ----
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    if (!window.MathJax) {
+      window.MathJax = {
+        tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$'],['\\[','\\]']] },
+        svg: { fontCache: 'global' },
+        startup: { typeset: false }
+      };
+    }
+    const libsReady = Promise.all([
+      loadScript('https://unpkg.com/mermaid/dist/mermaid.min.js').then(() => {
+        if (window.mermaid) window.mermaid.initialize({ startOnLoad: false, theme: 'default' });
+      }).catch(() => {}),
+      loadScript('https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js').catch(() => {}),
+    ]);
+
+    // ---- Fence plugin that handles mermaid, math, svg, csv, tsv, psv ----
+    let mermaidIdSeq = 0;
+    function parseDelimited(code, delim) {
+      const rows = code.trim().split('\n').map(line => {
+        if (delim === ',') {
+          // simple CSV split (no quoted commas in our demo content)
+          return line.split(',').map(c => c.trim());
+        }
+        if (delim === '\t') return line.split('\t').map(c => c.trim());
+        if (delim === '|')  return line.split('|').map(c => c.trim());
+      });
+      if (rows.length === 0) return '';
+      const head = rows[0];
+      const body = rows.slice(1);
+      return '<table class="chat-csv-table"><thead><tr>' +
+        head.map(c => '<th>' + c + '</th>').join('') +
+        '</tr></thead><tbody>' +
+        body.map(r => '<tr>' + r.map(c => '<td>' + c + '</td>').join('') + '</tr>').join('') +
+        '</tbody></table>';
+    }
+    const fencePlugin = {
+      render(code, lang) {
+        const l = (lang || '').toLowerCase();
+        if (l === 'mermaid') {
+          const id = 'chat-mer-' + (++mermaidIdSeq);
+          // Render asynchronously after the bubble is in the DOM
+          setTimeout(async () => {
+            const el = document.getElementById(id);
+            if (el && window.mermaid) {
+              try {
+                const { svg } = await window.mermaid.render(id + '-svg', code);
+                el.innerHTML = svg;
+              } catch (_e) { /* ignore */ }
+            }
+          }, 0);
+          return '<div id="' + id + '" class="chat-mermaid">Loading diagram…</div>';
+        }
+        if (l === 'math' || l === 'tex' || l === 'latex') {
+          // Wrap in $$..$$ so MathJax picks it up
+          return '<div class="chat-math">$$ ' + code + ' $$</div>';
+        }
+        if (l === 'svg') {
+          return '<div class="chat-svg-wrap">' + code + '</div>';
+        }
+        if (l === 'csv') return parseDelimited(code, ',');
+        if (l === 'tsv') return parseDelimited(code, '\t');
+        if (l === 'psv') return parseDelimited(code, '|');
+        return undefined;  // fall through to default code-block rendering
+      }
+    };
+
+    function addBubble(type, content) {
+      const div = document.createElement('div');
+      div.className = 'chat-bubble ' + type;
+      if (type === 'user') {
+        div.textContent = content;
+      } else {
+        div.innerHTML = quikdown(content, { fence_plugin: fencePlugin });
+      }
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      // Trigger MathJax typeset if math is present
+      if (window.MathJax && window.MathJax.typesetPromise && div.querySelector('.chat-math')) {
+        window.MathJax.typesetPromise([div]).catch(() => {});
+      }
+    }
+
+    // -------- Pre-loaded winding conversation showcasing every feature --------
+    // Designed so a visitor doesn't need to type anything to see the goodness.
+    const conversation = [
+      ['user', 'Hi! What can you actually render in a chat bubble?'],
+      ['bot',  `Hey! 👋 I can render **rich markdown** inside chat bubbles using **quikdown** plus a few fence plugins. Lists, tables, code, syntax highlighting, **Mermaid diagrams**, **MathJax equations**, **SVG**, and **CSV/TSV/PSV** tables — all in line.
+
+Want me to show you?`],
+
+      ['user', 'Yes! Start with some code.'],
+      ['bot',  `Sure — here's a Python function with a few features:
+
+\`\`\`python
+def greet(name: str) -> str:
+    return f"Hello, {name}!"
+
+# Higher-order example
+greeters = [greet(n) for n in ["Alice", "Bob", "Carol"]]
+print(greeters)
+\`\`\`
+
+Code fences are rendered with proper escaping and a monospace style. Pair with **highlight.js** for syntax colors.`],
+
+      ['user', 'Nice. Can you show me a Mermaid flowchart?'],
+      ['bot',  `Of course — here's a deployment pipeline as a flowchart:
+
+\`\`\`mermaid
+graph LR
+    A[Push to main] --> B{Tests pass?}
+    B -->|Yes| C[Build]
+    B -->|No| F[Fix]
+    F --> A
+    C --> D[Deploy to staging]
+    D --> E{QA approves?}
+    E -->|Yes| G[Production 🚀]
+    E -->|No| F
+\`\`\`
+
+The fence plugin pipes the \`mermaid\` block straight to **mermaid.js** which renders an inline SVG.`],
+
+      ['user', 'Cool. What about math?'],
+      ['bot',  `Math works through MathJax. Here's the famous Euler identity:
+
+\`\`\`math
+e^{i\\pi} + 1 = 0
+\`\`\`
+
+A summation:
+
+\`\`\`math
+\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}
+\`\`\`
+
+And the Gaussian integral:
+
+\`\`\`math
+\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}
+\`\`\`
+
+Same fence plugin pattern — \`math\` blocks go to MathJax, everything else falls through to default rendering.`],
+
+      ['user', 'Can you also render plain SVG inline?'],
+      ['bot',  `Yep — drop SVG in an \`svg\` fence and it renders directly:
+
+\`\`\`svg
+<svg width="260" height="80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+  </defs>
+  <rect x="5" y="5" width="250" height="70" rx="14" fill="url(#g)"/>
+  <text x="130" y="48" font-family="sans-serif" font-size="22" fill="white" text-anchor="middle" font-weight="700">quikdown</text>
+</svg>
+\`\`\`
+
+Same plugin handles it. The fence plugin escape-hatch lets you render anything you want.`],
+
+      ['user', 'How about tables — both markdown tables and CSV?'],
+      ['bot',  `Both work. Standard markdown table:
+
+| Feature       | Bytes  | Renders to     |
+|:--------------|------:|:---------------|
+| code          |    9 KB| \`<pre><code>\` |
+| table         |  +0 KB | \`<table>\`     |
+| mermaid       |   plug-in | inline SVG  |
+| math          |   plug-in | MathJax SVG |
+
+And the same data via the **CSV fence**:
+
+\`\`\`csv
+City,Temp °C,Humidity %
+Tokyo,18,70
+Paris,12,65
+San Francisco,15,72
+Cairo,28,30
+\`\`\`
+
+Same with **TSV** (tab-separated):
+
+\`\`\`tsv
+Item	Qty	Price
+Apples	3	1.20
+Bread	1	2.50
+Cheese	2	5.00
+\`\`\`
+
+And **PSV** (pipe-separated):
+
+\`\`\`psv
+ID|Name|Status
+1|Alice|active
+2|Bob|away
+3|Carol|active
+\`\`\``],
+
+      ['user', 'What about formatting like bold, italic, lists, blockquotes?'],
+      ['bot',  `All the basics work. Here's a checklist:
+
+1. **Bold** with \`**bold**\`
+2. *Italic* with \`*italic*\`
+3. ~~Strikethrough~~ with \`~~text~~\`
+4. \`inline code\` with backticks
+5. [Links](https://github.com/deftio/quikdown) with the standard syntax
+
+And nested things:
+
+- ✅ Task lists with \`- [x]\`
+- ⏳ With \`- [ ]\`
+- 📦 Bullet inside bullet
+  - Sub-bullet
+  - Another sub-bullet
+- 🎯 Back to top level
+
+> A blockquote works too. **Bold inside blockquote** works.
+> Multi-line blockquotes carry across lines.`],
+
+      ['user', 'This is awesome. How do I integrate it in my own app?'],
+      ['bot',  `Roughly five lines for a streaming-LLM use case:
+
+\`\`\`javascript
+import quikdown from 'quikdown';
+
+async function streamReply(target, response) {
+  let buffer = '';
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    target.innerHTML = quikdown(buffer);  // re-render on every chunk
+  }
+}
+\`\`\`
+
+If you want fence plugins (mermaid, math, etc.), pass a \`fence_plugin\` to \`quikdown(...)\`. If you want a full editor with bidirectional editing, use \`quikdown/edit\`. Pick the layer you need.
+
+That's it — go build something cool. 🚀`],
+    ];
+
+    // Render the conversation immediately on load
+    libsReady.then(() => {
+      conversation.forEach(([who, text]) => addBubble(who, text));
+    });
+
+    // Allow user to type more if they want
+    function handleSend() {
+      const text = input.value.trim();
+      if (!text) return;
+      addBubble('user', text);
+      input.value = '';
+      setTimeout(() => addBubble('bot',
+        `I'm a canned demo, not a real LLM, so I'll just echo: **${text.replace(/[*_`]/g, '\\$&')}**\n\nScroll up to see the full feature tour, or check the [code samples below](#).`
+      ), 250);
+    }
+    send.addEventListener('click', handleSend);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSend();
+    });
+  </script>
+  <script src="../../pages/scripts/example-page.js" defer></script>
+</body>
+</html>

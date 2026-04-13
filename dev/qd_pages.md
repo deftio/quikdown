@@ -1,6 +1,8 @@
 # quikdown.js Website Redesign Plan
 
-**Status:** Planning
+> **Note:** The `site/` directory referenced throughout this document has been renamed to `pages/`. `buildDocs.js` has been removed; `docs/` now contains only markdown source files. The build pipeline writes site output into `pages/` instead of the project root.
+
+**Status:** Implemented (directory restructure complete)
 **Goal:** Replace the auto-generated README landing page with a designed, hand-crafted site that gives quikdown the "wow" it deserves and surfaces the editor as a headline product, not a buried example.
 
 ## Hard constraints

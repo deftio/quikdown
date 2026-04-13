@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation — quikdown</title>
+  <meta name="description" content="Complete documentation for quikdown: parser API, bidirectional editor, fence plugin guide, security model, framework integration, and TypeScript definitions.">
+  <meta name="keywords" content="quikdown documentation, markdown parser api, javascript markdown reference, typescript markdown, fence plugin guide">
+  <meta name="author" content="deftio@deftio.com">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/pages/docs/">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="quikdown">
+  <meta property="og:title" content="quikdown documentation">
+  <meta property="og:description" content="Parser API, bidirectional editor, fence plugins, security, TypeScript types.">
+  <meta property="og:url" content="https://deftio.github.io/quikdown/pages/docs/">
+
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <style>
+    .docs-wrap { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    .docs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .docs-link-card {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-left: 4px solid #9550bb;
+      border-radius: 12px;
+      padding: 1rem;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      transition: all 0.18s;
+    }
+    .docs-link-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      color: inherit;
+    }
+    .docs-link-card h3 {
+      margin: 0 0 0.4rem 0;
+      font-size: 1.05rem;
+      color: #1f2937;
+    }
+    .docs-link-card p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: #4b5563;
+    }
+  </style>
+</head>
+<body class="qd-theme-light">
+  <nav class="qd-nav" aria-label="Main navigation">
+  <div class="qd-nav-inner">
+    <a class="qd-nav-brand" href="../../pages/" aria-label="quikdown home">
+      <img class="qd-nav-brand-icon" src="../../pages/assets/logo-nav.svg" alt="" aria-hidden="true">
+      <span class="qd-nav-brand-text">quikdown</span>
+      <span class="qd-nav-brand-version">v1.2.9</span>
+    </a>
+    <div class="qd-nav-links">
+      <a class="qd-nav-link" data-nav="home" href="../../pages/">Home</a>
+      <a class="qd-nav-link" data-nav="examples" href="../../pages/examples/">Examples</a>
+      <a class="qd-nav-link" data-nav="frameworks" href="../../pages/frameworks/">Frameworks</a>
+      <a class="qd-nav-link" data-nav="docs" href="../../pages/docs/">Docs</a>
+      <a class="qd-nav-link" data-nav="downloads" href="../../pages/downloads/">Downloads</a>
+      <a class="qd-nav-link" data-nav="changelog" href="../../pages/changelog/">Changelog</a>
+      <a class="qd-nav-link" href="https://github.com/deftio/quikdown" rel="noopener" target="_blank">GitHub</a>
+      <a class="qd-nav-link qd-nav-cta" data-nav="edit" href="../../pages/edit/">Try Editor</a>
+      <button class="qd-nav-theme-btn" id="qd-theme-toggle" type="button" aria-label="Toggle theme" title="Cycle theme: dark → light → auto">
+        <span id="qd-theme-icon">🌙</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+  <main>
+    <section class="qd-hero" style="padding: 2.5rem 0;">
+      <div class="qd-hero-inner">
+        <span class="qd-hero-eyebrow">Documentation · v1.2.9</span>
+        <h1 style="font-size: clamp(1.8rem, 4vw, 2.6rem); max-width: 28ch;">Everything you need to ship with quikdown.</h1>
+        <p class="qd-hero-sub">
+          Parser API, bidirectional model, editor component, fence plugin guide, framework integration, security model, TypeScript types — all in one place.
+        </p>
+      </div>
+    </section>
+
+    <section class="qd-section">
+      <div class="docs-wrap">
+
+        <h2 style="font-size: 1.4rem;">Start here</h2>
+        <div class="docs-grid">
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/README.md" target="_blank" rel="noopener">
+            <h3>📖 README</h3>
+            <p>Project overview, installation, quick start, and the core API surface.</p>
+          </a>
+          <a class="docs-link-card" href="../../pages/examples/">
+            <h3>🎓 Examples ladder</h3>
+            <p>Sixteen working examples organized as a learning ladder. Start with hello-world, end with headless editor in your app.</p>
+          </a>
+          <a class="docs-link-card" href="../../pages/edit/">
+            <h3>✏️ Try the editor</h3>
+            <p>Free, in-browser markdown editor. The same component you can drop into your app.</p>
+          </a>
+        </div>
+
+        <h2 style="font-size: 1.4rem; margin-top: 4rem;">Reference</h2>
+        <div class="docs-grid">
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/docs/api-reference.md" target="_blank" rel="noopener">
+            <h3>API Reference</h3>
+            <p>Complete public API for all six modules — parser, bidirectional, editor, AST, JSON, YAML.</p>
+          </a>
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/docs/quikdown-editor.md" target="_blank" rel="noopener">
+            <h3>Editor Guide</h3>
+            <p>QuikdownEditor options, methods, events, and headless mode.</p>
+          </a>
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/docs/quikdown-bidirectional.md" target="_blank" rel="noopener">
+            <h3>Bidirectional Guide</h3>
+            <p>How <code>data-qd-*</code> attributes enable HTML → Markdown round-tripping.</p>
+          </a>
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/docs/plugin-guide.md" target="_blank" rel="noopener">
+            <h3>Fence Plugin Guide</h3>
+            <p>Write a fence plugin with <code>render</code> and <code>reverse</code> handlers for custom code-fence types.</p>
+          </a>
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/docs/quikdown-ast.md" target="_blank" rel="noopener">
+            <h3>AST Guide</h3>
+            <p>The optional AST module for working with markdown as a structured tree (JSON, YAML, AST→HTML).</p>
+          </a>
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/docs/framework-integration.md" target="_blank" rel="noopener">
+            <h3>Framework Integration</h3>
+            <p>React, Vue, Svelte, Angular — patterns for embedding quikdown in any framework.</p>
+          </a>
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/docs/security.md" target="_blank" rel="noopener">
+            <h3>Security Model</h3>
+            <p>XSS protection, URL sanitization, what's safe by default, and what to watch for in fence plugins.</p>
+          </a>
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/docs/architecture.md" target="_blank" rel="noopener">
+            <h3>Architecture</h3>
+            <p>Parser internals, lexer design, fence handling pipeline. For contributors and curious users.</p>
+          </a>
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown/blob/main/docs/lexer-implementation.md" target="_blank" rel="noopener">
+            <h3>Lexer Implementation</h3>
+            <p>Deep dive into the parser's lexer state machine.</p>
+          </a>
+        </div>
+
+        <h2 style="font-size: 1.4rem; margin-top: 4rem;">Project</h2>
+        <div class="docs-grid">
+          <a class="docs-link-card" href="../../pages/changelog/">
+            <h3>📝 Changelog</h3>
+            <p>Release history, breaking changes, migration notes.</p>
+          </a>
+          <a class="docs-link-card" href="https://github.com/deftio/quikdown" target="_blank" rel="noopener">
+            <h3>🐙 GitHub</h3>
+            <p>Source code, issues, pull requests.</p>
+          </a>
+          <a class="docs-link-card" href="https://www.npmjs.com/package/quikdown" target="_blank" rel="noopener">
+            <h3>📦 npm</h3>
+            <p>Package on the registry. <code>npm install quikdown</code></p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="qd-footer">
+  <div class="qd-footer-inner">
+    <div class="qd-footer-cols">
+      <div class="qd-footer-col">
+        <a class="qd-footer-brand" href="../../pages/">
+          <img class="qd-nav-brand-icon" src="../../pages/assets/logo-nav.svg" alt="" aria-hidden="true">
+          <span>quikdown</span>
+        </a>
+        <p style="margin-top: 0.6rem; max-width: 36ch; color: #4b5563;">
+          Tiny, secure markdown for browsers and Node — with a drop-in editor that handles everything from Mermaid to MathJax to GeoJSON.
+        </p>
+      </div>
+      <div class="qd-footer-col">
+        <h5>Project</h5>
+        <ul>
+          <li><a href="../../pages/">Home</a></li>
+          <li><a href="../../pages/examples/">Examples</a></li>
+          <li><a href="../../pages/docs/">Documentation</a></li>
+          <li><a href="../../pages/changelog/">Changelog</a></li>
+          <li><a href="../../pages/edit/">Editor App</a></li>
+        </ul>
+      </div>
+      <div class="qd-footer-col">
+        <h5>Code</h5>
+        <ul>
+          <li><a href="https://github.com/deftio/quikdown" rel="noopener" target="_blank">GitHub</a></li>
+          <li><a href="https://www.npmjs.com/package/quikdown" rel="noopener" target="_blank">npm</a></li>
+          <li><a href="https://github.com/deftio/quikdown/issues" rel="noopener" target="_blank">Issues</a></li>
+          <li><a href="https://github.com/deftio/quikdown/blob/main/LICENSE.txt" rel="noopener" target="_blank">License (BSD-2)</a></li>
+        </ul>
+      </div>
+      <div class="qd-footer-col">
+        <h5>Related</h5>
+        <ul>
+          <li><a href="https://deftio.github.io/quikchat/" rel="noopener" target="_blank">quikchat</a></li>
+          <li><a href="https://deftio.github.io/triepack/" rel="noopener" target="_blank">triepack</a></li>
+          <li><a href="https://deftio.github.io/bitwrench/" rel="noopener" target="_blank">bitwrench</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="qd-footer-bottom">
+      <div>quikdown v1.2.9 — © deftio · BSD-2 licensed</div>
+      <div>Built with HTML, CSS, and JavaScript. Zero runtime dependencies.</div>
+    </div>
+  </div>
+</footer>
+
+  <script src="../../pages/scripts/site.js" defer></script>
+</body>
+</html>

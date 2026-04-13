@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog — quikdown release notes</title>
+  <meta name="description" content="Release history, breaking changes, and migration notes for quikdown. Current version: {{VERSION}}.">
+  <meta name="keywords" content="quikdown changelog, release notes, migration guide, version history">
+  <meta name="author" content="deftio@deftio.com">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/pages/changelog/">
+  <link rel="icon" type="image/svg+xml" href="{{ROOT}}/favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="quikdown">
+  <meta property="og:title" content="quikdown changelog">
+  <meta property="og:description" content="Release history and migration notes.">
+
+  <link rel="stylesheet" href="{{ROOT}}/pages/styles/quikdown-site.css">
+  <style>
+    .cl-wrap { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    .cl-current {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    }
+    .cl-current strong { font-size: 1.4rem; }
+    .cl-current a {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .cl-current a:hover { background: rgba(255,255,255,0.3); color: white; }
+    .cl-frame {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      padding: 1.5rem;
+    }
+    .cl-rendered { line-height: 1.6; }
+    .cl-rendered h1 { font-size: 1.6rem; margin: 2rem 0 1rem; border-bottom: 2px solid rgba(149, 80, 187, 0.15); padding-bottom: 0.4rem; }
+    .cl-rendered h2 { font-size: 1.35rem; margin: 2.5rem 0 0.75rem; border-bottom: 1px solid rgba(149, 80, 187, 0.1); padding-bottom: 0.3rem; }
+    .cl-rendered h3 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    .cl-rendered h4 { font-size: 1rem; margin: 1.25rem 0 0.4rem; }
+    .cl-rendered ul, .cl-rendered ol { padding-left: 1.5em; margin: 0.5rem 0; }
+    .cl-rendered li { margin: 0.25rem 0; font-size: 0.92rem; color: #374151; }
+    .cl-rendered code { font-size: 0.85em; background: #f3e6ff; color: #6c47b8; padding: 0.15em 0.4em; border-radius: 3px; }
+    .cl-rendered pre { background: #1e1e2e; color: #e6e6f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin: 0.75rem 0; }
+    .cl-rendered pre code { background: none; color: inherit; padding: 0; }
+    .cl-rendered hr { border: none; border-top: 1px solid rgba(149, 80, 187, 0.15); margin: 2rem 0; }
+    .cl-rendered p { margin: 0.5rem 0; font-size: 0.92rem; color: #374151; }
+    .cl-rendered strong { color: #1f2937; }
+    .cl-rendered a { color: #9550bb; }
+
+    body.qd-theme-dark .cl-rendered li,
+    body.qd-theme-dark .cl-rendered p { color: #b8b8c8; }
+    body.qd-theme-dark .cl-rendered strong { color: #e6e6f0; }
+    body.qd-theme-dark .cl-rendered code { background: rgba(179, 136, 221, 0.18); color: #d9b3ff; }
+    body.qd-theme-dark .cl-rendered h1,
+    body.qd-theme-dark .cl-rendered h2 { border-bottom-color: rgba(179, 136, 221, 0.2); }
+  </style>
+</head>
+<body class="qd-theme-light">
+  {{NAV_HTML}}
+
+  <main>
+    <section class="qd-hero" style="padding: 2.5rem 0;">
+      <div class="qd-hero-inner">
+        <span class="qd-hero-eyebrow">Release notes</span>
+        <h1 style="font-size: clamp(1.8rem, 4vw, 2.6rem); max-width: 28ch;">Changelog</h1>
+        <p class="qd-hero-sub">
+          Every release, what changed, and why. Breaking changes are called out. Migration notes when needed.
+        </p>
+      </div>
+    </section>
+
+    <section class="qd-section">
+      <div class="cl-wrap">
+
+        <div class="cl-current">
+          <div>Latest: <strong>v{{VERSION}}</strong></div>
+          <a href="https://github.com/deftio/quikdown/releases/tag/v{{VERSION}}" target="_blank" rel="noopener">View on GitHub →</a>
+        </div>
+
+        <div class="cl-frame" id="cl-content">
+          <p style="text-align: center; color: #6b7280;">Loading release notes&hellip;</p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  {{FOOTER_HTML}}
+  <script src="{{ROOT}}/pages/scripts/site.js" defer></script>
+  <script type="module">
+    import quikdown from '{{ROOT}}/dist/quikdown.esm.js';
+
+    const el = document.getElementById('cl-content');
+    try {
+      const res = await fetch('{{ROOT}}/docs/release-notes.md');
+      if (!res.ok) throw new Error(res.status);
+      const md = await res.text();
+      el.innerHTML = '<div class="cl-rendered">' + quikdown(md) + '</div>';
+    } catch (_e) {
+      el.innerHTML =
+        '<p style="text-align:center;">Could not load release notes. ' +
+        '<a href="https://github.com/deftio/quikdown/blob/main/docs/release-notes.md" target="_blank" rel="noopener">View on GitHub →</a></p>';
+    }
+  </script>
+</body>
+</html>
