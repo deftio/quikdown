@@ -3220,6 +3220,7 @@ class QuikdownEditor {
             .qde-toolbar {
                 display: flex;
                 align-items: center;
+                flex-wrap: wrap;
                 padding: 8px;
                 background: #f5f5f5;
                 border-bottom: 1px solid #ddd;
@@ -3608,13 +3609,14 @@ class QuikdownEditor {
             /* Mobile split toggle — hidden by default */
             .qde-split-toggle { display: none; }
 
-            /* Mobile responsive — collapse split to single-pane with toggle */
-            @media (max-width: 768px) {
+            /* Mobile responsive — compact toolbar for all small screens */
+            @media (max-width: 720px) {
                 .qde-toolbar {
-                    flex-wrap: wrap;
+                    padding: 6px;
+                    gap: 3px;
                 }
                 .qde-btn {
-                    padding: 4px 8px;
+                    padding: 5px 8px;
                     font-size: 12px;
                 }
                 .qde-source, .qde-preview {
@@ -3623,31 +3625,26 @@ class QuikdownEditor {
                 .qde-textarea {
                     padding: 10px;
                 }
+                /* Undo/Redo: show circular arrows instead of text */
+                .qde-btn[data-action="undo"] { font-size: 0; }
+                .qde-btn[data-action="undo"]::after { content: "\\21B6"; font-size: 14px; }
+                .qde-btn[data-action="redo"] { font-size: 0; }
+                .qde-btn[data-action="redo"]::after { content: "\\21B7"; font-size: 14px; }
+                /* Hide secondary utility buttons to reduce clutter */
+                .qde-btn[data-action="remove-hr"],
+                .qde-btn[data-action="lazy-linefeeds"],
+                .qde-btn[data-action="copy-rendered"] { display: none; }
+            }
 
-                /* In split mode on mobile: show only one pane at a time */
-                .qde-mode-split .qde-source {
-                    border-right: none;
-                }
-                .qde-mode-split .qde-preview {
-                    display: none;
-                }
-                /* When the user toggles to preview-side in mobile split */
-                .qde-mode-split.qde-split-preview .qde-source {
-                    display: none;
-                }
-                .qde-mode-split.qde-split-preview .qde-preview {
-                    display: block;
-                }
-
-                /* Show the toggle button only in split mode on mobile */
-                .qde-mode-split .qde-split-toggle {
-                    display: inline-block;
-                }
-
-                /* Dark theme border override */
-                .qde-dark.qde-mode-split .qde-source {
-                    border-bottom-color: #444;
-                }
+            /* Portrait mobile: drop split mode entirely */
+            @media (max-width: 720px) and (orientation: portrait) {
+                .qde-btn[data-mode="split"] { display: none; }
+                .qde-split-toggle { display: none !important; }
+                /* Fallback: if still in split mode, show source only */
+                .qde-mode-split .qde-source { border-right: none; }
+                .qde-mode-split .qde-preview { display: none; }
+                .qde-mode-split.qde-split-preview .qde-source { display: none; }
+                .qde-mode-split.qde-split-preview .qde-preview { display: block; }
             }
         `;
         
@@ -3724,8 +3721,22 @@ class QuikdownEditor {
                 }
             }
         });
+
+        // On narrow portrait viewports, auto-switch out of split mode to source.
+        // Split is kept available on landscape where there is enough width.
+        if (typeof window.matchMedia === 'function') {
+            const portraitQuery = window.matchMedia('(max-width: 720px) and (orientation: portrait)');
+            const switchIfPortrait = () => {
+                if (portraitQuery.matches && this.currentMode === 'split') {
+                    this.setMode('source');
+                }
+            };
+            // Check after init's setMode() has run (microtask fires after sync code).
+            Promise.resolve().then(switchIfPortrait);
+            portraitQuery.addEventListener('change', switchIfPortrait);
+        }
     }
-    
+
     /**
      * Handle source textarea input
      */
@@ -4854,11 +4865,14 @@ class QuikdownEditor {
             });
         }
         
-        // Make fence blocks non-editable when showing preview
-        if (mode !== 'source') {
+        // When switching to a mode that shows the preview, ensure the
+        // preview panel has current content (it may have been skipped if
+        // content was loaded while in source-only mode).
+        if (mode !== 'source' && this._html) {
+            this.previewPanel.innerHTML = this._html;
             setTimeout(() => this.makeFencesNonEditable(), 0);
         }
-        
+
         // Trigger mode change event
         if (this.options.onModeChange) {
             this.options.onModeChange(mode);
