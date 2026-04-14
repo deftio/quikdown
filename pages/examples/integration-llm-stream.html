@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streaming LLM output — Integration example 17 · quikdown</title>
+  <meta name="description" content="Render markdown chunks as they stream from an LLM API. Re-parse the buffer on every chunk — quikdown is fast enough that you can't see the re-renders.">
+  <meta name="keywords" content="llm streaming markdown, openai streaming markdown, anthropic streaming markdown, chunk markdown rendering">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/pages/examples/integration-llm-stream.html">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Streaming LLM output — quikdown">
+
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header h1 {
+      font-size: 1.8rem; margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98); border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 { margin: 0 0 0.75rem 0; font-size: 1.05rem; }
+    .stream-output {
+      background: #ffffff;
+      border: 1px solid #e6e8ee;
+      border-radius: 12px;
+      padding: 1.5rem;
+      min-height: 360px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .stream-output pre {
+      background: #1e1e2e;
+      color: #e6e6f0;
+      padding: 0.8rem;
+      font-size: 0.85rem;
+      border-radius: 6px;
+    }
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+    .controls button {
+      padding: 0.6rem 1.1rem;
+      border-radius: 8px;
+      border: none;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .controls button:hover { transform: translateY(-1px); }
+    .controls button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .controls label {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.9rem;
+    }
+    .controls input[type=range] { width: 120px; }
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="../../pages/examples/">Examples</a> › Track 4 — Integrations › Example 16</div>
+        <h1>Streaming LLM output</h1>
+        <p style="color: #4b5563;">
+          When LLMs stream tokens, you typically want them to render as markdown — code blocks, tables, lists — not as raw text. Re-parse the entire buffer with <code>quikdown(buffer)</code> on every chunk. The parser is small and fast enough that you can't see the re-renders.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>Live simulated stream</h2>
+        <div class="controls">
+          <button id="start">▶ Start streaming</button>
+          <button id="reset">↻ Reset</button>
+          <label>
+            Chunk delay:
+            <input type="range" id="speed" min="5" max="200" value="35">
+            <span id="speed-val">35ms</span>
+          </label>
+        </div>
+        <div id="stream-out" class="stream-output"></div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>The pattern</h2>
+<pre><code>import quikdown from 'quikdown';
+
+async function streamFromLLM(prompt, target) {
+  let buffer = '';
+
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    body: JSON.stringify({ prompt }),
+  });
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    target.innerHTML = quikdown(buffer);   // ← re-render on each chunk
+  }
+}</code></pre>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Why this works for streaming</h2>
+        <ul>
+          <li><strong>quikdown is small.</strong> ~9 KB of parser, no virtual DOM, no diffing. Re-parsing a 4 KB buffer takes microseconds.</li>
+          <li><strong>setting innerHTML is cheap.</strong> Modern browsers handle it in a single layout pass when the markup hasn't changed structurally.</li>
+          <li><strong>Mid-token markdown is fine.</strong> If a chunk arrives partway through a code fence (\`\`\` followed by no closing), quikdown still produces sensible HTML — it just renders the partial code as a code block. When the closing fence arrives, the next re-render snaps into place.</li>
+          <li><strong>XSS-safe.</strong> LLM output is untrusted. quikdown escapes HTML entities and sanitizes <code>javascript:</code> URLs before they hit the DOM.</li>
+        </ul>
+        <p>This is the pattern <a href="https://deftio.github.io/quikchat/" target="_blank" rel="noopener">quikchat</a> uses to render markdown in streaming chat bubbles.</p>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="../../pages/examples/integration-quikchat.html">← Previous: quikchat integration</a>
+        <a href="../../pages/examples/">All examples</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import quikdown from '../../dist/quikdown.esm.js';
+
+    const out = document.getElementById('stream-out');
+    const startBtn = document.getElementById('start');
+    const resetBtn = document.getElementById('reset');
+    const speed = document.getElementById('speed');
+    const speedVal = document.getElementById('speed-val');
+
+    speed.addEventListener('input', () => speedVal.textContent = speed.value + 'ms');
+
+    // A canned LLM-style markdown response with a mix of features
+    const fullResponse = `# Streaming markdown demo
+
+Here's a simulated **LLM response** that streams in token-by-token. Notice how each chunk is fed to \`quikdown(buffer)\` and the entire output is re-rendered every time.
+
+## Why this works
+
+- The parser is **fast enough** that re-rendering on every chunk is invisible
+- **No diffing needed** — just \`element.innerHTML = quikdown(buffer)\`
+- Mid-fence chunks render gracefully — quikdown handles incomplete markup
+
+## Code
+
+Here's how you'd wire it up to a real LLM API:
+
+\`\`\`javascript
+async function streamLLM(target, response) {
+  let buffer = '';
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    target.innerHTML = quikdown(buffer);
+  }
+}
+\`\`\`
+
+## Tables stream too
+
+| Feature       | Status | Notes               |
+|:--------------|:------:|:--------------------|
+| Code fences   |   ✓    | Re-render is cheap  |
+| Tables        |   ✓    | Last row may flicker|
+| Lists         |   ✓    | Smooth              |
+| Math fences   |   ✓    | Via fence_plugin    |
+
+## Wrap-up
+
+That's the entire pattern. **No framework, no virtual DOM, no streaming markdown library** — just \`quikdown(buffer)\` on every chunk.
+
+> Powered by quikdown.`;
+
+    let abortStreaming = false;
+
+    function tokenize(text) {
+      // Token-ish chunks: 1-4 chars random, plus pause on newlines
+      const tokens = [];
+      let i = 0;
+      while (i < text.length) {
+        const size = 1 + Math.floor(Math.random() * 4);
+        tokens.push(text.slice(i, i + size));
+        i += size;
+      }
+      return tokens;
+    }
+
+    async function stream() {
+      out.innerHTML = '';
+      abortStreaming = false;
+      startBtn.disabled = true;
+      const tokens = tokenize(fullResponse);
+      let buffer = '';
+      for (const tok of tokens) {
+        if (abortStreaming) break;
+        buffer += tok;
+        out.innerHTML = quikdown(buffer);
+        out.scrollTop = out.scrollHeight;
+        await new Promise(r => setTimeout(r, parseInt(speed.value, 10)));
+      }
+      startBtn.disabled = false;
+    }
+
+    function reset() {
+      abortStreaming = true;
+      out.innerHTML = '<p style="color: #6b7280; text-align: center; padding: 2rem;">Click "Start streaming" to simulate an LLM response token-by-token.</p>';
+      startBtn.disabled = false;
+    }
+
+    startBtn.addEventListener('click', stream);
+    resetBtn.addEventListener('click', reset);
+    reset();
+  </script>
+  <script src="../../pages/scripts/example-page.js" defer></script>
+</body>
+</html>

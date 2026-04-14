@@ -14,12 +14,17 @@ test.describe('QuikdownEditor E2E Tests', () => {
 
     test.describe('Initialization', () => {
         test('should initialize editor with split view by default', async () => {
-            // Check that both panels are visible
-            const sourcePanel = await page.locator('.qde-source');
-            const previewPanel = await page.locator('.qde-preview');
-            
+            const sourcePanel = page.locator('.qde-source');
+            const previewPanel = page.locator('.qde-preview');
+            const viewport = page.viewportSize();
+
             await expect(sourcePanel).toBeVisible();
-            await expect(previewPanel).toBeVisible();
+            if (viewport && viewport.width <= 768) {
+                // On mobile, split mode shows only source pane
+                await expect(previewPanel).not.toBeVisible();
+            } else {
+                await expect(previewPanel).toBeVisible();
+            }
         });
 
         test('should show toolbar by default', async () => {
@@ -66,9 +71,15 @@ test.describe('QuikdownEditor E2E Tests', () => {
             const container = await page.locator('.qde-container');
             await expect(container).toHaveClass(/qde-mode-split/);
             
-            // Both panels should be visible
+            // Source is always visible in split mode
             await expect(page.locator('.qde-source')).toBeVisible();
-            await expect(page.locator('.qde-preview')).toBeVisible();
+            const viewport = page.viewportSize();
+            if (viewport && viewport.width <= 768) {
+                // On mobile, split mode shows only source pane
+                await expect(page.locator('.qde-preview')).not.toBeVisible();
+            } else {
+                await expect(page.locator('.qde-preview')).toBeVisible();
+            }
         });
 
         test('should use keyboard shortcuts for mode switching', async () => {
@@ -494,21 +505,85 @@ test.describe('QuikdownEditor E2E Tests', () => {
 
     test.describe('Mobile Responsiveness', () => {
         test('should work on mobile viewport', async () => {
-            // Set mobile viewport
             await page.setViewportSize({ width: 375, height: 667 });
-            
-            // Editor should still be functional
-            const container = await page.locator('.qde-container');
+
+            const container = page.locator('.qde-container');
             await expect(container).toBeVisible();
-            
-            // Should default to source mode on mobile (if implemented)
-            // Or at least be usable
-            const sourceTextarea = await page.locator('.qde-textarea');
+
+            const sourceTextarea = page.locator('.qde-textarea');
             await sourceTextarea.fill('# Mobile Test');
             await page.waitForTimeout(400);
-            
+
             const content = await sourceTextarea.inputValue();
             expect(content).toBe('# Mobile Test');
+        });
+
+        test('should hide preview pane in split mode on mobile', async () => {
+            await page.setViewportSize({ width: 375, height: 667 });
+            await page.click('.qde-btn[data-mode="split"]');
+
+            // In split mode on mobile, preview should be hidden
+            await expect(page.locator('.qde-preview')).not.toBeVisible();
+            // Source should be visible
+            await expect(page.locator('.qde-source')).toBeVisible();
+        });
+
+        test('should show split-toggle button on mobile in split mode', async () => {
+            await page.setViewportSize({ width: 375, height: 667 });
+            await page.click('.qde-btn[data-mode="split"]');
+
+            const toggle = page.locator('.qde-split-toggle');
+            await expect(toggle).toBeVisible();
+            await expect(toggle).toContainText('Preview');
+        });
+
+        test('should toggle between source and preview on mobile split', async () => {
+            await page.setViewportSize({ width: 375, height: 667 });
+            await page.click('.qde-btn[data-mode="split"]');
+
+            // Initially source is shown
+            await expect(page.locator('.qde-source')).toBeVisible();
+            await expect(page.locator('.qde-preview')).not.toBeVisible();
+
+            // Click toggle to show preview
+            await page.click('.qde-split-toggle');
+            await expect(page.locator('.qde-preview')).toBeVisible();
+            await expect(page.locator('.qde-source')).not.toBeVisible();
+
+            // Toggle button should now say "Source"
+            await expect(page.locator('.qde-split-toggle')).toContainText('Source');
+
+            // Click toggle again to go back to source
+            await page.click('.qde-split-toggle');
+            await expect(page.locator('.qde-source')).toBeVisible();
+            await expect(page.locator('.qde-preview')).not.toBeVisible();
+            await expect(page.locator('.qde-split-toggle')).toContainText('Preview');
+        });
+
+        test('should show source mode full width on mobile', async () => {
+            await page.setViewportSize({ width: 375, height: 667 });
+            await page.click('.qde-btn[data-mode="source"]');
+
+            await expect(page.locator('.qde-source')).toBeVisible();
+            await expect(page.locator('.qde-preview')).not.toBeVisible();
+        });
+
+        test('should show preview mode full width on mobile', async () => {
+            await page.setViewportSize({ width: 375, height: 667 });
+            await page.click('.qde-btn[data-mode="preview"]');
+
+            await expect(page.locator('.qde-preview')).toBeVisible();
+            await expect(page.locator('.qde-source')).not.toBeVisible();
+        });
+
+        test('should wrap toolbar buttons on mobile', async () => {
+            await page.setViewportSize({ width: 375, height: 667 });
+
+            const toolbar = page.locator('.qde-toolbar');
+            await expect(toolbar).toBeVisible();
+            // Toolbar should allow wrapping (flex-wrap: wrap)
+            const flexWrap = await toolbar.evaluate(el => getComputedStyle(el).flexWrap);
+            expect(flexWrap).toBe('wrap');
         });
     });
 });

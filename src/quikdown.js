@@ -61,6 +61,8 @@
  * @returns {string}         Rendered HTML
  */
 
+import { isDashHRLine } from './quikdown_classify.js';
+
 // ────────────────────────────────────────────────────────────────────
 //  Constants
 // ────────────────────────────────────────────────────────────────────
@@ -523,7 +525,7 @@ function scanLineBlocks(text, getAttr, dataQd) {
 
         // ── Horizontal Rule ──
         // Three or more dashes, optional trailing whitespace, nothing else.
-        if (/^---+\s*$/.test(line)) {
+        if (isDashHRLine(line)) {
             result.push(`<hr${getAttr('hr')}>`);
             i++;
             continue;
@@ -834,7 +836,7 @@ quikdown.emitStyles = function(prefix = 'quikdown-', theme = 'light') {
         if (theme === 'dark' && themeOverrides.dark) {
             for (const [oldColor, newColor] of Object.entries(themeOverrides.dark)) {
                 if (!oldColor.startsWith('_')) {
-                    themedStyle = themedStyle.replace(new RegExp(oldColor, 'g'), newColor);
+                    themedStyle = themedStyle.replaceAll(oldColor, newColor);
                 }
             }
             const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];

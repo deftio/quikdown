@@ -56,6 +56,13 @@ describe('quikdown_bd edge cases and full coverage', () => {
     });
   });
 
+  describe('HR with trailing whitespace (isDashHRLine coverage)', () => {
+    test('should render HR when dashes have trailing spaces', () => {
+      const html = quikdown_bd('---  ');
+      expect(html).toContain('<hr');
+    });
+  });
+
   describe('Fence Plugin with Bidirectional', () => {
     test('should handle fence plugin returning undefined with bidirectional', () => {
       const plugin = {

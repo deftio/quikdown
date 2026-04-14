@@ -1064,8 +1064,8 @@ export async function getRenderedContent(previewPanel) {
                         if (w > 0 && h > 0 && overlaps && style.display !== 'none' && style.visibility !== 'hidden') {
                             ctx.drawImage(tile, x, y, w + 1, h + 1);
                         }
-                    } catch (e) {
-                        console.warn('Failed to draw tile:', e);
+                    } catch (_e) {
+                        console.warn('Failed to draw tile:', _e);
                     }
                 }
 
@@ -1084,8 +1084,8 @@ export async function getRenderedContent(previewPanel) {
                         const h = Math.round(r.height);
                         const overlaps = !(r.right <= leafRect.left || r.left >= leafRect.right || r.bottom <= leafRect.top || r.top >= leafRect.bottom);
                         if (w > 0 && h > 0 && overlaps) ctx.drawImage(img, x, y, w, h);
-                    } catch (e) {
-                        console.warn('Failed to draw overlay SVG:', e);
+                    } catch (_e) {
+                        console.warn('Failed to draw overlay SVG:', _e);
                     }
                 }
 
@@ -1103,8 +1103,8 @@ export async function getRenderedContent(previewPanel) {
                         if (w > 0 && h > 0 && overlaps && style.display !== 'none' && style.visibility !== 'hidden') {
                             ctx.drawImage(icon, x, y, w, h);
                         }
-                    } catch (e) {
-                        console.warn('Failed to draw marker icon:', e);
+                    } catch (_e) {
+                        console.warn('Failed to draw marker icon:', _e);
                     }
                 }
 

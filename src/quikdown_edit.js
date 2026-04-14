@@ -6,6 +6,7 @@
 
 import quikdown_bd from './quikdown_bd.js';
 import { getRenderedContent } from './quikdown_edit_copy.js';
+import { isHRLine, fenceOpen, isFenceClose, classifyLine, looksLikeTableRow } from './quikdown_classify.js';
 
 // Default options
 const DEFAULT_OPTIONS = {
@@ -68,13 +69,28 @@ const FENCE_LIBRARIES = {
     },
     math: {
         check: () => typeof window.MathJax !== 'undefined',
-        script: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js',
+        script: 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js',
         beforeLoad: () => {
             // Configure MathJax before loading (must be set on window before script runs)
+            // Must match the config in ensureMathJaxLoaded() for consistent behavior
             if (!window.MathJax) {
                 window.MathJax = {
-                    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
-                    svg: { fontCache: 'global' },
+                    loader: { load: ['input/tex', 'output/svg'] },
+                    tex: {
+                        packages: { '[+]': ['ams'] },
+                        inlineMath: [['$', '$'], ['\\(', '\\)']],
+                        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                        processEscapes: true,
+                        processEnvironments: true
+                    },
+                    options: {
+                        renderActions: { addMenu: [] },
+                        ignoreHtmlClass: 'tex2jax_ignore',
+                        processHtmlClass: 'tex2jax_process'
+                    },
+                    svg: {
+                        fontCache: 'none'  // self-contained SVGs (required for copy-rendered)
+                    },
                     startup: { typeset: false }
                 };
             }
@@ -211,7 +227,14 @@ class QuikdownEditor {
             btn.title = `Switch to ${modeLabels[mode]} view`;
             toolbar.appendChild(btn);
         });
-        
+
+        // Mobile split toggle (hidden by default, shown via CSS on narrow viewports)
+        const splitToggle = document.createElement('button');
+        splitToggle.className = 'qde-btn qde-split-toggle';
+        splitToggle.textContent = 'Preview';
+        splitToggle.title = 'Toggle between source and preview in split mode';
+        toolbar.appendChild(splitToggle);
+
         // Undo/Redo buttons (if enabled)
         if (this.options.showUndoRedo) {
             const undoBtn = document.createElement('button');
@@ -296,6 +319,7 @@ class QuikdownEditor {
             .qde-toolbar {
                 display: flex;
                 align-items: center;
+                flex-wrap: wrap;
                 padding: 8px;
                 background: #f5f5f5;
                 border-bottom: 1px solid #ddd;
@@ -681,19 +705,45 @@ class QuikdownEditor {
                 background: #252525;
             }
             
-            /* Mobile responsive */
-            @media (max-width: 768px) {
-                .qde-mode-split .qde-editor {
-                    flex-direction: column;
-                }
+            /* Mobile split toggle — hidden by default */
+            .qde-split-toggle { display: none; }
 
-                .qde-mode-split .qde-source {
-                    border-right: none;
-                    border-bottom: 1px solid #ddd;
+            /* Mobile responsive — compact toolbar for all small screens */
+            @media (max-width: 720px) {
+                .qde-toolbar {
+                    padding: 6px;
+                    gap: 3px;
                 }
-                .qde-dark.qde-mode-split .qde-source {
-                    border-bottom-color: #444;
+                .qde-btn {
+                    padding: 5px 8px;
+                    font-size: 12px;
                 }
+                .qde-source, .qde-preview {
+                    padding: 10px;
+                }
+                .qde-textarea {
+                    padding: 10px;
+                }
+                /* Undo/Redo: show circular arrows instead of text */
+                .qde-btn[data-action="undo"] { font-size: 0; }
+                .qde-btn[data-action="undo"]::after { content: "\\21B6"; font-size: 14px; }
+                .qde-btn[data-action="redo"] { font-size: 0; }
+                .qde-btn[data-action="redo"]::after { content: "\\21B7"; font-size: 14px; }
+                /* Hide secondary utility buttons to reduce clutter */
+                .qde-btn[data-action="remove-hr"],
+                .qde-btn[data-action="lazy-linefeeds"],
+                .qde-btn[data-action="copy-rendered"] { display: none; }
+            }
+
+            /* Portrait mobile: drop split mode entirely */
+            @media (max-width: 720px) and (orientation: portrait) {
+                .qde-btn[data-mode="split"] { display: none; }
+                .qde-split-toggle { display: none !important; }
+                /* Fallback: if still in split mode, show source only */
+                .qde-mode-split .qde-source { border-right: none; }
+                .qde-mode-split .qde-preview { display: none; }
+                .qde-mode-split.qde-split-preview .qde-source { display: none; }
+                .qde-mode-split.qde-split-preview .qde-preview { display: block; }
             }
         `;
         
@@ -719,7 +769,15 @@ class QuikdownEditor {
             this.toolbar.addEventListener('click', (e) => {
                 const btn = e.target.closest('.qde-btn');
                 if (!btn) return;
-                
+
+                // Mobile split-toggle button
+                if (btn.classList.contains('qde-split-toggle')) {
+                    this.container.classList.toggle('qde-split-preview');
+                    const showingPreview = this.container.classList.contains('qde-split-preview');
+                    btn.textContent = showingPreview ? 'Source' : 'Preview';
+                    return;
+                }
+
                 if (btn.dataset.mode) {
                     this.setMode(btn.dataset.mode);
                 } else if (btn.dataset.action) {
@@ -762,8 +820,22 @@ class QuikdownEditor {
                 }
             }
         });
+
+        // On narrow portrait viewports, auto-switch out of split mode to source.
+        // Split is kept available on landscape where there is enough width.
+        if (typeof window.matchMedia === 'function') {
+            const portraitQuery = window.matchMedia('(max-width: 720px) and (orientation: portrait)');
+            const switchIfPortrait = () => {
+                if (portraitQuery.matches && this.currentMode === 'split') {
+                    this.setMode('source');
+                }
+            };
+            // Check after init's setMode() has run (microtask fires after sync code).
+            Promise.resolve().then(switchIfPortrait);
+            portraitQuery.addEventListener('change', switchIfPortrait);
+        }
     }
-    
+
     /**
      * Handle source textarea input
      */
@@ -1870,11 +1942,20 @@ class QuikdownEditor {
         // below would otherwise wipe it out — this used to be a no-op bug
         // where dark mode was lost on every setMode call).
         const wasDark = this.container.classList.contains('qde-dark');
+        const previousMode = this.currentMode;
 
         this.currentMode = mode;
         this.container.className = `qde-container qde-mode-${mode}`;
         if (wasDark) {
             this.container.classList.add('qde-dark');
+        }
+
+        // Reset mobile split-toggle button text
+        if (this.toolbar) {
+            const splitToggle = this.toolbar.querySelector('.qde-split-toggle');
+            if (splitToggle) {
+                splitToggle.textContent = 'Preview';
+            }
         }
 
         // Update toolbar buttons
@@ -1883,12 +1964,23 @@ class QuikdownEditor {
                 btn.classList.toggle('active', btn.dataset.mode === mode);
             });
         }
-        
-        // Make fence blocks non-editable when showing preview
-        if (mode !== 'source') {
+
+        // If the preview was hidden (source-only) it may have missed content
+        // updates. Re-render it now, including MathJax typesetting.
+        // Do NOT re-render if the preview was already visible — that would
+        // destroy MathJax-typeset SVG output with raw pre-typeset HTML.
+        if (mode !== 'source' && previousMode === 'source' && this._html) {
+            this.previewPanel.innerHTML = this._html;
             setTimeout(() => this.makeFencesNonEditable(), 0);
+            if (typeof window !== 'undefined' && window.MathJax && window.MathJax.typesetPromise) {
+                const mathElements = this.previewPanel.querySelectorAll('.math-display');
+                if (mathElements.length > 0) {
+                    window.MathJax.typesetPromise(Array.from(mathElements))
+                        .catch(() => {});
+                }
+            }
         }
-        
+
         // Trigger mode change event
         if (this.options.onModeChange) {
             this.options.onModeChange(mode);
@@ -2136,36 +2228,29 @@ class QuikdownEditor {
         const lines = (markdown || '').split('\n');
         const result = [];
         let inFence = false;
-        let fenceChar = null;  // '`' or '~'
-        let fenceLen = 0;      // length of opening fence marker
+        let openChar = null;
+        let openLen = 0;
 
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmed = line.trim();
 
-            // Track fence open/close (``` or ~~~, 3+ chars)
-            const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
-            if (fenceMatch) {
-                const matchChar = fenceMatch[1][0];
-                const matchLen = fenceMatch[1].length;
-                if (!inFence) {
+            // Track fence open/close
+            if (!inFence) {
+                const fo = fenceOpen(trimmed);
+                if (fo) {
                     inFence = true;
-                    fenceChar = matchChar;
-                    fenceLen = matchLen;
-                    result.push(line);
-                    continue;
-                } else if (matchChar === fenceChar && matchLen >= fenceLen && /^(`{3,}|~{3,})\s*$/.test(trimmed)) {
-                    // Closing fence: same char, at least as many chars, no trailing content
-                    inFence = false;
-                    fenceChar = null;
-                    fenceLen = 0;
+                    openChar = fo.char;
+                    openLen = fo.len;
                     result.push(line);
                     continue;
                 }
-            }
-
-            // Inside a fence — keep everything
-            if (inFence) {
+            } else {
+                if (isFenceClose(trimmed, openChar, openLen)) {
+                    inFence = false;
+                    openChar = null;
+                    openLen = 0;
+                }
                 result.push(line);
                 continue;
             }
@@ -2176,14 +2261,13 @@ class QuikdownEditor {
                 continue;
             }
 
-            // Check if this line is a standalone HR
-            const isHR = /^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed);
-            if (isHR) {
+            // Check if this line is a standalone HR (no ReDoS — linear scan)
+            if (isHRLine(trimmed)) {
                 // Table separator heuristic: immediately adjacent lines (no blank
                 // lines between) that look like table rows protect this HR-like line
                 const prevLine = i > 0 ? lines[i - 1].trim() : '';
                 const nextLine = i < lines.length - 1 ? lines[i + 1].trim() : '';
-                if (_looksLikeTableRow(prevLine) || _looksLikeTableRow(nextLine)) {
+                if (looksLikeTableRow(prevLine) || looksLikeTableRow(nextLine)) {
                     result.push(line);
                     continue;
                 }
@@ -2262,30 +2346,28 @@ class QuikdownEditor {
         //   'blockquote', 'table', 'heading', 'hr', 'paragraph'
         const items = [];
         let inFence = false;
-        let fenceChar = null;
-        let fenceLen = 0;
+        let openChar = null;
+        let openLen = 0;
 
         for (const rawLine of inputLines) {
             const line = rawLine;
             const trimmed = line.trim();
 
-            // Fence tracking
-            const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
-            if (fenceMatch && !inFence) {
-                inFence = true;
-                fenceChar = fenceMatch[1][0];
-                fenceLen  = fenceMatch[1].length;
-                items.push({ line, kind: 'fence-open' });
-                continue;
-            }
-            if (inFence) {
-                if (fenceMatch &&
-                    fenceMatch[1][0] === fenceChar &&
-                    fenceMatch[1].length >= fenceLen &&
-                    /^(`{3,}|~{3,})\s*$/.test(trimmed)) {
+            // Fence tracking via shared utilities
+            if (!inFence) {
+                const fo = fenceOpen(trimmed);
+                if (fo) {
+                    inFence = true;
+                    openChar = fo.char;
+                    openLen  = fo.len;
+                    items.push({ line, kind: 'fence-open' });
+                    continue;
+                }
+            } else {
+                if (isFenceClose(trimmed, openChar, openLen)) {
                     inFence = false;
-                    fenceChar = null;
-                    fenceLen = 0;
+                    openChar = null;
+                    openLen = 0;
                     items.push({ line, kind: 'fence-close' });
                 } else {
                     items.push({ line, kind: 'fence-body' });
@@ -2299,16 +2381,12 @@ class QuikdownEditor {
                 continue;
             }
 
-            // Categorize content lines so we can recognize adjacent same-kind blocks
-            let category = 'paragraph';
-            if (/^#{1,6}\s/.test(trimmed))                    category = 'heading';
-            else if (/^[-_*](\s*[-_*]){2,}\s*$/.test(trimmed)) category = 'hr';
-            else if (/^(\d+\.)\s/.test(trimmed))              category = 'list-ol';
-            else if (/^[-*+]\s/.test(trimmed))                category = 'list-ul';
-            else if (/^>/.test(trimmed))                      category = 'blockquote';
-            else if (/^\|/.test(trimmed))                     category = 'table';
+            // Categorize content lines (no ReDoS — classifyLine uses linear scan for HR)
+            let category = classifyLine(trimmed);
             // Indented continuation of a list (2+ leading spaces or tab)
-            else if (/^(?: {4}|\t| {2,}[-*+]| {2,}\d+\.)/.test(line)) category = 'list-cont';
+            if (category === 'paragraph' && /^(?: {4}|\t| {2,}[-*+]| {2,}\d+\.)/.test(line)) {
+                category = 'list-cont';
+            }
 
             items.push({ line, kind: 'content', category });
         }
@@ -2408,13 +2486,6 @@ class QuikdownEditor {
             if (style) style.remove();
         }
     }
-}
-
-// --- Internal helpers for removeHR fence/table awareness ---
-
-/** Heuristic: does this line look like a markdown table row? */
-function _looksLikeTableRow(line) {
-    return line.includes('|');
 }
 
 // Export

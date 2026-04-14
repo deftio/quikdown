@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage](https://img.shields.io/badge/coverage-95.3%25-brightgreen)](https://github.com/deftio/quikdown)
+[![Coverage](https://img.shields.io/badge/coverage-95.4%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-9.5KB-green.svg)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-9.7KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 A small, secure markdown parser and editor for browsers and Node.js. Three modules — use only what you need.
 
@@ -14,9 +14,9 @@ A small, secure markdown parser and editor for browsers and Node.js. Three modul
 - **quikdown_edit_standalone.js** (3.8 MB) — Offline/air-gapped editor. Same as above but bundles highlight.js, Mermaid, DOMPurify, Leaflet, and Three.js — no CDN required. See [Standalone Docs](docs/standalone-editor.md).
 - **quikdown_ast.js** / **quikdown_json.js** / **quikdown_yaml.js** / **quikdown_ast_html.js** — AST companion libraries for structured output.
 
-**[Try the Editor](https://deftio.github.io/quikdown/edit/)** | **[Examples](https://deftio.github.io/quikdown/examples/)** | **[Frameworks](https://deftio.github.io/quikdown/frameworks/)** | **[Downloads](https://deftio.github.io/quikdown/downloads/)** | **[Docs](docs/)**
+**[Live Site](https://deftio.github.io/quikdown/pages/)** | **[Try the Editor](https://deftio.github.io/quikdown/pages/edit/)** | **[Examples](https://deftio.github.io/quikdown/pages/examples/)** | **[Frameworks](https://deftio.github.io/quikdown/pages/frameworks/)** | **[Downloads](https://deftio.github.io/quikdown/pages/downloads/)** | **[Docs](docs/)**
 
-![quikdown editor in split mode with Mermaid diagram rendering](site/assets/editor-screenshot.png)
+![quikdown editor in split mode with Mermaid diagram rendering](pages/assets/editor-screenshot.png)
 *quikdown_edit in split mode — markdown source on the left, live rendered preview with Mermaid diagram on the right. Toolbar shows mode switching, undo/redo, copy, and linefeed controls.*
 
 ## Features
@@ -247,6 +247,10 @@ const unsafe = '<script>alert("XSS")</script> **bold**';
 const safe = quikdown(unsafe);
 // &lt;script&gt;alert("XSS")&lt;/script&gt; <strong>bold</strong>
 ```
+
+**Static analysis** — quikdown passes ESLint with [eslint-plugin-security](https://www.npmjs.com/package/eslint-plugin-security) at error level with zero findings. All regex patterns are verified free of catastrophic backtracking (ReDoS), and no dynamic `RegExp` construction is used. Security lint is enforced in CI on every build.
+
+For the full security model, see [docs/security.md](docs/security.md).
 
 ## Framework Integration
 

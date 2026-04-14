@@ -27,5 +27,14 @@ module.exports = defineConfig({
       name: 'chromium',
       use: { browserName: 'chromium' },
     },
+    {
+      name: 'mobile-chrome',
+      use: {
+        browserName: 'chromium',
+        viewport: { width: 375, height: 667 },
+        isMobile: true,
+      },
+      grep: /Mobile/,
+    },
   ],
 });

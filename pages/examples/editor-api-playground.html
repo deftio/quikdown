@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API playground — Editor example 11 · quikdown</title>
+  <meta name="description" content="Drive every quikdown editor public API method from code, not buttons. The toolbar is just sugar over a public API — this playground proves it. Live console log of every call.">
+  <meta name="keywords" content="quikdown editor api, headless markdown editor api, programmatic markdown editor, javascript markdown editor api">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/pages/examples/editor-api-playground.html">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="quikdown">
+  <meta property="og:title" content="quikdown editor — API playground">
+  <meta property="og:description" content="Every public API method as a button. The toolbar is just sugar over a public API.">
+  <meta property="og:image" content="https://deftio.github.io/quikdown/pages/assets/og-examples.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="quikdown editor API playground">
+  <meta name="twitter:description" content="Every editor method demonstrated programmatically with live console log.">
+
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <style>
+    .ap-page { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    .ap-header h1 {
+      font-size: 1.8rem;
+      margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .ap-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ap-header .crumbs a { color: #6b7280; }
+    .ap-header .lede { color: #4b5563; margin: 0 0 1.5rem 0; max-width: 70ch; }
+
+    .ap-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+    @media (max-width: 1000px) { .ap-grid { grid-template-columns: 1fr; } }
+
+    .ap-panel {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      max-height: 78vh;
+      overflow-y: auto;
+    }
+
+    .ap-section {
+      margin-bottom: 1rem;
+    }
+    .ap-section h3 {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #9550bb;
+      margin: 0 0 0.5rem 0;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid rgba(149, 80, 187, 0.15);
+      font-weight: 800;
+    }
+
+    .ap-btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .ap-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      background: #f8f9fb;
+      border: 1px solid #e6e8ee;
+      color: #1f2937;
+      cursor: pointer;
+      font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: all 0.18s;
+    }
+    .ap-btn:hover {
+      background: #f3e6ff;
+      color: #9550bb;
+      border-color: #9550bb;
+      transform: translateY(-1px);
+    }
+    .ap-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .ap-btn.danger { color: #c0392b; }
+    .ap-btn.danger:hover { background: #fde2e0; border-color: #c0392b; }
+
+    .ap-input {
+      width: 100%;
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      border: 1px solid #e6e8ee;
+      background: #ffffff;
+      color: #1f2937;
+      font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+      font-size: 0.78rem;
+      margin-top: 0.4rem;
+    }
+
+    .ap-editor-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    #ap-editor {
+      height: 480px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      border: 1px solid #e6e8ee;
+      background: #ffffff;
+    }
+
+    .ap-console {
+      background: #0c0c14;
+      color: #b388dd;
+      font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+      font-size: 0.78rem;
+      padding: 1rem;
+      border-radius: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      line-height: 1.5;
+    }
+    .ap-console-row { white-space: pre-wrap; word-break: break-all; }
+    .ap-console-row .ap-call { color: #d9b3ff; font-weight: 700; }
+    .ap-console-row .ap-arrow { color: #6b6b7c; }
+    .ap-console-row .ap-result { color: #aafabb; }
+
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+
+    /* Mark headless mode visually */
+    .headless-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ap-page">
+      <header class="ap-header">
+        <div class="crumbs"><a href="../../pages/examples/">Examples</a> › Track 3 — Editor › Example 10</div>
+        <h1>API playground <span class="headless-banner">★ showcase</span></h1>
+        <p class="lede">
+          Every public method on the editor, as a button. The toolbar is just sugar over a public API — this playground proves it. The editor below runs in <strong>headless mode</strong> (<code>showToolbar: false</code>); every action you take here goes through <code>editor.someMethod()</code>, just as it would from your own app code. The console at the bottom logs every call.
+        </p>
+      </header>
+
+      <div class="ap-grid">
+
+        <!-- API Panel -->
+        <aside class="ap-panel">
+
+          <div class="ap-section">
+            <h3>View mode</h3>
+            <div class="ap-btn-row">
+              <button class="ap-btn" data-call="setMode" data-arg="source">setMode('source')</button>
+              <button class="ap-btn" data-call="setMode" data-arg="split">setMode('split')</button>
+              <button class="ap-btn" data-call="setMode" data-arg="preview">setMode('preview')</button>
+            </div>
+          </div>
+
+          <div class="ap-section">
+            <h3>Theme</h3>
+            <div class="ap-btn-row">
+              <button class="ap-btn" data-call="setTheme" data-arg="light">setTheme('light')</button>
+              <button class="ap-btn" data-call="setTheme" data-arg="dark">setTheme('dark')</button>
+              <button class="ap-btn" data-call="setTheme" data-arg="auto">setTheme('auto')</button>
+              <button class="ap-btn" data-call="getTheme">getTheme()</button>
+            </div>
+          </div>
+
+          <div class="ap-section">
+            <h3>Content</h3>
+            <div class="ap-btn-row">
+              <button class="ap-btn" data-call="setMarkdown" data-arg-from="ap-set-md-input">setMarkdown(...)</button>
+              <button class="ap-btn" data-call="getMarkdown">getMarkdown()</button>
+              <button class="ap-btn" data-call="getHTML">getHTML()</button>
+            </div>
+            <input type="text" class="ap-input" id="ap-set-md-input" value="# New content\n\nFrom **setMarkdown** call." />
+          </div>
+
+          <div class="ap-section">
+            <h3>Edit history</h3>
+            <div class="ap-btn-row">
+              <button class="ap-btn" data-call="undo">undo()</button>
+              <button class="ap-btn" data-call="redo">redo()</button>
+              <button class="ap-btn" data-call="canUndo">canUndo()</button>
+              <button class="ap-btn" data-call="canRedo">canRedo()</button>
+              <button class="ap-btn danger" data-call="clearHistory">clearHistory()</button>
+            </div>
+          </div>
+
+          <div class="ap-section">
+            <h3>HR &amp; Linefeeds</h3>
+            <div class="ap-btn-row">
+              <button class="ap-btn" data-call="removeHR">removeHR()</button>
+              <button class="ap-btn" data-call="convertLazyLinefeeds">convertLazyLinefeeds()</button>
+              <button class="ap-btn" data-call="setLazyLinefeeds" data-arg="true">setLazyLinefeeds(true)</button>
+              <button class="ap-btn" data-call="setLazyLinefeeds" data-arg="false">setLazyLinefeeds(false)</button>
+              <button class="ap-btn" data-call="getLazyLinefeeds">getLazyLinefeeds()</button>
+            </div>
+          </div>
+
+          <div class="ap-section">
+            <h3>Debounce</h3>
+            <div class="ap-btn-row">
+              <button class="ap-btn" data-call="setDebounceDelay" data-arg="0">setDebounceDelay(0)</button>
+              <button class="ap-btn" data-call="setDebounceDelay" data-arg="50">setDebounceDelay(50)</button>
+              <button class="ap-btn" data-call="setDebounceDelay" data-arg="500">setDebounceDelay(500)</button>
+              <button class="ap-btn" data-call="getDebounceDelay">getDebounceDelay()</button>
+            </div>
+          </div>
+
+          <div class="ap-section">
+            <h3>Clipboard</h3>
+            <div class="ap-btn-row">
+              <button class="ap-btn" data-call="copy" data-arg="markdown">copy('markdown')</button>
+              <button class="ap-btn" data-call="copy" data-arg="html">copy('html')</button>
+              <button class="ap-btn" data-call="copyRendered">copyRendered()</button>
+            </div>
+          </div>
+
+          <div class="ap-section">
+            <h3>Static helpers (no instance)</h3>
+            <div class="ap-btn-row">
+              <button class="ap-btn" data-static="removeHRFromMarkdown">QuikdownEditor.removeHRFromMarkdown(getMarkdown())</button>
+              <button class="ap-btn" data-static="convertLazyLinefeeds">QuikdownEditor.convertLazyLinefeeds(getMarkdown())</button>
+            </div>
+          </div>
+
+          <div class="ap-section">
+            <h3>Lifecycle</h3>
+            <div class="ap-btn-row">
+              <button class="ap-btn danger" data-call="destroy">destroy() &amp; rebuild</button>
+            </div>
+          </div>
+
+        </aside>
+
+        <!-- Editor + Console -->
+        <div class="ap-editor-col">
+          <div id="ap-editor"></div>
+          <div>
+            <div style="display:flex; align-items:center; justify-content: space-between; margin-bottom: 0.4rem;">
+              <strong style="font-size: 0.85rem; color: #1f2937;">Console</strong>
+              <button class="ap-btn" id="ap-clear-console">clear</button>
+            </div>
+            <div class="ap-console" id="ap-console"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <nav class="ex-nav">
+        <a href="../../pages/examples/demo-headless.html">← Previous: Headless mode</a>
+        <a href="../../pages/examples/">All examples</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+
+    let editor;
+    const console_el = document.getElementById('ap-console');
+    const $ = id => document.getElementById(id);
+
+    function fmt(v) {
+      if (v === undefined) return 'undefined';
+      if (v === null) return 'null';
+      if (typeof v === 'string') {
+        const s = v.length > 80 ? v.slice(0, 77) + '...' : v;
+        return JSON.stringify(s);
+      }
+      if (typeof v === 'object') {
+        try { return JSON.stringify(v).slice(0, 80); } catch { return '[object]'; }
+      }
+      return String(v);
+    }
+
+    function logCall(call, result) {
+      const row = document.createElement('div');
+      row.className = 'ap-console-row';
+      row.innerHTML = '<span class="ap-call">editor.' + call + '</span> <span class="ap-arrow">→</span> <span class="ap-result">' + fmt(result) + '</span>';
+      console_el.appendChild(row);
+      console_el.scrollTop = console_el.scrollHeight;
+    }
+
+    function logStatic(call, result) {
+      const row = document.createElement('div');
+      row.className = 'ap-console-row';
+      row.innerHTML = '<span class="ap-call">QuikdownEditor.' + call + '</span> <span class="ap-arrow">→</span> <span class="ap-result">' + fmt(result) + '</span>';
+      console_el.appendChild(row);
+      console_el.scrollTop = console_el.scrollHeight;
+    }
+
+    function buildEditor() {
+      if (editor) editor.destroy();
+      editor = new QuikdownEditor('#ap-editor', {
+        mode: 'split',
+        theme: 'auto',
+        showToolbar: false,    // ← headless. ALL actions go through public API.
+        plugins: { highlightjs: true }
+      });
+      window.editor = editor;
+      editor.setMarkdown(`# API playground
+
+Click any button on the left to call the corresponding **public API method**.
+The console below logs every call and its return value.
+
+The editor here runs **headless** — there is no built-in toolbar. Every
+action you see is going through code. Your own app would do the same.
+
+---
+
+Try:
+- \`undo()\` after typing — see history work
+- \`setTheme('dark')\` — runtime theme switch
+- \`removeHR()\` — strips this horizontal rule
+- \`destroy() & rebuild\` — full lifecycle
+
+\`\`\`javascript
+const editor = new QuikdownEditor('#editor', {
+  showToolbar: false  // headless
+});
+
+// Drive it from code
+editor.setMode('preview');
+editor.setTheme('dark');
+editor.undo();
+\`\`\``);
+    }
+
+    buildEditor();
+
+    // ----- Wire instance buttons -----
+    document.querySelectorAll('[data-call]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const call = btn.dataset.call;
+        let arg = btn.dataset.arg;
+        const argFrom = btn.dataset.argFrom;
+        if (argFrom) {
+          arg = $(argFrom).value.replace(/\\n/g, '\n');
+        }
+
+        // Special-case destroy: also rebuild so the playground stays usable
+        if (call === 'destroy') {
+          editor.destroy();
+          logCall('destroy()', '(rebuilding...)');
+          setTimeout(() => {
+            buildEditor();
+            logCall('new QuikdownEditor(...)', '(rebuilt)');
+          }, 100);
+          return;
+        }
+
+        // Convert string arg to right type
+        let realArg = arg;
+        if (arg === 'true') realArg = true;
+        else if (arg === 'false') realArg = false;
+        else if (arg !== undefined && !isNaN(Number(arg))) realArg = Number(arg);
+
+        try {
+          const result = realArg !== undefined
+            ? editor[call](realArg)
+            : editor[call]();
+          const printArg = realArg !== undefined ? fmt(realArg) : '';
+          logCall(`${call}(${printArg})`, result);
+        } catch (e) {
+          logCall(`${call}(${fmt(realArg)})`, 'ERROR: ' + e.message);
+        }
+      });
+    });
+
+    // ----- Wire static method buttons -----
+    document.querySelectorAll('[data-static]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const call = btn.dataset.static;
+        try {
+          const md = editor.getMarkdown();
+          const result = QuikdownEditor[call](md);
+          logStatic(`${call}(getMarkdown())`, result);
+        } catch (e) {
+          logStatic(`${call}()`, 'ERROR: ' + e.message);
+        }
+      });
+    });
+
+    $('ap-clear-console').addEventListener('click', () => {
+      console_el.innerHTML = '';
+    });
+  </script>
+  <script src="../../pages/scripts/example-page.js" defer></script>
+</body>
+</html>

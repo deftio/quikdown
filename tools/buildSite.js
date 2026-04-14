@@ -3,20 +3,21 @@
  * buildSite.js
  *
  * Static site builder for the quikdown website. Reads HTML templates from
- * site/templates/, substitutes placeholders, and writes plain .html files
- * to the project root and per-page subdirectories.
+ * pages/templates/, substitutes placeholders, and writes plain .html files
+ * into the pages/ directory.
  *
  * No template engine. No framework. Just file copy + string replace.
  *
  * Placeholders:
- *   {{NAV_HTML}}        — contents of site/components/nav.html
- *   {{FOOTER_HTML}}     — contents of site/components/footer.html
+ *   {{NAV_HTML}}        — contents of pages/components/nav.html
+ *   {{FOOTER_HTML}}     — contents of pages/components/footer.html
  *   {{VERSION}}         — package.json version
  *   {{COVERAGE}}        — coverage percentage from coverage-summary.json
  *   {{SIZE_CORE}}       — minified bundle size in KB for quikdown
  *   {{SIZE_BD}}         — minified bundle size for quikdown_bd
  *   {{SIZE_EDIT}}       — minified bundle size for quikdown_edit
  *   {{YEAR}}            — current year
+ *   {{ROOT}}            — relative path to repo root (computed per page)
  */
 import fs from 'fs';
 import path from 'path';
@@ -31,18 +32,18 @@ const root = path.resolve(__dirname, '..');
 // ----- Page mapping -----
 // Each entry: { template: source HTML, output: destination path }
 const PAGES = [
-    { template: 'landing.html',      output: 'index.html' },
-    { template: 'edit.html',         output: 'edit/index.html' },
-    { template: 'examples-hub.html', output: 'examples/index.html' },
-    { template: 'docs.html',         output: 'docs/index.html' },
-    { template: 'changelog.html',    output: 'changelog/index.html' },
-    { template: 'downloads.html',   output: 'downloads/index.html' },
-    { template: 'frameworks.html',  output: 'frameworks/index.html' },
+    { template: 'landing.html',      output: 'pages/index.html' },
+    { template: 'edit.html',         output: 'pages/edit/index.html' },
+    { template: 'examples-hub.html', output: 'pages/examples/index.html' },
+    { template: 'docs.html',         output: 'pages/docs/index.html' },
+    { template: 'changelog.html',    output: 'pages/changelog/index.html' },
+    { template: 'downloads.html',   output: 'pages/downloads/index.html' },
+    { template: 'frameworks.html',  output: 'pages/frameworks/index.html' },
 ];
 
 // ----- Read shared partials -----
 function readPartial(name) {
-    const p = path.join(root, 'site', 'components', name);
+    const p = path.join(root, 'pages', 'components', name);
     if (!fs.existsSync(p)) {
         console.warn(`buildSite: partial not found: ${name}`);
         return '';
@@ -122,16 +123,22 @@ function substitute(template, placeholders, warnOnUnknown = false) {
 
 // ----- Build a single page -----
 function buildPage(entry, placeholders) {
-    const tmplPath = path.join(root, 'site', 'templates', entry.template);
+    const tmplPath = path.join(root, 'pages', 'templates', entry.template);
     if (!fs.existsSync(tmplPath)) {
         console.warn(`buildSite: template missing: ${entry.template} (skipping)`);
         return false;
     }
     const template = fs.readFileSync(tmplPath, 'utf-8');
+    // Compute ROOT relative path based on output depth.
+    // pages/index.html (depth 1) → ROOT = ".."
+    // pages/edit/index.html (depth 2) → ROOT = "../.."
+    const depth = entry.output.split('/').length - 1;
+    const ROOT = Array(depth).fill('..').join('/');
+    const pagePlaceholders = { ...placeholders, ROOT };
     // Substitute twice so placeholders inside injected partials (e.g.
     // {{VERSION}} inside nav.html) get resolved on the second pass.
-    let html = substitute(template, placeholders, false);
-    html = substitute(html, placeholders, true);
+    let html = substitute(template, pagePlaceholders, false);
+    html = substitute(html, pagePlaceholders, true);
     const outPath = path.join(root, entry.output);
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, html);
@@ -156,8 +163,8 @@ function buildSitemap(builtPages) {
 ${urls}
 </urlset>
 `;
-    fs.writeFileSync(path.join(root, 'sitemap.xml'), xml);
-    console.log('  ✓ sitemap.xml');
+    fs.writeFileSync(path.join(root, 'pages', 'sitemap.xml'), xml);
+    console.log('  ✓ pages/sitemap.xml');
 }
 
 // ----- Robots.txt -----
@@ -165,10 +172,10 @@ function buildRobots() {
     const txt = `User-agent: *
 Allow: /
 
-Sitemap: https://deftio.github.io/quikdown/sitemap.xml
+Sitemap: https://deftio.github.io/quikdown/pages/sitemap.xml
 `;
-    fs.writeFileSync(path.join(root, 'robots.txt'), txt);
-    console.log('  ✓ robots.txt');
+    fs.writeFileSync(path.join(root, 'pages', 'robots.txt'), txt);
+    console.log('  ✓ pages/robots.txt');
 }
 
 // ----- version.json artifact -----
@@ -184,12 +191,12 @@ function buildVersionJson(placeholders) {
         sizeEdit:  placeholders.SIZE_EDIT,
         generated: new Date().toISOString(),
     };
-    fs.mkdirSync(path.join(root, 'site'), { recursive: true });
+    fs.mkdirSync(path.join(root, 'pages'), { recursive: true });
     fs.writeFileSync(
-        path.join(root, 'site', 'version.json'),
+        path.join(root, 'pages', 'version.json'),
         JSON.stringify(out, null, 2) + '\n'
     );
-    console.log('  ✓ site/version.json');
+    console.log('  ✓ pages/version.json');
 }
 
 // ----- downloads.json artifact -----
@@ -228,10 +235,10 @@ function buildDownloadsJson() {
         entries.push(entry);
     }
     fs.writeFileSync(
-        path.join(root, 'site', 'downloads.json'),
+        path.join(root, 'pages', 'downloads.json'),
         JSON.stringify(entries, null, 2) + '\n'
     );
-    console.log(`  ✓ site/downloads.json (${gzCount} .gz files built)`);
+    console.log(`  ✓ pages/downloads.json (${gzCount} .gz files built)`);
 }
 
 // ----- Main -----
