@@ -69,13 +69,28 @@ const FENCE_LIBRARIES = {
     },
     math: {
         check: () => typeof window.MathJax !== 'undefined',
-        script: 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js',
+        script: 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js',
         beforeLoad: () => {
             // Configure MathJax before loading (must be set on window before script runs)
+            // Must match the config in ensureMathJaxLoaded() for consistent behavior
             if (!window.MathJax) {
                 window.MathJax = {
-                    tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
-                    svg: { fontCache: 'global' },
+                    loader: { load: ['input/tex', 'output/svg'] },
+                    tex: {
+                        packages: { '[+]': ['ams'] },
+                        inlineMath: [['$', '$'], ['\\(', '\\)']],
+                        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                        processEscapes: true,
+                        processEnvironments: true
+                    },
+                    options: {
+                        renderActions: { addMenu: [] },
+                        ignoreHtmlClass: 'tex2jax_ignore',
+                        processHtmlClass: 'tex2jax_process'
+                    },
+                    svg: {
+                        fontCache: 'none'  // self-contained SVGs (required for copy-rendered)
+                    },
                     startup: { typeset: false }
                 };
             }
@@ -1927,6 +1942,7 @@ class QuikdownEditor {
         // below would otherwise wipe it out — this used to be a no-op bug
         // where dark mode was lost on every setMode call).
         const wasDark = this.container.classList.contains('qde-dark');
+        const previousMode = this.currentMode;
 
         this.currentMode = mode;
         this.container.className = `qde-container qde-mode-${mode}`;
@@ -1948,13 +1964,21 @@ class QuikdownEditor {
                 btn.classList.toggle('active', btn.dataset.mode === mode);
             });
         }
-        
-        // When switching to a mode that shows the preview, ensure the
-        // preview panel has current content (it may have been skipped if
-        // content was loaded while in source-only mode).
-        if (mode !== 'source' && this._html) {
+
+        // If the preview was hidden (source-only) it may have missed content
+        // updates. Re-render it now, including MathJax typesetting.
+        // Do NOT re-render if the preview was already visible — that would
+        // destroy MathJax-typeset SVG output with raw pre-typeset HTML.
+        if (mode !== 'source' && previousMode === 'source' && this._html) {
             this.previewPanel.innerHTML = this._html;
             setTimeout(() => this.makeFencesNonEditable(), 0);
+            if (typeof window !== 'undefined' && window.MathJax && window.MathJax.typesetPromise) {
+                const mathElements = this.previewPanel.querySelectorAll('.math-display');
+                if (mathElements.length > 0) {
+                    window.MathJax.typesetPromise(Array.from(mathElements))
+                        .catch(() => {});
+                }
+            }
         }
 
         // Trigger mode change event
