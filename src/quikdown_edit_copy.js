@@ -1418,7 +1418,7 @@ export async function getRenderedContent(previewPanel) {
                 if (copyToClipboard(fragment)) {
                     return { success: true, html: htmlContent, text };
                 }
-                throw new Error('Fallback copy failed');
+                throw new Error('Fallback copy failed', { cause: modernErr });
             }
         } else {
             // Windows/Linux approach (like squibview)
@@ -1448,7 +1448,7 @@ export async function getRenderedContent(previewPanel) {
                 
                 const successful = document.execCommand('copy');
                 if (!successful) {
-                    throw new Error('Fallback copy failed');
+                    throw new Error('Fallback copy failed', { cause: modernErr });
                 }
                 return { success: true, html: htmlContent, text };
             } finally {

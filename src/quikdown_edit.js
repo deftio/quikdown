@@ -1090,8 +1090,8 @@ class QuikdownEditor {
         const reverse = (element) => {
             // Get the language from data attribute
             const lang = element.getAttribute('data-qd-lang') || '';
-            let content = '';
-            
+            let content;
+
             // For syntax-highlighted code, extract the raw text
             if (element.querySelector('code.hljs')) {
                 const code = element.querySelector('code.hljs');

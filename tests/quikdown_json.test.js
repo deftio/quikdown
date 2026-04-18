@@ -90,6 +90,46 @@ describe('quikdown_json converter', () => {
         });
     });
 
+    describe('URL underscore handling (issue #3)', () => {
+        test('should not apply emphasis to underscores in link URLs', () => {
+            const result = JSON.parse(quikdown_json('[My Link](https://example.org/file_mytest_123.pdf)'));
+            const link = result.children[0].children[0];
+            expect(link.type).toBe('link');
+            expect(link.url).toBe('https://example.org/file_mytest_123.pdf');
+        });
+
+        test('should not apply bold to double underscores in URLs', () => {
+            const result = JSON.parse(quikdown_json('[Docs](https://docs.python.org/3/ref/__init__.html)'));
+            const link = result.children[0].children[0];
+            expect(link.type).toBe('link');
+            expect(link.url).toBe('https://docs.python.org/3/ref/__init__.html');
+            const strongNodes = result.children[0].children.filter(c => c.type === 'strong');
+            expect(strongNodes.length).toBe(0);
+        });
+
+        test('should not apply emphasis to underscores in image URLs', () => {
+            const result = JSON.parse(quikdown_json('![photo](https://example.com/my_photo_album/img_001.jpg)'));
+            const img = result.children[0].children[0];
+            expect(img.type).toBe('image');
+            expect(img.url).toBe('https://example.com/my_photo_album/img_001.jpg');
+        });
+
+        test('should not apply strikethrough to tildes in URLs', () => {
+            const result = JSON.parse(quikdown_json('[Archive](https://example.com/~~old~~/page)'));
+            const link = result.children[0].children[0];
+            expect(link.type).toBe('link');
+            expect(link.url).toBe('https://example.com/~~old~~/page');
+        });
+
+        test('should preserve emphasis in text alongside underscored URLs', () => {
+            const result = JSON.parse(quikdown_json('_italic_ and [link](https://example.com/path_name_here.html)'));
+            const children = result.children[0].children;
+            expect(children.some(c => c.type === 'em')).toBe(true);
+            const link = children.find(c => c.type === 'link');
+            expect(link.url).toBe('https://example.com/path_name_here.html');
+        });
+    });
+
     describe('Roundtrip', () => {
         test('should parse and stringify back to equivalent structure', () => {
             const markdown = '# Hello\n\nWorld';

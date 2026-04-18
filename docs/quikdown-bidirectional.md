@@ -197,7 +197,7 @@ const markdown = quikdown_bd.toMarkdown(html);
 
 ## Performance
 
-- **Bundle Size**: 14.1KB minified
+- **Bundle Size**: 15.8KB minified
 - **Speed**: ~1000 documents/second on modern hardware
 - **Memory**: Minimal overhead with DOM walking approach
 - **Round-trip**: <5ms for typical documents

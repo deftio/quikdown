@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.9
+ * @version 1.2.10
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -224,7 +224,7 @@ function looksLikeTableRow(line) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.9';
+const quikdownVersion = '1.2.10';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -465,45 +465,15 @@ function quikdown(markdown, options = {}) {
     // to all text content.  This runs on the output of steps 1-3, so
     // it sees text inside headings, blockquotes, table cells, list
     // items, and paragraph text.
-
-    // Images (must come before links — ![alt](src) vs [text](url))
-    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-        const sanitizedSrc = sanitizeUrl(src, options.allow_unsafe_urls);
-        // Bidirectional attributes are only exercised via quikdown_bd bundle.
-        /* istanbul ignore next - bd-only branch */
-        const altAttr = bidirectional && alt ? ` data-qd-alt="${escapeHtml(alt)}"` : '';
-        /* istanbul ignore next - bd-only branch */
-        const srcAttr = bidirectional ? ` data-qd-src="${escapeHtml(src)}"` : '';
-        return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${alt}"${altAttr}${srcAttr}${dataQd('!')}>`;
-    });
-
-    // Links
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, href) => {
-        const sanitizedHref = sanitizeUrl(href, options.allow_unsafe_urls);
-        const isExternal = /^https?:\/\//i.test(sanitizedHref);
-        const rel = isExternal ? ' rel="noopener noreferrer"' : '';
-        /* istanbul ignore next - bd-only branch */
-        const textAttr = bidirectional ? ` data-qd-text="${escapeHtml(text)}"` : '';
-        return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${textAttr}${dataQd('[')}>${text}</a>`;
-    });
-
-    // Autolinks — bare https?:// URLs become clickable <a> tags
-    html = html.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (match, prefix, url) => {
-        const sanitizedUrl = sanitizeUrl(url, options.allow_unsafe_urls);
-        return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>`;
-    });
-
-    // Bold, italic, strikethrough
-    // Order matters: ** before * (so ** isn't consumed as two *s)
-    const inlinePatterns = [
-        [/\*\*(.+?)\*\*/g, 'strong', '**'],
-        [/__(.+?)__/g, 'strong', '__'],
-        [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em', '*'],
-        [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em', '_'],
-        [/~~(.+?)~~/g, 'del', '~~']
-    ];
-    inlinePatterns.forEach(([pattern, tag, marker]) => {
-        html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(marker)}>$1</${tag}>`);
+    //
+    // Uses a character-walking scanner so that URL content (href, src)
+    // is emitted verbatim — emphasis markers inside URLs are never
+    // interpreted.  Link *text* is recursively scanned (emphasis in
+    // link text is valid markdown).
+    html = scanInline(html, getAttr, dataQd, sanitizeUrl, {
+        bidirectional,
+        allow_unsafe_urls: options.allow_unsafe_urls,
+        escapeHtml
     });
 
     // ── Step 5: Line breaks + paragraph wrapping ──
@@ -955,6 +925,149 @@ function processLists(text, getAttr, inline_styles, bidirectional) {
     }
 
     return result.join('\n');
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  Inline scanner (character-walking)
+// ════════════════════════════════════════════════════════════════════
+
+/**
+ * Character-walking inline formatter.  Processes images, links, autolinks,
+ * bold, strikethrough, and italic in priority order.  URL content is emitted
+ * verbatim — emphasis markers inside URLs are never interpreted (fixes #3).
+ *
+ * @param {string}   t           Input (HTML-escaped, blocks already rendered)
+ * @param {Function} getAttr     Attribute factory (class or style)
+ * @param {Function} dataQd      Bidirectional marker factory
+ * @param {Function} sanitizeUrl URL sanitizer
+ * @param {Object}   opts        { bidirectional, allow_unsafe_urls, escapeHtml }
+ * @returns {string}
+ */
+function scanInline(t, getAttr, dataQd, sanitizeUrl, opts) {
+    const { bidirectional, allow_unsafe_urls, escapeHtml } = opts;
+    let out = '', i = 0, j, end, start, close, pos, inner,
+        lineEnd, searchEnd, runEnd, sanitized, delim, delimC, tag, qd;
+
+    while (i < t.length) {
+        const c = t[i];
+
+        // 1. Image: ![alt](src)
+        if (c === '!' && t[i + 1] === '[') {
+            j = t.indexOf(']', i + 2);
+            if (j !== -1 && t[j + 1] === '(') {
+                end = t.indexOf(')', j + 2);
+                if (end !== -1 && end > j + 2) {
+                    const alt = t.slice(i + 2, j), src = t.slice(j + 2, end);
+                    sanitized = sanitizeUrl(src, allow_unsafe_urls);
+                    /* istanbul ignore next -- bd-only */
+                    out += `<img${getAttr('img')} src="${sanitized}" alt="${alt}"`
+                        + (bidirectional && alt ? ` data-qd-alt="${escapeHtml(alt)}"` : '')
+                        + (bidirectional ? ` data-qd-src="${escapeHtml(src)}"` : '')
+                        + `${dataQd('!')}>`;
+                    i = end + 1; continue;
+                }
+            }
+        }
+
+        // 2. Link: [text](href)
+        if (c === '[') {
+            j = t.indexOf(']', i + 1);
+            if (j !== -1 && (t.indexOf('[', i + 1) === -1 || t.indexOf('[', i + 1) >= j)
+                && t[j + 1] === '(') {
+                end = t.indexOf(')', j + 2);
+                if (end !== -1) {
+                    const lt = t.slice(i + 1, j), href = t.slice(j + 2, end);
+                    if (lt && href) {
+                        sanitized = sanitizeUrl(href, allow_unsafe_urls);
+                        const ext = /^https?:\/\//i.test(sanitized);
+                        /* istanbul ignore next -- bd-only */
+                        out += `<a${getAttr('a')} href="${sanitized}"`
+                            + (ext ? ' rel="noopener noreferrer"' : '')
+                            + (bidirectional ? ` data-qd-text="${escapeHtml(lt)}"` : '')
+                            + `${dataQd('[')}>` + scanInline(lt, getAttr, dataQd, sanitizeUrl, opts) + '</a>';
+                        i = end + 1; continue;
+                    }
+                }
+            }
+        }
+
+        // 3. Autolink: http(s)://…
+        if (c === 'h' && t[i + 1] === 't' && t[i + 2] === 't' && t[i + 3] === 'p'
+            && (i === 0 || /\s/.test(t[i - 1]))) {
+            const isS = t[i + 4] === 's', cp = isS ? i + 5 : i + 4;
+            if (t[cp] === ':' && t[cp + 1] === '/' && t[cp + 2] === '/') {
+                end = cp + 3;
+                while (end < t.length && !/[\s<]/.test(t[end])) end++;
+                const url = t.slice(i, end);
+                sanitized = sanitizeUrl(url, allow_unsafe_urls);
+                out += `<a${getAttr('a')} href="${sanitized}" rel="noopener noreferrer">${url}</a>`;
+                i = end; continue;
+            }
+        }
+
+        // 4. Two-char delimiters: ** __ ~~
+        delim = null;
+        if      (c === '*' && t[i + 1] === '*') { delim = '**'; delimC = '*'; tag = 'strong'; qd = '**'; }
+        else if (c === '_' && t[i + 1] === '_') { delim = '__'; delimC = '_'; tag = 'strong'; qd = '__'; }
+        else if (c === '~' && t[i + 1] === '~') { delim = '~~'; delimC = '~'; tag = 'del';    qd = '~~'; }
+        if (delim) {
+            start = i + 2;
+            lineEnd = t.indexOf('\n', start);
+            searchEnd = lineEnd === -1 ? t.length : lineEnd;
+            inner = null;
+            for (pos = start; pos < searchEnd;) {
+                close = t.indexOf(delim, pos);
+                if (close === -1 || close >= searchEnd) break;
+                if (delimC !== '~') {
+                    runEnd = close + 2;
+                    while (runEnd < searchEnd && t[runEnd] === delimC) runEnd++;
+                    inner = t.slice(start, runEnd - 2);
+                    if (!inner) { pos = close + 1; inner = null; continue; }
+                    end = runEnd;
+                } else {
+                    inner = t.slice(start, close);
+                    if (!inner) { pos = close + 1; inner = null; continue; }
+                    end = close + 2;
+                }
+                break;
+            }
+            if (inner) {
+                out += `<${tag}${getAttr(tag)}${dataQd(qd)}>`
+                    + scanInline(inner, getAttr, dataQd, sanitizeUrl, opts) + `</${tag}>`;
+                i = end; continue;
+            }
+        }
+
+        // 5. Single emphasis: * or _
+        if ((c === '*' && t[i + 1] !== '*' && (i === 0 || t[i - 1] !== '*'))
+         || (c === '_' && t[i + 1] !== '_' && (i === 0 || t[i - 1] !== '_'))) {
+            inner = null;
+            for (j = i + 1; j < t.length; j++) {
+                if (t[j] === '\n') break;
+                if (t[j] === c && t[j - 1] !== c && t[j + 1] !== c) {
+                    inner = t.slice(i + 1, j);
+                    /* istanbul ignore next -- guards above prevent empty inner */
+                    if (inner) { end = j + 1; break; }
+                }
+            }
+            if (inner) {
+                out += `<em${getAttr('em')}${dataQd(c)}>`
+                    + scanInline(inner, getAttr, dataQd, sanitizeUrl, opts) + '</em>';
+                i = end; continue;
+            }
+        }
+
+        // 6. Plain text — advance to next potential marker
+        for (j = i + 1; j < t.length; j++) {
+            const ch = t[j];
+            if (ch === '!' || ch === '[' || ch === '*' || ch === '_' || ch === '~') break;
+            if (ch === 'h' && t[j + 1] === 't' && t[j + 2] === 't' && t[j + 3] === 'p') break;
+        }
+        out += t.slice(i, j);
+        i = j;
+    }
+
+    return out;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -2871,7 +2984,7 @@ async function getRenderedContent(previewPanel) {
                 if (copyToClipboard(fragment)) {
                     return { success: true, html: htmlContent, text };
                 }
-                throw new Error('Fallback copy failed');
+                throw new Error('Fallback copy failed', { cause: modernErr });
             }
         } else {
             // Windows/Linux approach (like squibview)
@@ -2901,7 +3014,7 @@ async function getRenderedContent(previewPanel) {
                 
                 const successful = document.execCommand('copy');
                 if (!successful) {
-                    throw new Error('Fallback copy failed');
+                    throw new Error('Fallback copy failed', { cause: modernErr });
                 }
                 return { success: true, html: htmlContent, text };
             } finally {
@@ -4006,8 +4119,8 @@ class QuikdownEditor {
         const reverse = (element) => {
             // Get the language from data attribute
             const lang = element.getAttribute('data-qd-lang') || '';
-            let content = '';
-            
+            let content;
+
             // For syntax-highlighted code, extract the raw text
             if (element.querySelector('code.hljs')) {
                 const code = element.querySelector('code.hljs');

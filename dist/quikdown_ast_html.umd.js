@@ -1,6 +1,6 @@
 /**
  * quikdown_ast_html - AST to HTML Markdown Parser
- * @version 1.2.9
+ * @version 1.2.10
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -19,7 +19,7 @@
      */
 
     // Version will be injected at build time
-    const quikdownVersion$1 = '1.2.9';
+    const quikdownVersion$1 = '1.2.10';
 
     // Safety limit to prevent infinite loops in list parsing
     const MAX_LOOP_ITERATIONS = 1000;
@@ -340,8 +340,6 @@
         let remaining = text;
 
         while (remaining.length > 0) {
-            let matched = false;
-
             // Line break (1+ trailing spaces or explicit \n after processing)
             // Handle inline line breaks (two spaces at end of line or backslash before newline)
             const brMatch = remaining.match(/^(.+?)(?: {2}|\\\n|\n)/);
@@ -358,7 +356,6 @@
                     }
                     nodes.push({ type: 'br' });
                     remaining = afterText;
-                    matched = true;
                     continue;
                 }
             }
@@ -372,7 +369,6 @@
                     url: imgMatch[2].trim()  // Forgiving: trim whitespace in URL
                 });
                 remaining = remaining.slice(imgMatch[0].length);
-                matched = true;
                 continue;
             }
 
@@ -385,7 +381,6 @@
                     children: parseInlineContent(linkMatch[1])
                 });
                 remaining = remaining.slice(linkMatch[0].length);
-                matched = true;
                 continue;
             }
 
@@ -397,7 +392,6 @@
                     value: codeMatch[1]
                 });
                 remaining = remaining.slice(codeMatch[0].length);
-                matched = true;
                 continue;
             }
 
@@ -409,7 +403,6 @@
                     children: parseInlineContent(boldMatch[2])
                 });
                 remaining = remaining.slice(boldMatch[0].length);
-                matched = true;
                 continue;
             }
 
@@ -421,7 +414,6 @@
                     children: parseInlineContent(strikeMatch[1])
                 });
                 remaining = remaining.slice(strikeMatch[0].length);
-                matched = true;
                 continue;
             }
 
@@ -433,7 +425,6 @@
                     children: parseInlineContent(emMatch[2])
                 });
                 remaining = remaining.slice(emMatch[0].length);
-                matched = true;
                 continue;
             }
 
@@ -446,27 +437,24 @@
                     children: [{ type: 'text', value: urlMatch[1] }]
                 });
                 remaining = remaining.slice(urlMatch[0].length);
-                matched = true;
                 continue;
             }
 
             // Plain text - consume until next potential inline element or end
-            if (!matched) {
-                // Find next potential inline marker
-                const nextMarker = remaining.search(/[`*_~![\\n]|https?:\/\//);
-                if (nextMarker === -1) {
-                    // No more markers, consume rest as text
-                    nodes.push({ type: 'text', value: remaining });
-                    break;
-                } else if (nextMarker === 0) {
-                    // Current char is a marker but didn't match - consume it as text
-                    nodes.push({ type: 'text', value: remaining[0] });
-                    remaining = remaining.slice(1);
-                } else {
-                    // Consume text up to next marker
-                    nodes.push({ type: 'text', value: remaining.slice(0, nextMarker) });
-                    remaining = remaining.slice(nextMarker);
-                }
+            // Find next potential inline marker
+            const nextMarker = remaining.search(/[`*_~![\\n]|https?:\/\//);
+            if (nextMarker === -1) {
+                // No more markers, consume rest as text
+                nodes.push({ type: 'text', value: remaining });
+                break;
+            } else if (nextMarker === 0) {
+                // Current char is a marker but didn't match - consume it as text
+                nodes.push({ type: 'text', value: remaining[0] });
+                remaining = remaining.slice(1);
+            } else {
+                // Consume text up to next marker
+                nodes.push({ type: 'text', value: remaining.slice(0, nextMarker) });
+                remaining = remaining.slice(nextMarker);
             }
         }
 
@@ -524,7 +512,7 @@
 
 
     // Version will be injected at build time
-    const quikdownVersion = '1.2.9';
+    const quikdownVersion = '1.2.10';
 
     // Constants
     const CLASS_PREFIX = 'quikdown-';

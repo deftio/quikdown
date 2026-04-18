@@ -11,7 +11,7 @@ The standalone editor bundles all fence-rendering libraries into a single file s
 | DOMPurify | HTML fence sanitization | ~30 KB |
 | Leaflet | GeoJSON map rendering | ~140 KB |
 | Three.js | STL 3D model rendering | ~500 KB |
-| **quikdown editor** | Core editor + parser | ~81 KB |
+| **quikdown editor** | Core editor + parser | ~86 KB |
 
 **Total minified size:** ~3.8 MB
 
@@ -85,7 +85,7 @@ Use the standalone bundle when:
 
 Use the regular editor when:
 
-- **Bundle size matters** — the regular editor is 81 KB; fence libraries are loaded on demand
+- **Bundle size matters** — the regular editor is 86 KB; fence libraries are loaded on demand
 - **Most fences aren't used** — if your users only write text and code blocks, loading mermaid/leaflet/three.js upfront is waste
 - **CDN is available** — lazy loading gives the best initial load time
 

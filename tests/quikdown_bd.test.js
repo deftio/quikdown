@@ -615,9 +615,333 @@ End of document.`;
       const start = Date.now();
       const html = quikdown_bd(largeDoc);
       const duration = Date.now() - start;
-      
+
       expect(html).toBeTruthy();
       expect(duration).toBeLessThan(1000); // Should complete in under 1 second
+    });
+  });
+
+  describe('Parser coverage (bd-specific)', () => {
+    test('allow_unsafe_html option skips escaping', () => {
+      const html = quikdown_bd('<b>raw</b>', { allow_unsafe_html: true });
+      expect(html).toContain('<b>raw</b>');
+    });
+
+    test('task lists with inline_styles', () => {
+      const html = quikdown_bd('- [ ] todo\n- [x] done', { inline_styles: true });
+      expect(html).toContain('style="margin-right:.5em"');
+      expect(html).toContain('style="list-style:none"');
+    });
+
+    test('__bold__ and ~~strike~~ emphasis variants', () => {
+      const bold = quikdown_bd('__bold__');
+      expect(bold).toContain('<strong');
+      expect(bold).toContain('data-qd="__"');
+
+      const strike = quikdown_bd('~~strike~~');
+      expect(strike).toContain('<del');
+      expect(strike).toContain('data-qd="~~"');
+    });
+
+    test('empty delimiters are plain text', () => {
+      expect(quikdown_bd('****')).toContain('****');
+      expect(quikdown_bd('~~~~')).toContain('~~~~');
+    });
+
+    test('bold with italic inside *** run', () => {
+      const html = quikdown_bd('**bold *italic***');
+      expect(html).toContain('<strong');
+      expect(html).toContain('<em');
+    });
+
+    test('httpfoo is not an autolink', () => {
+      expect(quikdown_bd('httpfoo')).not.toContain('<a');
+      expect(quikdown_bd('httpsbar')).not.toContain('<a');
+    });
+
+    test('https:// autolink', () => {
+      const html = quikdown_bd('visit https://example.com today');
+      expect(html).toContain('<a');
+      expect(html).toContain('href="https://example.com"');
+    });
+
+    test('malformed image/link constructs', () => {
+      // image missing closing )
+      expect(quikdown_bd('![alt](url')).not.toContain('<img');
+      // image with empty src
+      expect(quikdown_bd('![alt]()')).not.toContain('<img');
+      // link with empty href
+      expect(quikdown_bd('[text]()')).not.toContain('<a');
+      // link with nested [
+      expect(quikdown_bd('[[inner]](url)')).not.toContain('href="url"');
+      // bare ! not followed by [
+      expect(quikdown_bd('!hello')).toContain('!hello');
+    });
+
+    test('single emphasis does not span newlines', () => {
+      expect(quikdown_bd('*hello\nworld*')).not.toContain('<em');
+    });
+
+    test('emitStyles light theme returns CSS', () => {
+      const light = quikdown_bd.emitStyles('quikdown-', 'light');
+      expect(light.length).toBeGreaterThan(0);
+      expect(light).toContain('quikdown-');
+    });
+
+    test('table with header-only (no body rows)', () => {
+      const html = quikdown_bd('| H1 | H2 |\n|---|---|');
+      expect(html).toContain('<th');
+      expect(html).not.toContain('<td');
+    });
+
+    test('table line not starting with |', () => {
+      // A row like "A | B" (no leading pipe) should still be parsed as table
+      const html = quikdown_bd('H1 | H2\n---|---\nA | B');
+      expect(html).toContain('<table');
+      expect(html).toContain('H1');
+    });
+
+    test('list type switch at same level', () => {
+      // Start with unordered, switch to ordered at same indent
+      const html = quikdown_bd('- bullet\n1. ordered');
+      expect(html).toContain('<ul');
+      expect(html).toContain('<ol');
+      expect(html).toContain('bullet');
+      expect(html).toContain('ordered');
+    });
+
+    test('images with bidirectional attributes', () => {
+      const html = quikdown_bd('![photo](pic.jpg)');
+      expect(html).toContain('data-qd-alt="photo"');
+      expect(html).toContain('data-qd-src="pic.jpg"');
+    });
+
+    test('internal link (no rel attribute)', () => {
+      const html = quikdown_bd('[click](/page)');
+      expect(html).toContain('href="/page"');
+      expect(html).not.toContain('noopener');
+    });
+
+    test('non-string input returns empty', () => {
+      expect(quikdown_bd(123)).toBe('');
+      expect(quikdown_bd({})).toBe('');
+    });
+
+    test('inline code with bidirectional marker', () => {
+      const html = quikdown_bd('use `code` here');
+      expect(html).toContain('data-qd="`"');
+    });
+
+    test('fence plugin returning undefined falls through', () => {
+      const plugin = { render: () => undefined };
+      const html = quikdown_bd('```js\ncode\n```', { fence_plugin: plugin });
+      expect(html).toContain('<pre');
+      expect(html).toContain('data-qd-lang="js"');
+    });
+  });
+
+  describe('toMarkdown coverage', () => {
+    let dom;
+    let originalDocument, originalWindow, originalNode;
+
+    beforeEach(() => {
+      dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
+      originalDocument = global.document;
+      originalWindow = global.window;
+      originalNode = global.Node;
+      global.document = dom.window.document;
+      global.window = dom.window;
+      global.Node = dom.window.Node;
+      global.Element = dom.window.Element;
+    });
+
+    afterEach(() => {
+      global.document = originalDocument;
+      global.window = originalWindow;
+      global.Node = originalNode;
+      delete global.Element;
+    });
+
+    test('non-string non-element input returns empty', () => {
+      expect(quikdown_bd.toMarkdown(42)).toBe('');
+      expect(quikdown_bd.toMarkdown(null)).toBe('');
+    });
+
+    test('heading without data-qd uses # prefix', () => {
+      expect(quikdown_bd.toMarkdown('<h1>Title</h1>')).toBe('# Title');
+      expect(quikdown_bd.toMarkdown('<h3>Sub</h3>')).toBe('### Sub');
+    });
+
+    test('link without href defaults to empty', () => {
+      const result = quikdown_bd.toMarkdown('<a>text</a>');
+      expect(result).toBe('[text]()');
+    });
+
+    test('image without data-qd attributes', () => {
+      const result = quikdown_bd.toMarkdown('<img src="pic.jpg" alt="photo">');
+      expect(result).toBe('![photo](pic.jpg)');
+    });
+
+    test('image without alt or src', () => {
+      const result = quikdown_bd.toMarkdown('<img>');
+      expect(result).toBe('![]()');
+    });
+
+    test('list items without data-qd use defaults', () => {
+      const ul = quikdown_bd.toMarkdown('<ul><li>A</li><li>B</li></ul>');
+      expect(ul).toBe('- A\n- B');
+
+      const ol = quikdown_bd.toMarkdown('<ol><li>First</li><li>Second</li></ol>');
+      expect(ol).toBe('1. First\n2. Second');
+    });
+
+    test('table without thead', () => {
+      const result = quikdown_bd.toMarkdown('<table><tbody><tr><td>A</td></tr></tbody></table>');
+      expect(result).toContain('| A |');
+    });
+
+    test('table with empty row (no td)', () => {
+      const result = quikdown_bd.toMarkdown(
+        '<table><thead><tr><th>H</th></tr></thead><tbody><tr></tr><tr><td>A</td></tr></tbody></table>'
+      );
+      expect(result).toContain('| H |');
+      expect(result).toContain('| A |');
+    });
+
+    test('pre code block without data-qd-source', () => {
+      const result = quikdown_bd.toMarkdown('<pre data-qd-fence="```" data-qd-lang="py"><code>print(1)</code></pre>');
+      expect(result).toBe('```py\nprint(1)\n```');
+    });
+
+    test('pre with data-qd-source attribute', () => {
+      const result = quikdown_bd.toMarkdown(
+        '<pre data-qd-fence="```" data-qd-lang="js" data-qd-source="const x = 1;"><code>highlighted</code></pre>'
+      );
+      expect(result).toBe('```js\nconst x = 1;\n```');
+    });
+
+    test('div with data-qd-source and fence but no lang', () => {
+      const result = quikdown_bd.toMarkdown(
+        '<div data-qd-fence="```" data-qd-source="raw content"></div>'
+      );
+      expect(result).toContain('```');
+      expect(result).toContain('raw content');
+    });
+
+    test('fence plugin reverse with partial result', () => {
+      const plugin = {
+        reverse: (el) => ({
+          content: 'recovered'
+          // no fence, no lang — use defaults
+        })
+      };
+      const html = '<pre data-qd-fence="```" data-qd-lang="test"><code>x</code></pre>';
+      const result = quikdown_bd.toMarkdown(html, { fence_plugin: plugin });
+      expect(result).toContain('recovered');
+    });
+
+    test('fence plugin reverse throwing error falls through', () => {
+      const plugin = {
+        reverse: () => { throw new Error('fail'); }
+      };
+      const html = '<pre data-qd-fence="```" data-qd-lang="js"><code>x</code></pre>';
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const result = quikdown_bd.toMarkdown(html, { fence_plugin: plugin });
+      expect(result).toContain('```js');
+      warn.mockRestore();
+    });
+
+    test('div fence plugin reverse with partial result', () => {
+      const plugin = {
+        reverse: (el) => ({
+          content: 'div-content'
+        })
+      };
+      const html = '<div data-qd-lang="test" data-qd-fence="```" data-qd-source="src"></div>';
+      const result = quikdown_bd.toMarkdown(html, { fence_plugin: plugin });
+      expect(result).toContain('div-content');
+    });
+
+    test('mermaid container without data-qd-fence', () => {
+      const html = '<div class="mermaid-container" data-qd-lang="mermaid" data-qd-source="graph LR; A-->B"></div>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('```mermaid');
+      expect(result).toContain('graph LR; A-->B');
+    });
+
+    test('br without data-qd uses default marker', () => {
+      const result = quikdown_bd.toMarkdown('<p>line1<br>line2</p>');
+      expect(result).toContain('line1');
+      expect(result).toContain('line2');
+    });
+
+    test('autolink round-trip', () => {
+      const html = quikdown_bd('visit https://example.com/path here');
+      const md = quikdown_bd.toMarkdown(html);
+      expect(md).toContain('https://example.com/path');
+    });
+
+    test('pre without code child uses childContent', () => {
+      const result = quikdown_bd.toMarkdown(
+        '<pre data-qd-fence="```" data-qd-lang="txt">raw text</pre>'
+      );
+      expect(result).toContain('```txt');
+      expect(result).toContain('raw text');
+    });
+
+    test('fence reverse returning empty content falls through', () => {
+      const plugin = {
+        reverse: () => ({ content: '' })
+      };
+      const html = '<pre data-qd-fence="```" data-qd-lang="js"><code>fallback</code></pre>';
+      const result = quikdown_bd.toMarkdown(html, { fence_plugin: plugin });
+      expect(result).toContain('fallback');
+    });
+
+    test('div fence reverse returning empty content falls through', () => {
+      const plugin = {
+        reverse: () => ({ content: '' })
+      };
+      const html = '<div data-qd-lang="test" data-qd-fence="```" data-qd-source="src"></div>';
+      const result = quikdown_bd.toMarkdown(html, { fence_plugin: plugin });
+      expect(result).toContain('src');
+    });
+
+    test('mermaid container without data-qd-lang uses default', () => {
+      const html = '<div class="mermaid-container" data-qd-source="graph LR; A-->B"></div>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('mermaid');
+      expect(result).toContain('graph LR; A-->B');
+    });
+
+    test('mermaid container with pre.mermaid source', () => {
+      const html = '<div class="mermaid-container"><pre class="mermaid" data-qd-source="graph TD; X-->Y">rendered</pre></div>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('graph TD; X-->Y');
+    });
+
+    test('mermaid container with .mermaid element containing graph text', () => {
+      const html = '<div class="mermaid-container"><div class="mermaid">graph LR; A-->B</div></div>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('graph LR; A-->B');
+    });
+
+    test('mermaid container with .mermaid-source element', () => {
+      const html = '<div class="mermaid-container"><div class="mermaid-source">graph TD; C-->D</div></div>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('graph TD; C-->D');
+    });
+
+    test('standalone mermaid div (legacy)', () => {
+      const html = '<div class="mermaid">graph LR; E-->F</div>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('graph LR; E-->F');
+    });
+
+    test('table thead without tr', () => {
+      const html = '<table><thead></thead><tbody><tr><td>A</td></tr></tbody></table>';
+      const result = quikdown_bd.toMarkdown(html);
+      expect(result).toContain('| A |');
     });
   });
 });

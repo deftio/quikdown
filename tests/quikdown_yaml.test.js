@@ -95,6 +95,46 @@ describe('quikdown_yaml converter', () => {
         });
     });
 
+    describe('URL underscore handling (issue #3)', () => {
+        test('should not apply emphasis to underscores in link URLs', () => {
+            const result = quikdown_yaml('[My Link](https://example.org/file_mytest_123.pdf)');
+            expect(result).toContain('type: link');
+            expect(result).toContain('https://example.org/file_mytest_123.pdf');
+            // Should NOT have emphasis nodes from URL underscores
+            const emCount = (result.match(/type: em/g) || []).length;
+            expect(emCount).toBe(0);
+        });
+
+        test('should not apply bold to double underscores in URLs', () => {
+            const result = quikdown_yaml('[Docs](https://docs.python.org/3/ref/__init__.html)');
+            expect(result).toContain('type: link');
+            expect(result).toContain('https://docs.python.org/3/ref/__init__.html');
+            const strongCount = (result.match(/type: strong/g) || []).length;
+            expect(strongCount).toBe(0);
+        });
+
+        test('should not apply emphasis to underscores in image URLs', () => {
+            const result = quikdown_yaml('![photo](https://example.com/my_photo_album/img_001.jpg)');
+            expect(result).toContain('type: image');
+            expect(result).toContain('https://example.com/my_photo_album/img_001.jpg');
+        });
+
+        test('should not apply strikethrough to tildes in URLs', () => {
+            const result = quikdown_yaml('[Archive](https://example.com/~~old~~/page)');
+            expect(result).toContain('type: link');
+            expect(result).toContain('https://example.com/~~old~~/page');
+            const delCount = (result.match(/type: del/g) || []).length;
+            expect(delCount).toBe(0);
+        });
+
+        test('should preserve emphasis in text alongside underscored URLs', () => {
+            const result = quikdown_yaml('_italic_ and [link](https://example.com/path_name_here.html)');
+            expect(result).toContain('type: em');
+            expect(result).toContain('type: link');
+            expect(result).toContain('https://example.com/path_name_here.html');
+        });
+    });
+
     describe('YAML string escaping', () => {
         test('should quote strings with colons', () => {
             const result = quikdown_yaml('Text: with colon');
