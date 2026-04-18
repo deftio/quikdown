@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
   "author": "deftio (https://github.com/deftio",
   "license": "BSD-2-Clause",
@@ -209,7 +209,7 @@
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.2",
     "@babel/preset-react": "^7.28.5",
-    "@eslint/js": "^9.39.4",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
     "@rollup/plugin-babel": "^7.0.0",
     "@rollup/plugin-commonjs": "^29.0.2",
@@ -219,12 +219,12 @@
     "bitwrench": "^2.0.31",
     "clean-css": "^5.3.3",
     "clean-css-cli": "^5.6.3",
-    "cssnano": "^7.1.4",
+    "cssnano": "^7.1.5",
     "docbat": "^0.9.3",
-    "dompurify": "^3.3.3",
-    "eslint": "^9.39.4",
+    "dompurify": "^3.4.0",
+    "eslint": "^10.2.1",
     "eslint-plugin-security": "^4.0.0",
-    "globals": "^17.4.0",
+    "globals": "^17.5.0",
     "husky": "^9.1.7",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
@@ -232,11 +232,11 @@
     "leaflet": "^1.9.4",
     "mermaid": "^11.14.0",
     "playwright": "^1.59.1",
-    "rollup": "^4.60.1",
+    "rollup": "^4.60.2",
     "rollup-plugin-css-only": "^4.5.5",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "rollup-plugin-postcss": "^4.0.2",
-    "three": "^0.183.2",
-    "typescript": "^6.0.2"
+    "three": "^0.184.0",
+    "typescript": "^6.0.3"
   }
 }

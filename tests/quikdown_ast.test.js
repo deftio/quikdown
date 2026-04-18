@@ -171,6 +171,55 @@ describe('quikdown_ast parser', () => {
             expect(linkNode).toBeDefined();
             expect(linkNode.url).toBe('https://example.com');
         });
+        test('should not apply emphasis to underscores in link URLs (issue #3)', () => {
+            const result = quikdown_ast('[My Link](https://example.org/file_mytest_123.pdf)');
+            const link = result.children[0].children[0];
+            expect(link.type).toBe('link');
+            expect(link.url).toBe('https://example.org/file_mytest_123.pdf');
+            // URL must not be mangled — no emphasis nodes as siblings
+            const emNodes = result.children[0].children.filter(n => n.type === 'em');
+            expect(emNodes.length).toBe(0);
+        });
+
+        test('should not apply emphasis to underscores in image URLs (issue #3)', () => {
+            const result = quikdown_ast('![photo](https://example.com/my_photo_album/img_001.jpg)');
+            const img = result.children[0].children[0];
+            expect(img.type).toBe('image');
+            expect(img.url).toBe('https://example.com/my_photo_album/img_001.jpg');
+        });
+
+        test('should not apply bold to double underscores in URLs (issue #3)', () => {
+            const result = quikdown_ast('[Docs](https://docs.python.org/3/ref/__init__.html)');
+            const link = result.children[0].children[0];
+            expect(link.type).toBe('link');
+            expect(link.url).toBe('https://docs.python.org/3/ref/__init__.html');
+            const strongNodes = result.children[0].children.filter(n => n.type === 'strong');
+            expect(strongNodes.length).toBe(0);
+        });
+
+        test('should not apply strikethrough to tildes in URLs (issue #3)', () => {
+            const result = quikdown_ast('[Archive](https://example.com/~~old~~/page)');
+            const link = result.children[0].children[0];
+            expect(link.type).toBe('link');
+            expect(link.url).toBe('https://example.com/~~old~~/page');
+        });
+
+        test('should not apply emphasis to underscores in autolinked URLs (issue #3)', () => {
+            const result = quikdown_ast('Visit https://example.org/file_mytest_123.pdf today');
+            const link = result.children[0].children.find(n => n.type === 'link');
+            expect(link).toBeDefined();
+            expect(link.url).toBe('https://example.org/file_mytest_123.pdf');
+        });
+
+        test('should preserve emphasis in text alongside underscored URLs (issue #3)', () => {
+            const result = quikdown_ast('This is _italic_ and [link](https://example.com/path_name_here.html)');
+            const children = result.children[0].children;
+            const emNode = children.find(n => n.type === 'em');
+            const linkNode = children.find(n => n.type === 'link');
+            expect(emNode).toBeDefined();
+            expect(linkNode).toBeDefined();
+            expect(linkNode.url).toBe('https://example.com/path_name_here.html');
+        });
     });
 
     describe('Blockquotes', () => {

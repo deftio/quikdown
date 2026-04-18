@@ -198,6 +198,37 @@ children:
             expect(result).toContain('alt="alt"');
         });
 
+        test('should not apply emphasis inside link href (issue #3)', () => {
+            const result = quikdown_ast_html('[My Link](https://example.org/file_mytest_123.pdf)');
+            expect(result).toContain('href="https://example.org/file_mytest_123.pdf"');
+            expect(result).not.toContain('<em>');
+            expect(result).not.toContain('<em ');
+        });
+
+        test('should not apply bold inside link href (issue #3)', () => {
+            const result = quikdown_ast_html('[Docs](https://docs.python.org/3/ref/__init__.html)');
+            expect(result).toContain('href="https://docs.python.org/3/ref/__init__.html"');
+            expect(result).not.toContain('<strong');
+        });
+
+        test('should not apply emphasis inside image src (issue #3)', () => {
+            const result = quikdown_ast_html('![photo](https://example.com/my_photo_album/img_001.jpg)');
+            expect(result).toContain('src="https://example.com/my_photo_album/img_001.jpg"');
+            expect(result).not.toContain('<em');
+        });
+
+        test('should not apply strikethrough inside URLs (issue #3)', () => {
+            const result = quikdown_ast_html('[Archive](https://example.com/~~old~~/page)');
+            expect(result).toContain('href="https://example.com/~~old~~/page"');
+            expect(result).not.toContain('<del');
+        });
+
+        test('should not apply emphasis in autolinked URLs (issue #3)', () => {
+            const result = quikdown_ast_html('Visit https://example.org/file_mytest_123.pdf today');
+            expect(result).toContain('href="https://example.org/file_mytest_123.pdf"');
+            expect(result).not.toContain('<em');
+        });
+
         test('should render line breaks', () => {
             const ast = {
                 type: 'document',

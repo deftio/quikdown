@@ -465,7 +465,7 @@ container.innerHTML = quikdown(combined);
 |---------|------------|---------------|
 | Markdown to HTML | ✅ Yes | ✅ Yes |
 | HTML to Markdown | ❌ No | ✅ Yes |
-| Size (minified) | 9.3KB | 14.1KB |
+| Size (minified) | 9.8KB | 14.6KB |
 | `toMarkdown()` method | ❌ No | ✅ Yes |
 | data-qd attributes | ❌ No | ✅ Yes |
 | Use case | Standard parsing | WYSIWYG editors |

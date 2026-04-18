@@ -125,7 +125,7 @@ for GeoJSON, Three.js for STL, highlight.js for syntax highlighting) is
 fence, it fetches `mermaid.min.js` from the CDN; the first STL fence triggers
 the Three.js download; and so on.
 
-Lazy loading keeps the editor lightweight (~70 KB minified) but introduces a
+Lazy loading keeps the editor lightweight (~86 KB minified) but introduces a
 small "loading…" delay the first time each fence type is rendered. For demo
 pages, documentation sites, or apps where you know in advance which fence
 types you'll need, you can preload those libraries at construction time:

@@ -9,7 +9,7 @@ Here are various badge options you can use in the README. Choose the ones that b
 [![npm version](https://badge.fury.io/js/quikdown.svg)](https://www.npmjs.com/package/quikdown)
 [![Coverage Status](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-8.7KB-green.svg)](https://github.com/deftio/quikdown/tree/main/dist)
+[![Bundle Size](https://img.shields.io/badge/minified-9.8KB-green.svg)](https://github.com/deftio/quikdown/tree/main/dist)
 ```
 
 ## Alternative Dynamic Badges (shields.io)

@@ -1113,6 +1113,225 @@ def analyze():
             expect(codeResult.match(/<a/g)?.length || 0).toBe(0);
         });
         
+        test('should not apply emphasis formatting inside URLs (issue #3)', () => {
+            // === Markdown-style links [text](url) ===
+
+            // Underscores in URL path
+            const underscoreUrl = '[My Link](https://example.org/file_mytest_123.pdf)';
+            const underscoreResult = quikdown(underscoreUrl);
+            expect(underscoreResult).not.toContain('<em>');
+            expect(underscoreResult).not.toContain('<i>');
+            expect(underscoreResult).toContain('href="https://example.org/file_mytest_123.pdf"');
+
+            // Multiple underscore pairs in URL
+            const multiUnderscore = '[Doc](https://example.com/path_one_two_three_four.html)';
+            const multiResult = quikdown(multiUnderscore);
+            expect(multiResult).not.toContain('<em>');
+            expect(multiResult).toContain('href="https://example.com/path_one_two_three_four.html"');
+
+            // Underscores in query parameters
+            const queryUnderscore = '[Search](https://api.example.com/search?user_name=john&sort_order=asc)';
+            const queryResult = quikdown(queryUnderscore);
+            expect(queryResult).not.toContain('<em>');
+            expect(queryResult).toContain('href="https://api.example.com/search?user_name=john&amp;sort_order=asc"');
+
+            // Underscores in fragment/hash
+            const fragmentUnderscore = '[Section](https://example.com/page#section_name_here)';
+            const fragmentResult = quikdown(fragmentUnderscore);
+            expect(fragmentResult).not.toContain('<em>');
+            expect(fragmentResult).toContain('href="https://example.com/page#section_name_here"');
+
+            // Asterisks in URL (bold markers)
+            const asteriskUrl = '[File](https://example.com/path*glob*pattern)';
+            const asteriskResult = quikdown(asteriskUrl);
+            expect(asteriskResult).not.toContain('<strong>');
+            expect(asteriskResult).not.toContain('<b>');
+
+            // Double underscores in URL (bold markers)
+            const doubleUnderscore = '[File](https://example.com/__init__/module)';
+            const doubleUnderscoreResult = quikdown(doubleUnderscore);
+            expect(doubleUnderscoreResult).not.toContain('<strong>');
+            expect(doubleUnderscoreResult).not.toContain('<em>');
+            expect(doubleUnderscoreResult).toContain('href="https://example.com/__init__/module"');
+
+            // Mixed formatting chars in URL
+            const mixedUrl = '[Mixed](https://example.com/a_b*c_d*e_f)';
+            const mixedResult = quikdown(mixedUrl);
+            expect(mixedResult).not.toContain('<em>');
+            expect(mixedResult).not.toContain('<strong>');
+
+            // === Bare/autolinked URLs ===
+
+            // Bare URL with underscores
+            const bareUnderscore = 'Visit https://example.org/file_mytest_123.pdf today';
+            const bareResult = quikdown(bareUnderscore);
+            expect(bareResult).not.toContain('<em>');
+            expect(bareResult).toContain('href="https://example.org/file_mytest_123.pdf"');
+
+            // Bare URL with multiple underscore segments
+            const bareMulti = 'See https://cdn.example.com/assets/my_image_file_name.png for details';
+            const bareMultiResult = quikdown(bareMulti);
+            expect(bareMultiResult).not.toContain('<em>');
+            expect(bareMultiResult).toContain('href="https://cdn.example.com/assets/my_image_file_name.png"');
+
+            // Bare URL with query string underscores
+            const bareQuery = 'API: https://api.example.com/v2/get_user_data?api_key=abc123';
+            const bareQueryResult = quikdown(bareQuery);
+            expect(bareQueryResult).not.toContain('<em>');
+            expect(bareQueryResult).toContain('href="https://api.example.com/v2/get_user_data?api_key=abc123"');
+
+            // Bare URL with double underscores
+            const bareDunder = 'https://pypi.org/project/__future__/';
+            const bareDunderResult = quikdown(bareDunder);
+            expect(bareDunderResult).not.toContain('<strong>');
+            expect(bareDunderResult).not.toContain('<em>');
+
+            // === Image links ===
+
+            // Image src with underscores
+            const imgUnderscore = '![alt text](https://example.com/my_photo_album/img_001.jpg)';
+            const imgResult = quikdown(imgUnderscore);
+            expect(imgResult).not.toContain('<em>');
+            expect(imgResult).toContain('src="https://example.com/my_photo_album/img_001.jpg"');
+
+            // === URLs alongside normal emphasis ===
+
+            // Emphasis in text but not in URL
+            const mixedContext = 'This is _italic_ and [link](https://example.com/path_name_here.html)';
+            const mixedContextResult = quikdown(mixedContext);
+            expect(mixedContextResult).toContain('>italic</em>');
+            expect(mixedContextResult).toContain('<em');
+            expect(mixedContextResult).toContain('href="https://example.com/path_name_here.html"');
+            expect(mixedContextResult).not.toContain('href="https://example.com/path<em>');
+
+            // Bold in text but not in URL
+            const boldContext = 'This is **bold** and [link](https://example.com/my__module__test)';
+            const boldContextResult = quikdown(boldContext);
+            expect(boldContextResult).toContain('>bold</strong>');
+            expect(boldContextResult).toContain('<strong');
+            expect(boldContextResult).not.toContain('href="https://example.com/my<strong>');
+
+            // === Edge cases ===
+
+            // URL that ends with underscore-word
+            const trailingUnderscore = '[Link](https://example.com/path_)';
+            const trailingResult = quikdown(trailingUnderscore);
+            expect(trailingResult).not.toContain('<em>');
+
+            // URL with consecutive underscores
+            const consecutiveUnderscores = '[Link](https://example.com/a___b___c)';
+            const consecutiveResult = quikdown(consecutiveUnderscores);
+            expect(consecutiveResult).not.toContain('<em>');
+
+            // Relative URL with underscores
+            const relativeUrl = '[Local](./docs/my_local_file.md)';
+            const relativeResult = quikdown(relativeUrl);
+            expect(relativeResult).not.toContain('<em>');
+            expect(relativeResult).toContain('href="./docs/my_local_file.md"');
+        });
+
+        test('should not apply formatting inside image src attributes (issue #3)', () => {
+            // Underscores in image src
+            const imgUnder = '![photo](https://example.com/my_photo_album/img_001.jpg)';
+            const imgUnderResult = quikdown(imgUnder);
+            expect(imgUnderResult).not.toContain('<em>');
+            expect(imgUnderResult).toContain('src="https://example.com/my_photo_album/img_001.jpg"');
+
+            // Double underscores in image src (Python-style)
+            const imgDunder = '![icon](https://example.com/__static__/icon.png)';
+            const imgDunderResult = quikdown(imgDunder);
+            expect(imgDunderResult).not.toContain('<strong>');
+            expect(imgDunderResult).not.toContain('<em>');
+            expect(imgDunderResult).toContain('src="https://example.com/__static__/icon.png"');
+
+            // Asterisks in image src (glob-style paths)
+            const imgAsterisk = '![glob](https://example.com/dir/*/file*match.png)';
+            const imgAsteriskResult = quikdown(imgAsterisk);
+            expect(imgAsteriskResult).not.toContain('<em');
+
+            // Tildes in image src
+            const imgTilde = '![old](https://example.com/~~archive~~/photo.jpg)';
+            const imgTildeResult = quikdown(imgTilde);
+            expect(imgTildeResult).not.toContain('<del>');
+            expect(imgTildeResult).toContain('src="https://example.com/~~archive~~/photo.jpg"');
+        });
+
+        test('should not apply formatting inside image alt attributes (issue #3)', () => {
+            // Underscores in alt text — alt text is plain descriptive text
+            const altUnder = '![my_photo_name](https://example.com/photo.jpg)';
+            const altUnderResult = quikdown(altUnder);
+            expect(altUnderResult).toContain('alt="my_photo_name"');
+            expect(altUnderResult).not.toContain('alt="my<em');
+
+            // Double underscores in alt text
+            const altDunder = '![__init__ module](https://example.com/icon.png)';
+            const altDunderResult = quikdown(altDunder);
+            expect(altDunderResult).not.toContain('alt="<strong>');
+
+            // Asterisks in alt text
+            const altStar = '![file *important* note](https://example.com/img.png)';
+            const altStarResult = quikdown(altStar);
+            expect(altStarResult).not.toContain('alt="file <em');
+
+            // Tildes in alt text
+            const altTilde = '![~~draft~~ final version](https://example.com/img.png)';
+            const altTildeResult = quikdown(altTilde);
+            expect(altTildeResult).not.toContain('alt="<del');
+        });
+
+        test('should not apply strikethrough inside URLs (issue #3)', () => {
+            // Tildes in link href
+            const tildeLink = '[Archive](https://example.com/~~old~~/page)';
+            const tildeLinkResult = quikdown(tildeLink);
+            expect(tildeLinkResult).not.toContain('<del>');
+            expect(tildeLinkResult).toContain('href="https://example.com/~~old~~/page"');
+
+            // Tildes in bare URL
+            const tildeBare = 'See https://example.com/~~deprecated~~/api for migration info';
+            const tildeBareResult = quikdown(tildeBare);
+            expect(tildeBareResult).not.toContain('<del>');
+            expect(tildeBareResult).toContain('href="https://example.com/~~deprecated~~/api"');
+        });
+
+        test('should not apply bold formatting inside URLs (issue #3)', () => {
+            // Double asterisks in link href (glob patterns)
+            const dblAsteriskLink = '[Glob](https://example.com/**/*.js)';
+            const dblAsteriskResult = quikdown(dblAsteriskLink);
+            expect(dblAsteriskResult).not.toContain('<strong>');
+
+            // Double underscores in link href
+            const dblUnderLink = '[Dunders](https://docs.python.org/3/ref/__init__.html)';
+            const dblUnderResult = quikdown(dblUnderLink);
+            expect(dblUnderResult).not.toContain('<strong>');
+            expect(dblUnderResult).toContain('href="https://docs.python.org/3/ref/__init__.html"');
+
+            // Double underscores in bare URL
+            const dblUnderBare = 'https://docs.python.org/3/ref/__init__.html';
+            const dblUnderBareResult = quikdown(dblUnderBare);
+            expect(dblUnderBareResult).not.toContain('<strong>');
+        });
+
+        test('should preserve formatting in link text while protecting URLs (issue #3)', () => {
+            // Bold link text with underscored URL — both should work correctly
+            const boldText = '[**Important**](https://example.com/my_file_path.html)';
+            const boldTextResult = quikdown(boldText);
+            expect(boldTextResult).toContain('<strong');
+            expect(boldTextResult).toContain('>Important</strong>');
+            expect(boldTextResult).toContain('href="https://example.com/my_file_path.html"');
+
+            // Italic link text with underscored URL
+            const italicText = '[*note*](https://example.com/path_to_file.pdf)';
+            const italicTextResult = quikdown(italicText);
+            expect(italicTextResult).toContain('<em');
+            expect(italicTextResult).toContain('href="https://example.com/path_to_file.pdf"');
+
+            // Strikethrough link text with underscored URL
+            const delText = '[~~old~~](https://example.com/path_one_two.html)';
+            const delTextResult = quikdown(delText);
+            expect(delTextResult).toContain('<del');
+            expect(delTextResult).toContain('href="https://example.com/path_one_two.html"');
+        });
+
         test('should tolerate heading trailing hashes', () => {
             // Single trailing hash
             expect(quikdown('# Heading #')).toBe('<h1 class="quikdown-h1">Heading</h1>');
@@ -1427,6 +1646,72 @@ code3
             const result = quikdown(input, { allow_unsafe_html: true, inline_styles: true });
             expect(result).toContain('<div>html</div>');
             expect(result).toContain('font-size:2em');
+        });
+
+        test('should handle malformed inline constructs in scanner', () => {
+            // Malformed image: ![ with no closing ]
+            expect(quikdown('![no close bracket')).toBe('<p>![no close bracket</p>');
+
+            // Malformed image: ![alt] with no (
+            expect(quikdown('![alt]no-paren')).toBe('<p>![alt]no-paren</p>');
+
+            // Malformed image: ![alt]( with no )
+            expect(quikdown('![alt](no-close')).toBe('<p>![alt](no-close</p>');
+
+            // Malformed link: [ with no ]
+            expect(quikdown('[no close')).toBe('<p>[no close</p>');
+
+            // Malformed link: [text] with no (
+            expect(quikdown('[text]no-paren')).toBe('<p>[text]no-paren</p>');
+
+            // Malformed link: [text]( with no )
+            expect(quikdown('[text](no-close')).toBe('<p>[text](no-close</p>');
+
+            // Bare ! not followed by [
+            expect(quikdown('hello! world')).toBe('<p>hello! world</p>');
+
+            // Single ~ (not strikethrough)
+            expect(quikdown('hello~world')).toBe('<p>hello~world</p>');
+
+            // Unmatched ** (no closing)
+            expect(quikdown('**unclosed bold')).toBe('<p>**unclosed bold</p>');
+
+            // Unmatched __ (no closing)
+            expect(quikdown('__unclosed bold')).toBe('<p>__unclosed bold</p>');
+
+            // Unmatched ~~ (no closing)
+            expect(quikdown('~~unclosed strike')).toBe('<p>~~unclosed strike</p>');
+
+            // Adjacent ** at start (unclosed): `**` at end of line
+            expect(quikdown('text **')).toBe('<p>text **</p>');
+
+            // Unclosed single emphasis (reaches end of text)
+            expect(quikdown('hello *world')).toBe('<p>hello *world</p>');
+            expect(quikdown('hello _world')).toBe('<p>hello _world</p>');
+
+            // Nested [ inside link text — should not match as link
+            expect(quikdown('[[inner]](url)')).not.toContain('href="url"');
+
+            // http in middle of word — should not autolink
+            expect(quikdown('xhttp://example.com')).not.toContain('<a');
+
+            // http prefix without :// — should not autolink
+            expect(quikdown('httpfoo bar')).not.toContain('<a');
+            expect(quikdown('httpsbar baz')).not.toContain('<a');
+
+            // Single emphasis spanning newline — should not match
+            const emNewline = quikdown('*hello\nworld*');
+            expect(emNewline).not.toContain('<em');
+
+            // ~~~~ (empty inner for ~~)
+            expect(quikdown('~~~~')).toBe('<p>~~~~</p>');
+
+            // **** (empty inner for **)
+            expect(quikdown('****')).toBe('<p>****</p>');
+
+            // Light theme emitStyles coverage
+            const lightCSS = quikdown.emitStyles('quikdown-', 'light');
+            expect(lightCSS).toContain('color:#333');
         });
     });
 });

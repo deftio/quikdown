@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.9
+ * @version 1.2.10
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -228,7 +228,7 @@
     // ────────────────────────────────────────────────────────────────────
 
     /** Build-time version stamp (injected by tools/updateVersion) */
-    const quikdownVersion = '1.2.9';
+    const quikdownVersion = '1.2.10';
 
     /** CSS class prefix used for all generated elements */
     const CLASS_PREFIX = 'quikdown-';
@@ -473,7 +473,6 @@
         // Images (must come before links — ![alt](src) vs [text](url))
         html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
             const sanitizedSrc = sanitizeUrl(src, options.allow_unsafe_urls);
-            // Bidirectional attributes are only exercised via quikdown_bd bundle.
             /* istanbul ignore next - bd-only branch */
             const altAttr = bidirectional && alt ? ` data-qd-alt="${escapeHtml(alt)}"` : '';
             /* istanbul ignore next - bd-only branch */
@@ -497,8 +496,12 @@
             return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>`;
         });
 
+        // Protect rendered tags so emphasis regexes don't see attribute
+        // values — fixes #3 (underscores in URLs interpreted as emphasis).
+        const savedTags = [];
+        html = html.replace(/<[^>]+>/g, m => { savedTags.push(m); return `%%T${savedTags.length - 1}%%`; });
+
         // Bold, italic, strikethrough
-        // Order matters: ** before * (so ** isn't consumed as two *s)
         const inlinePatterns = [
             [/\*\*(.+?)\*\*/g, 'strong', '**'],
             [/__(.+?)__/g, 'strong', '__'],
@@ -509,6 +512,9 @@
         inlinePatterns.forEach(([pattern, tag, marker]) => {
             html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(marker)}>$1</${tag}>`);
         });
+
+        // Restore protected tags
+        html = html.replace(/%%T(\d+)%%/g, (_, i) => savedTags[i]);
 
         // ── Step 5: Line breaks + paragraph wrapping ──
         if (lazy_linefeeds) {
@@ -2875,7 +2881,7 @@
                     if (copyToClipboard(fragment)) {
                         return { success: true, html: htmlContent, text };
                     }
-                    throw new Error('Fallback copy failed');
+                    throw new Error('Fallback copy failed', { cause: modernErr });
                 }
             } else {
                 // Windows/Linux approach (like squibview)
@@ -2905,7 +2911,7 @@
                     
                     const successful = document.execCommand('copy');
                     if (!successful) {
-                        throw new Error('Fallback copy failed');
+                        throw new Error('Fallback copy failed', { cause: modernErr });
                     }
                     return { success: true, html: htmlContent, text };
                 } finally {
@@ -4010,8 +4016,8 @@
             const reverse = (element) => {
                 // Get the language from data attribute
                 const lang = element.getAttribute('data-qd-lang') || '';
-                let content = '';
-                
+                let content;
+
                 // For syntax-highlighted code, extract the raw text
                 if (element.querySelector('code.hljs')) {
                     const code = element.querySelector('code.hljs');

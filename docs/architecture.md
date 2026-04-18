@@ -4,7 +4,7 @@
 
 quikdown is designed with these core principles:
 
-1. **Small & Fast** - Optimized for size (~9.3KB minified) and performance
+1. **Small & Fast** - Optimized for size (~9.8KB minified) and performance
 2. **Secure by Default** - All HTML is escaped unless explicitly trusted
 3. **Zero Dependencies** - No external libraries required
 4. **Extensible** - Plugin system for custom rendering
@@ -90,7 +90,7 @@ Replace placeholders with rendered HTML: `§CB0§` → `<pre><code>…</code></p
 
 ### Why Line Scanning Instead of Full AST?
 
-1. **Size** — No separate tokenizer/AST/renderer layers (~9.5 KB minified)
+1. **Size** — No separate tokenizer/AST/renderer layers (~9.8 KB minified)
 2. **Speed** — Each line is classified once; inline formatting per-block
 3. **Simplicity** — Easy to add a new block type (add a branch in the scanner)
 4. **Good enough** — Handles 95%+ of real-world markdown used in chat/LLM output

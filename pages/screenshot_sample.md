@@ -34,8 +34,8 @@ const editor = new QuikdownEditor('#app', {
 
 ```csv
 Module,Size,Deps,Bidirectional
-quikdown.js,9.3 KB,0,No
-quikdown_bd.js,14.1 KB,0,Yes
-quikdown_edit.js,80 KB,lazy,Yes
+quikdown.js,9.8 KB,0,No
+quikdown_bd.js,14.6 KB,0,Yes
+quikdown_edit.js,84.3 KB,lazy,Yes
 quikdown_ast.js,4.9 KB,0,No
 ```
