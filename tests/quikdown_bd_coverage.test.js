@@ -551,6 +551,92 @@ describe('quikdown_bd edge cases and full coverage', () => {
     });
   });
 
+  describe('allow_unsafe_html: whitelist mode (BD bundle)', () => {
+    // Minimal tag set for testing — callers define their own
+    const SAFE_TAGS = { div:1, a:1, img:1, details:1, summary:1, b:1, em:1 };
+
+    test('should pass through safe tags and block dangerous ones', () => {
+      const input = '<div class="box">ok</div><script>bad</script>';
+      const result = quikdown_bd(input, { allow_unsafe_html: SAFE_TAGS });
+      expect(result).toContain('<div class="box">');
+      expect(result).toContain('&lt;script&gt;');
+    });
+
+    test('should strip on* event handlers from safe tags', () => {
+      const input = '<div onclick="alert(1)" onmouseover="hack()">content</div>';
+      const result = quikdown_bd(input, { allow_unsafe_html: SAFE_TAGS });
+      expect(result).toContain('<div>');
+      expect(result).not.toContain('onclick');
+      expect(result).not.toContain('onmouseover');
+    });
+
+    test('should sanitize href/src URLs in safe tags', () => {
+      const input = '<a href="javascript:alert(1)">evil</a>';
+      const result = quikdown_bd(input, { allow_unsafe_html: SAFE_TAGS });
+      expect(result).toContain('href="#"');
+      expect(result).not.toContain('javascript:');
+    });
+
+    test('should handle single-quoted and unquoted attributes', () => {
+      const input1 = "<a href='https://example.com'>link</a>";
+      const result1 = quikdown_bd(input1, { allow_unsafe_html: SAFE_TAGS });
+      expect(result1).toContain('href="https://example.com"');
+
+      const input2 = '<img src=photo.jpg alt=photo>';
+      const result2 = quikdown_bd(input2, { allow_unsafe_html: SAFE_TAGS });
+      expect(result2).toContain('src="photo.jpg"');
+    });
+
+    test('should preserve boolean attributes and safe attrs', () => {
+      const input = '<details open><summary>Title</summary>Body</details>';
+      const result = quikdown_bd(input, { allow_unsafe_html: SAFE_TAGS });
+      expect(result).toContain('<details open>');
+      expect(result).toContain('<summary>Title</summary>');
+    });
+
+    test('should handle tags without attributes (no whitespace)', () => {
+      const input = '<div>simple</div>';
+      const result = quikdown_bd(input, { allow_unsafe_html: SAFE_TAGS });
+      expect(result).toContain('<div>simple</div>');
+    });
+
+    test('should allow data:image URLs in img src', () => {
+      const input = '<img src="data:image/png;base64,abc">';
+      const result = quikdown_bd(input, { allow_unsafe_html: SAFE_TAGS });
+      expect(result).toContain('src="data:image/png;base64,abc"');
+    });
+
+    test('should accept an array of tag names', () => {
+      const input = '<div>allowed</div><script>blocked</script>';
+      const result = quikdown_bd(input, { allow_unsafe_html: ['div'] });
+      expect(result).toContain('<div>');
+      expect(result).toContain('&lt;script&gt;');
+    });
+
+    test('backward compat: false escapes all, true passes all', () => {
+      const input = '<div>content</div>';
+      const escaped = quikdown_bd(input, { allow_unsafe_html: false });
+      expect(escaped).toContain('&lt;div&gt;');
+
+      const raw = quikdown_bd(input, { allow_unsafe_html: true });
+      expect(raw).toContain('<div>content</div>');
+    });
+
+    test('HTML comments pass through in whitelist mode', () => {
+      const input = 'before <!-- comment --> after';
+      const result = quikdown_bd(input, { allow_unsafe_html: SAFE_TAGS });
+      expect(result).toContain('<!-- comment -->');
+      expect(result).not.toContain('&lt;!--');
+    });
+
+    test('HTML comments are escaped in off mode', () => {
+      const input = 'before <!-- comment --> after';
+      const result = quikdown_bd(input, { allow_unsafe_html: false });
+      expect(result).toContain('&lt;!--');
+      expect(result).not.toContain('<!-- comment -->');
+    });
+  });
+
   describe('Error Handling', () => {
     test('should handle null and undefined inputs', () => {
       expect(quikdown_bd(null)).toBe('');

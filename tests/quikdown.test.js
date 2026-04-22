@@ -1583,6 +1583,307 @@ code3
         });
     });
 
+    describe('allow_unsafe_html: whitelist mode', () => {
+        // Curated safe tag list — same as QuikdownEditor.SAFE_HTML_TAGS
+        const SAFE_TAGS = {
+            b:1, i:1, em:1, strong:1, del:1, s:1, u:1, mark:1, sup:1, sub:1,
+            kbd:1, abbr:1, var:1, samp:1, cite:1, small:1, ins:1, dfn:1,
+            ruby:1, rt:1, rp:1, time:1, wbr:1,
+            img:1, picture:1, source:1, video:1, audio:1, figure:1, figcaption:1,
+            a:1, br:1, hr:1,
+            div:1, span:1, p:1, details:1, summary:1,
+            section:1, article:1, aside:1, header:1, footer:1, nav:1, main:1,
+            table:1, thead:1, tbody:1, tfoot:1, tr:1, th:1, td:1, caption:1, col:1, colgroup:1,
+            ul:1, ol:1, li:1, dl:1, dt:1, dd:1,
+            h1:1, h2:1, h3:1, h4:1, h5:1, h6:1,
+            blockquote:1, pre:1, code:1
+        };
+
+        test('should pass through safe inline tags', () => {
+            const input = 'Text with <b>bold</b> and <em>emphasis</em> and <mark>marked</mark>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<b>bold</b>');
+            expect(result).toContain('<em>emphasis</em>');
+            expect(result).toContain('<mark>marked</mark>');
+        });
+
+        test('should pass through safe media tags', () => {
+            const result = quikdown('<img src="photo.jpg" alt="A photo" width="300">', { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<img src="photo.jpg" alt="A photo" width="300">');
+        });
+
+        test('should pass through safe container tags', () => {
+            const input = '<div class="box">content</div>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<div class="box">');
+            expect(result).toContain('content</div>');
+        });
+
+        test('should pass through details/summary', () => {
+            const input = '<details><summary>Click me</summary>Hidden content</details>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<details>');
+            expect(result).toContain('<summary>Click me</summary>');
+            expect(result).toContain('</details>');
+        });
+
+        test('should pass through safe table HTML', () => {
+            const input = '<table><thead><tr><th>Header</th></tr></thead><tbody><tr><td>Cell</td></tr></tbody></table>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<table>');
+            expect(result).toContain('<th>Header</th>');
+            expect(result).toContain('<td>Cell</td>');
+        });
+
+        test('should pass through semantic tags', () => {
+            const input = '<section><article>Content</article></section>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<section>');
+            expect(result).toContain('<article>');
+        });
+
+        test('should pass through heading tags', () => {
+            const input = '<h1>Title</h1><h3>Subtitle</h3>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<h1>Title</h1>');
+            expect(result).toContain('<h3>Subtitle</h3>');
+        });
+
+        test('should block script tags', () => {
+            const input = '<script>alert("xss")</script>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('&lt;script&gt;');
+            expect(result).not.toContain('<script>');
+        });
+
+        test('should block iframe tags', () => {
+            const input = '<iframe src="https://evil.com"></iframe>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('&lt;iframe');
+            expect(result).not.toContain('<iframe');
+        });
+
+        test('should block style tags', () => {
+            const input = '<style>body{display:none}</style>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('&lt;style&gt;');
+            expect(result).not.toContain('<style>');
+        });
+
+        test('should block form/input/object/embed tags', () => {
+            expect(quikdown('<form action="/hack">', { allow_unsafe_html: SAFE_TAGS })).toContain('&lt;form');
+            expect(quikdown('<input type="text">', { allow_unsafe_html: SAFE_TAGS })).toContain('&lt;input');
+            expect(quikdown('<object data="x">', { allow_unsafe_html: SAFE_TAGS })).toContain('&lt;object');
+            expect(quikdown('<embed src="x">', { allow_unsafe_html: SAFE_TAGS })).toContain('&lt;embed');
+        });
+
+        test('should block svg tags', () => {
+            const input = '<svg onload="alert(1)"><circle r="50"></circle></svg>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('&lt;svg');
+            expect(result).not.toContain('<svg');
+        });
+
+        test('should strip on* event handler attributes', () => {
+            const input = '<div onclick="alert(1)" onmouseover="hack()">content</div>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<div>');
+            expect(result).not.toContain('onclick');
+            expect(result).not.toContain('onmouseover');
+        });
+
+        test('should strip on* handlers case-insensitively', () => {
+            const input = '<a onClick="alert(1)" ONLOAD="hack()" href="https://example.com">link</a>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).not.toContain('onClick');
+            expect(result).not.toContain('ONLOAD');
+            expect(result).toContain('href="https://example.com"');
+        });
+
+        test('should sanitize href/src URLs (block javascript:)', () => {
+            const input = '<a href="javascript:alert(1)">evil</a>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('href="#"');
+            expect(result).not.toContain('javascript:');
+        });
+
+        test('should sanitize img src URLs', () => {
+            const input = '<img src="javascript:alert(1)">';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('src="#"');
+            expect(result).not.toContain('javascript:');
+        });
+
+        test('should allow data:image URLs in img src', () => {
+            const input = '<img src="data:image/png;base64,abc123">';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('src="data:image/png;base64,abc123"');
+        });
+
+        test('should preserve safe attributes (class, id, style, width, height, alt)', () => {
+            const input = '<img src="photo.jpg" class="hero" id="main-photo" style="border:1px solid red" width="400" height="300" alt="Photo">';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('class="hero"');
+            expect(result).toContain('id="main-photo"');
+            expect(result).toContain('style="border:1px solid red"');
+            expect(result).toContain('width="400"');
+            expect(result).toContain('height="300"');
+            expect(result).toContain('alt="Photo"');
+        });
+
+        test('should still escape HTML inside fenced code blocks', () => {
+            const input = '```\n<div onclick="alert(1)">code</div>\n```';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('&lt;div');
+            expect(result).not.toContain('<div onclick');
+        });
+
+        test('should still escape HTML inside inline code', () => {
+            const input = 'Use `<div>` for containers';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<code');
+            expect(result).toContain('&lt;div&gt;');
+        });
+
+        test('should work alongside markdown formatting', () => {
+            const input = '# Heading\n\n<div class="box">**bold** and *italic*</div>\n\n[Link](https://example.com)';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<h1');
+            expect(result).toContain('<div class="box">');
+            expect(result).toContain('<strong');
+            expect(result).toContain('<em');
+            expect(result).toContain('<a');
+            expect(result).toContain('href="https://example.com"');
+        });
+
+        test('should handle closing tags', () => {
+            const input = '<div>content</div>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('</div>');
+        });
+
+        test('should handle self-closing tags', () => {
+            const input = '<br/> and <hr/> and <img src="x.jpg"/>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<br/>');
+            expect(result).toContain('<hr/>');
+            expect(result).toContain('<img src="x.jpg"/>');
+        });
+
+        test('should handle boolean attributes', () => {
+            const input = '<details open><summary>Title</summary>Body</details>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<details open>');
+        });
+
+        test('should handle tags with underscores in attribute values', () => {
+            const input = '<a href="https://example.com/my_file_path">link</a>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('href="https://example.com/my_file_path"');
+        });
+
+        test('backward compat: false still escapes all HTML', () => {
+            const input = '<div>content</div>';
+            const result = quikdown(input, { allow_unsafe_html: false });
+            expect(result).toContain('&lt;div&gt;');
+            expect(result).not.toContain('<div>');
+        });
+
+        test('backward compat: true still passes all HTML through', () => {
+            const input = '<script>alert(1)</script><div>safe</div>';
+            const result = quikdown(input, { allow_unsafe_html: true });
+            expect(result).toContain('<script>alert(1)</script>');
+            expect(result).toContain('<div>safe</div>');
+        });
+
+        test('should handle single-quoted attribute values', () => {
+            const input = "<a href='https://example.com'>link</a>";
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('href="https://example.com"');
+        });
+
+        test('should handle unquoted attribute values', () => {
+            const input = '<img src=photo.jpg alt=photo>';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('src="photo.jpg"');
+            expect(result).toContain('alt="photo"');
+        });
+
+        test('should strip on* handlers with single-quoted or unquoted values', () => {
+            const input = "<div onclick='alert(1)' onload=hack>content</div>";
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).not.toContain('onclick');
+            expect(result).not.toContain('onload');
+            expect(result).toContain('<div>');
+        });
+
+        test('should accept an array of tag names', () => {
+            const input = '<div>allowed</div><span>also allowed</span><script>blocked</script>';
+            const result = quikdown(input, { allow_unsafe_html: ['div', 'span'] });
+            expect(result).toContain('<div>');
+            expect(result).toContain('<span>');
+            expect(result).toContain('&lt;script&gt;');
+        });
+
+        test('should accept a custom object whitelist', () => {
+            const input = '<b>bold</b><div>not allowed</div>';
+            const result = quikdown(input, { allow_unsafe_html: { b: 1 } });
+            expect(result).toContain('<b>bold</b>');
+            expect(result).toContain('&lt;div&gt;');
+        });
+
+        test('should treat unknown object values as truthy whitelist entries', () => {
+            // Values don't matter — only key presence is checked
+            const input = '<b>bold</b><i>italic</i>';
+            const result = quikdown(input, { allow_unsafe_html: { b: 'yes', i: true } });
+            expect(result).toContain('<b>bold</b>');
+            expect(result).toContain('<i>italic</i>');
+        });
+
+        test('should handle mixed safe and unsafe tags', () => {
+            const input = '<div class="safe">ok</div><script>bad</script><img src="photo.jpg">';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<div class="safe">');
+            expect(result).toContain('&lt;script&gt;');
+            expect(result).toContain('<img src="photo.jpg">');
+        });
+
+        test('HTML comments pass through in whitelist mode (browser hides them)', () => {
+            const input = 'before <!-- this is a comment --> after';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<!-- this is a comment -->');
+            expect(result).not.toContain('&lt;!--');
+        });
+
+        test('HTML comments are escaped in off mode', () => {
+            const input = 'before <!-- comment --> after';
+            const result = quikdown(input, { allow_unsafe_html: false });
+            expect(result).toContain('&lt;!--');
+            expect(result).not.toContain('<!-- comment -->');
+        });
+
+        test('HTML comments pass through in allow-all mode', () => {
+            const input = 'before <!-- comment --> after';
+            const result = quikdown(input, { allow_unsafe_html: true });
+            expect(result).toContain('<!-- comment -->');
+        });
+
+        test('multiline HTML comments pass through in whitelist mode', () => {
+            const input = '<!--\nline1\nline2\n-->\nvisible text';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<!--');
+            expect(result).toContain('-->');
+            expect(result).toContain('visible text');
+        });
+
+        test('HTML comments inside code blocks are not affected', () => {
+            const input = '`<!-- not a comment -->`';
+            const result = quikdown(input, { allow_unsafe_html: SAFE_TAGS });
+            expect(result).toContain('<code');
+            expect(result).toContain('&lt;!--');
+        });
+    });
+
     describe('allow_unsafe_html option', () => {
         test('should escape HTML by default', () => {
             const input = 'Text with <div class="custom">HTML content</div> here';
