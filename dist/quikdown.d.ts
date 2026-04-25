@@ -53,6 +53,17 @@ declare module 'quikdown' {
     allow_unsafe_urls?: boolean;
     
     /**
+     * Controls HTML passthrough in parsed output.
+     * - false (default): all HTML tags are escaped (secure)
+     * - true: all HTML passes through unchanged (unsafe, use with trusted content only)
+     * - Record<string, any>: object whose keys are lowercase tag names to allow
+     *   (e.g. { img: 1, a: 1, div: 1 }). Use quikdown.SAFE_HTML_TAGS for a curated default.
+     * - string[]: array of tag names (converted to object internally)
+     * @default false
+     */
+    allow_unsafe_html?: boolean | Record<string, any> | string[];
+
+    /**
      * If true, adds data-qd attributes for bidirectional conversion.
      * Enables HTML to Markdown conversion.
      * @default false
@@ -95,6 +106,7 @@ declare module 'quikdown' {
      * The version of quikdown
      */
     export const version: string;
+
   }
 
   export = quikdown;

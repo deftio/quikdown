@@ -8,6 +8,37 @@ import quikdown_bd from './quikdown_bd.js';
 import { getRenderedContent } from './quikdown_edit_copy.js';
 import { isHRLine, fenceOpen, isFenceClose, classifyLine, looksLikeTableRow } from './quikdown_classify.js';
 
+/**
+ * Curated safe HTML tag whitelist.
+ * Pass to quikdown's `allow_unsafe_html` option to allow these tags
+ * through while escaping everything else.  Callers can use this as-is,
+ * pass a subset, or build their own object — any object whose keys are
+ * lowercase tag names works.
+ *
+ * @example
+ *   // Use the curated list
+ *   quikdown(md, { allow_unsafe_html: QuikdownEditor.SAFE_HTML_TAGS });
+ *
+ *   // Or a minimal subset
+ *   quikdown(md, { allow_unsafe_html: { img: 1, a: 1, br: 1 } });
+ *
+ *   // Or an array (converted internally)
+ *   quikdown(md, { allow_unsafe_html: ['img', 'a', 'br'] });
+ */
+const SAFE_HTML_TAGS = {
+    b:1, i:1, em:1, strong:1, del:1, s:1, u:1, mark:1, sup:1, sub:1,
+    kbd:1, abbr:1, var:1, samp:1, cite:1, small:1, ins:1, dfn:1,
+    ruby:1, rt:1, rp:1, time:1, wbr:1,
+    img:1, picture:1, source:1, video:1, audio:1, figure:1, figcaption:1,
+    a:1, br:1, hr:1,
+    div:1, span:1, p:1, details:1, summary:1,
+    section:1, article:1, aside:1, header:1, footer:1, nav:1, main:1,
+    table:1, thead:1, tbody:1, tfoot:1, tr:1, th:1, td:1, caption:1, col:1, colgroup:1,
+    ul:1, ol:1, li:1, dl:1, dt:1, dd:1,
+    h1:1, h2:1, h3:1, h4:1, h5:1, h6:1,
+    blockquote:1, pre:1, code:1
+};
+
 // Default options
 const DEFAULT_OPTIONS = {
     mode: 'split',          // 'source' | 'preview' | 'split'
@@ -47,7 +78,9 @@ const DEFAULT_OPTIONS = {
     customFences: {}, // { 'language': (code, lang) => html }
     enableComplexFences: true, // Enable CSV tables, math rendering, SVG, etc.
     showUndoRedo: false,      // Show undo/redo toolbar buttons
-    undoStackSize: 100        // Maximum number of undo states to keep
+    undoStackSize: 100,       // Maximum number of undo states to keep
+    allowUnsafeHTML: false,   // false | 'limited' | true — controls HTML passthrough
+    showAllowUnsafeHTML: false // Show toolbar button to cycle HTML mode
 };
 
 // Library catalog used by preloadFences. Each entry knows how to:
@@ -292,7 +325,17 @@ class QuikdownEditor {
             lazyLFBtn.title = 'Convert single newlines to paragraph breaks (one-time transform)';
             toolbar.appendChild(lazyLFBtn);
         }
-        
+
+        // Allow unsafe HTML toggle button (if enabled)
+        if (this.options.showAllowUnsafeHTML) {
+            const htmlModeBtn = document.createElement('button');
+            htmlModeBtn.className = 'qde-btn';
+            htmlModeBtn.dataset.action = 'toggle-html-mode';
+            htmlModeBtn.textContent = this._getHtmlModeLabel(this.options.allowUnsafeHTML);
+            htmlModeBtn.title = this._getHtmlModeTooltip(this.options.allowUnsafeHTML);
+            toolbar.appendChild(htmlModeBtn);
+        }
+
         return toolbar;
     }
     
@@ -350,6 +393,25 @@ class QuikdownEditor {
             .qde-btn.disabled {
                 opacity: 0.4;
                 pointer-events: none;
+            }
+            .qde-btn[data-action="toggle-html-mode"] {
+                position: relative;
+            }
+            .qde-btn[data-action="toggle-html-mode"]:hover::after {
+                content: attr(title);
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 5px 10px;
+                background: #1f2937;
+                color: #fff;
+                font-size: 0.75rem;
+                font-weight: 400;
+                white-space: nowrap;
+                border-radius: 4px;
+                pointer-events: none;
+                z-index: 10;
             }
             
             .qde-spacer {
@@ -454,6 +516,9 @@ class QuikdownEditor {
             .qde-preview img,
             .qde-preview > svg {
                 max-width: 100%;
+            }
+            .qde-preview img {
+                display: inline;
             }
             .qde-preview .leaflet-container { box-sizing: border-box; }
 
@@ -875,10 +940,16 @@ class QuikdownEditor {
                 this.previewPanel.innerHTML = '<div style="color: #999; font-style: italic; padding: 16px;">Start typing markdown in the source panel...</div>';
             }
         } else {
+            // Translate editor's allowUnsafeHTML to parser's allow_unsafe_html:
+            //   false → false,  true → true,  'limited' → quikdown_bd.SAFE_HTML_TAGS
+            const htmlMode = this.options.allowUnsafeHTML;
+            const allowHtml = htmlMode === 'limited' ? SAFE_HTML_TAGS : htmlMode;
+
             this._html = quikdown_bd(markdown, {
                 fence_plugin: this.createFencePlugin(),
                 lazy_linefeeds: this.options.lazy_linefeeds,
-                inline_styles: this.options.inline_styles
+                inline_styles: this.options.inline_styles,
+                allow_unsafe_html: allowHtml
             });
             
             // Update preview if visible
@@ -2112,6 +2183,9 @@ class QuikdownEditor {
             case 'redo':
                 this.redo();
                 break;
+            case 'toggle-html-mode':
+                this.cycleAllowUnsafeHTML();
+                break;
         }
     }
     
@@ -2469,6 +2543,62 @@ class QuikdownEditor {
     }
     
     /**
+     * Get the label for the current HTML passthrough mode.
+     * @private
+     */
+    _getHtmlModeLabel(mode) {
+        if (mode === true)      return 'HTML: Raw';
+        if (mode === 'limited') return 'HTML: Safe';
+        return 'HTML: Off';
+    }
+
+    /** @private */
+    _getHtmlModeTooltip(mode) {
+        if (mode === true)      return 'All HTML passes through — no protection';
+        if (mode === 'limited') return 'Safe tags render, dangerous tags escaped';
+        return 'All HTML tags shown as text';
+    }
+
+    /**
+     * Cycle allowUnsafeHTML through false → "limited" → true → false.
+     */
+    cycleAllowUnsafeHTML() {
+        const current = this.options.allowUnsafeHTML;
+        let next;
+        if (current === false)         next = 'limited';
+        else if (current === 'limited') next = true;
+        else                            next = false;
+        this.setAllowUnsafeHTML(next);
+    }
+
+    /**
+     * Set the HTML passthrough mode.
+     * @param {boolean|'limited'} mode - false, 'limited', or true
+     */
+    setAllowUnsafeHTML(mode) {
+        if (mode !== false && mode !== true && mode !== 'limited') return;
+        this.options.allowUnsafeHTML = mode;
+        // Update toolbar button label
+        if (this.toolbar) {
+            const btn = this.toolbar.querySelector('[data-action="toggle-html-mode"]');
+            if (btn) {
+                btn.textContent = this._getHtmlModeLabel(mode);
+                btn.title = this._getHtmlModeTooltip(mode);
+            }
+        }
+        // Re-render
+        this.updateFromMarkdown(this._markdown);
+    }
+
+    /**
+     * Get the current HTML passthrough mode.
+     * @returns {boolean|'limited'}
+     */
+    getAllowUnsafeHTML() {
+        return this.options.allowUnsafeHTML;
+    }
+
+    /**
      * Destroy the editor
      */
     destroy() {
@@ -2487,6 +2617,9 @@ class QuikdownEditor {
         }
     }
 }
+
+/** Static: curated safe HTML tag whitelist for allow_unsafe_html */
+QuikdownEditor.SAFE_HTML_TAGS = SAFE_HTML_TAGS;
 
 // Export
 export default QuikdownEditor;

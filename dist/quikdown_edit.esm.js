@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.10
+ * @version 1.2.11
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -222,7 +222,7 @@ function looksLikeTableRow(line) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.10';
+const quikdownVersion = '1.2.11';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -230,6 +230,10 @@ const CLASS_PREFIX = 'quikdown-';
 /** Placeholder sigils — chosen to be extremely unlikely in real text */
 const PLACEHOLDER_CB = '§CB';   // fenced code blocks
 const PLACEHOLDER_IC = '§IC';   // inline code spans
+const PLACEHOLDER_HT = '§HT';  // safe HTML tags (limited mode)
+
+/** Attributes whose values need URL sanitization */
+const URL_ATTRIBUTES = { href:1, src:1, action:1, formaction:1 };
 
 /** HTML entity escape map */
 const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -364,6 +368,46 @@ function quikdown(markdown, options = {}) {
         return trimmedUrl;
     }
 
+    /**
+     * Sanitize attributes on an HTML tag string for limited mode.
+     * Strips on* event handlers (case-insensitive) and runs sanitizeUrl()
+     * on href/src/action/formaction values.
+     */
+    function sanitizeHtmlTagAttrs(tagStr) {
+        // Self-closing or void tag without attributes — pass through
+        if (!/\s/.test(tagStr.replace(/<\/?[a-zA-Z][a-zA-Z0-9]*/, '').replace(/\/?>$/, ''))) {
+            return tagStr;
+        }
+        // Parse: <tagname ...attrs... > or <tagname ...attrs... />
+        const m = tagStr.match(/^(<\/?[a-zA-Z][a-zA-Z0-9]*)([\s\S]*?)(\/?>)$/);
+        /* istanbul ignore next - defensive: Phase 1.5 regex guarantees valid tag shape */
+        if (!m) return tagStr;
+
+        const [, open, attrStr, close] = m;
+        // Match individual attributes: name="value", name='value', name=value, or bare name
+        // eslint-disable-next-line security/detect-unsafe-regex -- linear: no nested quantifiers
+        const attrRe = /([a-zA-Z_][\w\-.:]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+)))?/g;
+        const attrs = [];
+        let am;
+        while ((am = attrRe.exec(attrStr)) !== null) {
+            const name = am[1];
+            const value = am[2] !== undefined ? am[2] : am[3] !== undefined ? am[3] : am[4];
+            // Strip event handlers (on*)
+            if (/^on/i.test(name)) continue;
+            if (value === undefined) {
+                // Boolean attribute (e.g. disabled, checked)
+                attrs.push(name);
+            } else {
+                let sanitized = value;
+                if (name.toLowerCase() in URL_ATTRIBUTES) {
+                    sanitized = sanitizeUrl(value);
+                }
+                attrs.push(`${name}="${sanitized}"`);
+            }
+        }
+        return open + (attrs.length ? ' ' + attrs.join(' ') : '') + close;
+    }
+
     // ────────────────────────────────────────────────────────────────
     //  Phase 1 — Code Extraction
     // ────────────────────────────────────────────────────────────────
@@ -416,14 +460,54 @@ function quikdown(markdown, options = {}) {
     });
 
     // ────────────────────────────────────────────────────────────────
+    //  Phase 1.5 — Safe HTML Extraction (whitelist mode)
+    // ────────────────────────────────────────────────────────────────
+    // When allow_unsafe_html is an object or array, extract whitelisted
+    // HTML tags, sanitize their attributes, and replace with placeholders.
+    // Non-whitelisted tags stay in text so Phase 2 will escape them.
+
+    const safeTags = [];
+    // Normalize: array → object for O(1) lookup; object used as-is
+    const htmlAllow = Array.isArray(allow_unsafe_html)
+        ? Object.fromEntries(allow_unsafe_html.map(t => [t, 1]))
+        : (allow_unsafe_html && typeof allow_unsafe_html === 'object') ? allow_unsafe_html : null;
+
+    if (htmlAllow) {
+        // Pass through HTML comments — browsers render them as nothing
+        html = html.replace(/<!--[\s\S]*?-->/g, (match) => {
+            const idx = safeTags.length;
+            safeTags.push(match);
+            return `${PLACEHOLDER_HT}${idx}§`;
+        });
+        html = html.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/g, (match, tagName) => {
+            if (tagName.toLowerCase() in htmlAllow) {
+                const sanitized = sanitizeHtmlTagAttrs(match);
+                const idx = safeTags.length;
+                safeTags.push(sanitized);
+                return `${PLACEHOLDER_HT}${idx}§`;
+            }
+            // Not whitelisted — leave in text for Phase 2 to escape
+            return match;
+        });
+    }
+
+    // ────────────────────────────────────────────────────────────────
     //  Phase 2 — HTML Escaping
     // ────────────────────────────────────────────────────────────────
     // All remaining text (everything except code placeholders) is escaped
     // to prevent XSS.  The `allow_unsafe_html` option skips this for
     // trusted pipelines that intentionally embed raw HTML.
+    // For whitelist mode, escaping still runs (only `true` bypasses it).
 
-    if (!allow_unsafe_html) {
+    if (allow_unsafe_html !== true) {
         html = escapeHtml(html);
+    }
+
+    // Restore safe HTML tag placeholders after escaping
+    if (htmlAllow) {
+        safeTags.forEach((tag, i) => {
+            html = html.replace(`${PLACEHOLDER_HT}${i}§`, tag);
+        });
     }
 
     // ────────────────────────────────────────────────────────────────
@@ -666,6 +750,14 @@ function scanLineBlocks(text, getAttr, dataQd) {
 
     while (i < lines.length) {
         const line = lines[i];
+
+        // ── Markdown comment (reference-link hack) ──
+        // [//]: # (comment)  or  [//]: # "comment"  or  [//]: #
+        // These produce no output — standard markdown comment convention.
+        if (/^\[\/\/\]: #/.test(line)) {
+            i++;
+            continue;
+        }
 
         // ── Heading ──
         // Count leading '#' characters.  Valid heading: 1-6 hashes then a space.
@@ -1030,6 +1122,7 @@ quikdown.configure = function(options) {
 
 /** Semantic version (injected at build time) */
 quikdown.version = quikdownVersion;
+
 
 // ════════════════════════════════════════════════════════════════════
 //  Exports
@@ -2928,6 +3021,37 @@ async function getRenderedContent(previewPanel) {
  */
 
 
+/**
+ * Curated safe HTML tag whitelist.
+ * Pass to quikdown's `allow_unsafe_html` option to allow these tags
+ * through while escaping everything else.  Callers can use this as-is,
+ * pass a subset, or build their own object — any object whose keys are
+ * lowercase tag names works.
+ *
+ * @example
+ *   // Use the curated list
+ *   quikdown(md, { allow_unsafe_html: QuikdownEditor.SAFE_HTML_TAGS });
+ *
+ *   // Or a minimal subset
+ *   quikdown(md, { allow_unsafe_html: { img: 1, a: 1, br: 1 } });
+ *
+ *   // Or an array (converted internally)
+ *   quikdown(md, { allow_unsafe_html: ['img', 'a', 'br'] });
+ */
+const SAFE_HTML_TAGS = {
+    b:1, i:1, em:1, strong:1, del:1, s:1, u:1, mark:1, sup:1, sub:1,
+    kbd:1, abbr:1, var:1, samp:1, cite:1, small:1, ins:1, dfn:1,
+    ruby:1, rt:1, rp:1, time:1, wbr:1,
+    img:1, picture:1, source:1, video:1, audio:1, figure:1, figcaption:1,
+    a:1, br:1, hr:1,
+    div:1, span:1, p:1, details:1, summary:1,
+    section:1, article:1, aside:1, header:1, footer:1, nav:1, main:1,
+    table:1, thead:1, tbody:1, tfoot:1, tr:1, th:1, td:1, caption:1, col:1, colgroup:1,
+    ul:1, ol:1, li:1, dl:1, dt:1, dd:1,
+    h1:1, h2:1, h3:1, h4:1, h5:1, h6:1,
+    blockquote:1, pre:1, code:1
+};
+
 // Default options
 const DEFAULT_OPTIONS = {
     mode: 'split',          // 'source' | 'preview' | 'split'
@@ -2967,7 +3091,9 @@ const DEFAULT_OPTIONS = {
     customFences: {}, // { 'language': (code, lang) => html }
     enableComplexFences: true, // Enable CSV tables, math rendering, SVG, etc.
     showUndoRedo: false,      // Show undo/redo toolbar buttons
-    undoStackSize: 100        // Maximum number of undo states to keep
+    undoStackSize: 100,       // Maximum number of undo states to keep
+    allowUnsafeHTML: false,   // false | 'limited' | true — controls HTML passthrough
+    showAllowUnsafeHTML: false // Show toolbar button to cycle HTML mode
 };
 
 // Library catalog used by preloadFences. Each entry knows how to:
@@ -3212,7 +3338,17 @@ class QuikdownEditor {
             lazyLFBtn.title = 'Convert single newlines to paragraph breaks (one-time transform)';
             toolbar.appendChild(lazyLFBtn);
         }
-        
+
+        // Allow unsafe HTML toggle button (if enabled)
+        if (this.options.showAllowUnsafeHTML) {
+            const htmlModeBtn = document.createElement('button');
+            htmlModeBtn.className = 'qde-btn';
+            htmlModeBtn.dataset.action = 'toggle-html-mode';
+            htmlModeBtn.textContent = this._getHtmlModeLabel(this.options.allowUnsafeHTML);
+            htmlModeBtn.title = this._getHtmlModeTooltip(this.options.allowUnsafeHTML);
+            toolbar.appendChild(htmlModeBtn);
+        }
+
         return toolbar;
     }
     
@@ -3270,6 +3406,25 @@ class QuikdownEditor {
             .qde-btn.disabled {
                 opacity: 0.4;
                 pointer-events: none;
+            }
+            .qde-btn[data-action="toggle-html-mode"] {
+                position: relative;
+            }
+            .qde-btn[data-action="toggle-html-mode"]:hover::after {
+                content: attr(title);
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 5px 10px;
+                background: #1f2937;
+                color: #fff;
+                font-size: 0.75rem;
+                font-weight: 400;
+                white-space: nowrap;
+                border-radius: 4px;
+                pointer-events: none;
+                z-index: 10;
             }
             
             .qde-spacer {
@@ -3374,6 +3529,9 @@ class QuikdownEditor {
             .qde-preview img,
             .qde-preview > svg {
                 max-width: 100%;
+            }
+            .qde-preview img {
+                display: inline;
             }
             .qde-preview .leaflet-container { box-sizing: border-box; }
 
@@ -3795,10 +3953,16 @@ class QuikdownEditor {
                 this.previewPanel.innerHTML = '<div style="color: #999; font-style: italic; padding: 16px;">Start typing markdown in the source panel...</div>';
             }
         } else {
+            // Translate editor's allowUnsafeHTML to parser's allow_unsafe_html:
+            //   false → false,  true → true,  'limited' → quikdown_bd.SAFE_HTML_TAGS
+            const htmlMode = this.options.allowUnsafeHTML;
+            const allowHtml = htmlMode === 'limited' ? SAFE_HTML_TAGS : htmlMode;
+
             this._html = quikdown_bd(markdown, {
                 fence_plugin: this.createFencePlugin(),
                 lazy_linefeeds: this.options.lazy_linefeeds,
-                inline_styles: this.options.inline_styles
+                inline_styles: this.options.inline_styles,
+                allow_unsafe_html: allowHtml
             });
             
             // Update preview if visible
@@ -5032,6 +5196,9 @@ class QuikdownEditor {
             case 'redo':
                 this.redo();
                 break;
+            case 'toggle-html-mode':
+                this.cycleAllowUnsafeHTML();
+                break;
         }
     }
     
@@ -5387,6 +5554,62 @@ class QuikdownEditor {
     }
     
     /**
+     * Get the label for the current HTML passthrough mode.
+     * @private
+     */
+    _getHtmlModeLabel(mode) {
+        if (mode === true)      return 'HTML: Raw';
+        if (mode === 'limited') return 'HTML: Safe';
+        return 'HTML: Off';
+    }
+
+    /** @private */
+    _getHtmlModeTooltip(mode) {
+        if (mode === true)      return 'All HTML passes through — no protection';
+        if (mode === 'limited') return 'Safe tags render, dangerous tags escaped';
+        return 'All HTML tags shown as text';
+    }
+
+    /**
+     * Cycle allowUnsafeHTML through false → "limited" → true → false.
+     */
+    cycleAllowUnsafeHTML() {
+        const current = this.options.allowUnsafeHTML;
+        let next;
+        if (current === false)         next = 'limited';
+        else if (current === 'limited') next = true;
+        else                            next = false;
+        this.setAllowUnsafeHTML(next);
+    }
+
+    /**
+     * Set the HTML passthrough mode.
+     * @param {boolean|'limited'} mode - false, 'limited', or true
+     */
+    setAllowUnsafeHTML(mode) {
+        if (mode !== false && mode !== true && mode !== 'limited') return;
+        this.options.allowUnsafeHTML = mode;
+        // Update toolbar button label
+        if (this.toolbar) {
+            const btn = this.toolbar.querySelector('[data-action="toggle-html-mode"]');
+            if (btn) {
+                btn.textContent = this._getHtmlModeLabel(mode);
+                btn.title = this._getHtmlModeTooltip(mode);
+            }
+        }
+        // Re-render
+        this.updateFromMarkdown(this._markdown);
+    }
+
+    /**
+     * Get the current HTML passthrough mode.
+     * @returns {boolean|'limited'}
+     */
+    getAllowUnsafeHTML() {
+        return this.options.allowUnsafeHTML;
+    }
+
+    /**
      * Destroy the editor
      */
     destroy() {
@@ -5405,6 +5628,9 @@ class QuikdownEditor {
         }
     }
 }
+
+/** Static: curated safe HTML tag whitelist for allow_unsafe_html */
+QuikdownEditor.SAFE_HTML_TAGS = SAFE_HTML_TAGS;
 
 // Export for CommonJS (needed for bundled ESM to work with Jest)
 if (typeof module !== 'undefined' && module.exports) {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Parser options — Parser example 2 · quikdown</title>
-  <meta name="description" content="Toggle quikdown parser options live: inline_styles, lazy_linefeeds, bidirectional, allow_unsafe_urls. See how each affects the rendered output.">
+  <meta name="description" content="Toggle quikdown parser options live: inline_styles, lazy_linefeeds, bidirectional, allow_unsafe_urls, allow_unsafe_html. See how each affects the rendered output.">
   <meta name="keywords" content="quikdown options, inline_styles, lazy_linefeeds, bidirectional markdown, markdown parser configuration">
   <meta name="theme-color" content="#9550bb">
   <link rel="canonical" href="https://deftio.github.io/quikdown/pages/examples/parser-options.html">
@@ -139,6 +139,19 @@
                 <span class="opt-desc">Disable URL sanitization. <strong>Only enable for trusted input</strong> — opens XSS vectors.</span>
               </span>
             </label>
+            <div style="padding: 0.6rem;">
+              <span class="opt-name">allow_unsafe_html</span>
+              <span class="opt-desc" style="display:block; margin-bottom:0.4rem;">Controls which HTML tags survive escaping. Pass an object of tag names or <code>true</code> to allow all.</span>
+              <label style="display:inline-flex; align-items:center; gap:0.3rem; margin-right:0.6rem; cursor:pointer;">
+                <input type="radio" name="html-mode" value="false" checked> Off
+              </label>
+              <label style="display:inline-flex; align-items:center; gap:0.3rem; margin-right:0.6rem; cursor:pointer;">
+                <input type="radio" name="html-mode" value="safe"> Safe tags
+              </label>
+              <label style="display:inline-flex; align-items:center; gap:0.3rem; cursor:pointer;">
+                <input type="radio" name="html-mode" value="true"> Raw
+              </label>
+            </div>
           </div>
           <div class="opts-source">
             <h2 style="margin-top:0;">Source</h2>
@@ -156,6 +169,16 @@ function hello() { return 'world'; }
 
 [A link](https://example.com)
 [Unsafe?](javascript:alert(1))
+
+<details><summary>Click to expand</summary>
+Hidden content inside a details block.
+</details>
+
+<img src="https://via.placeholder.com/120x40" alt="placeholder">
+
+<mark>Highlighted text</mark> and <kbd>Ctrl+S</kbd>
+
+<script>alert('xss')</script>
 
 | Col A | Col B |
 |:------|------:|
@@ -188,9 +211,31 @@ function hello() { return 'world'; }
     const $ = id => document.getElementById(id);
     const opts = ['inline_styles', 'lazy_linefeeds', 'bidirectional', 'allow_unsafe_urls'];
 
+    // Curated safe-tag whitelist — caller owns the policy, parser owns the mechanism
+    const SAFE_TAGS = {
+      b:1, i:1, em:1, strong:1, del:1, s:1, u:1, mark:1, sup:1, sub:1,
+      kbd:1, abbr:1, var:1, samp:1, cite:1, small:1, ins:1, dfn:1,
+      img:1, picture:1, source:1, video:1, audio:1, figure:1, figcaption:1,
+      a:1, br:1, hr:1,
+      div:1, span:1, p:1, details:1, summary:1,
+      section:1, article:1, aside:1, header:1, footer:1, nav:1, main:1,
+      table:1, thead:1, tbody:1, tfoot:1, tr:1, th:1, td:1, caption:1, col:1, colgroup:1,
+      ul:1, ol:1, li:1, dl:1, dt:1, dd:1,
+      h1:1, h2:1, h3:1, h4:1, h5:1, h6:1,
+      blockquote:1, pre:1, code:1
+    };
+
+    function getHtmlMode() {
+      const val = document.querySelector('input[name="html-mode"]:checked').value;
+      if (val === 'true') return true;
+      if (val === 'safe') return SAFE_TAGS;
+      return false;
+    }
+
     function render() {
       const o = {};
       opts.forEach(name => o[name] = $(`opt-${name}`).checked);
+      o.allow_unsafe_html = getHtmlMode();
       const md = $('opt-input').value;
       const html = quikdown(md, o);
       $('opt-output').innerHTML = html;
@@ -198,6 +243,7 @@ function hello() { return 'world'; }
     }
 
     opts.forEach(name => $(`opt-${name}`).addEventListener('change', render));
+    document.querySelectorAll('input[name="html-mode"]').forEach(r => r.addEventListener('change', render));
     $('opt-input').addEventListener('input', render);
     render();
 
