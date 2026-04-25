@@ -303,6 +303,45 @@ test.describe('HTML Whitelist — Editor E2E', () => {
         });
     });
 
+    // ── Markdown comments ([//]: #) ────────────────────────────────
+
+    test.describe('Markdown comments', () => {
+        test('[//]: # (comment) lines are stripped', async () => {
+            await page.evaluate(() => window.editor.setAllowUnsafeHTML('limited'));
+            await setMarkdown(page,
+                '[//]: # (BEGIN SIZE TABLE)\n# Visible Heading\n[//]: # (END SIZE TABLE)'
+            );
+            const preview = page.locator('.qde-preview');
+            const text = await preview.textContent();
+            expect(text).not.toContain('BEGIN SIZE TABLE');
+            expect(text).not.toContain('END SIZE TABLE');
+            expect(text).not.toContain('[//]');
+            expect(text).toContain('Visible Heading');
+        });
+
+        test('[//]: # comments work in all HTML modes', async () => {
+            const md = '[//]: # (hidden)\nvisible';
+            // Off mode
+            await page.evaluate(() => window.editor.setAllowUnsafeHTML(false));
+            await setMarkdown(page, md);
+            let text = await page.locator('.qde-preview').textContent();
+            expect(text).not.toContain('hidden');
+            expect(text).toContain('visible');
+
+            // Safe mode
+            await page.evaluate(() => window.editor.setAllowUnsafeHTML('limited'));
+            await setMarkdown(page, md);
+            text = await page.locator('.qde-preview').textContent();
+            expect(text).not.toContain('hidden');
+
+            // Raw mode
+            await page.evaluate(() => window.editor.setAllowUnsafeHTML(true));
+            await setMarkdown(page, md);
+            text = await page.locator('.qde-preview').textContent();
+            expect(text).not.toContain('hidden');
+        });
+    });
+
     // ── Badge / inline image rendering ──────────────────────────────
 
     test.describe('Badge inline rendering', () => {

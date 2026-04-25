@@ -597,6 +597,14 @@ function scanLineBlocks(text, getAttr, dataQd) {
     while (i < lines.length) {
         const line = lines[i];
 
+        // ── Markdown comment (reference-link hack) ──
+        // [//]: # (comment)  or  [//]: # "comment"  or  [//]: #
+        // These produce no output — standard markdown comment convention.
+        if (/^\[\/\/\]: #/.test(line)) {
+            i++;
+            continue;
+        }
+
         // ── Heading ──
         // Count leading '#' characters.  Valid heading: 1-6 hashes then a space.
         // Example: "## Hello World ##" → <h2>Hello World</h2>

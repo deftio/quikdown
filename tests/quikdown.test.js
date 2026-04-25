@@ -1884,6 +1884,54 @@ code3
         });
     });
 
+    describe('markdown comments ([//]: #)', () => {
+        test('should strip [//]: # (comment) lines', () => {
+            const input = '[//]: # (this is a comment)\nvisible text';
+            const result = quikdown(input);
+            expect(result).not.toContain('this is a comment');
+            expect(result).not.toContain('[//]');
+            expect(result).toContain('visible text');
+        });
+
+        test('should strip [//]: # "comment" lines', () => {
+            const input = '[//]: # "BEGIN SIZE TABLE"\nvisible text';
+            const result = quikdown(input);
+            expect(result).not.toContain('BEGIN SIZE TABLE');
+            expect(result).not.toContain('[//]');
+            expect(result).toContain('visible text');
+        });
+
+        test('should strip bare [//]: # lines', () => {
+            const input = 'before\n[//]: #\nafter';
+            const result = quikdown(input);
+            expect(result).not.toContain('[//]');
+            expect(result).toContain('before');
+            expect(result).toContain('after');
+        });
+
+        test('should strip multiple comment lines', () => {
+            const input = '[//]: # (comment 1)\n# Heading\n[//]: # (comment 2)\ntext';
+            const result = quikdown(input);
+            expect(result).not.toContain('comment 1');
+            expect(result).not.toContain('comment 2');
+            expect(result).toContain('Heading');
+            expect(result).toContain('text');
+        });
+
+        test('should work in all HTML modes', () => {
+            const input = '[//]: # (hidden)\nvisible';
+            // Off mode
+            const off = quikdown(input, { allow_unsafe_html: false });
+            expect(off).not.toContain('hidden');
+            // Safe mode
+            const safe = quikdown(input, { allow_unsafe_html: { div: 1 } });
+            expect(safe).not.toContain('hidden');
+            // Raw mode
+            const raw = quikdown(input, { allow_unsafe_html: true });
+            expect(raw).not.toContain('hidden');
+        });
+    });
+
     describe('allow_unsafe_html option', () => {
         test('should escape HTML by default', () => {
             const input = 'Text with <div class="custom">HTML content</div> here';

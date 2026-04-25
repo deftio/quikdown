@@ -637,6 +637,23 @@ describe('quikdown_bd edge cases and full coverage', () => {
     });
   });
 
+  describe('markdown comments ([//]: #)', () => {
+    test('should strip [//]: # comment lines', () => {
+      const input = '[//]: # (hidden comment)\nvisible text';
+      const result = quikdown_bd(input);
+      expect(result).not.toContain('hidden comment');
+      expect(result).not.toContain('[//]');
+      expect(result).toContain('visible text');
+    });
+
+    test('should strip [//]: # "quoted" comment lines', () => {
+      const input = '[//]: # "BEGIN SIZE TABLE"\n# Title';
+      const result = quikdown_bd(input);
+      expect(result).not.toContain('BEGIN SIZE TABLE');
+      expect(result).toContain('Title');
+    });
+  });
+
   describe('Error Handling', () => {
     test('should handle null and undefined inputs', () => {
       expect(quikdown_bd(null)).toBe('');
