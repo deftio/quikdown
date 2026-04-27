@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.2.11
+ * @version 1.2.12
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -112,7 +112,7 @@ function isDashHRLine(trimmed) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.11';
+const quikdownVersion = '1.2.12';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
