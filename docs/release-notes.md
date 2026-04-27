@@ -1,5 +1,35 @@
 # Release Notes
 
+## v1.2.12
+
+### Landing page
+- **Replaced embedded live editor with screenshot gallery**: Landing page now loads instantly with three static product shots (split-view editor, headless mode, quikchat integration) instead of loading the full editor module, mermaid, and highlight.js
+- **Hero reworded**: "Markdown Parser | Editor with Bidirectional Support" — gives fair weight to parser, bd, and editor
+- **Code tabs default to Editor**: The "One import, no build step" tabs now open on the Editor tab
+- **Screenshot capture script**: New `tools/captureScreenshots.cjs` — Playwright script to regenerate landing-page gallery screenshots
+
+---
+
+## v1.2.11
+
+### Parser
+- **HTML tag handling**: Updated HTML tag handling for improved output
+- **HTML escaping modes in editor**: `off`, `safe`, and `raw` modes for `allowUnsafeHTML`
+
+### Repo
+- **Squash-only merges**: Disabled merge commits and rebase merges on the repo
+- **Branch protection**: Required 1 approval + enforce admins on main
+
+---
+
+## v1.2.10
+
+### Parser
+- **URL/href underscore fix**: Fixed issue where underscores in URLs were incorrectly parsed as emphasis markers (issue #3)
+- **Emphasis fix**: Corrected emphasis (`*`/`_`) parsing edge cases
+
+---
+
 ## v1.2.9
 
 ### Security

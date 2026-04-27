@@ -283,7 +283,7 @@ const md: string = quikdown_bd.toMarkdown(html);
 
 ## Version
 
-quikdown_bd uses the same version as core quikdown: **1.2.3**
+quikdown_bd uses the same version as core quikdown: **1.2.12**
 
 ## License
 

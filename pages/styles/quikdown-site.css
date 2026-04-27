@@ -819,6 +819,53 @@ kbd {
 }
 
 /* ============================================================
+ * 10b. Screenshot gallery (landing page)
+ * ============================================================ */
+
+.qd-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+.qd-gallery-item {
+  text-decoration: none;
+  color: inherit;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(149, 80, 187, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.qd-gallery-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
+}
+.qd-gallery-item img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-bottom: 1px solid rgba(149, 80, 187, 0.1);
+}
+.qd-gallery-item h3 {
+  margin: 0.75rem 1rem 0.25rem;
+  font-size: 1rem;
+  color: #1f2937;
+}
+.qd-gallery-item p {
+  margin: 0 1rem 0.75rem;
+  font-size: 0.85rem;
+  color: #4b5563;
+  line-height: 1.45;
+}
+@media (max-width: 720px) {
+  .qd-gallery {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* ============================================================
  * 11. Code tabs
  * ============================================================ */
 
@@ -1062,6 +1109,17 @@ body.qd-theme-dark .qd-callout {
 }
 body.qd-theme-dark .qd-callout p { color: #b8b8c8; }
 
+body.qd-theme-dark .qd-gallery-item {
+  background: rgba(24, 24, 40, 0.96);
+  border-color: rgba(179, 136, 221, 0.18);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+body.qd-theme-dark .qd-gallery-item:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+body.qd-theme-dark .qd-gallery-item h3 { color: #e6e6f0; }
+body.qd-theme-dark .qd-gallery-item p { color: #b8b8c8; }
+
 /* ============================================================
  * 15. Auto theme (mirrors dark when system prefers dark)
  * ============================================================ */
@@ -1185,4 +1243,15 @@ body.qd-theme-dark .qd-callout p { color: #b8b8c8; }
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
   }
   body.qd-theme-auto .qd-callout p { color: #b8b8c8; }
+
+  body.qd-theme-auto .qd-gallery-item {
+    background: rgba(24, 24, 40, 0.96);
+    border-color: rgba(179, 136, 221, 0.18);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+  body.qd-theme-auto .qd-gallery-item:hover {
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  }
+  body.qd-theme-auto .qd-gallery-item h3 { color: #e6e6f0; }
+  body.qd-theme-auto .qd-gallery-item p { color: #b8b8c8; }
 }

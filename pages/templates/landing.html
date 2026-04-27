@@ -50,13 +50,13 @@
   <main>
 
     <!-- ============================================================
-         Hero (compact — leaves more room for the embedded editor below)
+         Hero
          ============================================================ -->
     <section class="qd-hero qd-hero-compact">
       <div class="qd-hero-inner">
-        <h1>Lightweight Bidirectional Markdown Parser/Editor</h1>
+        <h1>Markdown Parser | Editor with Bidirectional&nbsp;Support</h1>
         <p class="qd-hero-sub">
-          Tiny, secure markdown for browsers and Node. Drop-in editor with fence plugins for code, SVG, Mermaid, MathJax, CSV, GeoJSON, and STL. Pick the layer you need.
+          Zero-dependency markdown-to-HTML and HTML-to-markdown with live editing support. quikdown_edit is a full split-view editor with fence plugins for code highlighting, Mermaid diagrams, MathJax, SVG, CSV, GeoJSON maps, and STL 3D models.
         </p>
         <div class="qd-hero-meta">
           <span><strong>{{SIZE_CORE}} KB</strong> parser</span>
@@ -87,21 +87,33 @@
     </section>
 
     <!-- ============================================================
-         Embedded mini editor (sits right under the hero) — mounted
-         directly into this document, NOT in an iframe. One scroll
-         context, one theme class, no postMessage dance.
+         Screenshot gallery — three product shots
          ============================================================ -->
     <section class="qd-section qd-section-tight">
       <div class="qd-container">
-        <div class="qd-editor-wrap">
-          <div id="landing-demo-editor"></div>
+        <div class="qd-gallery">
+          <a class="qd-gallery-item" href="{{ROOT}}/pages/edit/">
+            <img src="{{ROOT}}/pages/assets/screenshots/editor-split.png"
+                 alt="quikdown split-view editor showing markdown source and rendered preview side by side"
+                 loading="lazy" width="640" height="400">
+            <h3>Split-view editor</h3>
+            <p>Source and rendered preview side by side. Mermaid, code highlighting, tables — all live.</p>
+          </a>
+          <a class="qd-gallery-item" href="{{ROOT}}/pages/examples/demo-headless.html">
+            <img src="{{ROOT}}/pages/assets/screenshots/editor-headless.png"
+                 alt="quikdown editor in headless mode with a custom toolbar"
+                 loading="lazy" width="640" height="400">
+            <h3>Headless mode</h3>
+            <p>No toolbar — wire your own buttons to the editor API. Embed it in any app shell.</p>
+          </a>
+          <a class="qd-gallery-item" href="https://github.com/deftio/quikchat" target="_blank" rel="noopener">
+            <img src="{{ROOT}}/pages/assets/screenshots/quikchat-integration.png"
+                 alt="quikchat using quikdown to render markdown inside chat bubbles"
+                 loading="lazy" width="640" height="400">
+            <h3>quikchat integration</h3>
+            <p>Markdown in LLM chat bubbles — code, tables, and diagrams rendered inline.</p>
+          </a>
         </div>
-        <p class="qd-text-center" style="margin-top: 0.75rem; font-size: 0.85rem; color: #6b7280;">
-          ↑ live editor — edit either pane.
-          <a href="{{ROOT}}/pages/edit/">Open full editor →</a>
-          ·
-          <a href="{{ROOT}}/pages/examples/">Browse examples →</a>
-        </p>
       </div>
     </section>
 
@@ -209,37 +221,6 @@ new QuikdownEditor('#editor', {
     </section>
 
     <!-- ============================================================
-         In production
-         ============================================================ -->
-    <section class="qd-section qd-section-soft">
-      <div class="qd-container">
-        <h2 style="font-size: clamp(1.6rem, 3vw, 2.2rem); margin: 0 0 1.5rem 0;">Real apps, real markdown</h2>
-        <div class="qd-callout">
-          <div>
-            <h3>quikchat — themable chat with built-in markdown</h3>
-            <p>
-              <a href="https://deftio.github.io/quikchat/" target="_blank" rel="noopener">quikchat</a>
-              uses quikdown to render inline fenced markdown in LLM chat
-              widgets. When an LLM streams back a code block, table, or
-              diagram, quikdown turns it into HTML in milliseconds — without a
-              heavyweight framework dragging down a chat bubble.
-            </p>
-            <p>
-              <a class="qd-card-link" href="{{ROOT}}/pages/examples/integration-quikchat.html">
-                See the integration example →
-              </a>
-            </p>
-          </div>
-          <div>
-            <div style="background: linear-gradient(135deg, #667eea, #764ba2); aspect-ratio: 4/3; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
-              quikchat<br>screenshot
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================
          Feature summary (two-column, just facts)
          ============================================================ -->
     <section class="qd-section">
@@ -288,11 +269,11 @@ new QuikdownEditor('#editor', {
         <p style="color: #4b5563; margin: 0 0 1.5rem 0;">Pick the layer, drop a script tag (or import), and you're done.</p>
         <div class="qd-tabs">
           <div class="qd-tabs-header">
-            <button class="qd-tab-btn active" data-tab-target="parser">Parser</button>
+            <button class="qd-tab-btn" data-tab-target="parser">Parser</button>
             <button class="qd-tab-btn" data-tab-target="bd">Bidirectional</button>
-            <button class="qd-tab-btn" data-tab-target="edit">Editor</button>
+            <button class="qd-tab-btn active" data-tab-target="edit">Editor</button>
           </div>
-          <div class="qd-tab-pane active" data-tab-pane="parser">
+          <div class="qd-tab-pane" data-tab-pane="parser">
 <pre><code>&lt;script type="module"&gt;
   import quikdown from 'https://unpkg.com/quikdown';
 
@@ -322,7 +303,7 @@ console.log('with syntax highlighting via fence_plugin');
   };
 &lt;/script&gt;</code></pre>
           </div>
-          <div class="qd-tab-pane" data-tab-pane="edit">
+          <div class="qd-tab-pane active" data-tab-pane="edit">
 <pre><code>&lt;div id="editor" style="height: 500px;"&gt;&lt;/div&gt;
 
 &lt;script type="module"&gt;
@@ -369,49 +350,5 @@ console.log('with syntax highlighting via fence_plugin');
 
   {{FOOTER_HTML}}
   <script src="{{ROOT}}/pages/scripts/site.js" defer></script>
-
-  <!-- Landing page mini-editor: directly mounted, shares the document with
-       the rest of the page so theme + scroll context just work. -->
-  <script type="module">
-    import QuikdownEditor from '{{ROOT}}/dist/quikdown_edit.esm.js';
-
-    function detectPageTheme() {
-      const cls = document.body.classList;
-      if (cls.contains('qd-theme-dark'))  return 'dark';
-      if (cls.contains('qd-theme-light')) return 'light';
-      if (cls.contains('qd-theme-auto'))  return 'auto';
-      return 'dark';
-    }
-
-    const editor = new QuikdownEditor('#landing-demo-editor', {
-      mode: 'split',
-      theme: detectPageTheme(),
-      showRemoveHR: true,
-      showLazyLinefeeds: true,
-      showUndoRedo: true,
-      preloadFences: 'all'
-    });
-    window.landingEditor = editor;
-
-    // Sync editor theme with the site nav theme toggle. site.js does
-    // body.classList.remove(...all) then add(theme) which fires the
-    // observer twice — debounce so we read the FINAL state.
-    let themeSyncTimer = null;
-    new MutationObserver(() => {
-      clearTimeout(themeSyncTimer);
-      themeSyncTimer = setTimeout(() => {
-        const cls = document.body.classList;
-        if (cls.contains('qd-theme-dark'))       editor.setTheme('dark');
-        else if (cls.contains('qd-theme-light')) editor.setTheme('light');
-        else if (cls.contains('qd-theme-auto'))  editor.setTheme('auto');
-      }, 0);
-    }).observe(document.body, { attributes: true, attributeFilter: ['class'] });
-
-    // Load the shared demo content (same as /edit/)
-    fetch('{{ROOT}}/pages/demo_content.md')
-      .then(r => r.ok ? r.text() : Promise.reject())
-      .then(md => editor.setMarkdown(md))
-      .catch(() => editor.setMarkdown('# quikdown_edit\n\nLive demo. Start typing.'));
-  </script>
 </body>
 </html>

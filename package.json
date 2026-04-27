@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
   "author": "deftio (https://github.com/deftio",
   "license": "BSD-2-Clause",
@@ -104,7 +104,6 @@
     "test:e2e": "npx playwright test --config=playwright.config.cjs",
     "test:e2e:full": "npx playwright test --config=playwright.config.cjs",
     "test:editor:e2e": "npx playwright test tests/quikdown-editor.spec.js",
-    "minifyCSS": "node ./tools/minifyCSS.cjs",
     "updateVersion": "node ./tools/updateVersion",
     "updateBadges": "node ./tools/updateBadges.js",
     "feature": "bash ./tools/feature.sh",
@@ -220,7 +219,6 @@
     "clean-css": "^5.3.3",
     "clean-css-cli": "^5.6.3",
     "cssnano": "^7.1.5",
-    "docbat": "^0.9.3",
     "dompurify": "^3.4.0",
     "eslint": "^10.2.1",
     "eslint-plugin-security": "^4.0.0",

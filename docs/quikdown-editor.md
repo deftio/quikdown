@@ -630,7 +630,7 @@ Bob|25|London
 ```json
 {
   "name": "QuikDown",
-  "version": "1.0.5",
+  "version": "1.2.12",
   "features": ["markdown", "preview", "plugins"]
 }
 ```
