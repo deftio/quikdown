@@ -1,0 +1,571 @@
+# quikdown
+
+> A lightweight, fast markdown-to-HTML parser with built-in XSS protection, plugin support, and a drop-in editor component.
+
+quikdown is a zero-dependency markdown parser for browser and Node.js. It converts markdown to HTML with security by default, supports bidirectional HTML-to-markdown roundtrip, ships a full-featured editor component (including headless mode), and provides structured output as AST, JSON, or YAML.
+
+- Version: 1.2.12
+- License: BSD-2-Clause
+- Repository: https://github.com/deftio/quikdown
+- Bundle size: ~10 KB minified (core parser), ~86 KB (editor), ~3.8 MB (standalone editor with all fence libraries)
+- Test coverage: 96%
+- Zero runtime dependencies
+- TypeScript definitions included
+
+## Modules
+
+quikdown ships seven modules, each available as ESM, UMD, and CommonJS:
+
+| Module | Import Path | Purpose | Minified Size |
+|--------|-------------|---------|---------------|
+| quikdown | `quikdown` | Core markdown-to-HTML parser | ~10 KB |
+| quikdown_bd | `quikdown/bd` | Bidirectional HTML-to-markdown roundtrip | ~15 KB |
+| quikdown_edit | `quikdown/edit` | Drop-in editor with toolbar, preview, undo/redo | ~86 KB |
+| quikdown_edit_standalone | (standalone build) | Editor with all fence libraries pre-bundled | ~3.8 MB |
+| quikdown_ast | `quikdown/ast` | Markdown to Abstract Syntax Tree | small |
+| quikdown_json | `quikdown/json` | Markdown to JSON string | small |
+| quikdown_yaml | `quikdown/yaml` | Markdown to YAML string | small |
+| quikdown_ast_html | `quikdown/ast-html` | Render AST back to HTML | small |
+
+## Installation
+
+```bash
+npm install quikdown
+```
+
+Or load directly in the browser:
+
+```html
+<!-- Core parser - UMD -->
+<script src="https://unpkg.com/quikdown/dist/quikdown.umd.min.js"></script>
+
+<!-- Core parser - ESM -->
+<script type="module">
+  import quikdown from 'https://unpkg.com/quikdown/dist/quikdown.esm.min.js';
+</script>
+
+<!-- Editor - ESM -->
+<script type="module">
+  import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
+</script>
+
+<!-- Editor - UMD -->
+<script src="https://unpkg.com/quikdown/dist/quikdown_edit.umd.min.js"></script>
+
+<!-- Standalone editor (offline, all fence libs bundled) -->
+<script src="https://unpkg.com/quikdown/dist/quikdown_edit_standalone.umd.min.js"></script>
+```
+
+## Quick Start
+
+```javascript
+// ESM
+import quikdown from 'quikdown';
+const html = quikdown('# Hello World\n\nThis is **bold** and *italic*.');
+
+// CommonJS
+const quikdown = require('quikdown');
+const html = quikdown('# Hello World');
+
+// Browser UMD (after including the script tag)
+const html = quikdown('# Hello World');
+```
+
+---
+
+## Core Parser API
+
+### quikdown(markdown, options?)
+
+Converts a markdown string to HTML.
+
+**Parameters:**
+- `markdown` (string) - Markdown source text
+- `options` (object, optional):
+  - `fence_plugin` (FencePlugin) - Custom code block renderer (see Fence Plugin System)
+  - `inline_styles` (boolean, default: false) - Embed CSS styles directly in HTML elements instead of using class names
+  - `lazy_linefeeds` (boolean, default: false) - Treat single newlines as `<br>` instead of requiring two trailing spaces
+  - `bidirectional` (boolean, default: false) - Add `data-qd` attributes to enable HTML-to-markdown roundtrip
+  - `allow_unsafe_html` (boolean | Record<string, any> | string[], default: false) - Control HTML passthrough. `false` escapes all HTML; `true` passes all through; provide an object or array to whitelist specific tags
+  - `allow_unsafe_urls` (boolean, default: false) - Allow javascript:, vbscript:, and data: URIs (blocked by default)
+
+**Returns:** HTML string
+
+### quikdown.emitStyles(prefix?, theme?)
+
+Generates a CSS stylesheet for quikdown-rendered HTML.
+
+- `prefix` (string, default: `'quikdown-'`) - CSS class prefix
+- `theme` (string, default: `'light'`) - `'light'` or `'dark'`
+- Returns: CSS string with all element selectors
+
+### quikdown.configure(options)
+
+Creates a pre-configured parser function with baked-in options.
+
+```javascript
+const parse = quikdown.configure({ inline_styles: true, lazy_linefeeds: true });
+const html = parse('# Hello');
+```
+
+### quikdown.version
+
+Current version string.
+
+---
+
+## Bidirectional Conversion
+
+The `quikdown_bd` module adds `data-qd` attributes during forward conversion and uses them to reconstruct markdown from HTML.
+
+```javascript
+import quikdown_bd from 'quikdown/bd';
+
+// Markdown to HTML (with data-qd attributes)
+const html = quikdown_bd('# Hello\n\n**Bold text**');
+
+// HTML back to Markdown
+const md = quikdown_bd.toMarkdown(html);
+```
+
+### quikdown_bd.toMarkdown(htmlOrElement, options?)
+
+- `htmlOrElement` (string | HTMLElement) - HTML to convert
+- `options` (object, optional) - `{ fence_plugin }` for custom reverse handlers
+- Returns: Markdown string
+
+Supported roundtrip elements: headings, bold, italic, strikethrough, links, images, code blocks (with language), tables, blockquotes, lists, horizontal rules.
+
+---
+
+## Editor Component
+
+QuikdownEditor is a drop-in markdown editing component with source/split/preview modes, a toolbar, undo/redo, bidirectional editing, theme support, and built-in fence rendering.
+
+### Editor Build Variants
+
+| Build | Files | Size | When to Use |
+|-------|-------|------|-------------|
+| **Regular** | `quikdown_edit.esm.min.js`, `.umd.min.js`, `.cjs` | ~86 KB | Standard use. Fence libraries lazy-loaded from CDN on first encounter. Best initial load time. |
+| **Standalone** | `quikdown_edit_standalone.esm.min.js`, `.umd.min.js` | ~3.8 MB | Offline / air-gapped / Electron / PWA. All fence libraries pre-bundled. Zero network calls. |
+| **TypeScript** | `quikdown_edit.d.ts` | 6.4 KB | Full type definitions for all editor APIs. |
+
+**Regular vs. Standalone:** The regular editor is ~86 KB and lazy-loads fence libraries (Highlight.js, Mermaid, Leaflet, Three.js) from CDN when a fence block is first encountered. The standalone editor bundles all libraries for instant offline rendering (~3.8 MB). Both have the exact same API.
+
+**Standalone bundles:** Highlight.js (core + 12 languages: JS, TS, Python, Java, C, C++, CSS, HTML/XML, JSON, Bash, Shell, SQL), Mermaid, DOMPurify, Leaflet, Three.js. MathJax is NOT bundled (requires dynamic font loading) and is always fetched from CDN.
+
+### Basic Editor Setup
+
+```html
+<div id="editor" style="height: 400px;"></div>
+<script type="module">
+  import QuikdownEditor from 'https://unpkg.com/quikdown/dist/quikdown_edit.esm.min.js';
+  const editor = new QuikdownEditor('#editor');
+  editor.setMarkdown('# Hello World\n\nStart editing!');
+</script>
+```
+
+### Editor with Options
+
+```javascript
+const editor = new QuikdownEditor('#editor', {
+  mode: 'split',
+  theme: 'dark',
+  showToolbar: true,
+  showUndoRedo: true,
+  initialContent: '# My Document',
+  plugins: { highlightjs: true, mermaid: true },
+  onChange: (markdown, html) => console.log('Changed:', markdown.length),
+  onModeChange: (mode) => console.log('Mode:', mode)
+});
+```
+
+### Headless Mode (Custom UI)
+
+Set `showToolbar: false` to hide the built-in toolbar and control the editor entirely through its API. This enables building a fully custom UI on top of the editor engine.
+
+```javascript
+const editor = new QuikdownEditor('#container', {
+  showToolbar: false,
+  mode: 'split',
+  onChange: (md, html) => updateMyCustomPreview(html)
+});
+
+// Wire up your own controls
+myUndoBtn.onclick = () => editor.undo();
+myRedoBtn.onclick = () => editor.redo();
+myCopyBtn.onclick = () => editor.copy('markdown');
+myCopyRenderedBtn.onclick = () => editor.copyRendered();
+myModeSelect.onchange = (e) => editor.setMode(e.target.value);
+myThemeToggle.onclick = () =>
+  editor.setTheme(editor.getTheme() === 'light' ? 'dark' : 'light');
+
+// Programmatic content control
+await editor.setMarkdown('# New content');
+const md = editor.getMarkdown();
+const html = editor.getHTML();
+```
+
+Static utility methods work without an editor instance:
+
+```javascript
+const cleaned = QuikdownEditor.removeHRFromMarkdown(rawMarkdown);
+const fixed = QuikdownEditor.convertLazyLinefeeds(rawMarkdown);
+```
+
+### Editor Constructor Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `mode` | string | `'split'` | `'source'`, `'split'`, or `'preview'` |
+| `theme` | string | `'auto'` | `'light'`, `'dark'`, or `'auto'` (follows system) |
+| `showToolbar` | boolean | `true` | Show/hide built-in toolbar |
+| `showRemoveHR` | boolean | `false` | Show "Remove HR" button |
+| `showLazyLinefeeds` | boolean | `false` | Show "Fix Linefeeds" button |
+| `showUndoRedo` | boolean | `false` | Show undo/redo buttons |
+| `showAllowUnsafeHTML` | boolean | `false` | Show HTML mode toggle |
+| `initialContent` | string | `''` | Initial markdown content |
+| `placeholder` | string | `'Start typing markdown...'` | Textarea placeholder |
+| `lazy_linefeeds` | boolean | `false` | Single `\n` becomes `<br>` |
+| `inline_styles` | boolean | `false` | Inline CSS vs class names |
+| `allowUnsafeHTML` | boolean\|'limited' | `false` | HTML passthrough mode |
+| `debounceDelay` | number | `20` | Milliseconds before updating preview |
+| `undoStackSize` | number | `100` | Maximum undo states |
+| `enableComplexFences` | boolean | `true` | Enable built-in fence rendering (mermaid, math, csv, etc.) |
+| `preloadFences` | 'all'\|string[]\|LibraryConfig[]\|null | `null` | Preload fence libraries at construction |
+| `customFences` | object | `{}` | Custom fence handlers `{ lang: (code, lang) => html }` |
+| `plugins` | object | `{}` | Legacy: `{ highlightjs: boolean, mermaid: boolean }` |
+| `onChange` | function | `null` | `(markdown, html) => void` |
+| `onModeChange` | function | `null` | `(mode) => void` |
+
+### Editor Instance Methods
+
+**Content:**
+- `getMarkdown(): string`
+- `setMarkdown(markdown: string): Promise<void>`
+- `getHTML(): string`
+- `markdown` (property getter/setter)
+- `html` (read-only property)
+
+**View:**
+- `setMode(mode: 'source' | 'split' | 'preview'): void`
+- `mode` (read-only property)
+- `setTheme(theme: 'light' | 'dark' | 'auto'): void`
+- `getTheme(): 'light' | 'dark' | 'auto'`
+- `setLazyLinefeeds(enabled: boolean): void`
+- `getLazyLinefeeds(): boolean`
+- `setDebounceDelay(delay: number): void`
+- `getDebounceDelay(): number`
+
+**Undo/Redo:**
+- `undo(): Promise<void>`
+- `redo(): Promise<void>`
+- `canUndo(): boolean`
+- `canRedo(): boolean`
+- `clearHistory(): void`
+
+**Transforms:**
+- `removeHR(): Promise<void>` - Remove horizontal rules (fence-safe, table-safe)
+- `convertLazyLinefeeds(): Promise<void>` - Convert single newlines to paragraph breaks (idempotent)
+
+**Clipboard:**
+- `copy(type: 'markdown' | 'html'): Promise<void>` - Copy source text to clipboard
+- `copyRendered(): Promise<void>` - Copy as rich text (rasterizes SVGs, diagrams, maps, 3D models into images for pasting into Word, Google Docs, etc.)
+
+**Resource Loading:**
+- `loadScript(src: string): Promise<void>` - Load an external script
+- `loadCSS(href: string): Promise<void>` - Load an external stylesheet
+
+**Lifecycle:**
+- `destroy(): void` - Remove listeners, styles, clear container
+
+**Static:**
+- `QuikdownEditor.removeHRFromMarkdown(markdown: string): string`
+- `QuikdownEditor.convertLazyLinefeeds(markdown: string): string`
+- `QuikdownEditor.SAFE_HTML_TAGS` - Curated whitelist for `allow_unsafe_html`
+
+### Editor Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| Ctrl/Cmd + 1 | Source mode |
+| Ctrl/Cmd + 2 | Split mode |
+| Ctrl/Cmd + 3 | Preview mode |
+| Ctrl/Cmd + Z | Undo |
+| Ctrl/Cmd + Shift + Z | Redo |
+| Ctrl/Cmd + Y | Redo |
+
+### Editor UI Structure
+
+```
+.qde-container
+  .qde-toolbar
+    [mode buttons] [mobile split toggle] [undo/redo] [spacer] [copy buttons] [utility buttons]
+  .qde-editor
+    .qde-source > textarea.qde-textarea
+    .qde-preview (contentEditable)
+```
+
+Custom CSS can target `.qde-preview h1`, `.qde-preview pre`, etc. to style the preview pane. The editor's built-in rules have normal specificity, so no `!important` is needed.
+
+### Editor Browser Support
+
+Chrome/Edge 88+, Firefox 78+, Safari 14+, iOS Safari 14+, Chrome for Android 88+.
+
+---
+
+## Fence Plugin System
+
+Fenced code blocks (``` or ~~~) can be rendered by custom plugins. The core parser and editor both support this, with slightly different mechanisms.
+
+### Core Parser: fence_plugin Option
+
+```javascript
+const html = quikdown(md, {
+  fence_plugin: {
+    render: (code, language) => {
+      if (language === 'mermaid') {
+        return `<div class="mermaid">${code}</div>`;
+      }
+      // Return undefined for default <pre><code> rendering
+    },
+    reverse: (element) => {
+      // Optional: for bidirectional roundtrip
+      if (element.classList.contains('mermaid')) {
+        return { fence: '```', lang: 'mermaid', content: element.textContent };
+      }
+      return null;
+    }
+  }
+});
+```
+
+`render(code, language)` receives raw code content (unescaped) and the language identifier. Return HTML for custom rendering, or `undefined` for default output. The optional `reverse(element)` function supports bidirectional conversion.
+
+### Editor: Built-in Fence Types
+
+The editor has built-in handlers for common fence types. Libraries are lazy-loaded from CDN on first use (or pre-bundled in the standalone build).
+
+| Fence Language | Renders | Library | Auto-Loaded |
+|---------------|---------|---------|-------------|
+| Any programming language | Syntax-highlighted code | Highlight.js | Yes |
+| `mermaid` | Flowcharts, sequence diagrams, Gantt, etc. | Mermaid | Yes |
+| `math`, `katex`, `tex`, `latex` | LaTeX equations | MathJax v3 | Yes |
+| `geojson` | Interactive maps | Leaflet | Yes |
+| `stl` | 3D model viewer | Three.js | Yes |
+| `csv` | HTML table from CSV | Built-in | N/A |
+| `psv` | HTML table from pipe-separated values | Built-in | N/A |
+| `tsv` | HTML table from tab-separated values | Built-in | N/A |
+| `svg` | Inline SVG rendering | Built-in | N/A |
+| `html` | Sanitized HTML rendering | DOMPurify | Yes |
+| `json`, `json5` | Syntax-highlighted JSON | Built-in/Highlight.js | Optional |
+
+### Editor: preloadFences Option
+
+Control when fence libraries are loaded:
+
+```javascript
+// Preload all - instant first render of any fence type
+new QuikdownEditor('#editor', { preloadFences: 'all' });
+
+// Preload specific libraries
+new QuikdownEditor('#editor', { preloadFences: ['mermaid', 'math', 'highlightjs'] });
+
+// Preload a custom library
+new QuikdownEditor('#editor', {
+  preloadFences: [
+    { name: 'mylib', script: 'https://cdn.example.com/lib.js', css: 'https://cdn.example.com/lib.css' }
+  ]
+});
+
+// Default: lazy-load on demand (null)
+new QuikdownEditor('#editor');
+```
+
+Recognized library names: `'highlightjs'`, `'mermaid'`, `'math'`, `'geojson'`, `'stl'`.
+
+**Trade-off:** Preloading uses more upfront bandwidth but eliminates per-fence load delays. Leave `preloadFences` off for production apps handling arbitrary user content; set it to `'all'` for demos and apps where fence types are known in advance.
+
+### Editor: customFences Option
+
+Register custom renderers that take priority over built-in handlers:
+
+```javascript
+new QuikdownEditor('#editor', {
+  customFences: {
+    'plantuml': (code, lang) => {
+      const encoded = plantumlEncoder.encode(code);
+      return `<img src="http://www.plantuml.com/plantuml/svg/${encoded}" alt="PlantUML">`;
+    },
+    'chart': (code, lang) => renderChart(JSON.parse(code))
+  },
+  plugins: { highlightjs: true }  // Still used for other code blocks
+});
+```
+
+Custom fences are checked first. If the handler returns `undefined`, it falls back to built-in behavior.
+
+### Editor: enableComplexFences Option
+
+Master toggle for all built-in fence transformations (default: `true`). Set to `false` for plain `<pre><code>` output only.
+
+---
+
+## AST, JSON, and YAML Output
+
+```javascript
+import quikdown_ast from 'quikdown/ast';
+import quikdown_json from 'quikdown/json';
+import quikdown_yaml from 'quikdown/yaml';
+
+const ast = quikdown_ast('# Heading\n\nParagraph with **bold**.');
+// { type: 'document', children: [ { type: 'heading', level: 1, ... }, ... ] }
+
+const json = quikdown_json('# Heading\n\nParagraph');
+// JSON string of the AST
+
+const yaml = quikdown_yaml('# Heading\n\nParagraph');
+// YAML string of the AST
+```
+
+AST node types: `document`, `heading`, `paragraph`, `code_block`, `blockquote`, `list`, `list_item`, `table`, `hr`, `text`, `strong`, `em`, `del`, `code`, `link`, `image`, `br`.
+
+---
+
+## Styling
+
+### CSS Classes (default)
+
+Elements receive classes prefixed with `quikdown-`: `quikdown-h1` through `quikdown-h6`, `quikdown-pre`, `quikdown-code`, `quikdown-table`, `quikdown-blockquote`, `quikdown-ul`, `quikdown-ol`, `quikdown-li`, `quikdown-task-item`, `quikdown-task-checkbox`, `quikdown-strong`, `quikdown-em`, `quikdown-del`, `quikdown-a`, `quikdown-img`, `quikdown-hr`.
+
+Generate matching CSS with `quikdown.emitStyles()`, or include the pre-built theme files: `dist/quikdown.light.css` or `dist/quikdown.dark.css`.
+
+### Inline Styles
+
+Set `inline_styles: true` to embed styles directly in elements. Useful for email HTML or contexts without external CSS.
+
+### Editor Theming
+
+The editor injects its own CSS (`<style id="qde-styles">`). Themes are controlled via `setTheme()`:
+- `'light'` - Light background, dark text
+- `'dark'` - Dark background (#1e1e1e), light text, `.qde-dark` class applied
+- `'auto'` - Follows `prefers-color-scheme` system setting
+
+Highlight.js automatically switches between light and dark stylesheets to match the editor theme.
+
+---
+
+## Security
+
+XSS protection is enabled by default:
+- All HTML in markdown is entity-escaped (`&`, `<`, `>`, `"`, `'`)
+- URLs are sanitized: `javascript:`, `vbscript:`, and non-image `data:` URIs are blocked
+- No dynamic RegExp construction; all patterns verified free of ReDoS
+- ESLint security plugin enforced at error level with zero findings
+- Zero runtime dependencies eliminates supply chain risk
+
+To selectively allow HTML:
+
+```javascript
+quikdown(md, { allow_unsafe_html: ['b', 'i', 'em', 'strong', 'a', 'img'] });
+quikdown(md, { allow_unsafe_html: QuikdownEditor.SAFE_HTML_TAGS });
+quikdown(md, { allow_unsafe_html: true }); // Only for fully trusted content
+```
+
+---
+
+## Supported Markdown
+
+Text formatting (bold, italic, strikethrough, inline code), headings (h1-h6), unordered/ordered/task lists, links, auto-linked URLs, images, fenced code blocks with language tags, tables with column alignment, blockquotes, horizontal rules, line breaks.
+
+**Intentionally omitted for security and simplicity:** reference-style links, footnotes, definition lists, raw HTML blocks (available via fence plugins instead).
+
+---
+
+## Use Cases
+
+- Chat applications and LLM output rendering
+- Comment systems with safe user input
+- Documentation sites and static site generation
+- Email template generation (with inline_styles)
+- WYSIWYG editing with bidirectional conversion
+- Offline/air-gapped document editing (standalone build)
+- Embedded editors in web applications
+
+---
+
+## Documentation
+
+Detailed documentation is available in the `docs/` directory:
+
+- **docs/api-reference.md** - Complete API documentation with examples
+- **docs/architecture.md** - Parser design, four-phase pipeline, security model
+- **docs/plugin-guide.md** - Plugin development with 6+ working examples
+- **docs/framework-integration.md** - React, Vue, Svelte, Angular, Next.js, Nuxt guides
+- **docs/security.md** - Security model, XSS prevention, CSP recommendations
+- **docs/quikdown-bidirectional.md** - HTML-to-markdown roundtrip conversion
+- **docs/quikdown-editor.md** - Full editor documentation with advanced usage
+- **docs/standalone-editor.md** - Standalone/offline editor guide
+- **docs/quikdown-ast.md** - AST, JSON, YAML structured output
+- **docs/release-notes.md** - Version history
+
+## Examples
+
+Working HTML examples are in the `examples/` directory:
+
+- **examples/parser-hello.html** - Minimal "hello world" parser usage
+- **examples/parser-options.html** - Live toggling of parser options
+- **examples/parser-themes.html** - Light/dark theme switching
+- **examples/parser-fence-plugin.html** - Custom fence rendering
+- **examples/bd-roundtrip.html** - Bidirectional HTML-to-markdown roundtrip
+- **examples/editor-embed-minimal.html** - Minimal editor embedding
+- **examples/editor-api-playground.html** - Interactive API testing
+- **examples/editor-fence-custom.html** - Custom fence handling in editor
+- **examples/demo-headless.html** - Headless editor with custom UI
+- **examples/integration-react.html** - React integration
+- **examples/integration-vue.html** - Vue.js integration
+- **examples/integration-llm-stream.html** - LLM streaming output
+- **examples/integration-quikchat.html** - Chat application
+
+Sample markdown files in `examples/`: sample-basic.md, sample-comprehensive.md, sample-fence.md, sample-tables.md, sample-security.md, sample-bidirectional.md, sample-many-fences.md, sample-tasks.md, sample-rich-content.md.
+
+---
+
+## Distribution Files
+
+```
+dist/
+  quikdown.esm.min.js                    # Core parser - ES Module
+  quikdown.umd.min.js                    # Core parser - UMD (browser)
+  quikdown.cjs                           # Core parser - CommonJS
+  quikdown.d.ts                          # Core parser - TypeScript defs
+  quikdown.light.css / .dark.css         # Theme stylesheets
+  quikdown_bd.*                          # Bidirectional (ESM, UMD, CJS, d.ts)
+  quikdown_edit.esm.min.js              # Editor - ES Module (~86 KB)
+  quikdown_edit.umd.min.js              # Editor - UMD (~86 KB)
+  quikdown_edit.cjs                      # Editor - CommonJS
+  quikdown_edit.d.ts                     # Editor - TypeScript defs
+  quikdown_edit_standalone.esm.min.js   # Standalone editor (~3.8 MB)
+  quikdown_edit_standalone.umd.min.js   # Standalone editor - UMD
+  quikdown_ast.*                         # AST parser (all formats)
+  quikdown_json.*                        # JSON converter (all formats)
+  quikdown_yaml.*                        # YAML converter (all formats)
+  quikdown_ast_html.*                    # AST-to-HTML (all formats)
+```
+
+## Development
+
+```bash
+npm install                # Install dev dependencies
+npm run build              # Full build: version, CSS, Rollup, site, badges
+npm run build:standalone   # Build standalone editor bundle separately
+npm run build:all          # Build everything including standalone
+npm test                   # All tests with coverage (Jest)
+npm run test:unit          # Unit tests only
+npm run test:e2e           # Playwright end-to-end tests
+npm run test:quikdown      # Core parser tests
+npm run docs:api           # Generate JSDoc API documentation
+npm run buildSite          # Build static site from pages/ templates
+npm run minifyCSS          # Minify theme CSS files
+npm run serve              # Dev server on port 6811 (bwcli)
+```
