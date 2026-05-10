@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.2.12
+ * @version 1.2.13
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -114,7 +114,7 @@ function isDashHRLine(trimmed) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.12';
+const quikdownVersion = '1.2.13';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -476,7 +476,7 @@ function quikdown(markdown, options = {}) {
         [/\*\*(.+?)\*\*/g, 'strong', '**'],
         [/__(.+?)__/g, 'strong', '__'],
         [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em', '*'],
-        [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em', '_'],
+        [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em', '_'],
         [/~~(.+?)~~/g, 'del', '~~']
     ];
     inlinePatterns.forEach(([pattern, tag, marker]) => {

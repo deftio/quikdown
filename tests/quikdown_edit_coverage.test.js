@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 import QuikdownEditor from '../dist/quikdown_edit.esm.js';
+import { getRenderedContent } from '../src/quikdown_edit_copy.js';
 
 beforeAll(() => {
     Object.defineProperty(window, 'matchMedia', {
@@ -20,8 +21,13 @@ beforeAll(() => {
 
     Object.defineProperty(navigator, 'clipboard', {
         writable: true,
-        value: { writeText: jest.fn().mockResolvedValue(undefined) }
+        value: {
+            writeText: jest.fn().mockResolvedValue(undefined),
+            write: jest.fn().mockResolvedValue(undefined)
+        }
     });
+
+    global.ClipboardItem = jest.fn().mockImplementation(items => ({ items }));
 });
 
 describe('QuikdownEditor Coverage', () => {
@@ -645,6 +651,21 @@ describe('QuikdownEditor Coverage', () => {
             const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
             await editor.copyRendered().catch(() => {});
             errSpy.mockRestore();
+        });
+
+        test('copyRendered uses bounded heading sizes for rich paste', async () => {
+            const preview = document.createElement('div');
+            preview.innerHTML = '<h1>Heading 1</h1><h2>Heading 2</h2><h3>Heading 3</h3>';
+            navigator.clipboard.write = jest.fn().mockResolvedValue(undefined);
+
+            const result = await getRenderedContent(preview);
+            const html = result.html;
+
+            expect(html).toContain('font-size:24pt');
+            expect(html).toContain('font-size:18pt');
+            expect(html).toContain('font-size:15pt');
+            expect(html).not.toContain('font-size:2em');
+            expect(html).not.toContain('font-size:1.5em');
         });
     });
 
