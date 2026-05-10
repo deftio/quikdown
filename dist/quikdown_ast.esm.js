@@ -1,6 +1,6 @@
 /**
  * quikdown_ast - AST Markdown Parser
- * @version 1.2.12
+ * @version 1.2.13
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -13,7 +13,7 @@
  */
 
 // Version will be injected at build time
-const quikdownVersion = '1.2.12';
+const quikdownVersion = '1.2.13';
 
 // Safety limit to prevent infinite loops in list parsing
 const MAX_LOOP_ITERATIONS = 1000;
@@ -411,12 +411,16 @@ function parseInline(text, options) {
             continue;
         }
 
-        // Italic: *text* or _text_ (not at word boundary for underscores)
-        const emMatch = remaining.match(/^(\*|_)(?!\1)(.+?)(?<!\1)\1(?!\1)/);
+        // Italic: *text* or _text_. Single underscores require word boundaries
+        // so identifiers like snake_case_variable stay plain text.
+        const previousChar = text[text.length - remaining.length - 1] || '';
+        const canOpenUnderscore = !/[A-Za-z0-9_]/.test(previousChar);
+        const emMatch = remaining.match(/^\*(?!\*)(.+?)(?<!\*)\*(?!\*)/)
+            || (canOpenUnderscore && remaining.match(/^_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/));
         if (emMatch) {
             nodes.push({
                 type: 'em',
-                children: parseInlineContent(emMatch[2])
+                children: parseInlineContent(emMatch[1])
             });
             remaining = remaining.slice(emMatch[0].length);
             continue;

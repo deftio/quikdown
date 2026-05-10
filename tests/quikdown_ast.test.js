@@ -141,6 +141,32 @@ describe('quikdown_ast parser', () => {
             expect(result.children[0].children[0].type).toBe('em');
         });
 
+        test('should not parse intraword underscores as italic markers', () => {
+            const cases = [
+                'fr_math ==> becomes _fr_math',
+                'snake_case_variable',
+                'foo_bar_ and _baz_qux',
+                'Keep user_id and api_key visible'
+            ];
+
+            for (const markdown of cases) {
+                const result = quikdown_ast(markdown);
+                const emNodes = result.children[0].children.filter(n => n.type === 'em');
+                expect(emNodes).toHaveLength(0);
+                expect(result.children[0].children.map(n => n.value || '').join('')).toBe(markdown);
+            }
+        });
+
+        test('should still parse underscore italic at word boundaries', () => {
+            const result = quikdown_ast('text _italic_ and (_also italic_) and _final_,');
+            const emNodes = result.children[0].children.filter(n => n.type === 'em');
+
+            expect(emNodes).toHaveLength(3);
+            expect(emNodes[0].children[0].value).toBe('italic');
+            expect(emNodes[1].children[0].value).toBe('also italic');
+            expect(emNodes[2].children[0].value).toBe('final');
+        });
+
         test('should parse strikethrough', () => {
             const result = quikdown_ast('~~strike~~');
             expect(result.children[0].children[0].type).toBe('del');

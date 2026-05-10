@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.12
+ * @version 1.2.13
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -222,7 +222,7 @@ function looksLikeTableRow(line) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.12';
+const quikdownVersion = '1.2.13';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -584,7 +584,7 @@ function quikdown(markdown, options = {}) {
         [/\*\*(.+?)\*\*/g, 'strong', '**'],
         [/__(.+?)__/g, 'strong', '__'],
         [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em', '*'],
-        [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em', '_'],
+        [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em', '_'],
         [/~~(.+?)~~/g, 'del', '~~']
     ];
     inlinePatterns.forEach(([pattern, tag, marker]) => {
@@ -1571,6 +1571,19 @@ function getPlatform() {
     return 'unknown';
 }
 
+const COPY_HEADING_STYLES = {
+    h1: { fontSize: '24pt', marginTop: '0.6em', marginBottom: '0.35em' },
+    h2: { fontSize: '18pt', marginTop: '0.55em', marginBottom: '0.3em' },
+    h3: { fontSize: '15pt', marginTop: '0.5em', marginBottom: '0.25em' },
+    h4: { fontSize: '13pt', marginTop: '0.45em', marginBottom: '0.25em' },
+    h5: { fontSize: '11pt', marginTop: '0.4em', marginBottom: '0.2em' },
+    h6: { fontSize: '10pt', marginTop: '0.35em', marginBottom: '0.2em' }
+};
+
+const COPY_HEADING_CSS = Object.entries(COPY_HEADING_STYLES)
+    .map(([tag, style]) => `${tag} { font-size:${style.fontSize}; font-weight:bold; line-height:1.25; margin:${style.marginTop} 0 ${style.marginBottom}; }`)
+    .join('\n                  ');
+
 /**
  * Copy to clipboard using HTML selection fallback (for Safari)
  * Uses div with selection to preserve HTML formatting
@@ -1902,46 +1915,14 @@ async function getRenderedContent(previewPanel) {
         });
         
         // 1.2 Block elements - add inline styles
-        clone.querySelectorAll('h1').forEach(el => {
-            el.style.fontSize = '2em';
-            el.style.fontWeight = 'bold';
-            el.style.marginTop = '0.67em';
-            el.style.marginBottom = '0.67em';
-        });
-        
-        clone.querySelectorAll('h2').forEach(el => {
-            el.style.fontSize = '1.5em';
-            el.style.fontWeight = 'bold';
-            el.style.marginTop = '0.83em';
-            el.style.marginBottom = '0.83em';
-        });
-        
-        clone.querySelectorAll('h3').forEach(el => {
-            el.style.fontSize = '1.17em';
-            el.style.fontWeight = 'bold';
-            el.style.marginTop = '1em';
-            el.style.marginBottom = '1em';
-        });
-        
-        clone.querySelectorAll('h4').forEach(el => {
-            el.style.fontSize = '1em';
-            el.style.fontWeight = 'bold';
-            el.style.marginTop = '1.33em';
-            el.style.marginBottom = '1.33em';
-        });
-        
-        clone.querySelectorAll('h5').forEach(el => {
-            el.style.fontSize = '0.83em';
-            el.style.fontWeight = 'bold';
-            el.style.marginTop = '1.67em';
-            el.style.marginBottom = '1.67em';
-        });
-        
-        clone.querySelectorAll('h6').forEach(el => {
-            el.style.fontSize = '0.67em';
-            el.style.fontWeight = 'bold';
-            el.style.marginTop = '2.33em';
-            el.style.marginBottom = '2.33em';
+        Object.entries(COPY_HEADING_STYLES).forEach(([tag, style]) => {
+            clone.querySelectorAll(tag).forEach(el => {
+                el.style.fontSize = style.fontSize;
+                el.style.fontWeight = 'bold';
+                el.style.lineHeight = '1.25';
+                el.style.marginTop = style.marginTop;
+                el.style.marginBottom = style.marginBottom;
+            });
         });
         
         clone.querySelectorAll('blockquote').forEach(el => {
@@ -2923,6 +2904,8 @@ async function getRenderedContent(previewPanel) {
               <head>
                 <meta charset="utf-8">
                 <style>
+                  ${COPY_HEADING_CSS}
+                  
                   /* Table styling */
                   table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
                   th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }

@@ -25,6 +25,28 @@ describe('quikdown markdown parser', () => {
         test('should handle italic text with _', () => {
             expect(quikdown('_italic_')).toBe('<p><em class="quikdown-em">italic</em></p>');
         });
+
+        test('should not treat intraword underscores as italic markers', () => {
+            expect(quikdown('fr_math ==> becomes _fr_math'))
+                .toBe('<p>fr_math ==&gt; becomes _fr_math</p>');
+            expect(quikdown('snake_case_variable'))
+                .toBe('<p>snake_case_variable</p>');
+            expect(quikdown('foo_bar_ and _baz_qux'))
+                .toBe('<p>foo_bar_ and _baz_qux</p>');
+            expect(quikdown('Keep user_id, api_key, and __dunder__ visible'))
+                .toBe('<p>Keep user_id, api_key, and <strong class="quikdown-strong">dunder</strong> visible</p>');
+        });
+
+        test('should still handle underscore italic at word boundaries', () => {
+            expect(quikdown('text _italic_ text'))
+                .toBe('<p>text <em class="quikdown-em">italic</em> text</p>');
+            expect(quikdown('(_italic_)'))
+                .toBe('<p>(<em class="quikdown-em">italic</em>)</p>');
+            expect(quikdown('_italic_, then text'))
+                .toBe('<p><em class="quikdown-em">italic</em>, then text</p>');
+            expect(quikdown('_multi word italic_'))
+                .toBe('<p><em class="quikdown-em">multi word italic</em></p>');
+        });
         
         test('should handle strikethrough', () => {
             expect(quikdown('~~strike~~')).toBe('<p><del class="quikdown-del">strike</del></p>');
