@@ -677,9 +677,10 @@ function scanLineBlocks(text, getAttr, dataQd) {
 
         // ── Blockquote ──
         // After Phase 2, the '>' character has been escaped to '&gt;'.
-        // Pattern: "&gt; content" or merged consecutive blockquotes.
-        if (/^&gt;\s+/.test(line)) {
-            result.push(`<blockquote${getAttr('blockquote')}>${line.replace(/^&gt;\s+/, '')}</blockquote>`);
+        // Pattern: "&gt; content" or "&gt;" alone (blank continuation line)
+        // or merged consecutive blockquotes.
+        if (/^&gt;(\s|$)/.test(line)) {
+            result.push(`<blockquote${getAttr('blockquote')}>${line.replace(/^&gt;\s*/, '')}</blockquote>`);
             i++;
             continue;
         }
@@ -690,10 +691,10 @@ function scanLineBlocks(text, getAttr, dataQd) {
     }
 
     // Merge consecutive blockquotes into a single element.
-    // <blockquote>A</blockquote>\n<blockquote>B</blockquote>
-    //   → <blockquote>A\nB</blockquote>
+    // <blockquote …>A</blockquote>\n<blockquote …>B</blockquote>
+    //   → <blockquote …>A\nB</blockquote>
     let joined = result.join('\n');
-    joined = joined.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+    joined = joined.replace(/<\/blockquote>\n<blockquote[^>]*>/g, '\n');
     return joined;
 }
 
