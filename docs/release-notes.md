@@ -1,5 +1,25 @@
 # Release Notes
 
+## v1.2.14 (unreleased)
+
+### Standalone / release
+- **Standalone bundle restored** to release pipeline: `build:all`, `verify:release`, `test:standalone:e2e`, air-gap zip on GitHub Release
+- **`highlight.js`** added to devDependencies so standalone Rollup bundle is fully self-contained
+- **`tools/checkStandalone.cjs`**, **`tools/buildAirgapZip.cjs`**, **`tools/verifyPackage.cjs`** release gates
+
+### LLM / examples
+- **`examples/llm-tool-editor/`** — quikchat + QuikdownEditor + simulated agent tools
+- **`examples/llm-stream-editor/`** — stream tokens into the editor (artifact viewer)
+- **`docs/llm-integration.md`** — LLM/agent integration guide
+- Examples hub cards for Examples 17–18
+
+### Packaging / CI
+- TypeScript `.d.ts` restored for all export subpaths
+- CI: build before test; publish workflow runs full release verification
+- Table `data-qd-align` bidirectional round-trip fixes
+
+---
+
 ## v1.2.12
 
 ### Landing page

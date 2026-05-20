@@ -148,7 +148,9 @@ const mermaidPlugin = {
 };
 ```
 
-### Math with KaTeX
+### Math with KaTeX (custom fence plugin)
+
+> **Built-in editor fences use MathJax v3**, not KaTeX. Use this pattern only when you supply KaTeX yourself via `fence_plugin` or `customFences`. The fence lang `katex` in the editor routes to MathJax for backward compatibility.
 
 ```javascript
 const mathPlugin = {

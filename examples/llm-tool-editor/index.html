@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LLM tool editor — quikdown + quikchat example</title>
+  <meta name="description" content="Chat with a simulated agent that edits markdown in QuikdownEditor via function-calling tools. Vanilla JS, quikchat widget, no framework.">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <link rel="stylesheet" href="../styles/integration-example.css">
+  <link rel="stylesheet" href="https://unpkg.com/quikchat/dist/quikchat.css">
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="../../pages/examples/">Examples</a> › LLM integrations › Tool editor</div>
+        <h1>LLM tool editor</h1>
+        <p class="lede">
+          Two widgets, one pattern: <a href="https://github.com/deftio/quikchat" target="_blank" rel="noopener">quikchat</a> for chat UI,
+          <strong>QuikdownEditor</strong> as the document canvas. This page runs a <em>simulated</em> agent — no API key —
+          that calls the same seven tools a real LLM would use via function calling.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <div class="ex-toolbar">
+          <span class="ex-panel-label" style="margin:0;">Live demo</span>
+          <label><input type="checkbox" id="toggle-tools" /> Show tool calls</label>
+          <button type="button" class="ex-btn" id="btn-clear-chat">Clear chat</button>
+          <button type="button" class="ex-btn" id="btn-reset-doc">Reset document</button>
+        </div>
+        <div class="ex-split">
+          <div>
+            <p class="ex-panel-label">Chat (quikchat widget)</p>
+            <div class="ex-chat-wrap" id="chat-wrap"></div>
+          </div>
+          <div>
+            <p class="ex-panel-label">Document canvas (QuikdownEditor)</p>
+            <div class="ex-editor-wrap"><div id="editor"></div></div>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:0.75rem;">Try a command:</p>
+        <div class="ex-chips" id="command-chips"></div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>How it works</h2>
+        <div class="ex-flow">
+          <span class="ex-flow-step">1. User types in chat</span>
+          <span>→</span>
+          <span class="ex-flow-step">2. Agent picks tools</span>
+          <span>→</span>
+          <span class="ex-flow-step">3. Browser runs tools on editor</span>
+          <span>→</span>
+          <span class="ex-flow-step">4. Agent replies in chat</span>
+        </div>
+        <p class="muted">
+          In production you replace <code>simulateAgentCommand()</code> with an LLM fetch loop
+          (<code>stream: false</code> so tool-call JSON parses cleanly). The editor API and tool definitions stay the same.
+        </p>
+
+        <h3>Tool reference</h3>
+        <table class="ex-doc-table">
+          <thead>
+            <tr><th>Tool</th><th>Parameters</th><th>Editor API</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>read_editor</code></td><td>—</td><td><code>editor.getMarkdown()</code></td></tr>
+            <tr><td><code>write_editor</code></td><td><code>content</code></td><td><code>editor.setMarkdown(content)</code></td></tr>
+            <tr><td><code>replace_text</code></td><td><code>find</code>, <code>replace</code></td><td>get → replace first match → set</td></tr>
+            <tr><td><code>extract_text</code></td><td><code>start_line</code>, <code>end_line</code></td><td>line slice (read-only)</td></tr>
+            <tr><td><code>get_stats</code></td><td>—</td><td>character / word / line counts</td></tr>
+            <tr><td><code>undo</code></td><td>—</td><td><code>editor.undo()</code></td></tr>
+            <tr><td><code>redo</code></td><td>—</td><td><code>editor.redo()</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Wire-up code (minimal)</h2>
+<pre><code>&lt;!-- quikchat (chat) + quikdown (editor) --&gt;
+&lt;link rel="stylesheet" href="https://unpkg.com/quikchat/dist/quikchat.css"&gt;
+&lt;script src="https://unpkg.com/quikchat/dist/quikchat-md.umd.min.js"&gt;&lt;/script&gt;
+
+&lt;div id="chat"&gt;&lt;/div&gt;
+&lt;div id="editor"&gt;&lt;/div&gt;
+
+&lt;script type="module"&gt;
+  import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+
+  const editor = new QuikdownEditor('#editor', { mode: 'split', showUndoRedo: true });
+  const chat = new quikchat('#chat', async (chat, msg) =&gt; {
+    chat.messageAddNew(msg, 'You', 'right', 'user');
+    // ... LLM tool loop or simulateAgentCommand(editor, msg)
+  });
+
+  function read_editor() { return editor.getMarkdown(); }
+  function write_editor(content) { editor.setMarkdown(content); }
+&lt;/script&gt;</code></pre>
+        <p class="muted">
+          Full BYOK example with OpenAI-compatible providers:
+          <a href="https://deftio.github.io/quikchat/examples/example_tool_editor.html" target="_blank" rel="noopener">quikchat tool editor demo →</a>
+        </p>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="../llm-stream-editor/">Next: Stream into editor →</a>
+        <a href="https://deftio.github.io/quikchat/examples/example_tool_editor.html" target="_blank" rel="noopener">Live LLM demo (quikchat) →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script src="https://unpkg.com/quikchat/dist/quikchat-md.umd.min.js"></script>
+  <script src="../shared/agent-tools.js"></script>
+  <script type="module">
+    import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+
+    const INITIAL_MARKDOWN = `# Product brief
+
+quikdown is a markdown toolkit built for **LLM and agent UIs** — small parser, rich fences, embeddable editor.
+
+## Features
+
+- Parser (~10 KB minified, zero runtime deps)
+- QuikdownEditor with live preview and undo
+- Mermaid, syntax highlighting, tables, task lists
+
+\`\`\`mermaid
+graph LR
+  User --> Chat
+  Chat --> Tools
+  Tools --> Editor
+  Editor --> Preview
+\`\`\`
+
+| Module | Role |
+|--------|------|
+| quikdown | Markdown → HTML |
+| quikdown/edit | Split editor widget |
+| standalone | Offline bundle (~3.8 MB) |
+
+- [x] Ship parser and editor
+- [ ] Connect your LLM tool loop
+- [ ] Deploy to air-gapped environment
+
+Ask the chat to **summarize this**, **show stats**, or **add a FAQ section**.
+`;
+
+    const COMMANDS = [
+      'Summarize this',
+      'How long is this document?',
+      'Show me lines 5-10',
+      'Add a FAQ section',
+      'Fix the grammar',
+      'Undo that',
+    ];
+
+    let showToolCalls = false;
+    let chatInstance = null;
+
+    const editor = new QuikdownEditor('#editor', {
+      mode: 'split',
+      theme: 'auto',
+      showUndoRedo: true,
+      preloadFences: ['mermaid'],
+    });
+    editor.setMarkdown(INITIAL_MARKDOWN);
+    window.editor = editor;
+
+    function syncChatTheme() {
+      if (!chatInstance || !chatInstance.changeTheme) return;
+      const dark = document.body.classList.contains('qd-theme-dark');
+      chatInstance.changeTheme(dark ? 'quikchat-theme-dark' : 'quikchat-theme-light');
+    }
+
+    function logTools(chat, tools) {
+      for (const t of tools) {
+        chat.messageAddFull({
+          content: '**Tool:** `' + t.name + '`\n**Args:** `' + JSON.stringify(t.args) + '`\n**Result:**\n```\n' + String(t.result).slice(0, 1200) + '\n```',
+          role: 'tool',
+          visible: showToolCalls,
+          tags: ['tool-call'],
+        });
+      }
+    }
+
+    async function handleUserMessage(chat, msg) {
+      chat.inputAreaSetEnabled(false);
+      chat.inputAreaSetButtonText('Thinking…');
+      try {
+        const { reply, tools } = window.QdAgentTools.simulateAgentCommand(editor, msg);
+        logTools(chat, tools);
+        chat.messageAddNew(reply, 'Agent', 'left', 'assistant');
+      } catch (err) {
+        chat.messageAddNew('Error: ' + err.message, 'System', 'left', 'system');
+      } finally {
+        chat.inputAreaSetEnabled(true);
+        chat.inputAreaSetButtonText('Send');
+      }
+    }
+
+    if (typeof quikchat === 'function') {
+      chatInstance = new quikchat('#chat-wrap', function (chat, msg) {
+        chat.messageAddNew(msg, 'You', 'right', 'user');
+        handleUserMessage(chat, msg);
+      }, {
+        theme: 'quikchat-theme-light',
+        titleArea: { title: 'Agent chat', show: true, align: 'left' },
+      });
+      window.chat = chatInstance;
+      syncChatTheme();
+      new MutationObserver(syncChatTheme).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    } else {
+      document.getElementById('chat-wrap').innerHTML = '<p style="padding:1rem;color:#b91c1c;">Could not load quikchat from CDN.</p>';
+    }
+
+    document.getElementById('toggle-tools').addEventListener('change', function (e) {
+      showToolCalls = e.target.checked;
+      if (chatInstance && chatInstance.messageSetVisibleByTag) {
+        chatInstance.messageSetVisibleByTag('tool-call', showToolCalls);
+      }
+    });
+
+    document.getElementById('btn-clear-chat').addEventListener('click', function () {
+      if (chatInstance && typeof chatInstance.historyImport === 'function') {
+        chatInstance.historyImport([]);
+      }
+    });
+
+    document.getElementById('btn-reset-doc').addEventListener('click', function () {
+      editor.setMarkdown(INITIAL_MARKDOWN);
+    });
+
+    const chips = document.getElementById('command-chips');
+    COMMANDS.forEach(function (cmd) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ex-chip';
+      btn.textContent = cmd;
+      btn.addEventListener('click', function () {
+        if (!chatInstance) return;
+        chatInstance.messageAddNew(cmd, 'You', 'right', 'user');
+        handleUserMessage(chatInstance, cmd);
+      });
+      chips.appendChild(btn);
+    });
+  </script>
+  <script src="../scripts/example-mount.js" defer></script>
+</body>
+</html>

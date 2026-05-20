@@ -582,8 +582,9 @@ function createGetAttr(inline_styles) {
 /**
  * Sanitize URLs
  */
-function sanitizeUrl(url) {
+function sanitizeUrl(url, allowUnsafe = false) {
     if (!url) return '';
+    if (allowUnsafe) return url;
     const trimmedUrl = url.trim();
     const lowerUrl = trimmedUrl.toLowerCase();
 
@@ -955,13 +956,13 @@ function renderNode(node, getAttr, options) {
             return `<code${getAttr('code')}>${escapeHtml(node.value || '')}</code>`;
 
         case 'link':
-            const sanitizedHref = sanitizeUrl(node.url);
+            const sanitizedHref = sanitizeUrl(node.url, options.allow_unsafe_urls);
             const isExternal = /^https?:\/\//i.test(sanitizedHref);
             const rel = isExternal ? ' rel="noopener noreferrer"' : '';
             return `<a${getAttr('a')} href="${sanitizedHref}"${rel}>${renderChildren(node.children, getAttr, options)}</a>`;
 
         case 'image':
-            const sanitizedSrc = sanitizeUrl(node.url);
+            const sanitizedSrc = sanitizeUrl(node.url, options.allow_unsafe_urls);
             return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${escapeHtml(node.alt || '')}">`;
 
         case 'br':

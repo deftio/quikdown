@@ -74,16 +74,19 @@ The main build (`npm run build`) does NOT include the standalone bundle. To buil
 npm run build:all
 ```
 
-Release CI and `npm run release` always run **`build:all`** and **`verify:standalone`** so the offline bundle cannot be omitted from a ship.
+Release CI and `npm run release` always run **`build:all`**, **`verify:release`**, and **`test:standalone:e2e`** so the offline bundle cannot be omitted from a ship.
 
 ## Release / CI
 
 | Step | What happens |
 |------|----------------|
-| `npm run release` | `build:all` → `verify:package` → `verify:standalone` → tests → auto-commit `dist/` |
-| CI on PR / main | Same gates; fails if standalone is missing or broken |
-| npm publish | Standalone is in `dist/` (`files: ["dist"]`) |
-| GitHub Release | Attaches `quikdown_edit_standalone.*.min.js` + `.gz` |
+| `npm run release` | `build:all` → `verify:release` → `test:standalone:e2e` → `build:airgap` → `npm test` → auto-commit `dist/` |
+| PR / daily CI | `npm run build` + tests only — **no standalone build** |
+| `publish.yml` | `build:all`, `verify:release`, standalone smoke, npm publish, GitHub Release assets |
+| npm publish | Standalone in `dist/` (`files: ["dist"]`) |
+| GitHub Release | `quikdown_edit_standalone.*.min.js`, `.gz`, and **`quikdown-airgap-vX.Y.Z.zip`** |
+
+See [release-process.md](release-process.md) for the full workflow.
 
 ## When to Use
 

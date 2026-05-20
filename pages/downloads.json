@@ -76,33 +76,33 @@
   },
   {
     "file": "quikdown_ast_html.esm.js",
-    "size": 33089,
+    "size": 33197,
     "format": "ESM",
     "minified": false
   },
   {
     "file": "quikdown_ast_html.esm.min.js",
-    "size": 11771,
+    "size": 11830,
     "format": "ESM",
     "minified": true,
-    "sri": "sha384-7tfNb9a1enUVvNeWWs1QOyHs1TiEim8/RRoSkGvn0jY6Mo90iy8qsW5guoc4Odbn",
+    "sri": "sha384-Dl63lXOsEGhZ1KW667VwgsIXv7w+Vp8rV/9S8YtbQaV9gj6hOWrqc71hQ0bNHGX3",
     "gzFile": "quikdown_ast_html.esm.min.js.gz",
-    "gzSize": 4154
+    "gzSize": 4181
   },
   {
     "file": "quikdown_ast_html.umd.js",
-    "size": 36974,
+    "size": 37086,
     "format": "UMD",
     "minified": false
   },
   {
     "file": "quikdown_ast_html.umd.min.js",
-    "size": 12002,
+    "size": 12061,
     "format": "UMD",
     "minified": true,
-    "sri": "sha384-BRmt5Lb7cbGH3nUklTG28MwtPiWXcIIKUUXrAKUqEk6Uo6aBVwRw3+VqT68io9Bd",
+    "sri": "sha384-8DAHPkkDz0MCIQhNz+TXidQPp0Ym2NW4MxgjRZ2Hd549Im7iTxiz/G28YCZJ0WhW",
     "gzFile": "quikdown_ast_html.umd.min.js.gz",
-    "gzSize": 4228
+    "gzSize": 4255
   },
   {
     "file": "quikdown_bd.d.ts",
@@ -173,6 +173,36 @@
     "sri": "sha384-376oAnXWU5npBrGI6uXF2y9zaADBrETefbUmMmh32zunn858Pi5PDqVfiR9aQHtX",
     "gzFile": "quikdown_edit.umd.min.js.gz",
     "gzSize": 23813
+  },
+  {
+    "file": "quikdown_edit_standalone.esm.js",
+    "size": 9451163,
+    "format": "ESM",
+    "minified": false
+  },
+  {
+    "file": "quikdown_edit_standalone.esm.min.js",
+    "size": 3988398,
+    "format": "ESM",
+    "minified": true,
+    "sri": "sha384-WbmwPU8ftE7GKNJdt4oeaFy4SrzhccUCcCu/UAuBJhQQo+KM0miV5taFa6j0R6Vl",
+    "gzFile": "quikdown_edit_standalone.esm.min.js.gz",
+    "gzSize": 1047410
+  },
+  {
+    "file": "quikdown_edit_standalone.umd.js",
+    "size": 9697269,
+    "format": "UMD",
+    "minified": false
+  },
+  {
+    "file": "quikdown_edit_standalone.umd.min.js",
+    "size": 3988632,
+    "format": "UMD",
+    "minified": true,
+    "sri": "sha384-f4+zsyZZNx87Pb/+5HwnjhMZIIb4H0RyLbyDvSn6cp1Z0indVTn6UrJgwuBfNT78",
+    "gzFile": "quikdown_edit_standalone.umd.min.js.gz",
+    "gzSize": 1047471
   },
   {
     "file": "quikdown_json.d.ts",

@@ -1,131 +1,65 @@
 # quikdown documentation
 
-Complete documentation for the quikdown markdown parser.
+Complete documentation for the quikdown markdown parser, editor, and companion libraries.
 
-## 📚 Documentation
+## Start here
 
-- **[Architecture](architecture.md)** - Parser design, phases, and implementation details
-- **[Security Guide](security.md)** - Security model, XSS prevention, and safe usage
-- **[API Reference](api-reference.md)** - Complete API documentation with examples
-- **[Plugin Development](plugin-guide.md)** - How to create custom fence plugins
-- **[Framework Integration](framework-integration.md)** - Using quikdown with React, Vue, Svelte, Angular
-- **[Bidirectional Conversion](quikdown-bidirectional.md)** - HTML to Markdown round-trip conversion
-- **[AST Libraries](quikdown-ast.md)** - Markdown to AST, JSON, YAML conversion
-- **[Lexer Implementation](lexer-implementation.md)** - Experimental lexer-based parser
+| Doc | Description |
+|-----|-------------|
+| **[Try the editor](https://deftio.github.io/quikdown/pages/edit/)** | Live split-view editor on the site |
+| **[Examples hub](https://deftio.github.io/quikdown/pages/examples/)** | Interactive demos (parser, editor, LLM, offline) |
+| **[LLM integration](llm-integration.md)** | Streaming, agent tools, quikchat — agent UI patterns |
+| **[Editor](quikdown-editor.md)** | QuikdownEditor API, headless mode, fences, themes |
+| **[Standalone editor](standalone-editor.md)** | Offline / air-gapped bundle (~3.8 MB) |
 
-## 🚀 Quick Links
+## Core reference
 
-- [GitHub Repository](https://github.com/deftio/quikdown)
-- [NPM Package](https://www.npmjs.com/package/quikdown)
-- [Live Examples](../examples/)
+- **[API Reference](api-reference.md)** — Parser options, modules, TypeScript types
+- **[Architecture](architecture.md)** — Four-phase parser pipeline
+- **[Security Guide](security.md)** — XSS model, CSP, deployment checklist
+- **[Plugin Development](plugin-guide.md)** — Custom fence plugins
+- **[Bidirectional Conversion](quikdown-bidirectional.md)** — HTML ↔ Markdown round-trip
+- **[AST Libraries](quikdown-ast.md)** — AST, JSON, YAML structured output
 
-## 📖 Overview
+## Integration
 
-quikdown is a lightweight, secure markdown parser designed for chat and LLM outputs. It prioritizes:
+- **[Framework Integration](framework-integration.md)** — React, Vue, Svelte, Angular, Next.js, Nuxt
+- **[LLM Integration](llm-integration.md)** — Streaming, tool editor, chat widgets
+- **[Release Process](release-process.md)** — Shipping, standalone bundle, CI gates
 
-- **Security** - All HTML is escaped by default
-- **Size** - 9.8KB minified (core), 14.6KB with bidirectional support, zero dependencies
-- **Extensibility** - Plugin system for custom rendering
-- **Simplicity** - Easy to understand and audit
-- **Bidirectional** - Convert HTML back to Markdown for WYSIWYG editing
+## Examples (repo)
 
-## 🎯 Use Cases
+| Path | Description |
+|------|-------------|
+| [examples/llm-tool-editor/](../examples/llm-tool-editor/) | quikchat + editor + simulated agent tools |
+| [examples/llm-stream-editor/](../examples/llm-stream-editor/) | Stream tokens into QuikdownEditor |
+| [pages/examples/](../pages/examples/) | Site-hosted examples (parser, BD, editor, integrations) |
+| [examples/](../examples/) | Additional HTML demos and sample `.md` files |
 
-- Chat applications
-- LLM output rendering
-- Comment systems
-- Documentation
-- Email templates
-- Static site generation
+Run locally: `npm run serve` → http://localhost:6811
 
-## 💡 Design Philosophy
+## Other
 
-1. **Secure by Default** - No XSS vulnerabilities without explicit opt-in
-2. **Small & Fast** - Optimized for size and performance
-3. **Practical** - Focuses on commonly used markdown features
-4. **Extensible** - Plugin system for customization
-5. **Zero Dependencies** - No supply chain risks
+- **[Lexer Implementation](lexer-implementation.md)** — Experimental lexer-based parser
+- **[Release Notes](release-notes.md)** — Version history
 
-## 🔒 Security First
+## Quick links
 
-quikdown escapes all HTML by default. Trusted HTML can only be rendered through explicit fence plugins, making trust granular and intentional.
+- [GitHub](https://github.com/deftio/quikdown)
+- [NPM](https://www.npmjs.com/package/quikdown)
+- [Downloads](https://deftio.github.io/quikdown/pages/downloads/)
+- [quikchat](https://github.com/deftio/quikchat) — chat widget often paired with quikdown
 
-```javascript
-// Safe for untrusted input
-const html = quikdown(userInput);
+## Overview
 
-// Trusted HTML requires explicit plugin
-const html = quikdown(markdown, {
-  fence_plugin: {
-    render: (content, lang) => {
-      if (lang === 'trusted-html' && isAdmin()) {
-        return content; // Only for trusted sources
-      }
-    }
-  }
-});
-```
+quikdown is a lightweight, secure markdown toolkit for chat, LLM output, and embeddable editing:
 
-## 📦 Installation
+- **Security** — HTML escaped by default; URL sanitization
+- **Size** — ~10 KB parser, ~84 KB editor (fences lazy-loaded)
+- **Offline** — Standalone editor bundles fence libs (~3.8 MB)
+- **Bidirectional** — Optional HTML ↔ Markdown round-trip
+- **Zero deps (core)** — Parser and BD modules have no runtime dependencies
 
-```bash
-npm install quikdown
-```
+## License
 
-Or via CDN:
-
-```html
-<script src="https://unpkg.com/quikdown/dist/quikdown.umd.min.js"></script>
-```
-
-## 🌟 Features
-
-### Supported Markdown
-
-- **Headings** (`#` through `######`)
-- **Bold** (`**text**` or `__text__`)
-- **Italic** (`*text*` or `_text_`)
-- **Strikethrough** (`~~text~~`)
-- **Code** (`` `inline` `` and ` ```blocks``` `)
-- **Links** (`[text](url)`)
-- **Images** (`![alt](url)`)
-- **Lists** (ordered and unordered with nesting)
-- **Tables** (with alignment)
-- **Blockquotes** (`> quote`)
-- **Horizontal rules** (`---`)
-- **Line breaks** (two spaces + newline)
-
-### Not Supported (Intentionally)
-
-- Raw HTML passthrough (security)
-- Reference-style links (complexity)
-- Footnotes (uncommon in chat)
-- Definition lists (uncommon)
-
-## 🔧 Configuration
-
-### Options
-
-- `inline_styles` - Use inline CSS instead of classes
-- `fence_plugin` - Custom code block renderer
-
-### Methods
-
-- `quikdown(markdown, options)` - Parse markdown to HTML
-- `quikdown.configure(options)` - Create configured parser
-- `quikdown.emitStyles()` - Get CSS stylesheet
-- `quikdown.version` - Version string
-
-## 🤝 Contributing
-
-See [Contributing Guide](../CONTRIBUTING.md)
-
-## 📄 License
-
-BSD-2-Clause - See [LICENSE](../LICENSE.txt)
-
-## 🙏 Acknowledgments
-
-- Inspired by the simplicity of early markdown parsers
-- Designed for the modern web with security in mind
-- Built for real-world chat and LLM use cases
+BSD-2-Clause — see [LICENSE](../LICENSE.txt)

@@ -54,6 +54,9 @@ jobs:
         test -f dist/quikdown_yaml.d.ts
         test -f dist/quikdown_ast_html.d.ts
 
+    - name: Verify package exports and types
+      run: npm run verify:package
+
   e2e:
     needs: build
     runs-on: ubuntu-latest

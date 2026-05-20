@@ -289,6 +289,87 @@ children:
             expect(result).toContain('href="#"');
             expect(result).not.toContain('javascript:');
         });
+
+        test('should allow javascript: URLs when allow_unsafe_urls is true', () => {
+            const ast = {
+                type: 'document',
+                children: [
+                    { type: 'paragraph', children: [
+                        { type: 'link', url: 'javascript:alert(1)', children: [{ type: 'text', value: 'click' }] }
+                    ]}
+                ]
+            };
+            const result = quikdown_ast_html(ast, { allow_unsafe_urls: true });
+            expect(result).toContain('href="javascript:alert(1)"');
+        });
+
+        test('should sanitize image src by default', () => {
+            const ast = {
+                type: 'document',
+                children: [
+                    { type: 'paragraph', children: [
+                        { type: 'image', url: 'javascript:alert(1)', alt: 'bad' }
+                    ]}
+                ]
+            };
+            const result = quikdown_ast_html(ast);
+            expect(result).toContain('src="#"');
+            expect(result).not.toContain('javascript:');
+        });
+
+        test('should allow unsafe image src when allow_unsafe_urls is true', () => {
+            const ast = {
+                type: 'document',
+                children: [
+                    { type: 'paragraph', children: [
+                        { type: 'image', url: 'javascript:alert(1)', alt: 'bad' }
+                    ]}
+                ]
+            };
+            const result = quikdown_ast_html(ast, { allow_unsafe_urls: true });
+            expect(result).toContain('src="javascript:alert(1)"');
+        });
+
+        test('should allow data:image URLs by default', () => {
+            const ast = {
+                type: 'document',
+                children: [
+                    { type: 'paragraph', children: [
+                        { type: 'image', url: 'data:image/png;base64,abc', alt: 'img' }
+                    ]}
+                ]
+            };
+            const result = quikdown_ast_html(ast);
+            expect(result).toContain('src="data:image/png;base64,abc"');
+        });
+
+        test('should block non-image data: URLs by default', () => {
+            const ast = {
+                type: 'document',
+                children: [
+                    { type: 'paragraph', children: [
+                        { type: 'link', url: 'data:text/html,<script>alert(1)</script>', children: [{ type: 'text', value: 'x' }] }
+                    ]}
+                ]
+            };
+            const result = quikdown_ast_html(ast);
+            expect(result).toContain('href="#"');
+        });
+
+        test('allow_unsafe_urls matches core parser behavior', () => {
+            // Both should allow javascript: when flag is set
+            const md = '[click](javascript:alert)';
+            const coreResult = quikdown(md, { allow_unsafe_urls: true });
+            const astResult = quikdown_ast_html(md, { allow_unsafe_urls: true });
+            expect(coreResult).toContain('javascript:alert');
+            expect(astResult).toContain('javascript:alert');
+
+            // Both should block javascript: by default
+            const coreDefault = quikdown(md);
+            const astDefault = quikdown_ast_html(md);
+            expect(coreDefault).not.toContain('javascript:alert');
+            expect(astDefault).not.toContain('javascript:alert');
+        });
     });
 
     describe('Roundtrip comparison', () => {
