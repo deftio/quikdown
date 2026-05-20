@@ -125,6 +125,7 @@
     "lint": "eslint src/",
     "verify:package": "node tools/verifyPackage.cjs",
     "verify:standalone": "node tools/checkStandalone.cjs",
+    "verify:types": "tsc --noEmit -p tests/fixtures/ts-consumer/tsconfig.json",
     "verify:release": "node tools/verifyPackage.cjs --release && node tools/checkStandalone.cjs",
     "build:airgap": "node tools/buildAirgapZip.cjs",
     "sizes": "node tools/printSizes.cjs",
@@ -178,10 +179,10 @@
         "statements": 99
       },
       "./dist/quikdown_edit.esm.js": {
-        "lines": 60,
-        "functions": 65,
-        "branches": 60,
-        "statements": 60
+        "lines": 80,
+        "functions": 85,
+        "branches": 72,
+        "statements": 80
       },
       "./dist/quikdown_ast.esm.js": {
         "lines": 99,

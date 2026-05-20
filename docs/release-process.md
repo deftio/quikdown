@@ -99,7 +99,7 @@ After merge to main, CI automatically:
 1. Runs normal **`build`** + tests on the PR (no standalone — fast loop)
 2. On version bump: tags and triggers **`publish.yml`**
 3. **Publish workflow** runs **`build:all`**, **`verify:release`**, standalone Playwright smoke, unit tests, npm publish
-4. **GitHub Release** attaches standalone `.min.js`, `.gz`, and **`quikdown-airgap-vX.Y.Z.zip`**
+4. **GitHub Release** attaches standalone `.min.js`, `.gz`, **`quikdown-airgap-vX.Y.Z.zip`**, all `.d.ts` type definitions, and CSS themes
 
 ### 7. Verify
 
@@ -137,10 +137,20 @@ git commit --no-verify -m "wip: temporary"
 
 | When | What runs |
 |------|-----------|
-| **PR / push (ci.yml)** | `npm run build`, `npm test`, core dist smoke checks — **no standalone** |
-| **Pre-commit (husky)** | `lint`, `npm test` — **no standalone** |
+| **PR / push (ci.yml)** | `npm run build`, `npm test`, dist + `.d.ts` file checks, `verify:package` — **no standalone** |
+| **PR e2e-smoke (ci.yml)** | `@smoke`-tagged Playwright tests — **blocking** (editor init, content editing, HTML whitelist, BD sync) |
+| **PR e2e (ci.yml)** | Full Playwright suite — **non-blocking** (`continue-on-error: true`) |
+| **Pre-commit (husky)** | `lint`, `npm test` — **no standalone, no build** |
 | **`npm run release` (local)** | `build:all`, `verify:release`, `test:standalone:e2e`, air-gap zip, `npm test` |
-| **publish.yml** | Same release gates + npm publish + GitHub Release assets |
+| **publish.yml** | Same release gates + npm publish + GitHub Release assets (bundles + `.d.ts` + CSS + air-gap zip) |
+
+### Verification scripts
+
+| Script | What it checks | When it runs |
+|--------|---------------|-------------|
+| `npm run verify:package` | All `exports.types` paths exist, npm pack dry-run | Every PR (ci.yml) |
+| `npm run verify:release` | `verify:package` + standalone bundle size/imports + npm pack | `release.sh` + `publish.yml` |
+| `npm run verify:types` | TypeScript consumer fixture compiles (`tsc --noEmit`) | Optional — run locally before release |
 
 ### Standalone (offline) editor
 

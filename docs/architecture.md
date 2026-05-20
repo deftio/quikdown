@@ -22,7 +22,11 @@ Input Markdown
     ↓
 Phase 1: Extract & Protect (Code blocks, inline code → §CB§ / §IC§ placeholders)
     ↓
+Phase 1.5: Safe HTML Extraction (whitelist mode only — §HT§ placeholders)
+    ↓
 Phase 2: Escape HTML (XSS protection)
+    ↓
+Phase 2.5: Restore §HT§ placeholders (whitelist mode only)
     ↓
 Phase 3: Block Scanning + Inline Formatting + Paragraph Wrapping
     ├── 3a: Table detection (line walker — multi-line lookahead)
@@ -49,6 +53,44 @@ Before any processing, we extract code blocks and inline code, replacing them wi
 - **Inline code** → `§IC0§`, `§IC1§`, etc.
 
 This prevents code content from being processed as markdown and ensures special characters remain intact.
+
+### Phase 1.5: Safe HTML Extraction (Whitelist Mode)
+
+When `allow_unsafe_html` is an array or object (whitelist mode), Phase 1.5 runs between extraction and escaping. It selectively preserves trusted HTML tags while letting Phase 2 escape everything else.
+
+**How it works:**
+
+1. **Normalize the whitelist** — `allow_unsafe_html: ['b', 'i', 'div']` becomes an O(1) lookup object.
+2. **Extract whitelisted tags** — A regex scans for HTML tags. Tags whose name is in the whitelist are replaced with `§HT0§`, `§HT1§`, etc. Non-whitelisted tags are left in the text.
+3. **Sanitize attributes** — Before storing each tag, `sanitizeHtmlTagAttrs()` strips:
+   - All `on*` event handler attributes (`onclick`, `onerror`, etc.)
+   - Dangerous URL protocols (`javascript:`, `vbscript:`, non-image `data:`) in `href`, `src`, `action`, `formaction`
+4. **Phase 2 escapes the rest** — Non-whitelisted tags get escaped as usual.
+5. **Restore `§HT§` placeholders** — After escaping, whitelisted tags are put back with their sanitized attributes.
+
+**Example flow:**
+
+```
+Input:  <b>bold</b> <script>alert(1)</script>
+Config: allow_unsafe_html: ['b']
+
+Phase 1.5: §HT0§bold§HT1§ <script>alert(1)</script>
+           safeTags = ['<b>', '</b>']
+
+Phase 2:   §HT0§bold§HT1§ &lt;script&gt;alert(1)&lt;/script&gt;
+
+Restore:   <b>bold</b> &lt;script&gt;alert(1)&lt;/script&gt;
+```
+
+**Three modes of `allow_unsafe_html`:**
+
+| Value | Behavior |
+|-------|----------|
+| `false` (default) | All HTML escaped — Phase 1.5 skipped |
+| `true` | Phase 2 escaping skipped entirely — all HTML passes through (trusted pipelines only) |
+| `string[]` or `object` | Phase 1.5 extracts + sanitizes whitelisted tags; Phase 2 escapes the rest |
+
+**Note:** `style` attributes pass through on whitelisted tags. See [Security Guide](security.md) for mitigation guidance.
 
 ### Phase 2: HTML Escaping
 

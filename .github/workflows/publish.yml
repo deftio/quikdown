@@ -99,3 +99,10 @@ jobs:
           ${{ steps.airgap.outputs.zip }}
           dist/quikdown.light.min.css
           dist/quikdown.dark.min.css
+          dist/quikdown.d.ts
+          dist/quikdown_bd.d.ts
+          dist/quikdown_edit.d.ts
+          dist/quikdown_ast.d.ts
+          dist/quikdown_json.d.ts
+          dist/quikdown_yaml.d.ts
+          dist/quikdown_ast_html.d.ts

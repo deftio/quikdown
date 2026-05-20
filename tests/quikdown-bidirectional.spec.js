@@ -52,7 +52,7 @@ test.describe('QuikdownEditor Bidirectional Editing Tests', () => {
     });
 
     test.describe('Preview to Source Sync', () => {
-        test('should update source when editing text in preview', async () => {
+        test('@smoke should update source when editing text in preview', async () => {
             const initialContent = '# Hello World\n\nThis is a paragraph.';
 
             await setMarkdown(page, initialContent);

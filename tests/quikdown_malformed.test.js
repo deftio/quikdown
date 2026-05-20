@@ -878,4 +878,66 @@ describe('Malformed markdown and exotic features', () => {
       expect(hrCount).toBe(3);
     });
   });
+
+  // ── Placeholder collision (§CB§, §IC§, §HT§ in user content) ──
+  // Documents expected behavior when user markdown contains literal
+  // placeholder strings that the parser uses internally.
+  describe('placeholder collision — §CB§, §IC§, §HT§ in user content', () => {
+    test('§CB0§ in paragraph text does not corrupt output', () => {
+      const result = quikdown('Text with §CB0§ in it');
+      // The placeholder should appear literally (escaped) in output, not be replaced
+      expect(result).toContain('§CB0§');
+      expect(result).not.toContain('<pre>');
+    });
+
+    test('§IC0§ in paragraph text does not corrupt output', () => {
+      const result = quikdown('Text with §IC0§ in it');
+      expect(result).toContain('§IC0§');
+      expect(result).not.toContain('<code>');
+    });
+
+    test('§CB0§ inside a code block is preserved exactly', () => {
+      const result = quikdown('```\n§CB0§\n```');
+      // Inside code blocks, the placeholder text should appear literally
+      expect(result).toContain('§CB0§');
+    });
+
+    test('§IC0§ inside inline code is preserved', () => {
+      const result = quikdown('Use `§IC0§` for testing');
+      expect(result).toContain('§IC0§');
+    });
+
+    test('§HT0§ in paragraph text does not corrupt output', () => {
+      const result = quikdown('Text with §HT0§ in it');
+      expect(result).toContain('§HT0§');
+    });
+
+    test('multiple placeholder strings in complex document', () => {
+      const md = '# Heading\n\n§CB0§ and §IC0§ and §HT0§\n\n```\n§CB1§\n```\n\nEnd';
+      const result = quikdown(md);
+      // The heading should render
+      expect(result).toContain('<h1');
+      // Code block should render
+      expect(result).toContain('<pre');
+      // Placeholders in paragraph text may or may not survive —
+      // document actual behavior for reference
+      expect(typeof result).toBe('string');
+    });
+
+    test('placeholder collision with actual code block present', () => {
+      // When a real code block exists (becoming §CB0§ internally),
+      // a literal §CB0§ in text could collide
+      const md = '```\nreal code\n```\n\nText mentions §CB0§ here';
+      const result = quikdown(md);
+      expect(result).toContain('real code');
+      // Document: the literal §CB0§ may be replaced by the real code block content.
+      // This is a known limitation of the placeholder scheme.
+    });
+
+    test('§HT0§ with allow_unsafe_html whitelist mode', () => {
+      const result = quikdown('§HT0§ test', { allow_unsafe_html: ['b'] });
+      // Should not crash or produce unexpected HTML
+      expect(typeof result).toBe('string');
+    });
+  });
 });
