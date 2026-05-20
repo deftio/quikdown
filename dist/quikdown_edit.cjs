@@ -790,7 +790,7 @@ function scanLineBlocks(text, getAttr, dataQd) {
         // Pattern: "&gt; content" or "&gt;" alone (blank continuation line)
         // or merged consecutive blockquotes.
         if (/^&gt;(\s|$)/.test(line)) {
-            result.push(`<blockquote${getAttr('blockquote')}>${line.replace(/^&gt;\s*/, '')}</blockquote>`);
+            result.push(`<blockquote${getAttr('blockquote')}${dataQd('>')}>${line.replace(/^&gt;\s*/, '')}</blockquote>`);
             i++;
             continue;
         }
@@ -3202,6 +3202,10 @@ class QuikdownEditor {
         this._undoStack = [];
         this._redoStack = [];
         this._isUndoRedo = false;
+
+        // Instance-level copy of fence libraries so custom entries
+        // don't leak across editor instances.
+        this._fenceLibraries = { ...FENCE_LIBRARIES };
         
         // Initialize
         this.initPromise = this.init();
@@ -3990,9 +3994,7 @@ class QuikdownEditor {
             // Update preview if visible
             if (this.currentMode !== 'source') {
                 this.previewPanel.innerHTML = this._html;
-                // Make all fence blocks non-editable
-                this.makeFencesNonEditable();
-                
+
                 // Process all math elements with MathJax if loaded (like squibview)
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     const mathElements = this.previewPanel.querySelectorAll('.math-display');
@@ -4810,20 +4812,6 @@ class QuikdownEditor {
     }
     
     /**
-     * Make complex fence blocks non-editable
-     */
-    makeFencesNonEditable() {
-        if (!this.previewPanel) return;
-        
-        // Only make specific complex fence types non-editable
-        // SVG, HTML, Math, Mermaid already have contenteditable="false" set
-        // Syntax-highlighted code also has it set
-        
-        // Don't make regular code blocks or tables non-editable
-        // They can be edited and properly round-trip
-    }
-    
-    /**
      * Load plugins dynamically — honors both `plugins: { highlightjs, mermaid }`
      * (legacy) and the newer `preloadFences` option which can preload any
      * combination of fence libraries (or 'all') at construction time.
@@ -4840,16 +4828,16 @@ class QuikdownEditor {
         // New preloadFences option
         const pf = this.options.preloadFences;
         if (pf === 'all') {
-            Object.keys(FENCE_LIBRARIES).forEach(n => namesToLoad.add(n));
+            Object.keys(this._fenceLibraries).forEach(n => namesToLoad.add(n));
         } else if (Array.isArray(pf)) {
             for (const entry of pf) {
                 if (typeof entry === 'string') {
-                    if (FENCE_LIBRARIES[entry]) namesToLoad.add(entry);
+                    if (this._fenceLibraries[entry]) namesToLoad.add(entry);
                     else console.warn(`QuikdownEditor: unknown preloadFences entry "${entry}"`);
                 } else if (entry && typeof entry === 'object' && entry.script) {
                     // Custom library: { name, script, css? }
                     namesToLoad.add('__custom__:' + (entry.name || entry.script));
-                    FENCE_LIBRARIES['__custom__:' + (entry.name || entry.script)] = {
+                    this._fenceLibraries['__custom__:' + (entry.name || entry.script)] = {
                         check: () => false,
                         script: entry.script,
                         css: entry.css
@@ -4863,7 +4851,7 @@ class QuikdownEditor {
         // Load each in parallel; respect already-loaded state
         const promises = [];
         for (const name of namesToLoad) {
-            const lib = FENCE_LIBRARIES[name];
+            const lib = this._fenceLibraries[name];
             if (!lib || lib.check()) continue;
             if (lib.beforeLoad) lib.beforeLoad();
             const p = (async () => {
@@ -5077,7 +5065,6 @@ class QuikdownEditor {
         // destroy MathJax-typeset SVG output with raw pre-typeset HTML.
         if (mode !== 'source' && previousMode === 'source' && this._html) {
             this.previewPanel.innerHTML = this._html;
-            setTimeout(() => this.makeFencesNonEditable(), 0);
             if (typeof window !== 'undefined' && window.MathJax && window.MathJax.typesetPromise) {
                 const mathElements = this.previewPanel.querySelectorAll('.math-display');
                 if (mathElements.length > 0) {

@@ -684,7 +684,7 @@
             // Pattern: "&gt; content" or "&gt;" alone (blank continuation line)
             // or merged consecutive blockquotes.
             if (/^&gt;(\s|$)/.test(line)) {
-                result.push(`<blockquote${getAttr('blockquote')}>${line.replace(/^&gt;\s*/, '')}</blockquote>`);
+                result.push(`<blockquote${getAttr('blockquote')}${dataQd('>')}>${line.replace(/^&gt;\s*/, '')}</blockquote>`);
                 i++;
                 continue;
             }

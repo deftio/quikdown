@@ -50,8 +50,21 @@ echo ""
 
 # --- run quality gates -------------------------------------------------------
 
-info "=== Running build ==="
-npm run build || die "Build failed. Fix errors before releasing."
+info "=== Running build (core + standalone offline editor) ==="
+npm run build:all || die "Build failed. Fix errors before releasing."
+echo ""
+
+info "=== Verifying release artifacts (standalone + npm pack) ==="
+npm run verify:release || die "Release verification failed."
+echo ""
+
+info "=== Standalone editor smoke (Playwright) ==="
+npx playwright install chromium 2>/dev/null || true
+npm run test:standalone:e2e || die "Standalone Playwright smoke failed."
+echo ""
+
+info "=== Building air-gapped zip ==="
+node tools/buildAirgapZip.cjs || die "Air-gap zip build failed."
 echo ""
 
 info "=== Running tests ==="

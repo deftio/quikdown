@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -80,7 +80,6 @@ jobs:
       run: npm run test:e2e
 
   # Tag + trigger publish: runs only on push to main when the version is new.
-  # Creates the git tag, then triggers publish.yml (which npm trusts for OIDC).
   tag-and-publish:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'

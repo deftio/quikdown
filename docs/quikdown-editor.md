@@ -596,7 +596,9 @@ graph LR
 ```
 ````
 
-#### Math Equations (KaTeX)
+#### Math Equations (MathJax v3)
+
+Rendering uses **MathJax v3** (CDN). The fence language `katex` is still accepted for backward compatibility and routes to MathJax — quikdown originally experimented with KaTeX before switching (see `docs/release-notes.md` v1.2.x).
 
 ````markdown
 ```math
@@ -678,7 +680,9 @@ const editor = new QuikdownEditor('#editor', {
 });
 ```
 
-#### KaTeX Integration
+#### KaTeX Integration (legacy / customFences only)
+
+> **Note:** Built-in editor fences use MathJax, not KaTeX. This example is for apps that bring their own KaTeX via `customFences` — not the default try-it or CDN editor path.
 
 ```javascript
 const editor = new QuikdownEditor('#editor', {

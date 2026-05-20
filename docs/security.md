@@ -305,6 +305,32 @@ quikdown('<div style="color:red">text</div>', {
 // → <div style="color:red">text</div>
 ```
 
+## Editor Security Considerations
+
+### Contenteditable Preview Trust Boundary
+
+When the editor is in `split` or `preview` mode, the preview pane uses `contentEditable="true"`. The rendered HTML from the bidirectional parser is inserted via `innerHTML`. This means:
+
+- **Fence plugin output is trusted** — plugins return raw HTML that is inserted directly into the editable preview. Only use plugins you control.
+- **Built-in fence renderers** (Mermaid, MathJax, SVG, HTML, GeoJSON, STL) load third-party scripts from CDNs. The editor marks these blocks as `contentEditable="false"` to prevent editing, but the rendered content runs in the page context.
+- **`data-qd-source` attributes** store the original fence source for roundtrip. The rich-copy handler sanitizes this content (stripping `<script>` tags and `on*` attributes) before processing.
+
+**Recommendation:** Do not load untrusted markdown into the editor if fence rendering is enabled. Use `enableComplexFences: false` to disable all built-in renderers when editing untrusted content.
+
+### Custom Fence Trust Model
+
+The `customFences` option maps language tags to render functions:
+
+```javascript
+new QuikdownEditor(container, {
+    customFences: {
+        'chart': (code, lang) => renderChart(code)
+    }
+});
+```
+
+Custom fence functions receive raw fence content and return HTML that is inserted directly into the preview. **There is no sanitization of custom fence output.** The caller is responsible for escaping or sanitizing as needed. Treat custom fences the same as a fence plugin — only register renderers you trust.
+
 ## Future Security Enhancements
 
 Planned security improvements:

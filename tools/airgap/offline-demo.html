@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>quikdown — offline demo</title>
+  <link rel="stylesheet" href="quikdown.light.min.css">
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+    #editor { height: 70vh; min-height: 420px; }
+    .note { color: #555; font-size: 0.92rem; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <h1>quikdown offline</h1>
+  <p class="note">
+    This folder is self-contained: no CDN, no npm, no network.
+    Open this file from disk or serve the folder on an air-gapped machine.
+    Math fences need network (MathJax fonts) — everything else works offline.
+  </p>
+  <div id="editor"></div>
+  <script src="quikdown_edit_standalone.umd.min.js"></script>
+  <script>
+    const editor = new QuikdownEditor('#editor', { mode: 'split', theme: 'light' });
+    editor.setMarkdown('# Hello from the air gap\n\n```javascript\nconsole.log("no network required");\n```\n\n```mermaid\ngraph LR; A[Markdown] --> B[Rendered]; B --> C[Offline];\n```');
+  </script>
+</body>
+</html>

@@ -22,10 +22,15 @@ npm run release
 The script will:
 1. Verify you're on a feature branch (not main)
 2. Check for clean working tree
-3. Run tests and build
-4. Auto-commit any badge/dist drift
-5. Show a summary and ask for confirmation
-6. Squash-merge into main and push
+3. Run **`build:all`** (core + **standalone offline editor**)
+4. Run **`verify:release`** (npm pack + standalone size/import checks)
+5. Run **`test:standalone:e2e`** (Playwright smoke on the bundled editor)
+6. Build **`quikdown-airgap-vX.Y.Z.zip`**
+7. Run unit tests (`npm test`)
+8. Auto-commit any badge/dist drift (including standalone bundles)
+9. Squash-merge into main and push
+
+**Normal dev / pre-commit does not build standalone.** Husky runs `lint` + `npm test` only. The ~60s standalone Rollup step runs here, in publish CI, and when you explicitly run `build:standalone`.
 
 CI takes over from there.
 
@@ -45,9 +50,14 @@ git checkout -b feature/your-change-name
 # Make your changes, then bump the version
 npm version patch --no-git-tag-version   # or minor / major
 
-# Build and test (also runs on commit via husky pre-commit hook)
+# Day-to-day dev (no standalone build)
 npm run build
 npm test
+
+# Before release (or let `npm run release` do it)
+npm run build:all
+npm run verify:release
+npm run test:standalone:e2e
 ```
 
 ### 3. Commit
@@ -86,12 +96,10 @@ gh pr merge --squash
 ### 6. CI handles the rest
 
 After merge to main, CI automatically:
-1. Runs tests again
-2. Reads the version from `package.json`
-3. Checks if that git tag already exists
-4. If new: creates and pushes the `vX.Y.Z` tag
-5. Publishes to npm (OIDC trusted publisher, no token needed)
-6. Creates a GitHub Release with dist files attached
+1. Runs normal **`build`** + tests on the PR (no standalone — fast loop)
+2. On version bump: tags and triggers **`publish.yml`**
+3. **Publish workflow** runs **`build:all`**, **`verify:release`**, standalone Playwright smoke, unit tests, npm publish
+4. **GitHub Release** attaches standalone `.min.js`, `.gz`, and **`quikdown-airgap-vX.Y.Z.zip`**
 
 ### 7. Verify
 
@@ -127,9 +135,24 @@ git commit --no-verify -m "wip: temporary"
 
 ## What CI does (detail)
 
-- **On PR:** runs the `build` job only (test + build verification)
-- **On push to main:** runs `build`, then `publish` (conditional — only if the version tag is new)
-- **Manual dispatch:** `publish.yml` can be triggered manually for retrying failed publishes
+| When | What runs |
+|------|-----------|
+| **PR / push (ci.yml)** | `npm run build`, `npm test`, core dist smoke checks — **no standalone** |
+| **Pre-commit (husky)** | `lint`, `npm test` — **no standalone** |
+| **`npm run release` (local)** | `build:all`, `verify:release`, `test:standalone:e2e`, air-gap zip, `npm test` |
+| **publish.yml** | Same release gates + npm publish + GitHub Release assets |
+
+### Standalone (offline) editor
+
+The **`quikdown_edit_standalone`** bundle (~3.8 MB) ships on every release for air-gapped deployments. It is **not** part of the normal debug cycle.
+
+| Check | Command |
+|-------|---------|
+| Build | `npm run build:standalone` or `npm run build:all` |
+| Verify (size, self-contained, npm pack) | `npm run verify:release` |
+| Browser smoke | `npm run test:standalone:e2e` |
+| Air-gap zip | `npm run build:airgap` |
+| Docs | `docs/standalone-editor.md` |
 
 ## Branch protection
 

@@ -1224,5 +1224,21 @@ End of document.`;
       const html = quikdown_bd(md);
       expect(html).toMatch(/data-qd-align="left,left"/);
     });
+
+    test('contract: blockquote forward emits data-qd', () => {
+      const md = '> Quote line';
+      const html = quikdown_bd(md);
+      // '>' is HTML-escaped to '&gt;' in attribute value
+      expect(html).toMatch(/data-qd="&gt;"/);
+    });
+
+    test('contract: blockquote roundtrip preserves content', () => {
+      const md = '> First line\n> Second line';
+      const html = quikdown_bd(md);
+      expect(html).toMatch(/data-qd="&gt;"/);
+      const back = quikdown_bd.toMarkdown(html);
+      expect(back).toContain('> First line');
+      expect(back).toContain('> Second line');
+    });
   });
 });

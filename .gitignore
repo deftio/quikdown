@@ -5,6 +5,7 @@ node_modules/
 # Ignore any temporary files
 *.log
 *.tmp
+tmp/
 
 # Ignore any IDE-specific files
 .vscode/

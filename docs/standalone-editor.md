@@ -66,13 +66,24 @@ The standalone bundle is built separately from the main build:
 npm run build:standalone
 ```
 
-This runs a dedicated rollup config (`rollup.config.standalone.js`) that bundles all dependencies with `inlineDynamicImports: true`.
+This runs a dedicated rollup config (`rollup.config.standalone.js`) that bundles all dependencies with `inlineDynamicImports: true`. Fence libraries (`highlight.js`, `mermaid`, `dompurify`, `leaflet`, `three`) must be present in **devDependencies** — CI runs `npm ci` before building.
 
 The main build (`npm run build`) does NOT include the standalone bundle. To build everything:
 
 ```bash
 npm run build:all
 ```
+
+Release CI and `npm run release` always run **`build:all`** and **`verify:standalone`** so the offline bundle cannot be omitted from a ship.
+
+## Release / CI
+
+| Step | What happens |
+|------|----------------|
+| `npm run release` | `build:all` → `verify:package` → `verify:standalone` → tests → auto-commit `dist/` |
+| CI on PR / main | Same gates; fails if standalone is missing or broken |
+| npm publish | Standalone is in `dist/` (`files: ["dist"]`) |
+| GitHub Release | Attaches `quikdown_edit_standalone.*.min.js` + `.gz` |
 
 ## When to Use
 

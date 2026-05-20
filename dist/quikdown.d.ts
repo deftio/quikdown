@@ -2,12 +2,16 @@
  * quikdown — A compact markdown-to-HTML parser with XSS protection.
  */
 
+export interface FencePlugin {
+    /** Render a fenced code block. Return undefined to fall back to default rendering. */
+    render: (code: string, lang: string) => string | undefined;
+    /** Reverse a rendered fence element back to source (for bidirectional mode). */
+    reverse?: (element: Element) => { content: string; lang: string; fence: string };
+}
+
 export interface QuikdownOptions {
     /** Custom handler for fenced code blocks. */
-    fence_plugin?: {
-        render: (code: string, lang: string) => string | undefined;
-        reverse?: (element: Element) => { content: string; lang: string; fence: string };
-    };
+    fence_plugin?: FencePlugin;
     /** Use inline styles instead of CSS classes. Default: false. */
     inline_styles?: boolean;
     /** Add data-qd attributes for HTML-to-markdown roundtrip. Default: false. */

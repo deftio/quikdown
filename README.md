@@ -133,7 +133,7 @@ The AST parsers are "forgiving" - they handle malformed markdown gracefully with
 - **highlight.js** - Loaded when code blocks are encountered and `highlightjs: true`
 - **mermaid** - Loaded when mermaid diagrams are found and `mermaid: true`
 - **DOMPurify** - Loaded when HTML fence blocks are rendered
-- **KaTeX** - Loaded when math/tex fence blocks are encountered
+- **MathJax v3** - Loaded when `math`, `tex`, `latex`, or `katex` fence blocks are encountered (`katex` lang kept for backward compatibility)
 
 This keeps the initial bundle small while providing rich functionality on-demand.
 

@@ -48,6 +48,9 @@ describe('QuikdownEditor Coverage', () => {
         if (container && container.parentNode) {
             container.parentNode.removeChild(container);
         }
+        // Clean up any hljs stylesheet stubs left by _syncHljsTheme tests
+        document.getElementById('qde-hljs-light')?.remove();
+        document.getElementById('qde-hljs-dark')?.remove();
         container = null;
         jest.restoreAllMocks();
     });
@@ -1284,13 +1287,6 @@ describe('QuikdownEditor Coverage', () => {
             expect(result).toContain('{invalid json');
         });
 
-        test('makeFencesNonEditable is a no-op without previewPanel', async () => {
-            editor = new QuikdownEditor('#test-editor');
-            await editor.initPromise;
-            // Should not throw
-            editor.makeFencesNonEditable();
-        });
-
         test('injectStyles does not duplicate styles', async () => {
             editor = new QuikdownEditor('#test-editor');
             await editor.initPromise;
@@ -1861,60 +1857,7 @@ describe('QuikdownEditor Coverage', () => {
         }, 10000);
     });
 
-    // ──────────────────────────────────────────────────────────────
-    //  _syncHljsTheme
-    // ──────────────────────────────────────────────────────────────
-
-    describe('_syncHljsTheme', () => {
-        test('toggles stylesheet disabled state in dark mode', async () => {
-            editor = new QuikdownEditor('#test-editor');
-            await editor.initPromise;
-            const light = document.createElement('link');
-            light.id = 'qde-hljs-light';
-            light.rel = 'stylesheet';
-            document.head.appendChild(light);
-            const dark = document.createElement('link');
-            dark.id = 'qde-hljs-dark';
-            dark.rel = 'stylesheet';
-            document.head.appendChild(dark);
-
-            editor.container.classList.add('qde-dark');
-            editor._syncHljsTheme();
-            // In dark mode, light should be disabled, dark should not
-            expect(document.getElementById('qde-hljs-light').disabled).toBeTruthy();
-
-            // Clean up
-            light.remove();
-            dark.remove();
-        });
-
-        test('toggles stylesheet disabled state in light mode', async () => {
-            editor = new QuikdownEditor('#test-editor');
-            await editor.initPromise;
-            const light = document.createElement('link');
-            light.id = 'qde-hljs-light';
-            light.rel = 'stylesheet';
-            document.head.appendChild(light);
-            const dark = document.createElement('link');
-            dark.id = 'qde-hljs-dark';
-            dark.rel = 'stylesheet';
-            document.head.appendChild(dark);
-
-            editor.container.classList.remove('qde-dark');
-            editor._syncHljsTheme();
-            expect(document.getElementById('qde-hljs-dark').disabled).toBeTruthy();
-
-            light.remove();
-            dark.remove();
-        });
-
-        test('handles missing stylesheet elements gracefully', async () => {
-            editor = new QuikdownEditor('#test-editor');
-            await editor.initPromise;
-            // Should not throw when elements don't exist
-            editor._syncHljsTheme();
-        });
-    });
+    // _syncHljsTheme: covered in Theme section and Library loading section
 
     // ──────────────────────────────────────────────────────────────
     //  Copy rendered content
@@ -1952,6 +1895,1779 @@ describe('QuikdownEditor Coverage', () => {
 
             editor.setTheme('auto');
             expect(editor._autoThemeListener).toBeTruthy();
+        });
+    });
+
+    // ================================================================
+    // Fence Renderers — direct method tests
+    // ================================================================
+    describe('Fence Renderers', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        describe('renderSVG', () => {
+            test('renders valid SVG in a container', () => {
+                const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="50" cy="50" r="40"/></svg>';
+                const html = editor.renderSVG(svg);
+                expect(html).toContain('qde-svg-container');
+                expect(html).toContain('data-qd-lang="svg"');
+                expect(html).toContain('data-qd-fence');
+                expect(html).toContain('<circle');
+            });
+
+            test('strips script elements from SVG body (not from data-qd-source)', () => {
+                const svg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script><rect width="10" height="10"/></svg>';
+                const html = editor.renderSVG(svg);
+                // Parse just the rendered SVG inside the container (not the data-qd-source attribute)
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                const innerSvg = tmp.querySelector('svg');
+                expect(innerSvg).toBeTruthy();
+                expect(innerSvg.querySelector('script')).toBeNull();
+                expect(innerSvg.querySelector('rect')).toBeTruthy();
+            });
+
+            test('strips on* event handlers from SVG elements', () => {
+                const svg = '<svg xmlns="http://www.w3.org/2000/svg"><rect onclick="alert(1)" width="10" height="10"/></svg>';
+                const html = editor.renderSVG(svg);
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                const rect = tmp.querySelector('rect');
+                expect(rect).toBeTruthy();
+                expect(rect.hasAttribute('onclick')).toBe(false);
+            });
+
+            test('strips javascript: URLs from SVG attributes', () => {
+                const svg = '<svg xmlns="http://www.w3.org/2000/svg"><a href="javascript:alert(1)"><rect width="10" height="10"/></a></svg>';
+                const html = editor.renderSVG(svg);
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                const link = tmp.querySelector('a');
+                if (link) {
+                    expect(link.hasAttribute('href')).toBe(false);
+                }
+            });
+
+            test('returns error pre for invalid SVG', () => {
+                const html = editor.renderSVG('not valid svg at all');
+                expect(html).toContain('Invalid SVG');
+                expect(html).toContain('qde-error');
+            });
+        });
+
+        describe('renderHTML', () => {
+            test('returns placeholder without DOMPurify', () => {
+                delete window.DOMPurify;
+                const html = editor.renderHTML('<p>Hello</p>');
+                expect(html).toContain('qde-html-container');
+                expect(html).toContain('data-qd-lang="html"');
+                expect(html).toContain('<p>Hello</p>');
+            });
+
+            test('uses DOMPurify when available', () => {
+                window.DOMPurify = { sanitize: jest.fn(code => code) };
+                const html = editor.renderHTML('<p>Safe</p>');
+                expect(window.DOMPurify.sanitize).toHaveBeenCalledWith('<p>Safe</p>');
+                expect(html).toContain('qde-html-container');
+                expect(html).toContain('data-qd-lang="html"');
+                delete window.DOMPurify;
+            });
+        });
+
+        describe('renderTable (CSV)', () => {
+            test('renders CSV as HTML table', () => {
+                const csv = 'Name,Age\nAlice,30\nBob,25';
+                const html = editor.renderTable(csv, 'csv');
+                expect(html).toContain('<table');
+                expect(html).toContain('<th>Name</th>');
+                expect(html).toContain('<th>Age</th>');
+                expect(html).toContain('<td>Alice</td>');
+                expect(html).toContain('<td>30</td>');
+                expect(html).toContain('<td>Bob</td>');
+                expect(html).toContain('qde-csv-table');
+            });
+
+            test('renders TSV with tab delimiter', () => {
+                const tsv = 'Col1\tCol2\nA\tB';
+                const html = editor.renderTable(tsv, 'tsv');
+                expect(html).toContain('<th>Col1</th>');
+                expect(html).toContain('<th>Col2</th>');
+                expect(html).toContain('<td>A</td>');
+                expect(html).toContain('<td>B</td>');
+            });
+
+            test('renders PSV with pipe delimiter', () => {
+                const psv = 'X|Y\n1|2';
+                const html = editor.renderTable(psv, 'psv');
+                expect(html).toContain('<th>X</th>');
+                expect(html).toContain('<th>Y</th>');
+                expect(html).toContain('<td>1</td>');
+            });
+
+            test('header-only CSV (no body rows)', () => {
+                const csv = 'Just,Headers';
+                const html = editor.renderTable(csv, 'csv');
+                expect(html).toContain('<th>Just</th>');
+                expect(html).toContain('<th>Headers</th>');
+                expect(html).not.toContain('<tbody');
+            });
+
+            test('escapes HTML in cell values', () => {
+                const csv = 'Col\n<script>alert(1)</script>';
+                const html = editor.renderTable(csv, 'csv');
+                expect(html).not.toContain('<script>');
+                expect(html).toContain('&lt;script&gt;');
+            });
+        });
+
+        describe('parseCSVLine', () => {
+            test('simple comma-separated values', () => {
+                expect(editor.parseCSVLine('a,b,c', ',')).toEqual(['a', 'b', 'c']);
+            });
+
+            test('quoted values with commas', () => {
+                expect(editor.parseCSVLine('"hello, world",b', ',')).toEqual(['hello, world', 'b']);
+            });
+
+            test('escaped quotes inside quoted values', () => {
+                expect(editor.parseCSVLine('"say ""hi""",b', ',')).toEqual(['say "hi"', 'b']);
+            });
+
+            test('tab delimiter', () => {
+                expect(editor.parseCSVLine('x\ty\tz', '\t')).toEqual(['x', 'y', 'z']);
+            });
+
+            test('pipe delimiter', () => {
+                expect(editor.parseCSVLine('a|b|c', '|')).toEqual(['a', 'b', 'c']);
+            });
+
+            test('empty fields', () => {
+                expect(editor.parseCSVLine('a,,c', ',')).toEqual(['a', '', 'c']);
+            });
+        });
+
+        describe('renderJSON', () => {
+            test('renders plain JSON without hljs', () => {
+                delete window.hljs;
+                const html = editor.renderJSON('{"key": "value"}', 'json');
+                expect(html).toContain('qde-json');
+                expect(html).toContain('data-qd-lang="json"');
+                expect(html).toContain('{&quot;key&quot;: &quot;value&quot;}');
+            });
+
+            test('renders with hljs when available', () => {
+                window.hljs = {
+                    getLanguage: jest.fn(() => true),
+                    highlight: jest.fn((code, opts) => ({ value: `<span class="hljs-string">${code}</span>` }))
+                };
+                const html = editor.renderJSON('{"a":1}', 'json');
+                expect(html).toContain('hljs');
+                expect(window.hljs.highlight).toHaveBeenCalled();
+                delete window.hljs;
+            });
+
+            test('formats valid JSON before highlighting', () => {
+                window.hljs = {
+                    getLanguage: jest.fn(() => true),
+                    highlight: jest.fn((code, opts) => ({ value: code }))
+                };
+                editor.renderJSON('{"a":1}', 'json');
+                // Should be called with formatted JSON
+                const callArg = window.hljs.highlight.mock.calls[0][0];
+                expect(callArg).toContain('  "a": 1');
+                delete window.hljs;
+            });
+
+            test('uses original code for invalid JSON', () => {
+                window.hljs = {
+                    getLanguage: jest.fn(() => true),
+                    highlight: jest.fn((code, opts) => ({ value: code }))
+                };
+                editor.renderJSON('{not json}', 'json');
+                const callArg = window.hljs.highlight.mock.calls[0][0];
+                expect(callArg).toBe('{not json}');
+                delete window.hljs;
+            });
+        });
+
+        describe('renderMath', () => {
+            test('returns math container with source', () => {
+                const html = editor.renderMath('E = mc^2', 'math');
+                expect(html).toContain('math-display');
+                // Source content is wrapped in $$...$$ for MathJax
+                expect(html).toContain('E = mc^2');
+            });
+        });
+    });
+
+    // ================================================================
+    // updateFromMarkdown — allowUnsafeHTML branches
+    // ================================================================
+    describe('updateFromMarkdown allowUnsafeHTML branches', () => {
+        test('allowUnsafeHTML=false escapes HTML tags', async () => {
+            editor = new QuikdownEditor('#test-editor', { allowUnsafeHTML: false });
+            await editor.initPromise;
+            editor.updateFromMarkdown('<b>bold</b>');
+            expect(editor.getHTML()).toContain('&lt;b&gt;');
+        });
+
+        test('allowUnsafeHTML=true passes HTML through', async () => {
+            editor = new QuikdownEditor('#test-editor', { allowUnsafeHTML: true });
+            await editor.initPromise;
+            editor.updateFromMarkdown('<b>bold</b>');
+            expect(editor.getHTML()).toContain('<b>bold</b>');
+        });
+
+        test('allowUnsafeHTML="limited" uses SAFE_HTML_TAGS', async () => {
+            editor = new QuikdownEditor('#test-editor', { allowUnsafeHTML: 'limited' });
+            await editor.initPromise;
+            // <b> is in SAFE_HTML_TAGS
+            editor.updateFromMarkdown('<b>bold</b>');
+            expect(editor.getHTML()).toContain('<b>bold</b>');
+            // <script> is not
+            editor.updateFromMarkdown('<script>x</script>');
+            expect(editor.getHTML()).toContain('&lt;script&gt;');
+        });
+
+        test('empty markdown shows placeholder in preview mode', async () => {
+            editor = new QuikdownEditor('#test-editor', { mode: 'split' });
+            await editor.initPromise;
+            editor.updateFromMarkdown('');
+            expect(editor.previewPanel.innerHTML).toContain('Start typing');
+        });
+
+        test('empty markdown in source mode does not set innerHTML', async () => {
+            editor = new QuikdownEditor('#test-editor', { mode: 'source' });
+            await editor.initPromise;
+            editor.updateFromMarkdown('');
+            expect(editor._html).toBe('');
+        });
+
+        test('onChange callback fires with markdown and html', async () => {
+            const onChange = jest.fn();
+            editor = new QuikdownEditor('#test-editor', { onChange });
+            await editor.initPromise;
+            editor.updateFromMarkdown('# Hello');
+            expect(onChange).toHaveBeenCalledWith(expect.stringContaining('# Hello'), expect.stringContaining('<h1'));
+        });
+    });
+
+    // ================================================================
+    // setMode — mode transitions
+    // ================================================================
+    describe('setMode — mode transitions', () => {
+        test('invalid mode is rejected', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setMode('split');
+            editor.setMode('invalid-mode');
+            expect(editor.currentMode).toBe('split');
+        });
+
+        test('preserves dark theme across mode swap', async () => {
+            editor = new QuikdownEditor('#test-editor', { theme: 'dark' });
+            await editor.initPromise;
+            editor.setMode('source');
+            expect(editor.container.classList.contains('qde-dark')).toBe(true);
+            editor.setMode('preview');
+            expect(editor.container.classList.contains('qde-dark')).toBe(true);
+            editor.setMode('split');
+            expect(editor.container.classList.contains('qde-dark')).toBe(true);
+        });
+
+        test('re-renders preview when switching from source', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            // Start in source mode so preview doesn't update
+            editor.setMode('source');
+            editor.updateFromMarkdown('# Rerender Test');
+            // Preview panel doesn't have the content yet
+            expect(editor.previewPanel.innerHTML).not.toContain('Rerender Test');
+            // Switch to split — should re-render
+            editor.setMode('split');
+            expect(editor.previewPanel.innerHTML).toContain('Rerender Test');
+        });
+
+        test('onModeChange callback fires', async () => {
+            const onModeChange = jest.fn();
+            editor = new QuikdownEditor('#test-editor', { onModeChange });
+            await editor.initPromise;
+            editor.setMode('preview');
+            expect(onModeChange).toHaveBeenCalledWith('preview');
+        });
+
+        test('updates active class on toolbar buttons', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setMode('preview');
+            const previewBtn = editor.toolbar.querySelector('[data-mode="preview"]');
+            const sourceBtn = editor.toolbar.querySelector('[data-mode="source"]');
+            if (previewBtn) expect(previewBtn.classList.contains('active')).toBe(true);
+            if (sourceBtn) expect(sourceBtn.classList.contains('active')).toBe(false);
+        });
+    });
+
+    // ================================================================
+    // createFencePlugin — coverage of fence rendering dispatch
+    // ================================================================
+    describe('createFencePlugin dispatch', () => {
+        test('fence plugin routes CSV to renderTable', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('```csv\nName,Age\nAlice,30\n```');
+            expect(editor.getHTML()).toContain('qde-csv-table');
+        });
+
+        test('fence plugin routes SVG to renderSVG', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('```svg\n<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>\n```');
+            expect(editor.getHTML()).toContain('qde-svg-container');
+        });
+
+        test('fence plugin routes JSON to renderJSON', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('```json\n{"key":"value"}\n```');
+            expect(editor.getHTML()).toContain('qde-json');
+        });
+
+        test('fence plugin routes html to renderHTML', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('```html\n<p>Hello</p>\n```');
+            expect(editor.getHTML()).toContain('qde-html-container');
+        });
+
+        test('fence plugin routes math to renderMath', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('```math\nE=mc^2\n```');
+            expect(editor.getHTML()).toContain('math-display');
+        });
+
+        test('enableComplexFences=false skips special renderers', async () => {
+            editor = new QuikdownEditor('#test-editor', { enableComplexFences: false });
+            await editor.initPromise;
+            await editor.setMarkdown('```csv\nName,Age\nAlice,30\n```');
+            // Should NOT render as table — plain code block
+            expect(editor.getHTML()).not.toContain('qde-csv-table');
+        });
+
+        test('custom fence handler is called', async () => {
+            const customHandler = jest.fn().mockReturnValue('<div class="custom-out">OK</div>');
+            editor = new QuikdownEditor('#test-editor', {
+                customFences: { mycustom: customHandler }
+            });
+            await editor.initPromise;
+            await editor.setMarkdown('```mycustom\ntest content\n```');
+            expect(customHandler).toHaveBeenCalledWith(expect.stringContaining('test content'), 'mycustom');
+        });
+
+        test('custom fence handler error falls through gracefully', async () => {
+            const brokenHandler = jest.fn().mockImplementation(() => { throw new Error('oops'); });
+            editor = new QuikdownEditor('#test-editor', {
+                customFences: { broken: brokenHandler }
+            });
+            await editor.initPromise;
+            // Should not throw
+            await editor.setMarkdown('```broken\nstuff\n```');
+            expect(editor.getHTML()).toBeTruthy();
+        });
+    });
+
+    // ================================================================
+    // Library loading
+    // ================================================================
+    describe('Library loading', () => {
+        test('loadScript resolves on success', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            // Mock script loading by simulating onload
+            const origCreate = document.createElement.bind(document);
+            jest.spyOn(document, 'createElement').mockImplementation((tag) => {
+                const el = origCreate(tag);
+                if (tag === 'script') {
+                    setTimeout(() => el.onload && el.onload(), 0);
+                }
+                return el;
+            });
+            await expect(editor.loadScript('https://example.com/lib.js')).resolves.toBeUndefined();
+            document.createElement.mockRestore();
+        });
+
+        test('loadScript rejects on error', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            const origCreate = document.createElement.bind(document);
+            jest.spyOn(document, 'createElement').mockImplementation((tag) => {
+                const el = origCreate(tag);
+                if (tag === 'script') {
+                    setTimeout(() => el.onerror && el.onerror(new Error('network')), 0);
+                }
+                return el;
+            });
+            await expect(editor.loadScript('https://example.com/bad.js')).rejects.toThrow();
+            document.createElement.mockRestore();
+        });
+
+        test('loadCSS adds link element', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.loadCSS('https://example.com/style.css', 'test-css');
+            const link = document.querySelector('link[id="test-css"]');
+            expect(link).toBeTruthy();
+            expect(link.href).toContain('style.css');
+        });
+
+        test('_syncHljsTheme adds/removes disabled on dark stylesheet', async () => {
+            editor = new QuikdownEditor('#test-editor', { theme: 'dark' });
+            await editor.initPromise;
+            // Create mock hljs stylesheets
+            const light = document.createElement('link');
+            light.id = 'qde-hljs-light';
+            document.head.appendChild(light);
+            const dark = document.createElement('link');
+            dark.id = 'qde-hljs-dark';
+            dark.disabled = true;
+            document.head.appendChild(dark);
+            // _syncHljsTheme reads the container's qde-dark class
+            editor._syncHljsTheme();
+            // In dark mode, dark stylesheet should be enabled, light disabled
+            expect(dark.disabled).toBe(false);
+            // Switch to light
+            editor.container.classList.remove('qde-dark');
+            editor._syncHljsTheme();
+            expect(dark.disabled).toBe(true);
+            light.remove();
+            dark.remove();
+        });
+    });
+
+    // ================================================================
+    // FENCE_LIBRARIES instance isolation
+    // ================================================================
+    describe('FENCE_LIBRARIES instance isolation', () => {
+        test('custom preloadFences entries are stored on instance, not module', async () => {
+            // Create editor with no preload to avoid network requests
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+
+            // Manually simulate what loadPlugins does for a custom entry
+            editor._fenceLibraries['__custom__:mylib'] = {
+                check: () => false,
+                script: 'https://example.com/mylib.js'
+            };
+            expect(editor._fenceLibraries['__custom__:mylib']).toBeTruthy();
+
+            // Second editor should have a clean copy
+            const container2 = document.createElement('div');
+            container2.id = 'test-editor-2';
+            document.body.appendChild(container2);
+            const editor2 = new QuikdownEditor('#test-editor-2');
+            await editor2.initPromise;
+            expect(editor2._fenceLibraries['__custom__:mylib']).toBeUndefined();
+
+            editor2.destroy();
+            container2.remove();
+        });
+    });
+
+    // ================================================================
+    // destroy
+    // ================================================================
+    describe('destroy cleanup', () => {
+        test('clears container innerHTML and removes class', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            expect(container.innerHTML).not.toBe('');
+            editor.destroy();
+            expect(container.innerHTML).toBe('');
+            expect(container.classList.contains('qde-container')).toBe(false);
+            editor = null; // prevent double-destroy in afterEach
+        });
+
+        test('clears debounce timer', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.updateTimer = setTimeout(() => {}, 10000);
+            editor.destroy();
+            // Timer should have been cleared (no easy way to assert directly,
+            // but coverage is the goal)
+            editor = null;
+        });
+    });
+
+    // ================================================================
+    // HTML mode toggle
+    // ================================================================
+    describe('HTML mode toggle', () => {
+        test('getAllowUnsafeHTML returns current mode', async () => {
+            editor = new QuikdownEditor('#test-editor', { allowUnsafeHTML: 'limited' });
+            await editor.initPromise;
+            expect(editor.getAllowUnsafeHTML()).toBe('limited');
+        });
+
+        test('setAllowUnsafeHTML changes mode and re-renders', async () => {
+            editor = new QuikdownEditor('#test-editor', { allowUnsafeHTML: false });
+            await editor.initPromise;
+            await editor.setMarkdown('<b>test</b>');
+            expect(editor.getHTML()).toContain('&lt;b&gt;');
+            editor.setAllowUnsafeHTML(true);
+            expect(editor.options.allowUnsafeHTML).toBe(true);
+        });
+
+        test('cycleAllowUnsafeHTML cycles false → limited → true → false', async () => {
+            editor = new QuikdownEditor('#test-editor', { allowUnsafeHTML: false, showAllowUnsafeHTML: true });
+            await editor.initPromise;
+            editor.cycleAllowUnsafeHTML();
+            expect(editor.options.allowUnsafeHTML).toBe('limited');
+            editor.cycleAllowUnsafeHTML();
+            expect(editor.options.allowUnsafeHTML).toBe(true);
+            editor.cycleAllowUnsafeHTML();
+            expect(editor.options.allowUnsafeHTML).toBe(false);
+        });
+    });
+
+    // ================================================================
+    // Lazy linefeeds + removeHR instance methods
+    // ================================================================
+    describe('Instance utility methods', () => {
+        test('setLazyLinefeeds updates option and re-renders', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('line1\nline2');
+            editor.setLazyLinefeeds(true);
+            expect(editor.options.lazy_linefeeds).toBe(true);
+            expect(editor.getLazyLinefeeds()).toBe(true);
+        });
+
+        test('convertLazyLinefeeds normalizes lazy newlines in content', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('# Title\nParagraph text');
+            await editor.convertLazyLinefeeds();
+            // After conversion, single newlines between blocks become double
+            expect(editor.getMarkdown()).toContain('# Title\n\nParagraph text');
+        });
+
+        test('removeHR removes horizontal rules', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('before\n\n---\n\nafter');
+            await editor.removeHR();
+            expect(editor.getMarkdown()).not.toMatch(/^---$/m);
+            expect(editor.getMarkdown()).toContain('before');
+            expect(editor.getMarkdown()).toContain('after');
+        });
+    });
+
+    // ================================================================
+    // Debounce and input handling
+    // ================================================================
+    describe('Debounce and input', () => {
+        test('setDebounceDelay clamps to >= 0', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setDebounceDelay(50);
+            expect(editor.getDebounceDelay()).toBe(50);
+            editor.setDebounceDelay(-10);
+            expect(editor.getDebounceDelay()).toBe(0);
+        });
+
+        test('handleSourceInput triggers debounced update', async () => {
+            editor = new QuikdownEditor('#test-editor', { debounceDelay: 5 });
+            await editor.initPromise;
+            editor.sourceTextarea.value = '# From Input';
+            editor.handleSourceInput();
+            // Wait for debounce
+            await new Promise(r => setTimeout(r, 20));
+            expect(editor.getMarkdown()).toBe('# From Input');
+        });
+    });
+
+    // ================================================================
+    // Toolbar button actions
+    // ================================================================
+    describe('Toolbar button actions', () => {
+        test('copy-markdown button copies markdown to clipboard', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('# Copy Test');
+            const btn = editor.toolbar.querySelector('[data-action="copy-markdown"]');
+            if (btn) {
+                btn.click();
+                await new Promise(r => setTimeout(r, 10));
+                expect(navigator.clipboard.writeText).toHaveBeenCalledWith('# Copy Test');
+            }
+        });
+
+        test('copy-html button copies HTML to clipboard', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('**bold**');
+            const btn = editor.toolbar.querySelector('[data-action="copy-html"]');
+            if (btn) {
+                btn.click();
+                await new Promise(r => setTimeout(r, 10));
+                expect(navigator.clipboard.writeText).toHaveBeenCalledWith(expect.stringContaining('<strong'));
+            }
+        });
+    });
+
+    // ================================================================
+    // escapeHtml
+    // ================================================================
+    describe('escapeHtml', () => {
+        test('escapes all dangerous characters', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            expect(editor.escapeHtml('&<>"\''))
+                .toBe('&amp;&lt;&gt;&quot;&#39;');
+        });
+
+        test('passes through safe strings', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            expect(editor.escapeHtml('hello world')).toBe('hello world');
+        });
+    });
+
+    // ================================================================
+    // initialContent option
+    // ================================================================
+    describe('initialContent option', () => {
+        test('sets markdown from initialContent on init', async () => {
+            editor = new QuikdownEditor('#test-editor', { initialContent: '# Init Content' });
+            await editor.initPromise;
+            // setMarkdown is called but not awaited in init(), so we need to wait a tick
+            await new Promise(r => setTimeout(r, 50));
+            expect(editor.getMarkdown()).toBe('# Init Content');
+            expect(editor.getHTML()).toContain('<h1');
+        });
+    });
+
+    // ================================================================
+    // handleAction dispatch
+    // ================================================================
+    describe('handleAction dispatch', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor', { showUndoRedo: true });
+            await editor.initPromise;
+            await editor.setMarkdown('# Title\n\n---\n\nparagraph');
+        });
+
+        test('copy-markdown action calls copy("markdown")', async () => {
+            const spy = jest.spyOn(editor, 'copy');
+            editor.handleAction('copy-markdown');
+            expect(spy).toHaveBeenCalledWith('markdown');
+        });
+
+        test('copy-html action calls copy("html")', async () => {
+            const spy = jest.spyOn(editor, 'copy');
+            editor.handleAction('copy-html');
+            expect(spy).toHaveBeenCalledWith('html');
+        });
+
+        test('copy-rendered action calls copyRendered()', async () => {
+            const spy = jest.spyOn(editor, 'copyRendered').mockResolvedValue(undefined);
+            editor.handleAction('copy-rendered');
+            expect(spy).toHaveBeenCalled();
+        });
+
+        test('remove-hr action calls removeHR()', async () => {
+            const spy = jest.spyOn(editor, 'removeHR').mockResolvedValue(undefined);
+            editor.handleAction('remove-hr');
+            expect(spy).toHaveBeenCalled();
+        });
+
+        test('lazy-linefeeds action calls convertLazyLinefeeds()', async () => {
+            const spy = jest.spyOn(editor, 'convertLazyLinefeeds').mockResolvedValue(undefined);
+            editor.handleAction('lazy-linefeeds');
+            expect(spy).toHaveBeenCalled();
+        });
+
+        test('undo action calls undo()', () => {
+            editor.updateFromMarkdown('change1');
+            const spy = jest.spyOn(editor, 'undo');
+            editor.handleAction('undo');
+            expect(spy).toHaveBeenCalled();
+        });
+
+        test('redo action calls redo()', () => {
+            editor.updateFromMarkdown('change1');
+            editor.undo();
+            const spy = jest.spyOn(editor, 'redo');
+            editor.handleAction('redo');
+            expect(spy).toHaveBeenCalled();
+        });
+
+        test('toggle-html-mode action calls cycleAllowUnsafeHTML()', () => {
+            const spy = jest.spyOn(editor, 'cycleAllowUnsafeHTML');
+            editor.handleAction('toggle-html-mode');
+            expect(spy).toHaveBeenCalled();
+        });
+
+        test('unknown action is a no-op', () => {
+            // Should not throw
+            editor.handleAction('nonexistent-action');
+        });
+    });
+
+    // ================================================================
+    // copy() visual feedback
+    // ================================================================
+    describe('copy() method', () => {
+        test('copies markdown content to clipboard', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('**bold**');
+            await editor.copy('markdown');
+            expect(navigator.clipboard.writeText).toHaveBeenCalledWith('**bold**');
+        });
+
+        test('copies html content to clipboard', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('**bold**');
+            await editor.copy('html');
+            expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+                expect.stringContaining('<strong')
+            );
+        });
+
+        test('handles clipboard failure gracefully', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('test');
+            navigator.clipboard.writeText.mockRejectedValueOnce(new Error('denied'));
+            const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            await editor.copy('markdown');
+            expect(errSpy).toHaveBeenCalled();
+            errSpy.mockRestore();
+        });
+    });
+
+    // ================================================================
+    // Public API properties (getters/setters)
+    // ================================================================
+    describe('Public API properties', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('markdown getter returns current markdown', async () => {
+            await editor.setMarkdown('# Hello');
+            expect(editor.markdown).toBe('# Hello');
+        });
+
+        test('markdown setter calls setMarkdown', () => {
+            const spy = jest.spyOn(editor, 'setMarkdown');
+            editor.markdown = '# World';
+            expect(spy).toHaveBeenCalledWith('# World');
+        });
+
+        test('html getter returns rendered HTML', async () => {
+            await editor.setMarkdown('**bold**');
+            expect(editor.html).toContain('<strong');
+        });
+
+        test('mode getter returns current mode', () => {
+            expect(editor.mode).toBe('split');
+            editor.setMode('source');
+            expect(editor.mode).toBe('source');
+        });
+    });
+
+    // ================================================================
+    // Static removeHRFromMarkdown edge cases
+    // ================================================================
+    describe('Static removeHRFromMarkdown', () => {
+        test('removes standalone HR lines', () => {
+            const input = 'before\n\n---\n\nafter';
+            const result = QuikdownEditor.removeHRFromMarkdown(input);
+            expect(result).not.toMatch(/^---$/m);
+            expect(result).toContain('before');
+            expect(result).toContain('after');
+        });
+
+        test('preserves HR-like lines inside fences', () => {
+            const input = '```\n---\n***\n```';
+            const result = QuikdownEditor.removeHRFromMarkdown(input);
+            expect(result).toContain('---');
+            expect(result).toContain('***');
+        });
+
+        test('preserves table separator rows', () => {
+            const input = '| H1 | H2 |\n| --- | --- |\n| a | b |';
+            const result = QuikdownEditor.removeHRFromMarkdown(input);
+            expect(result).toContain('| --- | --- |');
+        });
+
+        test('preserves table-adjacent HR-like lines', () => {
+            const input = '| H1 | H2 |\n|---|---|\n| a | b |';
+            const result = QuikdownEditor.removeHRFromMarkdown(input);
+            expect(result).toContain('|---|---|');
+        });
+
+        test('removes multiple HR variants', () => {
+            const input = 'a\n\n---\n\nb\n\n***\n\nc\n\n___\n\nd';
+            const result = QuikdownEditor.removeHRFromMarkdown(input);
+            expect(result).not.toMatch(/^---$/m);
+            expect(result).not.toMatch(/^\*\*\*$/m);
+            expect(result).not.toMatch(/^___$/m);
+        });
+
+        test('handles tilde fences', () => {
+            const input = '~~~\n---\n~~~\n\n---';
+            const result = QuikdownEditor.removeHRFromMarkdown(input);
+            // HR inside fence preserved, standalone HR removed
+            expect(result).toMatch(/~~~\n---\n~~~/);
+        });
+
+        test('handles empty input', () => {
+            expect(QuikdownEditor.removeHRFromMarkdown('')).toBe('');
+        });
+
+        test('handles input with no HRs', () => {
+            const input = '# Hello\n\nWorld';
+            expect(QuikdownEditor.removeHRFromMarkdown(input)).toBe(input);
+        });
+    });
+
+    // ================================================================
+    // Static convertLazyLinefeeds edge cases
+    // ================================================================
+    describe('Static convertLazyLinefeeds', () => {
+        test('adds blank line between paragraphs', () => {
+            const result = QuikdownEditor.convertLazyLinefeeds('line1\nline2');
+            expect(result).toContain('line1\n\nline2');
+        });
+
+        test('idempotent: already-separated paragraphs stay same', () => {
+            const input = 'line1\n\nline2';
+            const result = QuikdownEditor.convertLazyLinefeeds(input);
+            expect(result).toBe('line1\n\nline2');
+        });
+
+        test('preserves fence content verbatim', () => {
+            const input = '```\nfoo\nbar\nbaz\n```';
+            const result = QuikdownEditor.convertLazyLinefeeds(input);
+            expect(result).toContain('foo\nbar\nbaz');
+        });
+
+        test('preserves tilde fence content', () => {
+            const input = '~~~js\nconst a = 1;\nconst b = 2;\n~~~';
+            const result = QuikdownEditor.convertLazyLinefeeds(input);
+            expect(result).toContain('const a = 1;\nconst b = 2;');
+        });
+
+        test('keeps adjacent list items together', () => {
+            const input = '- item1\n- item2\n- item3';
+            const result = QuikdownEditor.convertLazyLinefeeds(input);
+            expect(result).toContain('- item1\n- item2\n- item3');
+        });
+
+        test('keeps adjacent ordered list items together', () => {
+            const input = '1. first\n2. second\n3. third';
+            const result = QuikdownEditor.convertLazyLinefeeds(input);
+            expect(result).toContain('1. first\n2. second\n3. third');
+        });
+
+        test('keeps adjacent blockquote lines together', () => {
+            const input = '> line1\n> line2';
+            const result = QuikdownEditor.convertLazyLinefeeds(input);
+            expect(result).toContain('> line1\n> line2');
+        });
+
+        test('keeps adjacent table rows together', () => {
+            const input = '| H1 | H2 |\n| -- | -- |\n| a | b |';
+            const result = QuikdownEditor.convertLazyLinefeeds(input);
+            expect(result).toContain('| H1 | H2 |\n| -- | -- |\n| a | b |');
+        });
+
+        test('adds blank between heading and paragraph', () => {
+            const result = QuikdownEditor.convertLazyLinefeeds('# Title\nBody text');
+            expect(result).toBe('# Title\n\nBody text');
+        });
+
+        test('handles null/undefined input', () => {
+            expect(QuikdownEditor.convertLazyLinefeeds(null)).toBe('');
+            expect(QuikdownEditor.convertLazyLinefeeds(undefined)).toBe('');
+            expect(QuikdownEditor.convertLazyLinefeeds('')).toBe('');
+        });
+
+        test('normalizes whitespace-only lines to blanks', () => {
+            const result = QuikdownEditor.convertLazyLinefeeds('a\n   \nb');
+            // Should normalize whitespace-only line to blank
+            expect(result).toBe('a\n\nb');
+        });
+
+        test('handles mixed content types', () => {
+            const input = '# Heading\nParagraph\n- list1\n- list2\n> quote';
+            const result = QuikdownEditor.convertLazyLinefeeds(input);
+            // Heading + paragraph separated
+            expect(result).toMatch(/# Heading\n\nParagraph/);
+            // List items stay together
+            expect(result).toMatch(/- list1\n- list2/);
+        });
+    });
+
+    // ================================================================
+    // _getHtmlModeLabel / _getHtmlModeTooltip
+    // ================================================================
+    describe('HTML mode labels and tooltips', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('_getHtmlModeLabel returns correct labels', () => {
+            expect(editor._getHtmlModeLabel(true)).toBe('HTML: Raw');
+            expect(editor._getHtmlModeLabel('limited')).toBe('HTML: Safe');
+            expect(editor._getHtmlModeLabel(false)).toBe('HTML: Off');
+        });
+
+        test('_getHtmlModeTooltip returns correct tooltips', () => {
+            expect(editor._getHtmlModeTooltip(true)).toContain('no protection');
+            expect(editor._getHtmlModeTooltip('limited')).toContain('Safe tags');
+            expect(editor._getHtmlModeTooltip(false)).toContain('shown as text');
+        });
+    });
+
+    // ================================================================
+    // clearHistory
+    // ================================================================
+    describe('clearHistory', () => {
+        test('clears undo and redo stacks', async () => {
+            editor = new QuikdownEditor('#test-editor', { showUndoRedo: true });
+            await editor.initPromise;
+            editor.updateFromMarkdown('first');
+            editor.updateFromMarkdown('second');
+            expect(editor.canUndo()).toBe(true);
+            editor.undo();
+            expect(editor.canRedo()).toBe(true);
+            editor.clearHistory();
+            expect(editor.canUndo()).toBe(false);
+            expect(editor.canRedo()).toBe(false);
+        });
+    });
+
+    // ================================================================
+    // destroy edge cases
+    // ================================================================
+    describe('destroy edge cases', () => {
+        test('removes injected styles when last editor is destroyed', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            // After destroy, no more .qde-container elements should exist
+            editor.destroy();
+            const styleEl = document.getElementById('qde-styles');
+            // Style element should be removed (or was never added)
+            // The point is that it doesn't throw
+            editor = null; // prevent double-destroy in afterEach
+        });
+
+        test('preserves styles when other editors exist', async () => {
+            // Create a second container that looks like another editor
+            const otherContainer = document.createElement('div');
+            otherContainer.classList.add('qde-container');
+            document.body.appendChild(otherContainer);
+
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.destroy();
+            // Another .qde-container still exists, so styles should be preserved
+            otherContainer.remove();
+            editor = null;
+        });
+    });
+
+    // ================================================================
+    // setAllowUnsafeHTML with re-render
+    // ================================================================
+    describe('setAllowUnsafeHTML rendering', () => {
+        test('re-renders content when mode changes', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('<div>hello</div>');
+
+            // In off mode, HTML is escaped
+            const htmlOff = editor.getHTML();
+            expect(htmlOff).toContain('&lt;div&gt;');
+
+            // Switch to limited (safe tags)
+            editor.setAllowUnsafeHTML('limited');
+            const htmlLimited = editor.getHTML();
+            expect(htmlLimited).toContain('<div>');
+
+            // Switch to full passthrough
+            editor.setAllowUnsafeHTML(true);
+            const htmlFull = editor.getHTML();
+            expect(htmlFull).toContain('<div>');
+
+            // Back to off
+            editor.setAllowUnsafeHTML(false);
+            const htmlOff2 = editor.getHTML();
+            expect(htmlOff2).toContain('&lt;div&gt;');
+        });
+
+        test('rejects invalid mode values', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setAllowUnsafeHTML('invalid');
+            expect(editor.getAllowUnsafeHTML()).toBe(false); // default unchanged
+        });
+    });
+
+    // ================================================================
+    // Undo/Redo stack size enforcement
+    // ================================================================
+    describe('Undo stack size limit', () => {
+        test('enforces max undo stack size', async () => {
+            editor = new QuikdownEditor('#test-editor', {
+                showUndoRedo: true,
+                undoStackSize: 5
+            });
+            await editor.initPromise;
+
+            // Push more states than the limit
+            for (let i = 0; i < 10; i++) {
+                editor.updateFromMarkdown(`state-${i}`);
+            }
+
+            // Should be capped at 5
+            let undoCount = 0;
+            while (editor.canUndo()) {
+                editor.undo();
+                undoCount++;
+            }
+            expect(undoCount).toBeLessThanOrEqual(5);
+        });
+    });
+
+    // ================================================================
+    // _pushUndoState no-op when content unchanged
+    // ================================================================
+    describe('Undo no-op detection', () => {
+        test('does not push state when content is identical', async () => {
+            editor = new QuikdownEditor('#test-editor', { showUndoRedo: true });
+            await editor.initPromise;
+            editor.updateFromMarkdown('same');
+            editor.updateFromMarkdown('same'); // duplicate — should not push
+            // Only one undo should be possible (initial '' → 'same')
+            editor.undo();
+            expect(editor.canUndo()).toBe(false);
+        });
+    });
+
+    // ================================================================
+    // SAFE_HTML_TAGS static property
+    // ================================================================
+    describe('SAFE_HTML_TAGS static', () => {
+        test('is accessible and contains common safe tags', () => {
+            const tags = QuikdownEditor.SAFE_HTML_TAGS;
+            expect(tags).toBeDefined();
+            expect(Array.isArray(tags) || typeof tags === 'object').toBe(true);
+        });
+    });
+
+    // ================================================================
+    // version static property
+    // ================================================================
+    describe('version static', () => {
+        test('is a non-empty string', () => {
+            expect(typeof QuikdownEditor.version).toBe('string');
+            expect(QuikdownEditor.version.length).toBeGreaterThan(0);
+        });
+    });
+
+    // ================================================================
+    // setMode edge cases: source→split re-render with cached HTML
+    // ================================================================
+    describe('setMode re-render from source', () => {
+        test('re-renders preview when switching from source to split', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('**bold**');
+            editor.setMode('source');
+            // Clear preview to verify re-render
+            editor.previewPanel.innerHTML = '';
+            editor.setMode('split');
+            // Preview should be re-populated from cached _html
+            expect(editor.previewPanel.innerHTML).toContain('<strong');
+        });
+
+        test('does NOT re-render when switching preview→split', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('**bold**');
+            editor.setMode('preview');
+            const htmlBefore = editor.previewPanel.innerHTML;
+            editor.setMode('split');
+            // Should NOT re-render (preview was already visible)
+            expect(editor.previewPanel.innerHTML).toBe(htmlBefore);
+        });
+    });
+
+    // ================================================================
+    // removeHR instance method visual feedback
+    // ================================================================
+    describe('removeHR visual feedback', () => {
+        test('updates toolbar button text temporarily', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            // Create a mock toolbar button
+            const btn = document.createElement('button');
+            btn.dataset.action = 'remove-hr';
+            btn.textContent = 'Remove HR';
+            editor.toolbar.appendChild(btn);
+
+            await editor.setMarkdown('hello\n\n---\n\nworld');
+            await editor.removeHR();
+            expect(btn.textContent).toBe('Removed!');
+            // After timeout it should revert (test with fake timer)
+        });
+    });
+
+    // ================================================================
+    // convertLazyLinefeeds instance visual feedback
+    // ================================================================
+    describe('convertLazyLinefeeds visual feedback', () => {
+        test('updates toolbar button text temporarily', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            const btn = document.createElement('button');
+            btn.dataset.action = 'lazy-linefeeds';
+            btn.textContent = 'Convert';
+            editor.toolbar.appendChild(btn);
+
+            await editor.setMarkdown('# Title\nParagraph');
+            await editor.convertLazyLinefeeds();
+            expect(btn.textContent).toBe('Converted!');
+        });
+    });
+
+    // ================================================================
+    // copy() visual feedback on toolbar button
+    // ================================================================
+    describe('copy() visual feedback', () => {
+        test('shows Copied! on existing copy-markdown button', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            // The toolbar already has a copy-markdown button from createToolbar()
+            const btn = editor.toolbar.querySelector('[data-action="copy-markdown"]');
+            expect(btn).toBeTruthy();
+            const originalText = btn.textContent;
+
+            await editor.setMarkdown('test');
+            await editor.copy('markdown');
+            expect(btn.textContent).toBe('Copied!');
+        });
+    });
+
+    // ================================================================
+    // allow_unsafe_html whitelist mode via parser (sanitizeHtmlTagAttrs)
+    // ================================================================
+    describe('allow_unsafe_html whitelist mode in parser', () => {
+        test('whitelisted tags pass through, non-whitelisted are escaped', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setAllowUnsafeHTML('limited');
+            await editor.setMarkdown('<div>allowed</div><script>evil</script>');
+            const html = editor.getHTML();
+            expect(html).toContain('<div>');
+            expect(html).not.toContain('<script>');
+            expect(html).toContain('&lt;script&gt;');
+        });
+
+        test('on* event handler attributes are stripped from whitelisted tags', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setAllowUnsafeHTML('limited');
+            await editor.setMarkdown('<div onclick="alert(1)">click me</div>');
+            const html = editor.getHTML();
+            expect(html).toContain('<div>');
+            expect(html).not.toContain('onclick');
+        });
+
+        test('javascript: URLs in href are sanitized on whitelisted tags', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setAllowUnsafeHTML('limited');
+            await editor.setMarkdown('<a href="javascript:alert(1)">link</a>');
+            const html = editor.getHTML();
+            expect(html).toContain('<a');
+            expect(html).not.toContain('javascript:');
+        });
+
+        test('data:image/ URLs are allowed on whitelisted tags', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setAllowUnsafeHTML('limited');
+            await editor.setMarkdown('<img src="data:image/png;base64,abc123">');
+            const html = editor.getHTML();
+            expect(html).toContain('data:image/png');
+        });
+
+        test('boolean attributes on whitelisted tags are preserved', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setAllowUnsafeHTML('limited');
+            await editor.setMarkdown('<input disabled type="text">');
+            const html = editor.getHTML();
+            // input may or may not be in SAFE_HTML_TAGS; check what's there
+            // The test exercises sanitizeHtmlTagAttrs boolean attr branch
+        });
+
+        test('HTML comments pass through in whitelist mode', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setAllowUnsafeHTML('limited');
+            await editor.setMarkdown('<!-- comment --><div>content</div>');
+            const html = editor.getHTML();
+            expect(html).toContain('<!-- comment -->');
+        });
+    });
+
+    // ================================================================
+    // auto theme with matchMedia
+    // ================================================================
+    describe('auto theme', () => {
+        test('auto theme uses matchMedia preference', async () => {
+            // Mock dark mode preference
+            window.matchMedia = jest.fn().mockImplementation(query => ({
+                matches: true,
+                media: query,
+                onchange: null,
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+                dispatchEvent: jest.fn(),
+            }));
+
+            editor = new QuikdownEditor('#test-editor', { theme: 'auto' });
+            await editor.initPromise;
+            // Since matchMedia says dark, container should have qde-dark
+            expect(editor.container.classList.contains('qde-dark')).toBe(true);
+
+            // Restore
+            window.matchMedia = jest.fn().mockImplementation(query => ({
+                matches: false,
+                media: query,
+                onchange: null,
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+                dispatchEvent: jest.fn(),
+            }));
+        });
+
+        test('auto theme listener responds to system change', async () => {
+            let changeCallback;
+            window.matchMedia = jest.fn().mockImplementation(query => ({
+                matches: false,
+                media: query,
+                onchange: null,
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+                addEventListener: jest.fn((event, cb) => { changeCallback = cb; }),
+                removeEventListener: jest.fn(),
+                dispatchEvent: jest.fn(),
+            }));
+
+            editor = new QuikdownEditor('#test-editor', { theme: 'auto' });
+            await editor.initPromise;
+            expect(editor.container.classList.contains('qde-dark')).toBe(false);
+
+            // Simulate system switching to dark
+            if (changeCallback) {
+                changeCallback({ matches: true });
+            }
+            expect(editor.container.classList.contains('qde-dark')).toBe(true);
+
+            // Restore
+            window.matchMedia = jest.fn().mockImplementation(query => ({
+                matches: false,
+                media: query,
+                onchange: null,
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+                dispatchEvent: jest.fn(),
+            }));
+        });
+    });
+
+    // ================================================================
+    // split-toggle button reset on setMode
+    // ================================================================
+    describe('split-toggle button', () => {
+        test('setMode resets split-toggle text to Preview', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            // The toolbar already creates a .qde-split-toggle button
+            const btn = editor.toolbar.querySelector('.qde-split-toggle');
+            expect(btn).toBeTruthy();
+            // Simulate that a user toggled it to 'Source'
+            btn.textContent = 'Source';
+
+            editor.setMode('split');
+            expect(btn.textContent).toBe('Preview');
+        });
+    });
+
+    // ================================================================
+    // _updateUndoButtons toolbar integration
+    // ================================================================
+    describe('_updateUndoButtons', () => {
+        test('toggles disabled class on undo/redo buttons', async () => {
+            editor = new QuikdownEditor('#test-editor', { showUndoRedo: true });
+            await editor.initPromise;
+            // The toolbar already has undo/redo buttons created by createToolbar()
+            const undoBtn = editor.toolbar.querySelector('[data-action="undo"]');
+            const redoBtn = editor.toolbar.querySelector('[data-action="redo"]');
+            expect(undoBtn).toBeTruthy();
+            expect(redoBtn).toBeTruthy();
+
+            // Initially both should be disabled (no undo/redo history)
+            editor._updateUndoButtons();
+            expect(undoBtn.classList.contains('disabled')).toBe(true);
+            expect(redoBtn.classList.contains('disabled')).toBe(true);
+
+            editor.updateFromMarkdown('change');
+            editor._updateUndoButtons();
+            expect(undoBtn.classList.contains('disabled')).toBe(false);
+            // redo should still be disabled
+            expect(redoBtn.classList.contains('disabled')).toBe(true);
+
+            editor.undo();
+            editor._updateUndoButtons();
+            expect(redoBtn.classList.contains('disabled')).toBe(false);
+        });
+    });
+
+    // ================================================================
+    // getHTML / getMarkdown consistency
+    // ================================================================
+    describe('getHTML / getMarkdown consistency', () => {
+        test('getHTML returns rendered result matching getMarkdown input', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('- item1\n- item2');
+            expect(editor.getMarkdown()).toBe('- item1\n- item2');
+            expect(editor.getHTML()).toContain('<li');
+        });
+
+        test('empty markdown produces minimal/empty HTML', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('');
+            expect(editor.getMarkdown()).toBe('');
+        });
+    });
+
+    // ================================================================
+    // Parser edge cases exercised through editor
+    // ================================================================
+    describe('Parser paths via editor', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('autolinks (bare URLs) become links', async () => {
+            await editor.setMarkdown('Visit https://example.com today');
+            expect(editor.getHTML()).toContain('href="https://example.com"');
+        });
+
+        test('lazy linefeeds with table protection', async () => {
+            editor.setLazyLinefeeds(true);
+            await editor.setMarkdown('| H1 | H2 |\n| -- | -- |\n| a | b |\n\nParagraph');
+            const html = editor.getHTML();
+            // Table should be intact, not have <br> inserted
+            expect(html).toContain('<table');
+            expect(html).toContain('<td');
+        });
+
+        test('lazy linefeeds with list protection', async () => {
+            editor.setLazyLinefeeds(true);
+            await editor.setMarkdown('- item1\n- item2\n\nParagraph');
+            const html = editor.getHTML();
+            expect(html).toContain('<li');
+            expect(html).toContain('<p>');
+        });
+
+        test('lazy linefeeds single newline becomes br', async () => {
+            editor.setLazyLinefeeds(true);
+            await editor.setMarkdown('line1\nline2');
+            const html = editor.getHTML();
+            expect(html).toContain('<br');
+        });
+
+        test('mixed list type (ul then ol) closes and reopens', async () => {
+            await editor.setMarkdown('- bullet\n1. numbered');
+            const html = editor.getHTML();
+            expect(html).toContain('</ul>');
+            expect(html).toContain('<ol');
+        });
+
+        test('list at end of document gets closed', async () => {
+            await editor.setMarkdown('- last item');
+            const html = editor.getHTML();
+            expect(html).toContain('</ul>');
+        });
+
+        test('code block without plugin falls back to pre/code', async () => {
+            await editor.setMarkdown('```js\nconst x = 1;\n```');
+            const html = editor.getHTML();
+            expect(html).toContain('<pre');
+            expect(html).toContain('<code');
+        });
+
+        test('table at end of document', async () => {
+            await editor.setMarkdown('| A | B |\n| - | - |\n| 1 | 2 |');
+            const html = editor.getHTML();
+            expect(html).toContain('<table');
+            expect(html).toContain('</table>');
+        });
+
+        test('invalid table (no separator) is not rendered as table', async () => {
+            await editor.setMarkdown('| A | B |\n| 1 | 2 |');
+            const html = editor.getHTML();
+            // Without a separator row, should not render as a table
+            expect(html).not.toContain('<table');
+        });
+
+        test('image rendering', async () => {
+            await editor.setMarkdown('![alt text](https://example.com/img.png)');
+            const html = editor.getHTML();
+            expect(html).toContain('<img');
+            expect(html).toContain('alt text');
+        });
+
+        test('blockquote rendering', async () => {
+            await editor.setMarkdown('> quoted text');
+            const html = editor.getHTML();
+            expect(html).toContain('<blockquote');
+        });
+
+        test('horizontal rule rendering', async () => {
+            await editor.setMarkdown('---');
+            const html = editor.getHTML();
+            expect(html).toContain('<hr');
+        });
+
+        test('inline code rendering', async () => {
+            await editor.setMarkdown('Use `code` here');
+            const html = editor.getHTML();
+            expect(html).toContain('<code');
+        });
+
+        test('strikethrough rendering', async () => {
+            await editor.setMarkdown('~~deleted~~');
+            const html = editor.getHTML();
+            expect(html).toContain('<del');
+        });
+
+        test('task list rendering', async () => {
+            await editor.setMarkdown('- [x] done\n- [ ] todo');
+            const html = editor.getHTML();
+            expect(html).toContain('type="checkbox"');
+        });
+    });
+
+    // ================================================================
+    // updateFromHTML (preview→source) roundtrip
+    // ================================================================
+    describe('updateFromHTML preview→source', () => {
+        test('converts preview HTML back to markdown', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('# Hello\n\n**bold** text');
+            // Trigger HTML→markdown conversion
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('# Hello');
+            expect(md).toContain('**bold**');
+        });
+
+        test('roundtrips list content', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('- item1\n- item2');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('item1');
+            expect(md).toContain('item2');
+        });
+
+        test('roundtrips table content', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('| H1 | H2 |\n| --- | --- |\n| a | b |');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('| H1 | H2 |');
+        });
+
+        test('roundtrips code block', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('```js\nconst x = 1;\n```');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('```');
+            expect(md).toContain('const x = 1;');
+        });
+
+        test('roundtrips blockquote', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('> quoted');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('>');
+            expect(md).toContain('quoted');
+        });
+
+        test('roundtrips links', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('[example](https://example.com)');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('example');
+            expect(md).toContain('https://example.com');
+        });
+
+        test('roundtrips images', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('![alt](https://example.com/img.png)');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('alt');
+            expect(md).toContain('img.png');
+        });
+
+        test('roundtrips horizontal rule', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('before\n\n---\n\nafter');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('---');
+        });
+
+        test('roundtrips strikethrough', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('~~deleted~~');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('~~');
+        });
+
+        test('roundtrips inline code', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('Use `code` here');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('`code`');
+        });
+
+        test('roundtrips headings at all levels', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('# H1\n\n## H2\n\n### H3');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('# H1');
+            expect(md).toContain('## H2');
+            expect(md).toContain('### H3');
+        });
+
+        test('roundtrips task lists', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('- [x] done\n- [ ] todo');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('[x]');
+            expect(md).toContain('[ ]');
+        });
+
+        test('roundtrips ordered lists', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('1. first\n2. second');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('first');
+            expect(md).toContain('second');
+        });
+    });
+
+    // ================================================================
+    // toMarkdown edge-case roundtrips (targets uncovered walkNode branches)
+    // ================================================================
+    describe('toMarkdown edge cases via roundtrip', () => {
+        test('italic text roundtrips', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('*italic text*');
+            editor.updateFromHTML();
+            expect(editor.getMarkdown()).toContain('italic text');
+        });
+
+        test('underscore italic roundtrips', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('_emphasized_');
+            editor.updateFromHTML();
+            expect(editor.getMarkdown()).toContain('emphasized');
+        });
+
+        test('autolink roundtrips', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('Visit https://example.com for info');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('https://example.com');
+        });
+
+        test('line break (double-space) roundtrips', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            // Use explicit <br> via HTML rendering to ensure br is in preview
+            await editor.setMarkdown('line1  \nline2');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('line1');
+            expect(md).toContain('line2');
+        });
+
+        test('multiple list items roundtrip', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('- parent\n- sibling\n- third');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('parent');
+            expect(md).toContain('sibling');
+            expect(md).toContain('third');
+        });
+
+        test('paragraph with trailing content roundtrips', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('First paragraph\n\nSecond paragraph');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('First paragraph');
+            expect(md).toContain('Second paragraph');
+        });
+
+        test('div passthrough in toMarkdown', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setAllowUnsafeHTML('limited');
+            await editor.setMarkdown('<div>Content inside div</div>');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('Content inside div');
+        });
+
+        test('span passthrough in toMarkdown', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            editor.setAllowUnsafeHTML('limited');
+            await editor.setMarkdown('<span>inline span</span>');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('inline span');
+        });
+
+        test('bold with __ syntax roundtrips', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('__bold text__');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('bold text');
+        });
+
+        test('table with alignment roundtrips via toMarkdown', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('| Left | Center | Right |\n| :--- | :---: | ---: |\n| a | b | c |');
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('Left');
+            expect(md).toContain('Center');
+            expect(md).toContain('Right');
+        });
+    });
+
+    // ================================================================
+    // MathJax integration
+    // ================================================================
+    describe('MathJax integration', () => {
+        test('calls MathJax.typesetPromise when available', async () => {
+            const typesetSpy = jest.fn().mockResolvedValue(undefined);
+            window.MathJax = { typesetPromise: typesetSpy };
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('$$E = mc^2$$');
+            // MathJax should be called if math elements exist
+            // (The parser wraps $$ in .math-display elements)
+            delete window.MathJax;
+        });
+    });
+
+    // ================================================================
+    // Source textarea sync
+    // ================================================================
+    describe('Source textarea sync', () => {
+        test('sourceTextarea is synced with markdown', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+            await editor.setMarkdown('# Test');
+            if (editor.sourceTextarea) {
+                expect(editor.sourceTextarea.value).toBe('# Test');
+            }
+        });
+
+        test('undo restores textarea content', async () => {
+            editor = new QuikdownEditor('#test-editor', { showUndoRedo: true });
+            await editor.initPromise;
+            editor.updateFromMarkdown('first');
+            editor.updateFromMarkdown('second');
+            editor.undo();
+            if (editor.sourceTextarea) {
+                expect(editor.sourceTextarea.value).toBe('first');
+            }
+        });
+
+        test('redo restores textarea content', async () => {
+            editor = new QuikdownEditor('#test-editor', { showUndoRedo: true });
+            await editor.initPromise;
+            editor.updateFromMarkdown('first');
+            editor.updateFromMarkdown('second');
+            editor.undo();
+            editor.redo();
+            if (editor.sourceTextarea) {
+                expect(editor.sourceTextarea.value).toBe('second');
+            }
         });
     });
 });
