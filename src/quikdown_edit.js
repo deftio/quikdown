@@ -2522,10 +2522,11 @@ class QuikdownEditor {
     
     /**
      * Copy rendered content as rich text
+     * @param {string} [output='default'] - Output profile: 'default', 'quikdown', or 'stripped'
      */
-    async copyRendered() {
+    async copyRendered(output = 'default') {
         try {
-            const result = await getRenderedContent(this.previewPanel);
+            const result = await getRenderedContent(this.previewPanel, { output });
             if (result.success) {
                 // Visual feedback
                 const btn = this.toolbar?.querySelector('[data-action="copy-rendered"]');

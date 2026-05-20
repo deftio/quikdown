@@ -376,4 +376,98 @@ code
             expect(result).toContain('data:');
         });
     });
+
+    describe('YAML serialization edge cases', () => {
+        test('should serialize null value', () => {
+            const ast = { type: 'document', children: [null] };
+            const result = quikdown_yaml.stringify(ast);
+            expect(result).toContain('null');
+        });
+
+        test('should serialize boolean values', () => {
+            const ast = { active: true, deleted: false };
+            const result = quikdown_yaml.stringify(ast);
+            expect(result).toContain('true');
+            expect(result).toContain('false');
+        });
+
+        test('should serialize number values', () => {
+            const ast = { count: 42 };
+            const result = quikdown_yaml.stringify(ast);
+            expect(result).toContain('42');
+        });
+
+        test('should serialize empty object', () => {
+            const ast = { meta: {} };
+            const result = quikdown_yaml.stringify(ast);
+            expect(result).toContain('{}');
+        });
+
+        test('should serialize top-level boolean via stringify', () => {
+            const result = quikdown_yaml.stringify(true);
+            expect(result).toBe('true');
+        });
+
+        test('should serialize top-level false via stringify', () => {
+            const result = quikdown_yaml.stringify(false);
+            expect(result).toBe('false');
+        });
+
+        test('should serialize top-level number via stringify', () => {
+            const result = quikdown_yaml.stringify(99);
+            expect(result).toBe('99');
+        });
+
+        test('should serialize top-level null via stringify', () => {
+            const result = quikdown_yaml.stringify(null);
+            expect(result).toBe('null');
+        });
+
+        test('should serialize empty object at top level', () => {
+            const result = quikdown_yaml.stringify({});
+            expect(result).toBe('{}');
+        });
+
+        test('should handle unknown type fallback in formatValue', () => {
+            // Symbols and other non-standard types fall through to String()
+            const ast = { data: Symbol.for('test') };
+            const result = quikdown_yaml.stringify(ast);
+            expect(result).toContain('Symbol(test)');
+        });
+    });
+
+    describe('Inline content edge cases', () => {
+        test('should handle strikethrough in YAML output', () => {
+            const md = 'This is ~~deleted~~ text';
+            const result = quikdown_yaml(md);
+            expect(result).toContain('del');
+            expect(result).toContain('deleted');
+        });
+
+        test('should handle autolinks in YAML output', () => {
+            const md = 'Visit https://example.com for info';
+            const result = quikdown_yaml(md);
+            expect(result).toContain('https://example.com');
+            expect(result).toContain('link');
+        });
+
+        test('should handle hard line break in YAML output', () => {
+            const md = 'line one\\\nline two';
+            const result = quikdown_yaml(md);
+            expect(result).toContain('br');
+        });
+
+        test('should reject table with invalid separator in YAML output', () => {
+            const md = '| Header |\n| no dashes |';
+            const result = quikdown_yaml(md);
+            expect(result).not.toContain('table');
+        });
+
+        test('should handle nested list items in YAML output', () => {
+            const md = '- parent\n  - child';
+            const result = quikdown_yaml(md);
+            expect(result).toContain('list');
+            expect(result).toContain('child');
+        });
+    });
 });

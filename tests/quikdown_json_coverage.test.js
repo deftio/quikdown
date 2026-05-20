@@ -165,4 +165,25 @@ describe('quikdown_json coverage boost', () => {
             expect(ast).toEqual({ type: 'document', children: [] });
         });
     });
+
+    describe('Table and inline edge cases', () => {
+        test('should reject table with invalid separator in JSON output', () => {
+            const md = '| Header |\n| no dashes |';
+            const result = quikdown_json(md);
+            expect(result).not.toContain('"type":"table"');
+        });
+
+        test('should handle hard line break with backslash in JSON output', () => {
+            const md = 'line one\\\nline two';
+            const result = quikdown_json(md);
+            expect(result).toContain('"type": "br"');
+        });
+
+        test('should handle nested list items in JSON output', () => {
+            const md = '- parent\n  - child';
+            const result = quikdown_json(md);
+            expect(result).toContain('"type": "list"');
+            expect(result).toContain('child');
+        });
+    });
 });

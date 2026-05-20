@@ -5,7 +5,7 @@
  * Theme with container-based scoping.
  * Usage: <div class="quikdown-light">...content...</div>
  * 
- * @version 1.2.13
+ * @version 1.2.14
  * @source tools/generateThemeCSS.js
  */
 
@@ -17,7 +17,6 @@
 /* Primary heading */
 .quikdown-light .quikdown-h1 {
     font-size: 2em;
-    font-weight: 600;
     margin: 0.67em 0;
     text-align: left;
     color: #333;
@@ -26,7 +25,6 @@
 /* Secondary heading */
 .quikdown-light .quikdown-h2 {
     font-size: 1.5em;
-    font-weight: 600;
     margin: 0.83em 0;
     color: #333;
 }
@@ -34,7 +32,6 @@
 /* Tertiary heading */
 .quikdown-light .quikdown-h3 {
     font-size: 1.25em;
-    font-weight: 600;
     margin: 1em 0;
     color: #333;
 }
@@ -42,7 +39,6 @@
 /* Fourth level heading */
 .quikdown-light .quikdown-h4 {
     font-size: 1em;
-    font-weight: 600;
     margin: 1.33em 0;
     color: #333;
 }
@@ -50,7 +46,6 @@
 /* Fifth level heading */
 .quikdown-light .quikdown-h5 {
     font-size: .875em;
-    font-weight: 600;
     margin: 1.67em 0;
     color: #333;
 }
@@ -58,7 +53,6 @@
 /* Sixth level heading */
 .quikdown-light .quikdown-h6 {
     font-size: .85em;
-    font-weight: 600;
     margin: 2em 0;
     color: #333;
 }

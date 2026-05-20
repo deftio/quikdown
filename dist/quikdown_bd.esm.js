@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.2.13
+ * @version 1.2.14
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -112,7 +112,7 @@ function isDashHRLine(trimmed) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.13';
+const quikdownVersion = '1.2.14';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -139,12 +139,12 @@ const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
  * and these same values are emitted by `quikdown.emitStyles()`.
  */
 const QUIKDOWN_STYLES = {
-    h1: 'font-size:2em;font-weight:600;margin:.67em 0;text-align:left',
-    h2: 'font-size:1.5em;font-weight:600;margin:.83em 0',
-    h3: 'font-size:1.25em;font-weight:600;margin:1em 0',
-    h4: 'font-size:1em;font-weight:600;margin:1.33em 0',
-    h5: 'font-size:.875em;font-weight:600;margin:1.67em 0',
-    h6: 'font-size:.85em;font-weight:600;margin:2em 0',
+    h1: 'font-size:2em;margin:.67em 0;text-align:left',
+    h2: 'font-size:1.5em;margin:.83em 0',
+    h3: 'font-size:1.25em;margin:1em 0',
+    h4: 'font-size:1em;margin:1.33em 0',
+    h5: 'font-size:.875em;margin:1.67em 0',
+    h6: 'font-size:.85em;margin:2em 0',
     pre: 'background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto;margin:1em 0',
     code: 'background:#f0f0f0;padding:2px 4px;border-radius:3px;font-family:monospace',
     blockquote: 'border-left:4px solid #ddd;margin-left:0;padding-left:1em',

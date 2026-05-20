@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.13
+ * @version 1.2.14
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -222,7 +222,7 @@ function looksLikeTableRow(line) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.13';
+const quikdownVersion = '1.2.14';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -249,12 +249,12 @@ const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
  * and these same values are emitted by `quikdown.emitStyles()`.
  */
 const QUIKDOWN_STYLES = {
-    h1: 'font-size:2em;font-weight:600;margin:.67em 0;text-align:left',
-    h2: 'font-size:1.5em;font-weight:600;margin:.83em 0',
-    h3: 'font-size:1.25em;font-weight:600;margin:1em 0',
-    h4: 'font-size:1em;font-weight:600;margin:1.33em 0',
-    h5: 'font-size:.875em;font-weight:600;margin:1.67em 0',
-    h6: 'font-size:.85em;font-weight:600;margin:2em 0',
+    h1: 'font-size:2em;margin:.67em 0;text-align:left',
+    h2: 'font-size:1.5em;margin:.83em 0',
+    h3: 'font-size:1.25em;margin:1em 0',
+    h4: 'font-size:1em;margin:1.33em 0',
+    h5: 'font-size:.875em;margin:1.67em 0',
+    h6: 'font-size:.85em;margin:2em 0',
     pre: 'background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto;margin:1em 0',
     code: 'background:#f0f0f0;padding:2px 4px;border-radius:3px;font-family:monospace',
     blockquote: 'border-left:4px solid #ddd;margin-left:0;padding-left:1em',
@@ -1572,6 +1572,8 @@ function getPlatform() {
     return 'unknown';
 }
 
+const COPY_OUTPUT_PROFILES = ['default', 'stripped', 'quikdown'];
+
 const COPY_HEADING_STYLES = {
     h1: { fontSize: '24pt', marginTop: '0.6em', marginBottom: '0.35em' },
     h2: { fontSize: '18pt', marginTop: '0.55em', marginBottom: '0.3em' },
@@ -1581,9 +1583,15 @@ const COPY_HEADING_STYLES = {
     h6: { fontSize: '10pt', marginTop: '0.35em', marginBottom: '0.2em' }
 };
 
-const COPY_HEADING_CSS = Object.entries(COPY_HEADING_STYLES)
-    .map(([tag, style]) => `${tag} { font-size:${style.fontSize}; font-weight:bold; line-height:1.25; margin:${style.marginTop} 0 ${style.marginBottom}; }`)
-    .join('\n                  ');
+function buildHeadingCSS(output) {
+    if (output === 'stripped') return '';
+    return Object.entries(COPY_HEADING_STYLES)
+        .map(([tag, style]) => {
+            const weight = output === 'quikdown' ? ' font-weight:bold;' : '';
+            return `${tag} { font-size:${style.fontSize};${weight} line-height:1.25; margin:${style.marginTop} 0 ${style.marginBottom}; }`;
+        })
+        .join('\n                  ');
+}
 
 /**
  * Copy to clipboard using HTML selection fallback (for Safari)
@@ -1861,9 +1869,15 @@ async function rasterizeGeoJSONMap(liveContainer) {
 /**
  * Get rendered content as rich HTML suitable for clipboard
  * @param {HTMLElement} previewPanel - The preview panel element to copy from
+ * @param {Object} [options={}] - Copy options
+ * @param {string} [options.output='default'] - Output profile: 'default' (no heading font-weight), 'quikdown' (full styling with heading font-weight), or 'stripped' (minimal styling)
  * @returns {Promise<{success: boolean, html?: string, text?: string}>}
  */
-async function getRenderedContent(previewPanel) {
+async function getRenderedContent(previewPanel, options = {}) {
+    const output = options.output || 'default';
+    if (!COPY_OUTPUT_PROFILES.includes(output)) {
+        throw new Error(`Invalid output profile "${output}". Must be one of: ${COPY_OUTPUT_PROFILES.join(', ')}`);
+    }
     if (!previewPanel) {
         throw new Error('No preview panel available');
     }
@@ -1889,24 +1903,26 @@ async function getRenderedContent(previewPanel) {
     // Process different fence types for rich copy
     try {
         // Phase 1: Process basic markdown elements with inline styles
-        
+        // In 'stripped' mode, skip all inline style application
+        if (output !== 'stripped') {
+
         // 1.1 Text formatting - add inline styles
         clone.querySelectorAll('strong, b').forEach(el => {
             el.style.fontWeight = 'bold';
         });
-        
+
         clone.querySelectorAll('em, i').forEach(el => {
             el.style.fontStyle = 'italic';
         });
-        
+
         clone.querySelectorAll('del, s, strike').forEach(el => {
             el.style.textDecoration = 'line-through';
         });
-        
+
         clone.querySelectorAll('u').forEach(el => {
             el.style.textDecoration = 'underline';
         });
-        
+
         clone.querySelectorAll('code:not(pre code)').forEach(el => {
             el.style.backgroundColor = '#f4f4f4';
             el.style.padding = '2px 4px';
@@ -1914,38 +1930,40 @@ async function getRenderedContent(previewPanel) {
             el.style.fontFamily = 'monospace';
             el.style.fontSize = '0.9em';
         });
-        
+
         // 1.2 Block elements - add inline styles
         Object.entries(COPY_HEADING_STYLES).forEach(([tag, style]) => {
             clone.querySelectorAll(tag).forEach(el => {
                 el.style.fontSize = style.fontSize;
-                el.style.fontWeight = 'bold';
+                if (output === 'quikdown') {
+                    el.style.fontWeight = 'bold';
+                }
                 el.style.lineHeight = '1.25';
                 el.style.marginTop = style.marginTop;
                 el.style.marginBottom = style.marginBottom;
             });
         });
-        
+
         clone.querySelectorAll('blockquote').forEach(el => {
             el.style.borderLeft = '4px solid #ddd';
             el.style.marginLeft = '0';
             el.style.paddingLeft = '1em';
             el.style.color = '#666';
         });
-        
+
         clone.querySelectorAll('hr').forEach(el => {
             el.style.border = 'none';
             el.style.borderTop = '1px solid #ccc';
             el.style.margin = '1em 0';
         });
-        
+
         // 1.3 Tables - add inline styles
         clone.querySelectorAll('table').forEach(table => {
             table.style.borderCollapse = 'collapse';
             table.style.width = '100%';
             table.style.marginBottom = '1em';
         });
-        
+
         clone.querySelectorAll('th').forEach(th => {
             th.style.border = '1px solid #ccc';
             th.style.padding = '8px';
@@ -1953,23 +1971,23 @@ async function getRenderedContent(previewPanel) {
             th.style.backgroundColor = '#f0f0f0';
             th.style.fontWeight = 'bold';
         });
-        
+
         clone.querySelectorAll('td').forEach(td => {
             td.style.border = '1px solid #ccc';
             td.style.padding = '8px';
             td.style.textAlign = 'left';
         });
-        
+
         // 1.4 Links - add inline styles
         clone.querySelectorAll('a').forEach(a => {
             a.style.color = '#0066cc';
             a.style.textDecoration = 'underline';
         });
-        
+
         // Process code blocks - wrap in table and add syntax highlighting colors
         clone.querySelectorAll('pre code').forEach(block => {
             const pre = block.parentElement;
-            
+
             // Add inline styles for syntax highlighting (GitHub theme colors)
             if (block.classList.contains('hljs')) {
                 // Apply inline styles to all highlight.js elements
@@ -2033,13 +2051,13 @@ async function getRenderedContent(previewPanel) {
                     el.style.color = '#6f42c1';
                 });
             }
-            
+
             const table = document.createElement('table');
             table.style.width = '100%';
             table.style.borderCollapse = 'collapse';
             table.style.border = 'none';
             table.style.marginBottom = '1em';
-            
+
             const tr = document.createElement('tr');
             const td = document.createElement('td');
             td.style.backgroundColor = '#f7f7f7';
@@ -2051,16 +2069,18 @@ async function getRenderedContent(previewPanel) {
             td.style.overflowX = 'auto';
             td.style.border = '1px solid #ddd';
             td.style.borderRadius = '4px';
-            
+
             // Move the formatted code content with inline styles
             td.innerHTML = block.innerHTML;
-            
+
             tr.appendChild(td);
             table.appendChild(tr);
-            
+
             // Replace the pre element with the table
             pre.parentNode.replaceChild(table, pre);
         });
+
+        } // end if (output !== 'stripped')
         
         // Process images - convert to data URLs and ensure proper dimensions
         const images = clone.querySelectorAll('img');
@@ -2897,6 +2917,25 @@ async function getRenderedContent(previewPanel) {
         
         // Wrap in proper HTML structure for rich text editors
         const fragment = clone.innerHTML;
+        const headingCSS = buildHeadingCSS(output);
+        const cssBlock = output === 'stripped'
+            ? '/* Minimal styles */\n                  img { max-width: 100%; height: auto; }'
+            : `${headingCSS}
+
+                  /* Table styling */
+                  table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+                  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                  th { background-color: #f0f0f0; font-weight: bold; }
+
+                  /* Code block styling */
+                  pre { background-color: #f4f4f4; padding: 1em; border-radius: 4px; overflow-x: auto; }
+                  code { font-family: monospace; background-color: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; }
+
+                  /* Image handling */
+                  img { display: block; max-width: 100%; height: auto; margin: 0.5em 0; }
+
+                  /* Blockquote */
+                  blockquote { border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em; color: #666; }`;
         const htmlContent = `
             <!DOCTYPE html>
             <html xmlns:v="urn:schemas-microsoft-com:vml"
@@ -2905,22 +2944,7 @@ async function getRenderedContent(previewPanel) {
               <head>
                 <meta charset="utf-8">
                 <style>
-                  ${COPY_HEADING_CSS}
-                  
-                  /* Table styling */
-                  table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
-                  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-                  th { background-color: #f0f0f0; font-weight: bold; }
-                  
-                  /* Code block styling */
-                  pre { background-color: #f4f4f4; padding: 1em; border-radius: 4px; overflow-x: auto; }
-                  code { font-family: monospace; background-color: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; }
-                  
-                  /* Image handling */
-                  img { display: block; max-width: 100%; height: auto; margin: 0.5em 0; }
-                  
-                  /* Blockquote */
-                  blockquote { border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em; color: #666; }
+                  ${cssBlock}
                   
                   /* Math equations centered like squibview */
                   .math-display { text-align: center; margin: 1em 0; }
@@ -5517,10 +5541,11 @@ class QuikdownEditor {
     
     /**
      * Copy rendered content as rich text
+     * @param {string} [output='default'] - Output profile: 'default', 'quikdown', or 'stripped'
      */
-    async copyRendered() {
+    async copyRendered(output = 'default') {
         try {
-            const result = await getRenderedContent(this.previewPanel);
+            const result = await getRenderedContent(this.previewPanel, { output });
             if (result.success) {
                 // Visual feedback
                 const btn = this.toolbar?.querySelector('[data-action="copy-rendered"]');

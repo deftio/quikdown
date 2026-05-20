@@ -666,6 +666,65 @@ describe('QuikdownEditor Coverage', () => {
             expect(html).toContain('font-size:15pt');
             expect(html).not.toContain('font-size:2em');
             expect(html).not.toContain('font-size:1.5em');
+            // default mode: no font-weight on headings
+            expect(html).not.toMatch(/h[1-6][^}]*font-weight:\s*bold/);
+        });
+
+        test('default output profile: headings have font-size but no font-weight', async () => {
+            const preview = document.createElement('div');
+            preview.innerHTML = '<h1>Title</h1><h2>Subtitle</h2><strong>Bold</strong>';
+            navigator.clipboard.write = jest.fn().mockResolvedValue(undefined);
+
+            const result = await getRenderedContent(preview, { output: 'default' });
+            const html = result.html;
+
+            // Headings get font-size in pt
+            expect(html).toContain('font-size:24pt');
+            expect(html).toContain('font-size:18pt');
+            // Heading CSS should not contain font-weight
+            expect(html).not.toMatch(/h[1-6]\s*\{[^}]*font-weight/);
+            // Strong elements should still be styled
+            expect(html).toContain('font-weight: bold');
+        });
+
+        test('stripped output profile: no inline styles on elements', async () => {
+            const preview = document.createElement('div');
+            preview.innerHTML = '<h1>Title</h1><strong>Bold</strong><em>Italic</em><table><tr><td>Cell</td></tr></table>';
+            navigator.clipboard.write = jest.fn().mockResolvedValue(undefined);
+
+            const result = await getRenderedContent(preview, { output: 'stripped' });
+            const html = result.html;
+
+            // Content is still present
+            expect(html).toContain('Title');
+            expect(html).toContain('Bold');
+            expect(html).toContain('Italic');
+            expect(html).toContain('Cell');
+            // No heading font-size in CSS block
+            expect(html).not.toContain('font-size:24pt');
+            // Minimal CSS: just img safety
+            expect(html).toContain('max-width: 100%');
+        });
+
+        test('quikdown output profile: headings have font-size AND font-weight', async () => {
+            const preview = document.createElement('div');
+            preview.innerHTML = '<h1>Title</h1><h2>Subtitle</h2>';
+            navigator.clipboard.write = jest.fn().mockResolvedValue(undefined);
+
+            const result = await getRenderedContent(preview, { output: 'quikdown' });
+            const html = result.html;
+
+            // Headings get font-size and font-weight
+            expect(html).toContain('font-size:24pt');
+            expect(html).toMatch(/h1\s*\{[^}]*font-weight:\s*bold/);
+        });
+
+        test('invalid output profile throws error', async () => {
+            const preview = document.createElement('div');
+            preview.innerHTML = '<h1>Title</h1>';
+
+            await expect(getRenderedContent(preview, { output: 'invalid' }))
+                .rejects.toThrow('Invalid output profile');
         });
     });
 
