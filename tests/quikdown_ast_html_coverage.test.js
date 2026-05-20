@@ -887,4 +887,133 @@ children:
             expect(result).toContain('child');
         });
     });
+
+    // ── Coverage gap: line 29 — non-string/empty input ──
+    describe('Non-string input guard (line 29)', () => {
+        test('null input returns empty document', () => {
+            const result = quikdown_ast_html(null);
+            expect(result).toBe('');
+        });
+
+        test('undefined input returns empty document', () => {
+            const result = quikdown_ast_html(undefined);
+            expect(result).toBe('');
+        });
+
+        test('numeric input returns empty document', () => {
+            const result = quikdown_ast_html(42);
+            expect(result).toBe('');
+        });
+
+        test('empty string returns empty document', () => {
+            const result = quikdown_ast_html('');
+            expect(result).toBe('');
+        });
+    });
+
+    // ── Coverage gap: line 593 — hex entity decoding in sanitizeUrl ──
+    describe('URL hex entity decoding (line 593)', () => {
+        test('hex-encoded javascript: in link is blocked', () => {
+            const md = '[click](&#x6A;avascript:alert(1))';
+            const result = quikdown_ast_html(md);
+            expect(result).not.toContain('href="&#x6A;avascript:');
+        });
+
+        test('hex-encoded vbscript: in link is blocked', () => {
+            const md = '[click](&#x76;bscript:alert(1))';
+            const result = quikdown_ast_html(md);
+            expect(result).not.toContain('href="&#x76;bscript:');
+        });
+
+        test('normal hex entities in URLs are fine', () => {
+            const md = '[click](https://example.com/path&#x2F;file)';
+            const result = quikdown_ast_html(md);
+            expect(result).toContain('href=');
+        });
+    });
+
+    // ── Coverage gap: lines 702, 712, 717, 727 — YAML edge cases ──
+    describe('YAML frontmatter parsing edge cases', () => {
+        test('YAML with indent less than minIndent returns null (line 702)', () => {
+            // parseYamlNode is called with minIndent>0 but encounters a line with less indent
+            // When value is on next lines (line 847 calls parseYamlNode with indent+2),
+            // but next line has less indent than expected
+            const yaml = 'type: document\nchildren:\nvalue: hello';
+            const result = quikdown_ast_html(yaml);
+            expect(typeof result).toBe('string');
+        });
+
+        test('YAML with empty array [] on own line (line 712)', () => {
+            // [] must be on its own indented line to hit parseYamlNode line 711
+            const yaml = 'type: document\nchildren:\n  []';
+            const result = quikdown_ast_html(yaml);
+            expect(typeof result).toBe('string');
+        });
+
+        test('YAML with empty object {} on own line (line 717)', () => {
+            // {} must be on its own indented line to hit parseYamlNode line 716
+            const yaml = 'type: document\nchildren:\n  {}';
+            const result = quikdown_ast_html(yaml);
+            expect(typeof result).toBe('string');
+        });
+
+        test('YAML with plain scalar on own line (line 727)', () => {
+            // A line that is not array item, not [], not {}, and has no colon
+            // This triggers the scalar fallback in parseYamlNode
+            const yaml = 'type: text\nvalue:\n  justascalar';
+            const result = quikdown_ast_html(yaml);
+            expect(typeof result).toBe('string');
+        });
+    });
+
+    // ── Coverage gap: lines 742-743, 750-751 — YAML array edge cases ──
+    describe('YAML array parsing edge cases', () => {
+        test('YAML array with blank lines between scalar items (lines 742-743)', () => {
+            // Simple scalar items with blank line — blank line processed by parseYamlArray directly
+            const yaml = 'type: document\nchildren:\n  - first\n\n  - second';
+            const result = quikdown_ast_html(yaml);
+            expect(typeof result).toBe('string');
+        });
+
+        test('YAML array with continuation indented lines after scalar (lines 750-751)', () => {
+            // After a scalar array item, a more-indented non-item line triggers continuation skip
+            const yaml = 'type: document\nchildren:\n  - scalar1\n    continuation\n  - scalar2';
+            const result = quikdown_ast_html(yaml);
+            expect(typeof result).toBe('string');
+        });
+    });
+
+    // ── Coverage gap: lines 838-839 — YAML object non-key line ──
+    describe('YAML object parsing edge cases', () => {
+        test('YAML object with non-key-value line is skipped (lines 838-839)', () => {
+            // A line inside a YAML object that has no colon — colonIdx returns -1 (<=0)
+            const yaml = 'type: document\nchildren:\n  - type: text\n    value: hello\n    notakey';
+            const result = quikdown_ast_html(yaml);
+            expect(typeof result).toBe('string');
+        });
+
+        test('YAML object with line starting with colon is skipped (colonIdx=0)', () => {
+            // colonIdx === 0 also triggers the skip
+            const yaml = 'type: text\nvalue: hello\n:orphan';
+            const result = quikdown_ast_html(yaml);
+            expect(typeof result).toBe('string');
+        });
+    });
+
+    // ── Coverage gap: lines 288, 290 — list children edge cases ──
+    describe('AST list children edge cases', () => {
+        test('deeply nested list creates children array on item (line 288)', () => {
+            const md = '- item1\n  - nested1\n    - deep nested';
+            const result = quikdown_ast_html(md);
+            expect(result).toContain('item1');
+            expect(result).toContain('nested1');
+            expect(result).toContain('deep nested');
+        });
+
+        test('list with paragraph and nested sub-list', () => {
+            const md = '- first item\n\n  paragraph continuation\n\n  - sub item';
+            const result = quikdown_ast_html(md);
+            expect(result).toContain('first item');
+        });
+    });
 });

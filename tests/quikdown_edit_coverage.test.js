@@ -4141,4 +4141,244 @@ describe('QuikdownEditor Coverage', () => {
             expect(md).toContain('child');
         });
     });
+
+    // ================================================================
+    // Coverage push v2: toMarkdown edge cases + mermaid fallbacks
+    // Target lines: 1230, 1242-1244, 1298, 1306-1308, 1330,
+    //   1343-1381, 3162, 4438, 5044, 99
+    // ================================================================
+
+    describe('toMarkdown pre with fence_plugin.reverse error (line 1230)', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('pre with fence_plugin.reverse that throws falls through to source', () => {
+            const faultyPlugin = {
+                reverse: () => { throw new Error('test error'); }
+            };
+            const pre = document.createElement('pre');
+            pre.setAttribute('data-qd-fence', '```');
+            pre.setAttribute('data-qd-lang', 'js');
+            pre.setAttribute('data-qd-source', 'let x = 1;');
+            const code = document.createElement('code');
+            code.textContent = 'let x = 1;';
+            pre.appendChild(code);
+            editor.previewPanel.innerHTML = '';
+            editor.previewPanel.appendChild(pre);
+
+            const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('let x = 1');
+            consoleSpy.mockRestore();
+        });
+
+        test('pre without code element uses childContent fallback (line 1242-1244)', () => {
+            const pre = document.createElement('pre');
+            pre.setAttribute('data-qd-fence', '```');
+            pre.setAttribute('data-qd-lang', 'txt');
+            pre.textContent = 'raw text here';
+            editor.previewPanel.innerHTML = '';
+            editor.previewPanel.appendChild(pre);
+
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('raw text here');
+        });
+    });
+
+    describe('toMarkdown paragraph trailing blank lines (lines 1298, 1306-1308)', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('paragraph with trailing whitespace-only lines', () => {
+            const p1 = document.createElement('p');
+            p1.appendChild(document.createTextNode('first line'));
+            p1.appendChild(document.createTextNode('\n'));
+            p1.appendChild(document.createTextNode('\n'));
+            const p2 = document.createElement('p');
+            p2.textContent = 'second';
+
+            editor.previewPanel.innerHTML = '';
+            editor.previewPanel.appendChild(p1);
+            editor.previewPanel.appendChild(p2);
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('first line');
+            expect(md).toContain('second');
+        });
+    });
+
+    describe('toMarkdown div with data-qd-source fallback (lines 1336-1338)', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('div with data-qd-source and data-qd-fence but no lang uses source fallback', () => {
+            // A div with fence attributes but no data-qd-lang skips the reverse handler (line 1321)
+            // and falls through to the data-qd-source fallback (line 1336-1338)
+            const div = document.createElement('div');
+            div.setAttribute('data-qd-fence', '```');
+            div.setAttribute('data-qd-source', 'chart data here');
+            div.textContent = 'rendered output';
+
+            editor.previewPanel.innerHTML = '';
+            editor.previewPanel.appendChild(div);
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('chart data here');
+        });
+    });
+
+    describe('toMarkdown mermaid container fallbacks (lines 1343-1381)', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('mermaid container with data-qd-source on container itself', () => {
+            // No data-qd-lang (line 1321 false), no data-qd-fence (line 1337 false)
+            // → falls to mermaid-container check at line 1342, data-qd-source at line 1347
+            editor.previewPanel.innerHTML =
+                '<div class="mermaid-container" data-qd-source="graph TD; A--&gt;B">' +
+                '<div class="mermaid">rendered svg</div></div>';
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('```mermaid');
+            expect(md).toContain('graph TD');
+        });
+
+        test('mermaid container with data-qd-source on pre.mermaid child', () => {
+            // No data-qd-source on container, no data-qd-lang, no data-qd-fence
+            // → mermaid-container at 1342, no container source (1348 false), pre.mermaid at 1358
+            editor.previewPanel.innerHTML =
+                '<div class="mermaid-container">' +
+                '<pre class="mermaid" data-qd-source="graph LR; X--&gt;Y">svg output</pre></div>';
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('```mermaid');
+            expect(md).toContain('graph LR');
+        });
+
+        test('mermaid container with .mermaid-source legacy element', () => {
+            // No source attributes on container or pre, no data-qd-lang, no data-qd-fence
+            // → mermaid-container at 1342, no source (1348 false), no pre (1358 false), .mermaid-source at 1369
+            editor.previewPanel.innerHTML =
+                '<div class="mermaid-container">' +
+                '<div class="mermaid-source">graph TB; C--&gt;D</div>' +
+                '<div class="mermaid">rendered</div></div>';
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('```mermaid');
+            expect(md).toContain('graph TB');
+        });
+
+        test('mermaid container with .mermaid element containing graph keyword', () => {
+            // No source attributes anywhere, no mermaid-source, no data-qd-lang, no data-qd-fence
+            // → mermaid-container at 1342, falls through to .mermaid element at 1379
+            editor.previewPanel.innerHTML =
+                '<div class="mermaid-container">' +
+                '<div class="mermaid">graph TD\nA-->B\nB-->C</div></div>';
+            editor.updateFromHTML();
+            const md = editor.getMarkdown();
+            expect(md).toContain('```mermaid');
+            expect(md).toContain('graph TD');
+        });
+    });
+
+    describe('Constructor invalid container (line 3162)', () => {
+        test('throws on invalid container selector', () => {
+            expect(() => new QuikdownEditor('#nonexistent-editor'))
+                .toThrow('QuikdownEditor: Invalid container');
+        });
+
+        test('throws on null container', () => {
+            expect(() => new QuikdownEditor(null))
+                .toThrow();
+        });
+    });
+
+    describe('renderTable error path (line 4438)', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('renderTable with null data falls back to pre', () => {
+            const result = editor.renderTable(null, 'csv');
+            expect(result).toContain('<pre');
+        });
+    });
+
+    describe('Mode switch source→split with MathJax (line 5044)', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('switching from source to split triggers MathJax typeset', () => {
+            editor.updateFromMarkdown('$$ x^2 $$');
+            editor.setMode('source');
+
+            const typesetSpy = jest.fn().mockResolvedValue(undefined);
+            window.MathJax = { typesetPromise: typesetSpy };
+
+            const mathEl = document.createElement('div');
+            mathEl.className = 'math-display';
+            editor.previewPanel.appendChild(mathEl);
+
+            editor.setMode('split');
+
+            delete window.MathJax;
+        });
+    });
+
+    describe('Fence close with trailing non-whitespace (line 99)', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('fence close line with trailing text does not close fence', () => {
+            editor.updateFromMarkdown('```js\ncode\n``` not close\nmore\n```');
+            const html = editor.html;
+            expect(html).toContain('not close');
+            expect(html).toContain('more');
+        });
+    });
+
+    describe('Embedded parser edge cases via updateFromMarkdown', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('code block without lang gets rendered', () => {
+            editor.updateFromMarkdown('```\nplain code\n```');
+            expect(editor.html).toContain('plain code');
+            expect(editor.html).toContain('<pre');
+        });
+
+        test('array-form allowUnsafeHTML normalization', async () => {
+            editor.destroy();
+            editor = new QuikdownEditor('#test-editor', { allowUnsafeHTML: ['b', 'i'] });
+            await editor.initPromise;
+            editor.updateFromMarkdown('<b>bold</b> <script>bad</script>');
+            expect(editor.html).toContain('<b>bold</b>');
+            expect(editor.html).not.toMatch(/<script[\s>]/);
+        });
+
+        test('boolean HTML attributes pass through with whitelist', async () => {
+            editor.destroy();
+            editor = new QuikdownEditor('#test-editor', { allowUnsafeHTML: ['input'] });
+            await editor.initPromise;
+            editor.updateFromMarkdown('<input disabled type="text">');
+            expect(editor.html).toContain('disabled');
+        });
+    });
 });
