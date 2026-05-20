@@ -530,7 +530,7 @@ function quikdown(markdown, options = {}) {
     // ── Step 1: Tables ──
     // Tables need multi-line lookahead (header → separator → body rows)
     // so they're handled by a dedicated line-walker first.
-    html = processTable(html, getAttr);
+    html = processTable(html, getAttr, bidirectional);
 
     // ── Step 2: Headings, HR, Blockquotes ──
     // These are simple line-level constructs.  We scan each line once
@@ -821,7 +821,7 @@ function processInlineMarkdown(text, getAttr) {
         [/\*\*(.+?)\*\*/g, 'strong'],
         [/__(.+?)__/g, 'strong'],
         [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
-        [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em'],
+        [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em'],
         [/~~(.+?)~~/g, 'del'],
         [/`([^`]+)`/g, 'code']
     ];
@@ -842,7 +842,7 @@ function processInlineMarkdown(text, getAttr) {
  * @param {Function} getAttr Attribute factory
  * @returns {string}         Text with tables rendered
  */
-function processTable(text, getAttr) {
+function processTable(text, getAttr, bidirectional) {
     const lines = text.split('\n');
     const result = [];
     let inTable = false;
@@ -859,7 +859,7 @@ function processTable(text, getAttr) {
             tableLines.push(line);
         } else {
             if (inTable) {
-                const tableHtml = buildTable(tableLines, getAttr);
+                const tableHtml = buildTable(tableLines, getAttr, bidirectional);
                 if (tableHtml) {
                     result.push(tableHtml);
                 } else {
@@ -874,7 +874,7 @@ function processTable(text, getAttr) {
 
     // Handle table at end of document
     if (inTable && tableLines.length > 0) {
-        const tableHtml = buildTable(tableLines, getAttr);
+        const tableHtml = buildTable(tableLines, getAttr, bidirectional);
         if (tableHtml) {
             result.push(tableHtml);
         } else {
@@ -892,7 +892,7 @@ function processTable(text, getAttr) {
  * @param {Function} getAttr Attribute factory
  * @returns {string|null}    HTML table string, or null if invalid
  */
-function buildTable(lines, getAttr) {
+function buildTable(lines, getAttr, bidirectional) {
     if (lines.length < 2) return null;
 
     // Find the separator row (---|---|)
@@ -918,7 +918,9 @@ function buildTable(lines, getAttr) {
         return 'left';
     });
 
-    let html = `<table${getAttr('table')}>\n`;
+    /* istanbul ignore next - bd-only branch */
+    const alignAttr = bidirectional ? ` data-qd-align="${alignments.join(',')}"` : '';
+    let html = `<table${getAttr('table')}${alignAttr}>\n`;
 
     // Header
     html += `<thead${getAttr('thead')}>\n`;
@@ -2709,6 +2711,14 @@ async function getRenderedContent(previewPanel, options = {}) {
                     // Parse the source HTML
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = source;
+
+                    // Sanitize: remove script elements and on* event handlers
+                    tempDiv.querySelectorAll('script').forEach(s => s.remove());
+                    tempDiv.querySelectorAll('*').forEach(el => {
+                        for (const attr of Array.from(el.attributes)) {
+                            if (/^on/i.test(attr.name)) el.removeAttribute(attr.name);
+                        }
+                    });
                     
                     // Process all images in the HTML block
                     const htmlImages = tempDiv.querySelectorAll('img');
@@ -3024,10 +3034,12 @@ async function getRenderedContent(previewPanel, options = {}) {
 
 /**
  * Quikdown Editor - A drop-in markdown editor control
- * @version 1.0.5
  * @license BSD-2-Clause
  */
 
+
+/** Build-time version stamp (injected by rollup replaceVersion plugin) */
+const quikdownEditorVersion = '1.2.14';
 
 /**
  * Curated safe HTML tag whitelist.
@@ -4119,7 +4131,7 @@ class QuikdownEditor {
                     return this.options.customFences[lang](code, lang);
                 } catch (err) {
                     console.error(`Custom fence plugin error for ${lang}:`, err);
-                    return `<pre><code class="language-${lang}">${this.escapeHtml(code)}</code></pre>`;
+                    return `<pre><code class="language-${this.escapeHtml(lang)}">${this.escapeHtml(code)}</code></pre>`;
                 }
             }
             
@@ -4171,7 +4183,7 @@ class QuikdownEditor {
             if (window.hljs && lang && hljs.getLanguage(lang)) {
                 const highlighted = hljs.highlight(code, { language: lang }).value;
                 // Don't add contenteditable="false" - the bidirectional system can extract text from the highlighted code
-                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${lang}"><code class="hljs language-${lang}">${highlighted}</code></pre>`;
+                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${this.escapeHtml(lang)}"><code class="hljs language-${this.escapeHtml(lang)}">${highlighted}</code></pre>`;
             }
             
             // Default: let quikdown handle it
@@ -4388,7 +4400,7 @@ class QuikdownEditor {
                 
                 // Process any existing math elements (like squibview)
                 if (window.MathJax && window.MathJax.typesetPromise) {
-                    const mathElements = document.querySelectorAll('.math-display');
+                    const mathElements = (this.previewPanel || document).querySelectorAll('.math-display');
                     if (mathElements.length > 0) {
                         window.MathJax.typesetPromise(Array.from(mathElements)).catch(err => {
                             console.warn('Initial MathJax processing failed:', err);
@@ -4769,7 +4781,7 @@ class QuikdownEditor {
                 mermaid.render(id + '-svg', code).then(result => {
                     element.innerHTML = result.svg;
                 }).catch(err => {
-                    element.innerHTML = `<pre>Error rendering diagram: ${err.message}</pre>`;
+                    element.innerHTML = `<pre>Error rendering diagram: ${this.escapeHtml(err.message)}</pre>`;
                 });
             }
         }, 0);
@@ -5640,6 +5652,9 @@ class QuikdownEditor {
 
 /** Static: curated safe HTML tag whitelist for allow_unsafe_html */
 QuikdownEditor.SAFE_HTML_TAGS = SAFE_HTML_TAGS;
+
+/** Semantic version (injected at build time) */
+QuikdownEditor.version = quikdownEditorVersion;
 
 // Export for CommonJS (needed for bundled ESM to work with Jest)
 if (typeof module !== 'undefined' && module.exports) {

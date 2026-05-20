@@ -286,6 +286,25 @@ For example, CommonMark HR detection (`---`, `***`, `_ _ _`, etc.) uses an O(n) 
 | `security/detect-object-injection` | disabled (false positives on parser array iteration) |
 | All other `eslint-plugin-security` rules | 0 findings (warn level) |
 
+## HTML Whitelist Mode (`allow_unsafe_html`)
+
+When `allow_unsafe_html` is set to an array of tag names or an object, quikdown operates in **whitelist mode**:
+
+- Listed tags pass through with their attributes intact
+- All `on*` event handler attributes are stripped
+- URL attributes (`href`, `src`, `action`, `formaction`) are sanitized to block `javascript:`, `vbscript:`, and non-image `data:` URIs
+- Non-whitelisted tags are escaped as normal
+
+**Note:** `style` attributes pass through on whitelisted tags. If your threat model requires blocking inline styles (e.g., CSS exfiltration or UI redress attacks), strip `style` attributes in a post-processing step or use a dedicated HTML sanitizer like DOMPurify after quikdown.
+
+```javascript
+// Whitelist mode — style attributes pass through
+quikdown('<div style="color:red">text</div>', {
+  allow_unsafe_html: ['div']
+});
+// → <div style="color:red">text</div>
+```
+
 ## Future Security Enhancements
 
 Planned security improvements:

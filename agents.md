@@ -8,7 +8,7 @@ quikdown is a lightweight, zero-dependency markdown-to-HTML parser with built-in
 
 - **Repository:** https://github.com/deftio/quikdown
 - **License:** BSD-2-Clause
-- **Version:** 1.2.12
+- **Version:** 1.2.14
 - **Language:** JavaScript (ES modules, UMD, CommonJS)
 - **TypeScript:** Definitions included in `dist/*.d.ts`
 - **Test framework:** Jest (unit) + Playwright (e2e)

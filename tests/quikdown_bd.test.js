@@ -1192,4 +1192,37 @@ End of document.`;
       expect(result).toContain('| A |');
     });
   });
+
+  // ========================================================================
+  // Contract: forward parser output ↔ BD reverse roundtrip
+  // ========================================================================
+  describe('Forward + roundtrip contracts', () => {
+    test('contract: table alignment forward emits data-qd-align', () => {
+      const md = '| L | C | R |\n|:--|:--:|--:|\n| a | b | c |';
+      const html = quikdown_bd(md);
+      // Forward pass must emit data-qd-align on the table element
+      expect(html).toMatch(/data-qd-align="left,center,right"/);
+    });
+
+    test('contract: table alignment roundtrip preserves separator syntax', () => {
+      const md = '| Left | Center | Right |\n|:-----|:------:|------:|\n| a | b | c |';
+      const html = quikdown_bd(md);
+      expect(html).toMatch(/data-qd-align="left,center,right"/);
+      const back = quikdown_bd.toMarkdown(html);
+      // Roundtripped markdown must contain alignment markers
+      // Left alignment uses plain '---' (no colon), per markdown convention
+      expect(back).toMatch(/\| ---/);    // left (plain dashes)
+      expect(back).toMatch(/:---:/);     // center (colon both sides)
+      expect(back).toMatch(/---:/);      // right (trailing colon)
+      // Re-forward should produce same alignment attribute
+      const html2 = quikdown_bd(back);
+      expect(html2).toMatch(/data-qd-align="left,center,right"/);
+    });
+
+    test('contract: all-left alignment emits data-qd-align with all left', () => {
+      const md = '| A | B |\n|---|---|\n| 1 | 2 |';
+      const html = quikdown_bd(md);
+      expect(html).toMatch(/data-qd-align="left,left"/);
+    });
+  });
 });

@@ -2289,4 +2289,31 @@ code3
             expect(lightCSS).toContain('color:#333');
         });
     });
+
+    // ========================================================================
+    // Underscore emphasis consistency: paragraph vs table cell
+    // ========================================================================
+    describe('Underscore emphasis consistency', () => {
+        test('foo_bar_baz renders the same in paragraph and table cell', () => {
+            const md = 'foo_bar_baz\n\n| col |\n|-----|\n| foo_bar_baz |';
+            const html = quikdown(md);
+            const bodyMatch = html.match(/<p>(.*?)<\/p>/s)?.[1];
+            const cellMatch = html.match(/<td[^>]*>(.*?)<\/td>/s)?.[1];
+            // Both should treat mid-word underscores identically (no emphasis)
+            expect(bodyMatch).toBe('foo_bar_baz');
+            expect(cellMatch).toBe('foo_bar_baz');
+        });
+
+        test('_proper_ emphasis works the same in paragraph and table cell', () => {
+            const md = '_proper_\n\n| col |\n|-----|\n| _proper_ |';
+            const html = quikdown(md);
+            const bodyMatch = html.match(/<p>(.*?)<\/p>/s)?.[1];
+            const cellMatch = html.match(/<td[^>]*>(.*?)<\/td>/s)?.[1];
+            // Both should render emphasis
+            expect(bodyMatch).toContain('<em');
+            expect(bodyMatch).toContain('proper');
+            expect(cellMatch).toContain('<em');
+            expect(cellMatch).toContain('proper');
+        });
+    });
 });

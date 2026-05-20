@@ -426,7 +426,7 @@
         // ── Step 1: Tables ──
         // Tables need multi-line lookahead (header → separator → body rows)
         // so they're handled by a dedicated line-walker first.
-        html = processTable(html, getAttr);
+        html = processTable(html, getAttr, bidirectional);
 
         // ── Step 2: Headings, HR, Blockquotes ──
         // These are simple line-level constructs.  We scan each line once
@@ -717,7 +717,7 @@
             [/\*\*(.+?)\*\*/g, 'strong'],
             [/__(.+?)__/g, 'strong'],
             [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
-            [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em'],
+            [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em'],
             [/~~(.+?)~~/g, 'del'],
             [/`([^`]+)`/g, 'code']
         ];
@@ -738,7 +738,7 @@
      * @param {Function} getAttr Attribute factory
      * @returns {string}         Text with tables rendered
      */
-    function processTable(text, getAttr) {
+    function processTable(text, getAttr, bidirectional) {
         const lines = text.split('\n');
         const result = [];
         let inTable = false;
@@ -755,7 +755,7 @@
                 tableLines.push(line);
             } else {
                 if (inTable) {
-                    const tableHtml = buildTable(tableLines, getAttr);
+                    const tableHtml = buildTable(tableLines, getAttr, bidirectional);
                     if (tableHtml) {
                         result.push(tableHtml);
                     } else {
@@ -770,7 +770,7 @@
 
         // Handle table at end of document
         if (inTable && tableLines.length > 0) {
-            const tableHtml = buildTable(tableLines, getAttr);
+            const tableHtml = buildTable(tableLines, getAttr, bidirectional);
             if (tableHtml) {
                 result.push(tableHtml);
             } else {
@@ -788,7 +788,7 @@
      * @param {Function} getAttr Attribute factory
      * @returns {string|null}    HTML table string, or null if invalid
      */
-    function buildTable(lines, getAttr) {
+    function buildTable(lines, getAttr, bidirectional) {
         if (lines.length < 2) return null;
 
         // Find the separator row (---|---|)
@@ -814,7 +814,9 @@
             return 'left';
         });
 
-        let html = `<table${getAttr('table')}>\n`;
+        /* istanbul ignore next - bd-only branch */
+        const alignAttr = bidirectional ? ` data-qd-align="${alignments.join(',')}"` : '';
+        let html = `<table${getAttr('table')}${alignAttr}>\n`;
 
         // Header
         html += `<thead${getAttr('thead')}>\n`;

@@ -1,10 +1,12 @@
 /**
  * Quikdown Editor - A drop-in markdown editor control
- * @version 1.0.5
  * @license BSD-2-Clause
  */
 
 import quikdown_bd from './quikdown_bd.js';
+
+/** Build-time version stamp (injected by rollup replaceVersion plugin) */
+const quikdownEditorVersion = '__QUIKDOWN_VERSION__';
 import { getRenderedContent } from './quikdown_edit_copy.js';
 import { isHRLine, fenceOpen, isFenceClose, classifyLine, looksLikeTableRow } from './quikdown_classify.js';
 
@@ -1098,7 +1100,7 @@ class QuikdownEditor {
                     return this.options.customFences[lang](code, lang);
                 } catch (err) {
                     console.error(`Custom fence plugin error for ${lang}:`, err);
-                    return `<pre><code class="language-${lang}">${this.escapeHtml(code)}</code></pre>`;
+                    return `<pre><code class="language-${this.escapeHtml(lang)}">${this.escapeHtml(code)}</code></pre>`;
                 }
             }
             
@@ -1150,7 +1152,7 @@ class QuikdownEditor {
             if (window.hljs && lang && hljs.getLanguage(lang)) {
                 const highlighted = hljs.highlight(code, { language: lang }).value;
                 // Don't add contenteditable="false" - the bidirectional system can extract text from the highlighted code
-                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${lang}"><code class="hljs language-${lang}">${highlighted}</code></pre>`;
+                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${this.escapeHtml(lang)}"><code class="hljs language-${this.escapeHtml(lang)}">${highlighted}</code></pre>`;
             }
             
             // Default: let quikdown handle it
@@ -1367,7 +1369,7 @@ class QuikdownEditor {
                 
                 // Process any existing math elements (like squibview)
                 if (window.MathJax && window.MathJax.typesetPromise) {
-                    const mathElements = document.querySelectorAll('.math-display');
+                    const mathElements = (this.previewPanel || document).querySelectorAll('.math-display');
                     if (mathElements.length > 0) {
                         window.MathJax.typesetPromise(Array.from(mathElements)).catch(err => {
                             console.warn('Initial MathJax processing failed:', err);
@@ -1748,7 +1750,7 @@ class QuikdownEditor {
                 mermaid.render(id + '-svg', code).then(result => {
                     element.innerHTML = result.svg;
                 }).catch(err => {
-                    element.innerHTML = `<pre>Error rendering diagram: ${err.message}</pre>`;
+                    element.innerHTML = `<pre>Error rendering diagram: ${this.escapeHtml(err.message)}</pre>`;
                 });
             }
         }, 0);
@@ -2621,6 +2623,9 @@ class QuikdownEditor {
 
 /** Static: curated safe HTML tag whitelist for allow_unsafe_html */
 QuikdownEditor.SAFE_HTML_TAGS = SAFE_HTML_TAGS;
+
+/** Semantic version (injected at build time) */
+QuikdownEditor.version = quikdownEditorVersion;
 
 // Export
 export default QuikdownEditor;

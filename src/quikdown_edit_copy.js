@@ -1158,6 +1158,14 @@ export async function getRenderedContent(previewPanel, options = {}) {
                     // Parse the source HTML
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = source;
+
+                    // Sanitize: remove script elements and on* event handlers
+                    tempDiv.querySelectorAll('script').forEach(s => s.remove());
+                    tempDiv.querySelectorAll('*').forEach(el => {
+                        for (const attr of Array.from(el.attributes)) {
+                            if (/^on/i.test(attr.name)) el.removeAttribute(attr.name);
+                        }
+                    });
                     
                     // Process all images in the HTML block
                     const htmlImages = tempDiv.querySelectorAll('img');

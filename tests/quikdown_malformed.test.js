@@ -376,8 +376,15 @@ describe('Malformed markdown and exotic features', () => {
       const markdown = '| Left | Center | Right |\n|:-----|:------:|------:|\n| L    | C      | R     |';
       const html1 = quikdown_bd(markdown);
       expect(html1).toContain('<table');
+      // Forward pass must emit data-qd-align for BD roundtrip
+      expect(html1).toMatch(/data-qd-align="left,center,right"/);
       const backToMd = quikdown_bd.toMarkdown(html1);
       expect(backToMd).toContain('|');
+      // Roundtripped markdown must preserve alignment syntax
+      // Left alignment uses plain '---' (no colon prefix), per markdown convention
+      expect(backToMd).toMatch(/\| ---/);    // left alignment (plain dashes)
+      expect(backToMd).toMatch(/:---:/);     // center alignment (colon on both sides)
+      expect(backToMd).toMatch(/---:/);      // right alignment (trailing colon)
       const html2 = quikdown_bd(backToMd);
       expect(html2).toContain('<table');
       expect(html2).toContain('Left');

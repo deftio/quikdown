@@ -2,7 +2,7 @@
   "name": "quikdown",
   "version": "1.2.14",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
-  "author": "deftio (https://github.com/deftio",
+  "author": "deftio (https://github.com/deftio)",
   "license": "BSD-2-Clause",
   "repository": {
     "type": "git",
@@ -122,6 +122,7 @@
     "css": "npm run build:css && npm run minify:css",
     "test:perf": "node tests/performance-benchmark.js",
     "lint": "eslint src/",
+    "verify:package": "node tools/verifyPackage.cjs",
     "sizes": "node tools/printSizes.cjs",
     "clean": "node tools/clean.cjs",
     "prepare": "husky"

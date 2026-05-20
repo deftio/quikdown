@@ -50,12 +50,12 @@ echo ""
 
 # --- run quality gates -------------------------------------------------------
 
-info "=== Running tests ==="
-npm test || die "Tests failed. Fix failures before releasing."
-echo ""
-
 info "=== Running build ==="
 npm run build || die "Build failed. Fix errors before releasing."
+echo ""
+
+info "=== Running tests ==="
+npm test || die "Tests failed. Fix failures before releasing."
 echo ""
 
 # --- capture any badge/docs/dist drift and commit it before releasing -------
