@@ -174,38 +174,38 @@
       "./dist/quikdown_bd.esm.js": {
         "lines": 100,
         "functions": 100,
-        "branches": 89,
-        "statements": 100
+        "branches": 97,
+        "statements": 99
       },
       "./dist/quikdown_edit.esm.js": {
-        "lines": 49,
-        "functions": 56,
-        "branches": 42,
-        "statements": 49
+        "lines": 58,
+        "functions": 63,
+        "branches": 58,
+        "statements": 58
       },
       "./dist/quikdown_ast.esm.js": {
-        "lines": 95,
+        "lines": 97,
         "functions": 100,
-        "branches": 90,
-        "statements": 94
+        "branches": 93,
+        "statements": 97
       },
       "./dist/quikdown_json.esm.js": {
         "lines": 93,
         "functions": 100,
-        "branches": 75,
-        "statements": 88
+        "branches": 84,
+        "statements": 93
       },
       "./dist/quikdown_yaml.esm.js": {
-        "lines": 90,
+        "lines": 94,
         "functions": 100,
-        "branches": 78,
-        "statements": 86
+        "branches": 88,
+        "statements": 94
       },
       "./dist/quikdown_ast_html.esm.js": {
-        "lines": 91,
-        "functions": 100,
-        "branches": 80,
-        "statements": 87
+        "lines": 92,
+        "functions": 97,
+        "branches": 86,
+        "statements": 92
       }
     }
   },

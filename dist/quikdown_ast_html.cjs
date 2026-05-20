@@ -588,7 +588,24 @@ function sanitizeUrl(url, allowUnsafe = false) {
     if (!url) return '';
     if (allowUnsafe) return url;
     const trimmedUrl = url.trim();
-    const lowerUrl = trimmedUrl.toLowerCase();
+
+    // Decode HTML entities before protocol check to prevent bypass via
+    // &#106;avascript: or javascript&#58; etc.
+    const decoded = trimmedUrl
+        .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+        .replace(/&#(\d+);?/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#039;|&apos;/gi, "'");
+    // Strip control chars and whitespace before protocol check
+    let stripped = '';
+    for (let i = 0; i < decoded.length; i++) {
+        const c = decoded.charCodeAt(i);
+        if (c > 0x20 && c !== 0x7f) stripped += decoded[i];
+    }
+    const lowerUrl = stripped.toLowerCase();
 
     const dangerousProtocols = ['javascript:', 'vbscript:', 'data:'];
     for (const protocol of dangerousProtocols) {
@@ -910,7 +927,7 @@ function renderNode(node, getAttr, options) {
             return `<h${level}${getAttr('h' + level)}>${renderChildren(node.children, getAttr, options)}</h${level}>`;
 
         case 'code_block':
-            const langClass = !options.inline_styles && node.lang ? ` class="language-${node.lang}"` : '';
+            const langClass = !options.inline_styles && node.lang ? ` class="language-${escapeHtml(node.lang)}"` : '';
             const codeAttr = options.inline_styles ? getAttr('code') : langClass;
             return `<pre${getAttr('pre')}><code${codeAttr}>${escapeHtml(node.content)}</code></pre>`;
 

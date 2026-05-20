@@ -2281,8 +2281,8 @@ code3
             // ~~~~ (empty inner for ~~)
             expect(quikdown('~~~~')).toBe('<p>~~~~</p>');
 
-            // **** (empty inner for **)
-            expect(quikdown('****')).toBe('<p>****</p>');
+            // **** is a valid thematic break (4+ asterisks)
+            expect(quikdown('****')).toContain('<hr');
 
             // Light theme emitStyles coverage
             const lightCSS = quikdown.emitStyles('quikdown-', 'light');

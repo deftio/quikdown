@@ -240,23 +240,37 @@ describe('fence detection via removeHR and convertLazy', () => {
 // SECTION 3: Parser vs editor HR agreement
 // ========================================================================
 describe('parser vs editor HR agreement', () => {
-    describe('known semantic gap: main parser only does dash HRs', () => {
-        // The main parser only recognizes --- as HR.
-        // The editor's removeHR recognizes ---, ***, ___, etc.
-        // This is intentional — documented in the plan.
+    describe('parser and editor agree on all HR variants', () => {
+        // As of 1.2.14, the parser uses isHRLine() for full CommonMark HR support.
+        // Both parser and editor now recognize ---, ***, ___, and spaced variants.
         test('parser renders --- as <hr>', () => {
             const html = quikdown('---');
             expect(html).toContain('<hr');
         });
 
-        test('parser does NOT render *** as <hr>', () => {
+        test('parser renders *** as <hr>', () => {
             const html = quikdown('***');
-            expect(html).not.toContain('<hr');
+            expect(html).toContain('<hr');
         });
 
-        test('parser does NOT render ___ as <hr>', () => {
+        test('parser renders ___ as <hr>', () => {
             const html = quikdown('___');
-            expect(html).not.toContain('<hr');
+            expect(html).toContain('<hr');
+        });
+
+        test('parser renders ---- (4+ dashes) as <hr>', () => {
+            expect(quikdown('----')).toContain('<hr');
+            expect(quikdown('-----')).toContain('<hr');
+        });
+
+        test('parser renders **** (4+ asterisks) as <hr>', () => {
+            expect(quikdown('****')).toContain('<hr');
+        });
+
+        test('parser does not render -- (too short) as <hr>', () => {
+            expect(quikdown('--')).not.toContain('<hr');
+            expect(quikdown('**')).not.toContain('<hr');
+            expect(quikdown('__')).not.toContain('<hr');
         });
 
         test('editor removes --- as HR', () => {

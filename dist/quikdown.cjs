@@ -19,30 +19,41 @@
  * simple regex or a linear scan, so there is zero ReDoS risk.
  */
 
-
 /**
- * Dash-only HR check — exact parity with the main parser's original
- * regex `/^---+\s*$/`.  Only matches lines of three or more dashes
- * with optional trailing whitespace (no interspersed spaces).
+ * Full CommonMark HR check: three or more identical characters from
+ * {-, *, _} with optional interspersed whitespace.
+ *
+ * Examples that return true:  ---, ***, ___, ----, - - -, * * *, _  _  _
+ * Examples that return false: --, - text, ---text, mixed -_*, empty
+ *
+ * Algorithm (O(n), single pass, no backtracking):
+ *   1. Strip all whitespace
+ *   2. Verify length >= 3
+ *   3. First char must be -, *, or _
+ *   4. Every remaining char must equal the first
  *
  * @param {string} trimmed  The line, already trimmed
  * @returns {boolean}
  */
-function isDashHRLine(trimmed) {
+function isHRLine(trimmed) {
     if (trimmed.length < 3) return false;
+
+    // Strip whitespace via linear scan
+    let stripped = '';
     for (let i = 0; i < trimmed.length; i++) {
         const ch = trimmed[i];
-        if (ch === '-') continue;
-        // Allow trailing whitespace only
-        if (ch === ' ' || ch === '\t') {
-            for (let j = i + 1; j < trimmed.length; j++) {
-                if (trimmed[j] !== ' ' && trimmed[j] !== '\t') return false;
-            }
-            return i >= 3; // at least 3 dashes before whitespace
-        }
-        return false;
+        if (ch !== ' ' && ch !== '\t') stripped += ch;
     }
-    return true; // all dashes
+
+    if (stripped.length < 3) return false;
+
+    const ch = stripped[0];
+    if (ch !== '-' && ch !== '*' && ch !== '_') return false;
+
+    for (let i = 1; i < stripped.length; i++) {
+        if (stripped[i] !== ch) return false;
+    }
+    return true;
 }
 
 /**
@@ -577,7 +588,7 @@ function quikdown(markdown, options = {}) {
 
             if (replacement === undefined) {
                 // Plugin declined — fall back to default rendering.
-                const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+                const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
                 const codeAttr = inline_styles ? getAttr('code') : langClass;
                 /* istanbul ignore next - bd-only branch */
                 const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -591,7 +602,7 @@ function quikdown(markdown, options = {}) {
             }
         } else {
             // Default rendering — wrap in <pre><code>.
-            const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+            const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
             const codeAttr = inline_styles ? getAttr('code') : langClass;
             /* istanbul ignore next - bd-only branch */
             const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -668,9 +679,9 @@ function scanLineBlocks(text, getAttr, dataQd) {
         }
 
         // ── Horizontal Rule ──
-        // Three or more dashes, optional trailing whitespace, nothing else.
-        if (isDashHRLine(line)) {
-            result.push(`<hr${getAttr('hr')}>`);
+        // Three or more identical chars (-, *, _), optional interspersed spaces.
+        if (isHRLine(line)) {
+            result.push(`<hr${getAttr('hr')}${dataQd(line.trim())}>`);
             i++;
             continue;
         }
