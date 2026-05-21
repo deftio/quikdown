@@ -46,6 +46,8 @@ jobs:
         test -f dist/quikdown_json.esm.js
         test -f dist/quikdown_yaml.esm.js
         test -f dist/quikdown_ast_html.esm.js
+        test -f dist/quikdown_mcp.esm.js
+        test -f dist/quikdown_mcp.cjs
         test -f dist/quikdown.d.ts
         test -f dist/quikdown_bd.d.ts
         test -f dist/quikdown_edit.d.ts
@@ -53,9 +55,46 @@ jobs:
         test -f dist/quikdown_json.d.ts
         test -f dist/quikdown_yaml.d.ts
         test -f dist/quikdown_ast_html.d.ts
+        test -f dist/quikdown_mcp.d.ts
 
     - name: Verify package exports and types
       run: npm run verify:package
+
+    - name: Dry-run publish release steps
+      run: |
+        npm run build:all
+        node tools/buildAirgapZip.cjs
+        gzip -9 -k -f dist/quikdown_edit_standalone.esm.min.js dist/quikdown_edit_standalone.umd.min.js
+        TAG="v$(node -p 'require("./package.json").version')"
+        ASSETS=(
+          dist/quikdown.umd.min.js
+          dist/quikdown.esm.min.js
+          dist/quikdown.cjs
+          dist/quikdown_bd.umd.min.js
+          dist/quikdown_bd.esm.min.js
+          dist/quikdown_edit.umd.min.js
+          dist/quikdown_edit_standalone.esm.min.js
+          dist/quikdown_edit_standalone.umd.min.js
+          dist/quikdown_edit_standalone.esm.min.js.gz
+          dist/quikdown_edit_standalone.umd.min.js.gz
+          "dist/quikdown-airgap-${TAG}.zip"
+          dist/quikdown.light.min.css
+          dist/quikdown.dark.min.css
+          dist/quikdown.d.ts
+          dist/quikdown_bd.d.ts
+          dist/quikdown_edit.d.ts
+          dist/quikdown_ast.d.ts
+          dist/quikdown_json.d.ts
+          dist/quikdown_yaml.d.ts
+          dist/quikdown_ast_html.d.ts
+          dist/quikdown_mcp.d.ts
+        )
+        MISSING=0
+        for f in "${ASSETS[@]}"; do
+          if [ ! -f "$f" ]; then echo "MISSING: $f"; MISSING=$((MISSING+1)); fi
+        done
+        if [ "$MISSING" -gt 0 ]; then echo "::error::$MISSING publish release asset(s) missing"; exit 1; fi
+        echo "All ${#ASSETS[@]} release assets verified."
 
   e2e-smoke:
     needs: build

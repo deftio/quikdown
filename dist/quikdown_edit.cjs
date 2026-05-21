@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.15
+ * @version 1.2.16
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -199,7 +199,7 @@ function looksLikeTableRow(line) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.15';
+const quikdownVersion = '1.2.16';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -3016,7 +3016,7 @@ async function getRenderedContent(previewPanel, options = {}) {
 
 
 /** Build-time version stamp (injected by rollup replaceVersion plugin) */
-const quikdownEditorVersion = '1.2.15';
+const quikdownEditorVersion = '1.2.16';
 
 /**
  * Curated safe HTML tag whitelist.

@@ -4,7 +4,7 @@
 
 quikdown is a zero-dependency markdown parser for browser and Node.js. It converts markdown to HTML with security by default, supports bidirectional HTML-to-markdown roundtrip, ships a full-featured editor component (including headless mode), and provides structured output as AST, JSON, or YAML.
 
-- Version: 1.2.12
+- Version: 1.2.16
 - License: BSD-2-Clause
 - Repository: https://github.com/deftio/quikdown
 - Bundle size: ~10 KB minified (core parser), ~86 KB (editor), ~3.8 MB (standalone editor with all fence libraries)
@@ -14,7 +14,7 @@ quikdown is a zero-dependency markdown parser for browser and Node.js. It conver
 
 ## Modules
 
-quikdown ships seven modules, each available as ESM, UMD, and CommonJS:
+quikdown ships eight modules, each available as ESM, UMD, and/or CommonJS:
 
 | Module | Import Path | Purpose | Minified Size |
 |--------|-------------|---------|---------------|
@@ -26,6 +26,7 @@ quikdown ships seven modules, each available as ESM, UMD, and CommonJS:
 | quikdown_json | `quikdown/json` | Markdown to JSON string | small |
 | quikdown_yaml | `quikdown/yaml` | Markdown to YAML string | small |
 | quikdown_ast_html | `quikdown/ast-html` | Render AST back to HTML | small |
+| quikdown_mcp | `quikdown/mcp` | MCP server — AI agent tool integration (JSON-RPC 2.0 over stdio) | small |
 
 ## Installation
 
@@ -314,6 +315,49 @@ Chrome/Edge 88+, Firefox 78+, Safari 14+, iOS Safari 14+, Chrome for Android 88+
 
 ---
 
+## MCP Server (Model Context Protocol)
+
+quikdown includes an MCP server that exposes parsing, bidirectional conversion, file I/O, and editor control as tools for AI agents. It communicates over JSON-RPC 2.0 on stdio.
+
+### Running
+
+```bash
+npx quikdown-mcp                       # headless + filesystem (cwd as root)
+npx quikdown-mcp --root=/path/to/docs  # custom sandbox root
+```
+
+### Tool Groups
+
+| Group | Tools | When Available |
+|-------|-------|----------------|
+| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info` | Always |
+| Filesystem | `read_file_info`, `read_file_lines`, `read_file_markdown`, `write_markdown_to_file`, `write_html_to_file` | `--root` set |
+| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo` | Editor binding |
+
+### AI Host Configuration
+
+**Cursor** (`.cursor/mcp.json`):
+```json
+{ "mcpServers": { "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] } } }
+```
+
+**Claude Desktop** (`claude_desktop_config.json`):
+```json
+{ "mcpServers": { "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] } } }
+```
+
+### Programmatic Usage
+
+```javascript
+import { createMcpServer } from 'quikdown/mcp';
+const mcp = createMcpServer({ root: process.cwd() });
+const result = mcp.callTool('markdown_to_html', { markdown: '# Hello' });
+```
+
+Full MCP documentation: docs/quikdown-mcp.md
+
+---
+
 ## Fence Plugin System
 
 Fenced code blocks (``` or ~~~) can be rendered by custom plugins. The core parser and editor both support this, with slightly different mechanisms.
@@ -491,6 +535,7 @@ Text formatting (bold, italic, strikethrough, inline code), headings (h1-h6), un
 - WYSIWYG editing with bidirectional conversion
 - Offline/air-gapped document editing (standalone build)
 - Embedded editors in web applications
+- AI agent tool integration via MCP (Cursor, Claude Desktop, VS Code, etc.)
 
 ---
 
@@ -509,6 +554,7 @@ Detailed documentation is available in the `docs/` directory:
 - **docs/llm-integration.md** - LLM/agent UI patterns (stream, tool editor, quikchat)
 - **docs/release-process.md** - Release workflow, standalone gates, air-gap zip
 - **docs/quikdown-ast.md** - AST, JSON, YAML structured output
+- **docs/quikdown-mcp.md** - MCP server setup, tool reference, AI host configuration
 - **docs/release-notes.md** - Version history
 
 ## Examples
@@ -555,6 +601,9 @@ dist/
   quikdown_json.*                        # JSON converter (all formats)
   quikdown_yaml.*                        # YAML converter (all formats)
   quikdown_ast_html.*                    # AST-to-HTML (all formats)
+  quikdown_mcp.esm.js                    # MCP server - ES Module
+  quikdown_mcp.cjs                       # MCP server - CommonJS
+  quikdown_mcp.d.ts                      # MCP server - TypeScript defs
 ```
 
 ## Development

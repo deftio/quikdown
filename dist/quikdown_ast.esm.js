@@ -1,6 +1,6 @@
 /**
  * quikdown_ast - AST Markdown Parser
- * @version 1.2.15
+ * @version 1.2.16
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -13,7 +13,7 @@
  */
 
 // Version will be injected at build time
-const quikdownVersion = '1.2.15';
+const quikdownVersion = '1.2.16';
 
 // Safety limit to prevent infinite loops in list parsing
 const MAX_LOOP_ITERATIONS = 1000;

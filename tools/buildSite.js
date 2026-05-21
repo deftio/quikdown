@@ -39,6 +39,7 @@ const PAGES = [
     { template: 'changelog.html',    output: 'pages/changelog/index.html' },
     { template: 'downloads.html',   output: 'pages/downloads/index.html' },
     { template: 'frameworks.html',  output: 'pages/frameworks/index.html' },
+    { template: 'mcp.html',         output: 'pages/mcp/index.html' },
 ];
 
 // ----- Read shared partials -----

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP Server — AI Agent Integration · quikdown</title>
+  <meta name="description" content="quikdown MCP server: expose markdown parsing, bidirectional conversion, file I/O, and editor control as tools for Cursor, Claude Desktop, VS Code, and other AI agents.">
+  <meta name="keywords" content="quikdown mcp, model context protocol, ai agent markdown, cursor mcp, claude desktop mcp, markdown tools mcp">
+  <meta name="author" content="deftio@deftio.com">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/pages/mcp/">
+  <link rel="icon" type="image/svg+xml" href="{{ROOT}}/favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="quikdown">
+  <meta property="og:title" content="quikdown MCP Server">
+  <meta property="og:description" content="AI agent integration via Model Context Protocol. 19 tools for markdown parsing, file I/O, and editor control.">
+  <meta property="og:url" content="https://deftio.github.io/quikdown/pages/mcp/">
+
+  <link rel="stylesheet" href="{{ROOT}}/pages/styles/quikdown-site.css">
+  <style>
+    .mcp-wrap { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .mcp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .mcp-card {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-left: 4px solid #9550bb;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .mcp-card h3 { margin: 0 0 0.4rem 0; font-size: 1.05rem; color: #1f2937; }
+    .mcp-card p { margin: 0; font-size: 0.88rem; color: #4b5563; line-height: 1.5; }
+    .mcp-badge {
+      display: inline-block; font-size: 0.7rem; font-weight: 700;
+      padding: 0.2em 0.6em; border-radius: 100px;
+      background: #f3e6ff; color: #6c47b8;
+    }
+    .mcp-tool-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 0.75rem; }
+    .mcp-tool-table th, .mcp-tool-table td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid rgba(149, 80, 187, 0.1); }
+    .mcp-tool-table th { font-weight: 600; color: #6c47b8; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .mcp-tool-table code { background: #f3e6ff; padding: 0.15em 0.4em; border-radius: 4px; font-size: 0.85em; }
+    pre.mcp-code {
+      background: #1e1e2e; color: #cdd6f4; border-radius: 10px;
+      padding: 1rem 1.25rem; overflow-x: auto; font-size: 0.85rem; line-height: 1.5;
+      margin: 0.75rem 0;
+    }
+    pre.mcp-code .comment { color: #6c7086; }
+    pre.mcp-code .string { color: #a6e3a1; }
+    pre.mcp-code .key { color: #89b4fa; }
+    .mcp-section { margin-top: 3rem; }
+    .mcp-section h2 { font-size: 1.4rem; margin: 0 0 0.5rem 0; }
+    .mcp-section > p { color: #4b5563; font-size: 0.95rem; margin: 0 0 1rem 0; }
+    .mcp-step { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; }
+    .mcp-step-num {
+      flex-shrink: 0; width: 2rem; height: 2rem; border-radius: 50%;
+      background: #9550bb; color: #fff; font-weight: 700; font-size: 0.95rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mcp-step-body { flex: 1; }
+    .mcp-step-body h3 { margin: 0 0 0.3rem 0; font-size: 1rem; }
+    .mcp-step-body p { margin: 0; font-size: 0.9rem; color: #4b5563; }
+  </style>
+</head>
+<body class="qd-theme-light">
+  {{NAV_HTML}}
+
+  <main>
+    <section class="qd-hero" style="padding: 2.5rem 0;">
+      <div class="qd-hero-inner">
+        <span class="qd-hero-eyebrow">MCP Server &middot; v{{VERSION}}</span>
+        <h1 style="font-size: clamp(1.8rem, 4vw, 2.6rem); max-width: 32ch;">Give your AI agent markdown superpowers.</h1>
+        <p class="qd-hero-sub">
+          The quikdown MCP server exposes 19 tools over JSON-RPC 2.0 &mdash; markdown parsing, bidirectional conversion, file I/O, and full editor control. Works with Cursor, Claude Desktop, VS Code, and any MCP-compatible host.
+        </p>
+      </div>
+    </section>
+
+    <section class="qd-section">
+      <div class="mcp-wrap">
+
+        <!-- Quick Start -->
+        <div class="mcp-section">
+          <h2>Quick Start</h2>
+          <div class="mcp-step">
+            <div class="mcp-step-num">1</div>
+            <div class="mcp-step-body">
+              <h3>Install quikdown</h3>
+              <pre class="mcp-code">npm install quikdown</pre>
+            </div>
+          </div>
+          <div class="mcp-step">
+            <div class="mcp-step-num">2</div>
+            <div class="mcp-step-body">
+              <h3>Run the MCP server</h3>
+              <pre class="mcp-code">npx quikdown-mcp --root=.</pre>
+              <p>The server reads JSON-RPC on stdin and writes responses to stdout. <code>--root</code> sets the filesystem sandbox.</p>
+            </div>
+          </div>
+          <div class="mcp-step">
+            <div class="mcp-step-num">3</div>
+            <div class="mcp-step-body">
+              <h3>Configure your AI host</h3>
+              <p>Add the server to your tool's MCP config (see setup guides below).</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tool Groups -->
+        <div class="mcp-section">
+          <h2>Tool Groups</h2>
+          <p>The server organizes 19 tools into three groups, activated by configuration.</p>
+          <div class="mcp-grid">
+            <div class="mcp-card">
+              <h3>Headless <span class="mcp-badge">Always on</span></h3>
+              <p>Parse markdown, convert HTML, get statistics. No file access or editor required.</p>
+              <table class="mcp-tool-table">
+                <tr><td><code>markdown_to_html</code></td><td>Markdown &rarr; XSS-safe HTML</td></tr>
+                <tr><td><code>html_to_markdown</code></td><td>HTML &rarr; Markdown</td></tr>
+                <tr><td><code>markdown_stats</code></td><td>Word/line/paragraph counts</td></tr>
+                <tr><td><code>quikdown_info</code></td><td>Version, modules, active groups</td></tr>
+              </table>
+            </div>
+            <div class="mcp-card">
+              <h3>Filesystem <span class="mcp-badge">--root</span></h3>
+              <p>Read and write markdown/HTML files within a sandboxed directory. Path traversal is blocked.</p>
+              <table class="mcp-tool-table">
+                <tr><td><code>read_file_info</code></td><td>Size, lines, modified time</td></tr>
+                <tr><td><code>read_file_lines</code></td><td>Line range from a file</td></tr>
+                <tr><td><code>read_file_markdown</code></td><td>Full file contents</td></tr>
+                <tr><td><code>write_markdown_to_file</code></td><td>Write markdown to disk</td></tr>
+                <tr><td><code>write_html_to_file</code></td><td>Convert &amp; write HTML</td></tr>
+              </table>
+            </div>
+            <div class="mcp-card">
+              <h3>Editor <span class="mcp-badge">Host binding</span></h3>
+              <p>Full control over a QuikdownEditor instance: read/write buffer, search, replace, undo/redo.</p>
+              <table class="mcp-tool-table">
+                <tr><td><code>read_editor</code></td><td>Get editor markdown</td></tr>
+                <tr><td><code>write_editor</code></td><td>Replace editor content</td></tr>
+                <tr><td><code>find_regex</code></td><td>Search with regex</td></tr>
+                <tr><td><code>replace_regex</code></td><td>Regex find &amp; replace</td></tr>
+                <tr><td><code>replace_text</code></td><td>Literal string replace</td></tr>
+                <tr><td><code>extract_text</code></td><td>Extract line range</td></tr>
+                <tr><td><code>get_stats</code></td><td>Buffer statistics</td></tr>
+                <tr><td><code>get_html</code></td><td>Get parsed HTML output</td></tr>
+                <tr><td><code>undo</code></td><td>Undo last change</td></tr>
+                <tr><td><code>redo</code></td><td>Redo last undo</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Setup Guides -->
+        <div class="mcp-section">
+          <h2>Setup Guides</h2>
+
+          <div class="mcp-card" style="margin-bottom: 1rem;">
+            <h3>Cursor</h3>
+            <p>Add to <code>.cursor/mcp.json</code> in your project root:</p>
+            <pre class="mcp-code">{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"quikdown"</span>: {
+      <span class="key">"command"</span>: <span class="string">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="string">"quikdown-mcp"</span>, <span class="string">"--root=."</span>]
+    }
+  }
+}</pre>
+          </div>
+
+          <div class="mcp-card" style="margin-bottom: 1rem;">
+            <h3>Claude Desktop</h3>
+            <p>Add to <code>claude_desktop_config.json</code>:</p>
+            <pre class="mcp-code">{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"quikdown"</span>: {
+      <span class="key">"command"</span>: <span class="string">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="string">"quikdown-mcp"</span>, <span class="string">"--root=/path/to/project"</span>]
+    }
+  }
+}</pre>
+          </div>
+
+          <div class="mcp-card" style="margin-bottom: 1rem;">
+            <h3>Claude Code</h3>
+            <p>Add to <code>.mcp.json</code> in your project root:</p>
+            <pre class="mcp-code">{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"quikdown"</span>: {
+      <span class="key">"command"</span>: <span class="string">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="string">"quikdown-mcp"</span>, <span class="string">"--root=."</span>]
+    }
+  }
+}</pre>
+          </div>
+
+          <div class="mcp-card" style="margin-bottom: 1rem;">
+            <h3>VS Code (Copilot MCP)</h3>
+            <p>Add to <code>.vscode/mcp.json</code>:</p>
+            <pre class="mcp-code">{
+  <span class="key">"servers"</span>: {
+    <span class="key">"quikdown"</span>: {
+      <span class="key">"command"</span>: <span class="string">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="string">"quikdown-mcp"</span>, <span class="string">"--root=${workspaceFolder}"</span>]
+    }
+  }
+}</pre>
+          </div>
+
+          <div class="mcp-card" style="margin-bottom: 1rem;">
+            <h3>Windsurf</h3>
+            <p>Add to <code>~/.codeium/windsurf/mcp_config.json</code>:</p>
+            <pre class="mcp-code">{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"quikdown"</span>: {
+      <span class="key">"command"</span>: <span class="string">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="string">"quikdown-mcp"</span>, <span class="string">"--root=."</span>]
+    }
+  }
+}</pre>
+          </div>
+        </div>
+
+        <!-- Programmatic Usage -->
+        <div class="mcp-section">
+          <h2>Programmatic Usage</h2>
+          <p>Use the MCP server from Node.js without the CLI:</p>
+          <pre class="mcp-code"><span class="comment">// ES Module</span>
+import { createMcpServer } from <span class="string">'quikdown/mcp'</span>;
+
+<span class="comment">// Headless only</span>
+const mcp = createMcpServer();
+const result = mcp.callTool(<span class="string">'markdown_to_html'</span>, { markdown: <span class="string">'# Hello'</span> });
+console.log(result.content[0].text);
+
+<span class="comment">// With filesystem sandbox</span>
+const mcpFs = createMcpServer({ root: <span class="string">'/path/to/docs'</span> });
+
+<span class="comment">// With editor binding (browser context)</span>
+const mcpFull = createMcpServer({ root: <span class="string">'.'</span>, editor: editorInstance });
+console.log(mcpFull.getTools().length); <span class="comment">// 19</span></pre>
+        </div>
+
+        <!-- Security -->
+        <div class="mcp-section">
+          <h2>Security</h2>
+          <div class="mcp-grid">
+            <div class="mcp-card">
+              <h3>Filesystem Sandbox</h3>
+              <p>All file operations are confined to the <code>--root</code> directory. Path traversal attempts (<code>../</code>) are rejected before any I/O occurs.</p>
+            </div>
+            <div class="mcp-card">
+              <h3>XSS Protection</h3>
+              <p><code>markdown_to_html</code> escapes HTML entities by default. Unsafe HTML passthrough must be explicitly enabled.</p>
+            </div>
+            <div class="mcp-card">
+              <h3>Regex Limits</h3>
+              <p>Search patterns capped at 200 characters. Match count limited to 200 results. No ReDoS-vulnerable patterns.</p>
+            </div>
+            <div class="mcp-card">
+              <h3>No Network</h3>
+              <p>The MCP server makes zero outbound network requests. All operations are local to the machine.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Full docs link -->
+        <div class="mcp-section" style="text-align: center; margin-top: 4rem;">
+          <p style="font-size: 1.05rem;">
+            Full tool reference, JSON-RPC protocol details, and TypeScript types:<br>
+            <a href="https://github.com/deftio/quikdown/blob/main/docs/quikdown-mcp.md" target="_blank" rel="noopener" style="color: #9550bb; font-weight: 600;">docs/quikdown-mcp.md</a>
+          </p>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  {{FOOTER_HTML}}
+  <script src="{{ROOT}}/pages/scripts/site.js" defer></script>
+</body>
+</html>

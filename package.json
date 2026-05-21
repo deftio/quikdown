@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.2.15",
+  "version": "1.2.16",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
   "author": "deftio (https://github.com/deftio)",
   "license": "BSD-2-Clause",
@@ -33,7 +33,9 @@
     "plugin",
     "fence",
     "autolink",
-    "sanitization"
+    "sanitization",
+    "mcp",
+    "model-context-protocol"
   ],
   "main": "dist/quikdown.cjs",
   "module": "dist/quikdown.esm.js",
@@ -83,10 +85,19 @@
       "browser": "./dist/quikdown_ast_html.umd.min.js",
       "types": "./dist/quikdown_ast_html.d.ts"
     },
+    "./mcp": {
+      "import": "./dist/quikdown_mcp.esm.js",
+      "require": "./dist/quikdown_mcp.cjs",
+      "types": "./dist/quikdown_mcp.d.ts"
+    },
     "./package.json": "./package.json"
   },
+  "bin": {
+    "quikdown-mcp": "./bin/quikdown-mcp"
+  },
   "files": [
-    "dist"
+    "dist",
+    "bin"
   ],
   "type": "module",
   "directories": {
@@ -157,7 +168,8 @@
       "dist/quikdown_ast.esm.js",
       "dist/quikdown_json.esm.js",
       "dist/quikdown_yaml.esm.js",
-      "dist/quikdown_ast_html.esm.js"
+      "dist/quikdown_ast_html.esm.js",
+      "dist/quikdown_mcp.esm.js"
     ],
     "coverageDirectory": "coverage",
     "coverageReporters": [
@@ -212,6 +224,12 @@
         "functions": 100,
         "branches": 89,
         "statements": 95
+      },
+      "./dist/quikdown_mcp.esm.js": {
+        "lines": 90,
+        "functions": 80,
+        "branches": 90,
+        "statements": 90
       }
     }
   },

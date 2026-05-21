@@ -90,6 +90,7 @@ function checkCoreDistBundles() {
     'dist/quikdown_json.esm.js',
     'dist/quikdown_yaml.esm.js',
     'dist/quikdown_ast_html.esm.js',
+    'dist/quikdown_mcp.esm.js',
   ];
   for (const f of bundles) {
     fileMustExist(f, 'bundle');
@@ -106,6 +107,7 @@ function checkTypeScriptDefinitions() {
     'dist/quikdown_json.d.ts',
     'dist/quikdown_yaml.d.ts',
     'dist/quikdown_ast_html.d.ts',
+    'dist/quikdown_mcp.d.ts',
   ];
   for (const f of expected) {
     fileMustExist(f, 'types');

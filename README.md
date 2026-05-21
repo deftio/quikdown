@@ -13,6 +13,7 @@ A small, secure markdown parser and editor for browsers and Node.js. Three modul
 - **quikdown_edit.js** (84.3 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.
 - **quikdown_edit_standalone.js** (3.8 MB) — Offline/air-gapped editor. Same as above but bundles highlight.js, Mermaid, DOMPurify, Leaflet, and Three.js — no CDN required. See [Standalone Docs](docs/standalone-editor.md).
 - **quikdown_ast.js** / **quikdown_json.js** / **quikdown_yaml.js** / **quikdown_ast_html.js** — AST companion libraries for structured output.
+- **quikdown_mcp.js** — MCP (Model Context Protocol) server. Exposes 19 tools for AI agents over JSON-RPC 2.0 on stdio. Works with Cursor, Claude Desktop, VS Code, and any MCP host.
 
 **[Live Site](https://deftio.github.io/quikdown/pages/)** | **[Try the Editor](https://deftio.github.io/quikdown/pages/edit/)** | **[Examples](https://deftio.github.io/quikdown/pages/examples/)** | **[Frameworks](https://deftio.github.io/quikdown/pages/frameworks/)** | **[Downloads](https://deftio.github.io/quikdown/pages/downloads/)** | **[Docs](docs/)**
 
@@ -149,6 +150,50 @@ quikdown fits the **model writes markdown, human sees rendered output** loop:
 | Chat bubbles + markdown | [quikchat](https://github.com/deftio/quikchat) + [integration example](https://deftio.github.io/quikdown/pages/examples/integration-quikchat.html) |
 
 Overview: [docs/llm-integration.md](docs/llm-integration.md)
+
+## MCP Server (AI Agent Integration)
+
+quikdown includes an MCP server that lets AI agents parse markdown, convert between formats, read/write files, and control the editor — all over JSON-RPC 2.0.
+
+```bash
+npm install quikdown
+npx quikdown-mcp --root=.
+```
+
+**19 tools** in three groups:
+
+| Group | Tools | Activated by |
+|-------|-------|-------------|
+| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info` | Always |
+| Filesystem | `read_file_info`, `read_file_lines`, `read_file_markdown`, `write_markdown_to_file`, `write_html_to_file` | `--root` flag |
+| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo` | Editor binding |
+
+**Cursor** — add to `.cursor/mcp.json`:
+```json
+{
+  "mcpServers": {
+    "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] }
+  }
+}
+```
+
+**Claude Desktop** — add to `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] }
+  }
+}
+```
+
+**Programmatic:**
+```javascript
+import { createMcpServer } from 'quikdown/mcp';
+const mcp = createMcpServer({ root: '.' });
+const result = mcp.callTool('markdown_to_html', { markdown: '# Hello' });
+```
+
+Full documentation: [docs/quikdown-mcp.md](docs/quikdown-mcp.md) | [MCP setup page](https://deftio.github.io/quikdown/pages/mcp/)
 
 ## Other Configuration Options
 quikdown supports built-in styles for a "batteries included" experience or you can bring your own CSS themes.  Example css files are provided for basic light and dark themes to get started.

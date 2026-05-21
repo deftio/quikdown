@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.2.15
+ * @version 1.2.16
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -129,7 +129,7 @@
     // ────────────────────────────────────────────────────────────────────
 
     /** Build-time version stamp (injected by tools/updateVersion) */
-    const quikdownVersion = '1.2.15';
+    const quikdownVersion = '1.2.16';
 
     /** CSS class prefix used for all generated elements */
     const CLASS_PREFIX = 'quikdown-';

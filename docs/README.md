@@ -25,6 +25,7 @@ Complete documentation for the quikdown markdown parser, editor, and companion l
 
 - **[Framework Integration](framework-integration.md)** — React, Vue, Svelte, Angular, Next.js, Nuxt
 - **[LLM Integration](llm-integration.md)** — Streaming, tool editor, chat widgets
+- **[MCP Server](quikdown-mcp.md)** — AI agent tool integration (Cursor, Claude Desktop, VS Code)
 - **[Release Process](release-process.md)** — Shipping, standalone bundle, CI gates
 
 ## Examples (repo)

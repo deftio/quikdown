@@ -8,7 +8,7 @@ quikdown is a lightweight, zero-dependency markdown-to-HTML parser with built-in
 
 - **Repository:** https://github.com/deftio/quikdown
 - **License:** BSD-2-Clause
-- **Version:** 1.2.14
+- **Version:** 1.2.16
 - **Language:** JavaScript (ES modules, UMD, CommonJS)
 - **TypeScript:** Definitions included in `dist/*.d.ts`
 - **Test framework:** Jest (unit) + Playwright (e2e)
@@ -29,6 +29,7 @@ quikdown/
 │   ├── quikdown_json.js             # AST to JSON
 │   ├── quikdown_yaml.js             # AST to YAML
 │   ├── quikdown_ast_html.js         # AST to HTML renderer
+│   ├── quikdown_mcp.js              # MCP server (Model Context Protocol)
 │   ├── quikdown_classify.js         # Line classification utilities
 │   └── quikdown_version.js          # Version constant
 ├── dist/                             # Build output (ESM, UMD, CJS, d.ts, CSS)
@@ -37,6 +38,8 @@ quikdown/
 ├── docs/                             # Detailed documentation (13 markdown files)
 ├── pages/                            # Static site templates and generated pages
 ├── tools/                            # Build scripts (version, CSS, badges, site)
+├── bin/                              # CLI entry points
+│   └── quikdown-mcp                 # MCP server CLI (stdio JSON-RPC)
 ├── rollup.config.js                 # Rollup build configuration
 ├── playwright.config.cjs            # Playwright e2e test config
 ├── package.json                     # Package metadata and scripts
@@ -102,6 +105,7 @@ The core parser (`src/quikdown.js`) processes markdown in four phases:
 | JSON | `src/quikdown_json.js` | `quikdown/json` | Markdown to JSON |
 | YAML | `src/quikdown_yaml.js` | `quikdown/yaml` | Markdown to YAML |
 | AST to HTML | `src/quikdown_ast_html.js` | `quikdown/ast-html` | Render AST to HTML |
+| MCP server | `src/quikdown_mcp.js` | `quikdown/mcp` | Model Context Protocol server (JSON-RPC 2.0) |
 
 ### Build Outputs
 
@@ -363,6 +367,7 @@ Detailed docs in `docs/`:
 | `docs/quikdown-ast.md` | AST, JSON, YAML structured output |
 | `docs/release-notes.md` | Complete version history |
 | `docs/release-process.md` | Release workflow (standalone, verify:release, air-gap zip) |
+| `docs/quikdown-mcp.md` | MCP server setup, tool reference, AI host configuration |
 
 ## Examples Reference
 
@@ -418,6 +423,54 @@ Working HTML examples in `examples/` and `pages/examples/`:
 - `tools/minifyThemeCSS.js` minifies theme CSS.
 - `tools/buildSite.js` generates pages from templates.
 - Output goes to `dist/`.
+
+## MCP Server (Model Context Protocol)
+
+quikdown ships an MCP server that exposes parsing, bidirectional conversion, file I/O, and editor control as tools for AI agents. It communicates over JSON-RPC 2.0 on stdio.
+
+### Running the MCP server
+
+```bash
+npx quikdown-mcp                       # headless + filesystem (cwd as root)
+npx quikdown-mcp --root=/path/to/docs  # custom sandbox root
+```
+
+### Configuring in AI tools
+
+**Cursor** (`.cursor/mcp.json`):
+```json
+{ "mcpServers": { "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] } } }
+```
+
+**Claude Desktop** (`claude_desktop_config.json`):
+```json
+{ "mcpServers": { "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] } } }
+```
+
+### Tool groups
+
+| Group | Tools | When available |
+|-------|-------|----------------|
+| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info` | Always |
+| Filesystem | `read_file_info`, `read_file_lines`, `read_file_markdown`, `write_markdown_to_file`, `write_html_to_file` | `--root` set |
+| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo` | Editor binding passed |
+
+### Programmatic usage
+
+```javascript
+import { createMcpServer } from 'quikdown/mcp';
+
+const mcp = createMcpServer({ root: process.cwd() });
+
+// Call a tool directly
+const result = mcp.callTool('markdown_to_html', { markdown: '# Hello' });
+console.log(result.content[0].text);
+
+// Or listen on stdio for JSON-RPC
+mcp.listenStdio();
+```
+
+Full documentation: [docs/quikdown-mcp.md](docs/quikdown-mcp.md)
 
 ## Important Conventions
 
