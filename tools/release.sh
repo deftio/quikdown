@@ -90,6 +90,44 @@ npm run test:e2e:coverage || die "E2E coverage tests failed."
 npm run coverage:merge || warn "Coverage merge failed (non-blocking)."
 echo ""
 
+info "=== Verifying publish workflow will succeed ==="
+# Simulate what publish.yml's release job does: gzip + check all release assets exist.
+gzip -9 -k -f dist/quikdown_edit_standalone.esm.min.js dist/quikdown_edit_standalone.umd.min.js \
+  || die "gzip standalone bundles failed."
+
+RELEASE_ASSETS=(
+  dist/quikdown.umd.min.js
+  dist/quikdown.esm.min.js
+  dist/quikdown.cjs
+  dist/quikdown_bd.umd.min.js
+  dist/quikdown_bd.esm.min.js
+  dist/quikdown_edit.umd.min.js
+  dist/quikdown_edit_standalone.esm.min.js
+  dist/quikdown_edit_standalone.umd.min.js
+  dist/quikdown_edit_standalone.esm.min.js.gz
+  dist/quikdown_edit_standalone.umd.min.js.gz
+  "dist/quikdown-airgap-${TAG}.zip"
+  dist/quikdown.light.min.css
+  dist/quikdown.dark.min.css
+  dist/quikdown.d.ts
+  dist/quikdown_bd.d.ts
+  dist/quikdown_edit.d.ts
+  dist/quikdown_ast.d.ts
+  dist/quikdown_json.d.ts
+  dist/quikdown_yaml.d.ts
+  dist/quikdown_ast_html.d.ts
+)
+MISSING=0
+for asset in "${RELEASE_ASSETS[@]}"; do
+  if [ ! -f "$asset" ]; then
+    warn "  MISSING release asset: $asset"
+    MISSING=$((MISSING + 1))
+  fi
+done
+[ "$MISSING" -eq 0 ] || die "$MISSING release asset(s) missing. publish.yml would fail."
+info "  All ${#RELEASE_ASSETS[@]} release assets verified."
+echo ""
+
 # --- capture any badge/docs/dist drift and commit it before releasing -------
 # `npm test` and `npm run build` regenerate README.md badges, dist files, and
 # the root index.html (from buildDocs). If anything changed, commit it to the

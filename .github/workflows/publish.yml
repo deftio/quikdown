@@ -78,7 +78,7 @@ jobs:
       run: echo "zip=dist/quikdown-airgap-v$(node -p 'require("./package.json").version').zip" >> "$GITHUB_OUTPUT"
 
     - name: Gzip standalone bundles
-      run: gzip -9 -k dist/quikdown_edit_standalone.esm.min.js dist/quikdown_edit_standalone.umd.min.js
+      run: gzip -9 -k -f dist/quikdown_edit_standalone.esm.min.js dist/quikdown_edit_standalone.umd.min.js
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2

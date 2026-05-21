@@ -1,5 +1,23 @@
 # Release Notes
 
+## v1.2.15
+
+### Release pipeline
+- **Fixed publish workflow**: `gzip -9 -k -f` in `publish.yml` prevents failure when `.gz` files already exist from the build step
+- **Release asset verification**: `release.sh` now checks all 20 GitHub Release assets exist locally before pushing, catching publish workflow mismatches early
+- **Release notes auto-stamp**: `release.sh` strips `(unreleased)` from the current version heading before committing
+
+### CI
+- **Playwright coverage isolation**: `@coverage`-tagged E2E tests excluded from CI via `--grep-invert @coverage` on `test:e2e` and `test:e2e:full` scripts; coverage tests only run during release (`npm run test:e2e:coverage`)
+- **Istanbul + Playwright coverage pipeline**: New `coverage:full` script orchestrates instrumented build, browser E2E coverage collection, and merge with Jest coverage — integrated into `release.sh`, not CI
+- **CI e2e unchanged**: Smoke tests (`@smoke`) remain blocking; full E2E suite remains non-blocking with `continue-on-error`
+
+### Docs
+- **Changelog rendering fix**: Removed fenced code blocks from `release-notes.md` that contained backtick literals, which caused the quikdown parser to break when rendering the changelog page
+- **v1.2.13 release notes**: Added missing changelog section for v1.2.13 (underscore emphasis fix, copy headings rewrite)
+
+---
+
 ## v1.2.14
 
 ### Parser
