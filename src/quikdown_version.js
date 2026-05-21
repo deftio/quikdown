@@ -1,6 +1,6 @@
 // Auto-generated version file - DO NOT EDIT MANUALLY
 // This file is automatically updated by tools/updateVersion.js
 
-export const quikdownVersion = "1.2.14";
+export const quikdownVersion = "1.2.15";
 
 export default quikdownVersion;
