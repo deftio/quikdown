@@ -1,6 +1,6 @@
 /**
  * quikdown - Lightweight Markdown Parser
- * @version 1.2.13
+ * @version 1.2.14
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -23,30 +23,41 @@
      * simple regex or a linear scan, so there is zero ReDoS risk.
      */
 
-
     /**
-     * Dash-only HR check — exact parity with the main parser's original
-     * regex `/^---+\s*$/`.  Only matches lines of three or more dashes
-     * with optional trailing whitespace (no interspersed spaces).
+     * Full CommonMark HR check: three or more identical characters from
+     * {-, *, _} with optional interspersed whitespace.
+     *
+     * Examples that return true:  ---, ***, ___, ----, - - -, * * *, _  _  _
+     * Examples that return false: --, - text, ---text, mixed -_*, empty
+     *
+     * Algorithm (O(n), single pass, no backtracking):
+     *   1. Strip all whitespace
+     *   2. Verify length >= 3
+     *   3. First char must be -, *, or _
+     *   4. Every remaining char must equal the first
      *
      * @param {string} trimmed  The line, already trimmed
      * @returns {boolean}
      */
-    function isDashHRLine(trimmed) {
+    function isHRLine(trimmed) {
         if (trimmed.length < 3) return false;
+
+        // Strip whitespace via linear scan
+        let stripped = '';
         for (let i = 0; i < trimmed.length; i++) {
             const ch = trimmed[i];
-            if (ch === '-') continue;
-            // Allow trailing whitespace only
-            if (ch === ' ' || ch === '\t') {
-                for (let j = i + 1; j < trimmed.length; j++) {
-                    if (trimmed[j] !== ' ' && trimmed[j] !== '\t') return false;
-                }
-                return i >= 3; // at least 3 dashes before whitespace
-            }
-            return false;
+            if (ch !== ' ' && ch !== '\t') stripped += ch;
         }
-        return true; // all dashes
+
+        if (stripped.length < 3) return false;
+
+        const ch = stripped[0];
+        if (ch !== '-' && ch !== '*' && ch !== '_') return false;
+
+        for (let i = 1; i < stripped.length; i++) {
+            if (stripped[i] !== ch) return false;
+        }
+        return true;
     }
 
     /**
@@ -118,7 +129,7 @@
     // ────────────────────────────────────────────────────────────────────
 
     /** Build-time version stamp (injected by tools/updateVersion) */
-    const quikdownVersion = '1.2.13';
+    const quikdownVersion = '1.2.14';
 
     /** CSS class prefix used for all generated elements */
     const CLASS_PREFIX = 'quikdown-';
@@ -145,12 +156,12 @@
      * and these same values are emitted by `quikdown.emitStyles()`.
      */
     const QUIKDOWN_STYLES = {
-        h1: 'font-size:2em;font-weight:600;margin:.67em 0;text-align:left',
-        h2: 'font-size:1.5em;font-weight:600;margin:.83em 0',
-        h3: 'font-size:1.25em;font-weight:600;margin:1em 0',
-        h4: 'font-size:1em;font-weight:600;margin:1.33em 0',
-        h5: 'font-size:.875em;font-weight:600;margin:1.67em 0',
-        h6: 'font-size:.85em;font-weight:600;margin:2em 0',
+        h1: 'font-size:2em;margin:.67em 0;text-align:left',
+        h2: 'font-size:1.5em;margin:.83em 0',
+        h3: 'font-size:1.25em;margin:1em 0',
+        h4: 'font-size:1em;margin:1.33em 0',
+        h5: 'font-size:.875em;margin:1.67em 0',
+        h6: 'font-size:.85em;margin:2em 0',
         pre: 'background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto;margin:1em 0',
         code: 'background:#f0f0f0;padding:2px 4px;border-radius:3px;font-family:monospace',
         blockquote: 'border-left:4px solid #ddd;margin-left:0;padding-left:1em',
@@ -426,7 +437,7 @@
         // ── Step 1: Tables ──
         // Tables need multi-line lookahead (header → separator → body rows)
         // so they're handled by a dedicated line-walker first.
-        html = processTable(html, getAttr);
+        html = processTable(html, getAttr, bidirectional);
 
         // ── Step 2: Headings, HR, Blockquotes ──
         // These are simple line-level constructs.  We scan each line once
@@ -581,7 +592,7 @@
 
                 if (replacement === undefined) {
                     // Plugin declined — fall back to default rendering.
-                    const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+                    const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
                     const codeAttr = inline_styles ? getAttr('code') : langClass;
                     /* istanbul ignore next - bd-only branch */
                     const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -595,7 +606,7 @@
                 }
             } else {
                 // Default rendering — wrap in <pre><code>.
-                const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+                const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
                 const codeAttr = inline_styles ? getAttr('code') : langClass;
                 /* istanbul ignore next - bd-only branch */
                 const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -672,18 +683,19 @@
             }
 
             // ── Horizontal Rule ──
-            // Three or more dashes, optional trailing whitespace, nothing else.
-            if (isDashHRLine(line)) {
-                result.push(`<hr${getAttr('hr')}>`);
+            // Three or more identical chars (-, *, _), optional interspersed spaces.
+            if (isHRLine(line)) {
+                result.push(`<hr${getAttr('hr')}${dataQd(line.trim())}>`);
                 i++;
                 continue;
             }
 
             // ── Blockquote ──
             // After Phase 2, the '>' character has been escaped to '&gt;'.
-            // Pattern: "&gt; content" or merged consecutive blockquotes.
-            if (/^&gt;\s+/.test(line)) {
-                result.push(`<blockquote${getAttr('blockquote')}>${line.replace(/^&gt;\s+/, '')}</blockquote>`);
+            // Pattern: "&gt; content" or "&gt;" alone (blank continuation line)
+            // or merged consecutive blockquotes.
+            if (/^&gt;(\s|$)/.test(line)) {
+                result.push(`<blockquote${getAttr('blockquote')}${dataQd('>')}>${line.replace(/^&gt;\s*/, '')}</blockquote>`);
                 i++;
                 continue;
             }
@@ -694,10 +706,10 @@
         }
 
         // Merge consecutive blockquotes into a single element.
-        // <blockquote>A</blockquote>\n<blockquote>B</blockquote>
-        //   → <blockquote>A\nB</blockquote>
+        // <blockquote …>A</blockquote>\n<blockquote …>B</blockquote>
+        //   → <blockquote …>A\nB</blockquote>
         let joined = result.join('\n');
-        joined = joined.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+        joined = joined.replace(/<\/blockquote>\n<blockquote[^>]*>/g, '\n');
         return joined;
     }
 
@@ -716,7 +728,7 @@
             [/\*\*(.+?)\*\*/g, 'strong'],
             [/__(.+?)__/g, 'strong'],
             [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
-            [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em'],
+            [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em'],
             [/~~(.+?)~~/g, 'del'],
             [/`([^`]+)`/g, 'code']
         ];
@@ -737,7 +749,7 @@
      * @param {Function} getAttr Attribute factory
      * @returns {string}         Text with tables rendered
      */
-    function processTable(text, getAttr) {
+    function processTable(text, getAttr, bidirectional) {
         const lines = text.split('\n');
         const result = [];
         let inTable = false;
@@ -754,7 +766,7 @@
                 tableLines.push(line);
             } else {
                 if (inTable) {
-                    const tableHtml = buildTable(tableLines, getAttr);
+                    const tableHtml = buildTable(tableLines, getAttr, bidirectional);
                     if (tableHtml) {
                         result.push(tableHtml);
                     } else {
@@ -769,7 +781,7 @@
 
         // Handle table at end of document
         if (inTable && tableLines.length > 0) {
-            const tableHtml = buildTable(tableLines, getAttr);
+            const tableHtml = buildTable(tableLines, getAttr, bidirectional);
             if (tableHtml) {
                 result.push(tableHtml);
             } else {
@@ -787,7 +799,7 @@
      * @param {Function} getAttr Attribute factory
      * @returns {string|null}    HTML table string, or null if invalid
      */
-    function buildTable(lines, getAttr) {
+    function buildTable(lines, getAttr, bidirectional) {
         if (lines.length < 2) return null;
 
         // Find the separator row (---|---|)
@@ -813,7 +825,9 @@
             return 'left';
         });
 
-        let html = `<table${getAttr('table')}>\n`;
+        /* istanbul ignore next - bd-only branch */
+        const alignAttr = bidirectional ? ` data-qd-align="${alignments.join(',')}"` : '';
+        let html = `<table${getAttr('table')}${alignAttr}>\n`;
 
         // Header
         html += `<thead${getAttr('thead')}>\n`;

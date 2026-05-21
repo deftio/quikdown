@@ -8,7 +8,7 @@ quikdown is a lightweight, zero-dependency markdown-to-HTML parser with built-in
 
 - **Repository:** https://github.com/deftio/quikdown
 - **License:** BSD-2-Clause
-- **Version:** 1.2.12
+- **Version:** 1.2.14
 - **Language:** JavaScript (ES modules, UMD, CommonJS)
 - **TypeScript:** Definitions included in `dist/*.d.ts`
 - **Test framework:** Jest (unit) + Playwright (e2e)
@@ -52,10 +52,14 @@ npm run build:standalone   # Build standalone editor bundle
 npm run build:all          # Build everything including standalone
 
 # Test
-npm test                   # All tests with coverage
-npm run test:quikdown      # Core parser tests only
-npm run test:unit          # Unit tests with coverage
-npm run test:e2e           # Playwright end-to-end tests
+npm test                   # All tests with coverage (no standalone build)
+npm run test:e2e           # Playwright e2e (general)
+npm run test:standalone:e2e  # Standalone bundle smoke (release gate)
+
+# Release / verify
+npm run verify:package     # Core dist + exports (+ npm pack in --release mode)
+npm run verify:release     # Release gate: verify:package --release + standalone checks
+npm run build:airgap       # quikdown-airgap-vX.Y.Z.zip (after build:all)
 
 # Other
 npm run serve              # Dev server on port 6811
@@ -355,23 +359,26 @@ Detailed docs in `docs/`:
 | `docs/quikdown-bidirectional.md` | HTML ↔ markdown roundtrip |
 | `docs/quikdown-editor.md` | Full editor docs: setup, API, headless, plugins, styling |
 | `docs/standalone-editor.md` | Standalone/offline editor: bundled libs, build, usage |
+| `docs/llm-integration.md` | LLM/agent patterns: stream, tool editor, quikchat |
 | `docs/quikdown-ast.md` | AST, JSON, YAML structured output |
 | `docs/release-notes.md` | Complete version history |
-| `docs/release-process.md` | Release workflow |
+| `docs/release-process.md` | Release workflow (standalone, verify:release, air-gap zip) |
 
 ## Examples Reference
 
-Working HTML examples in `examples/`:
+Working HTML examples in `examples/` and `pages/examples/`:
 
-**Parser basics:** `parser-hello.html`, `parser-options.html`, `parser-themes.html`, `parser-fence-plugin.html`
+**LLM / agent:** `examples/llm-tool-editor/`, `examples/llm-stream-editor/`, `pages/examples/integration-llm-stream.html`, `pages/examples/integration-quikchat.html`
 
-**Bidirectional:** `bd-roundtrip.html`, `bd-fence-reverse.html`, `bd-tables-and-fences.html`
+**Parser basics:** `pages/examples/parser-hello.html`, `parser-options.html`, `parser-themes.html`, `parser-fence-plugin.html`
 
-**Editor:** `editor-embed-minimal.html`, `editor-api-playground.html`, `editor-fence-custom.html`, `editor-themes-runtime.html`, `demo-headless.html`
+**Bidirectional:** `pages/examples/bd-roundtrip.html`, `bd-fence-reverse.html`, `bd-tables-and-fences.html`
 
-**Integrations:** `integration-react.html`, `integration-vue.html`, `integration-llm-stream.html`, `integration-quikchat.html`
+**Editor:** `pages/examples/editor-embed-minimal.html`, `editor-api-playground.html`, `editor-fence-custom.html`, `demo-headless.html`, `pages/examples/test-standalone.html`
 
-**Sample markdown:** `sample-basic.md`, `sample-comprehensive.md`, `sample-fence.md`, `sample-tables.md`, `sample-security.md`, `sample-bidirectional.md`, `sample-many-fences.md`, `sample-tasks.md`, `sample-rich-content.md`
+**Integrations:** `pages/examples/integration-react.html`, `integration-vue.html`
+
+**Sample markdown:** `examples/sample-*.md`
 
 ## Common Agent Tasks
 

@@ -262,5 +262,53 @@ describe('quikdown_ast coverage boost', () => {
             const result = quikdown_ast(md);
             expect(result.children[0].type).toBe('list');
         });
+
+        test('should handle nested list creating children array on parent item', () => {
+            const md = '- parent\n  - child';
+            const result = quikdown_ast(md);
+            const list = result.children[0];
+            expect(list.type).toBe('list');
+            const parentItem = list.items[0];
+            expect(parentItem.children).toBeDefined();
+            expect(parentItem.children.length).toBeGreaterThan(0);
+        });
+    });
+
+    describe('Table separator validation', () => {
+        test('should reject table with invalid separator (no dashes)', () => {
+            const md = '| Header |\n| no dashes |';
+            const result = quikdown_ast(md);
+            // Should not produce a table since separator has no dashes
+            const hasTable = result.children.some(c => c.type === 'table');
+            expect(hasTable).toBe(false);
+        });
+
+        test('should reject table with completely invalid separator', () => {
+            const md = '| A | B |\n| x | y |';
+            const result = quikdown_ast(md);
+            const hasTable = result.children.some(c => c.type === 'table');
+            expect(hasTable).toBe(false);
+        });
+    });
+
+    describe('Inline line breaks', () => {
+        test('should parse hard line break with trailing backslash', () => {
+            const md = 'line one\\\nline two';
+            const result = quikdown_ast(md);
+            const para = result.children.find(c => c.type === 'paragraph');
+            expect(para).toBeDefined();
+            // Should contain a br node from the backslash line break
+            const hasBr = JSON.stringify(para).includes('"type":"br"');
+            expect(hasBr).toBe(true);
+        });
+
+        test('should parse hard line break with two trailing spaces', () => {
+            const md = 'line one  \nline two';
+            const result = quikdown_ast(md);
+            const para = result.children.find(c => c.type === 'paragraph');
+            expect(para).toBeDefined();
+            const hasBr = JSON.stringify(para).includes('"type":"br"');
+            expect(hasBr).toBe(true);
+        });
     });
 });

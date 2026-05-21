@@ -48,14 +48,46 @@ info "=== Checking version ==="
 node tools/checkVersion.cjs || die "Version check failed. Bump the version before releasing."
 echo ""
 
+# --- stamp release notes ------------------------------------------------------
+
+NOTES=docs/release-notes.md
+if grep -q "(unreleased)" "$NOTES"; then
+  info "Stamping release notes: removing '(unreleased)' from $TAG"
+  # portable sed -i (macOS needs '' arg, Linux does not)
+  if [[ "$OSTYPE" == darwin* ]]; then
+    sed -i '' "s/## v${VERSION} (unreleased)/## v${VERSION}/" "$NOTES"
+  else
+    sed -i "s/## v${VERSION} (unreleased)/## v${VERSION}/" "$NOTES"
+  fi
+fi
+
 # --- run quality gates -------------------------------------------------------
+
+info "=== Running build (core + standalone offline editor) ==="
+npm run build:all || die "Build failed. Fix errors before releasing."
+echo ""
+
+info "=== Verifying release artifacts (standalone + npm pack) ==="
+npm run verify:release || die "Release verification failed."
+echo ""
+
+info "=== Standalone editor smoke (Playwright) ==="
+npx playwright install chromium 2>/dev/null || true
+npm run test:standalone:e2e || die "Standalone Playwright smoke failed."
+echo ""
+
+info "=== Building air-gapped zip ==="
+node tools/buildAirgapZip.cjs || die "Air-gap zip build failed."
+echo ""
 
 info "=== Running tests ==="
 npm test || die "Tests failed. Fix failures before releasing."
 echo ""
 
-info "=== Running build ==="
-npm run build || die "Build failed. Fix errors before releasing."
+info "=== Full coverage (Jest + Playwright Istanbul) ==="
+npm run build:coverage || die "Instrumented build failed."
+npm run test:e2e:coverage || die "E2E coverage tests failed."
+npm run coverage:merge || warn "Coverage merge failed (non-blocking)."
 echo ""
 
 # --- capture any badge/docs/dist drift and commit it before releasing -------

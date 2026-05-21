@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage](https://img.shields.io/badge/coverage-96%25-brightgreen)](https://github.com/deftio/quikdown)
+[![Coverage](https://img.shields.io/badge/coverage-99.5%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-10.8KB-green.svg)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-10.9KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 A small, secure markdown parser and editor for browsers and Node.js. Three modules — use only what you need.
 
@@ -27,7 +27,7 @@ A small, secure markdown parser and editor for browsers and Node.js. Three modul
 - **Fence plugins** — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, raw HTML. All bidirectional.
 - **XSS-safe** — HTML entities escaped by default. URL sanitization blocks `javascript:`, `vbscript:`, and non-image `data:` URIs.
 - **Browser and Node.js** — parser and bidirectional modules work in both. Editor requires DOM.
-- **Zero runtime deps** — parser and bidirectional modules have no dependencies. Editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, etc.) from CDN on demand.
+- **Zero runtime deps (core)** — parser and bidirectional modules have no dependencies. The editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, etc.) from CDN on demand, or use the [standalone offline bundle](docs/standalone-editor.md) (~3.8 MB, no CDN).
 - **TypeScript definitions** — hand-maintained `.d.ts` files for all modules.
 - **Inline styles or CSS classes** — built-in light/dark themes, or bring your own CSS.
 - **Copy as rich text** — copies the rendered preview to clipboard with images, tables, and rendered fences. Paste into Gmail, Word, Slack, Notion.
@@ -133,9 +133,22 @@ The AST parsers are "forgiving" - they handle malformed markdown gracefully with
 - **highlight.js** - Loaded when code blocks are encountered and `highlightjs: true`
 - **mermaid** - Loaded when mermaid diagrams are found and `mermaid: true`
 - **DOMPurify** - Loaded when HTML fence blocks are rendered
-- **KaTeX** - Loaded when math/tex fence blocks are encountered
+- **MathJax v3** - Loaded when `math`, `tex`, `latex`, or `katex` fence blocks are encountered (`katex` lang kept for backward compatibility)
 
 This keeps the initial bundle small while providing rich functionality on-demand.
+
+## LLM and agent UIs
+
+quikdown fits the **model writes markdown, human sees rendered output** loop:
+
+| Pattern | Doc / demo |
+|---------|------------|
+| Stream tokens into HTML | [integration-llm-stream](https://deftio.github.io/quikdown/pages/examples/integration-llm-stream.html) |
+| Stream into **QuikdownEditor** | [examples/llm-stream-editor](examples/llm-stream-editor/) |
+| Agent **tool calling** on editor | [examples/llm-tool-editor](examples/llm-tool-editor/) |
+| Chat bubbles + markdown | [quikchat](https://github.com/deftio/quikchat) + [integration example](https://deftio.github.io/quikdown/pages/examples/integration-quikchat.html) |
+
+Overview: [docs/llm-integration.md](docs/llm-integration.md)
 
 ## Other Configuration Options
 quikdown supports built-in styles for a "batteries included" experience or you can bring your own CSS themes.  Example css files are provided for basic light and dark themes to get started.
@@ -254,7 +267,7 @@ For the full security model, see [docs/security.md](docs/security.md).
 
 ## Framework Integration
 
-Works with React, Vue, Svelte, Angular. See [Framework Integration Guide](docs/framework-integration.md) for examples.
+Works with React, Vue, Svelte, Angular. See [Framework Integration Guide](docs/framework-integration.md). For LLM/agent patterns (streaming, tool editor), see [LLM Integration](docs/llm-integration.md).
 
 ## Limitations
 
@@ -285,5 +298,5 @@ BSD 2-Clause - see [LICENSE.txt](LICENSE.txt)
 
 - 📖 [Documentation](docs/)
 - 🐛 [Issues](https://github.com/deftio/quikdown/issues)
-- 📦 [Examples](examples/)  
+- 📦 [Examples hub](https://deftio.github.io/quikdown/pages/examples/) · [examples/](examples/) (source)
 

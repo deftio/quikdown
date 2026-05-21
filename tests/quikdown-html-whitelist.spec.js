@@ -38,7 +38,7 @@ test.describe('HTML Whitelist — Editor E2E', () => {
     // ── Safe tag passthrough ────────────────────────────────────────
 
     test.describe('Safe tag passthrough', () => {
-        test('should pass through <details>/<summary> tags', async () => {
+        test('@smoke should pass through <details>/<summary> tags', async () => {
             await setMarkdown(page,
                 '<details><summary>Click me</summary>\nHidden content\n</details>'
             );
@@ -101,7 +101,7 @@ test.describe('HTML Whitelist — Editor E2E', () => {
     // ── Dangerous tag blocking ──────────────────────────────────────
 
     test.describe('Dangerous tag blocking', () => {
-        test('should escape <script> tags', async () => {
+        test('@smoke should escape <script> tags', async () => {
             await setMarkdown(page,
                 '<script>alert("xss")</script>'
             );
@@ -151,7 +151,7 @@ test.describe('HTML Whitelist — Editor E2E', () => {
     // ── Attribute sanitization ──────────────────────────────────────
 
     test.describe('Attribute sanitization', () => {
-        test('should strip onclick handlers from safe tags', async () => {
+        test('@smoke should strip onclick handlers from safe tags', async () => {
             await setMarkdown(page,
                 '<div onclick="alert(1)">click me</div>'
             );

@@ -1,10 +1,12 @@
 /**
  * Quikdown Editor - A drop-in markdown editor control
- * @version 1.0.5
  * @license BSD-2-Clause
  */
 
 import quikdown_bd from './quikdown_bd.js';
+
+/** Build-time version stamp (injected by rollup replaceVersion plugin) */
+const quikdownEditorVersion = '__QUIKDOWN_VERSION__';
 import { getRenderedContent } from './quikdown_edit_copy.js';
 import { isHRLine, fenceOpen, isFenceClose, classifyLine, looksLikeTableRow } from './quikdown_classify.js';
 
@@ -167,6 +169,10 @@ class QuikdownEditor {
         this._undoStack = [];
         this._redoStack = [];
         this._isUndoRedo = false;
+
+        // Instance-level copy of fence libraries so custom entries
+        // don't leak across editor instances.
+        this._fenceLibraries = { ...FENCE_LIBRARIES };
         
         // Initialize
         this.initPromise = this.init();
@@ -955,9 +961,7 @@ class QuikdownEditor {
             // Update preview if visible
             if (this.currentMode !== 'source') {
                 this.previewPanel.innerHTML = this._html;
-                // Make all fence blocks non-editable
-                this.makeFencesNonEditable();
-                
+
                 // Process all math elements with MathJax if loaded (like squibview)
                 if (window.MathJax && window.MathJax.typesetPromise) {
                     const mathElements = this.previewPanel.querySelectorAll('.math-display');
@@ -1098,7 +1102,7 @@ class QuikdownEditor {
                     return this.options.customFences[lang](code, lang);
                 } catch (err) {
                     console.error(`Custom fence plugin error for ${lang}:`, err);
-                    return `<pre><code class="language-${lang}">${this.escapeHtml(code)}</code></pre>`;
+                    return `<pre><code class="language-${this.escapeHtml(lang)}">${this.escapeHtml(code)}</code></pre>`;
                 }
             }
             
@@ -1150,7 +1154,7 @@ class QuikdownEditor {
             if (window.hljs && lang && hljs.getLanguage(lang)) {
                 const highlighted = hljs.highlight(code, { language: lang }).value;
                 // Don't add contenteditable="false" - the bidirectional system can extract text from the highlighted code
-                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${lang}"><code class="hljs language-${lang}">${highlighted}</code></pre>`;
+                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${this.escapeHtml(lang)}"><code class="hljs language-${this.escapeHtml(lang)}">${highlighted}</code></pre>`;
             }
             
             // Default: let quikdown handle it
@@ -1367,7 +1371,7 @@ class QuikdownEditor {
                 
                 // Process any existing math elements (like squibview)
                 if (window.MathJax && window.MathJax.typesetPromise) {
-                    const mathElements = document.querySelectorAll('.math-display');
+                    const mathElements = (this.previewPanel || document).querySelectorAll('.math-display');
                     if (mathElements.length > 0) {
                         window.MathJax.typesetPromise(Array.from(mathElements)).catch(err => {
                             console.warn('Initial MathJax processing failed:', err);
@@ -1748,7 +1752,7 @@ class QuikdownEditor {
                 mermaid.render(id + '-svg', code).then(result => {
                     element.innerHTML = result.svg;
                 }).catch(err => {
-                    element.innerHTML = `<pre>Error rendering diagram: ${err.message}</pre>`;
+                    element.innerHTML = `<pre>Error rendering diagram: ${this.escapeHtml(err.message)}</pre>`;
                 });
             }
         }, 0);
@@ -1775,20 +1779,6 @@ class QuikdownEditor {
     }
     
     /**
-     * Make complex fence blocks non-editable
-     */
-    makeFencesNonEditable() {
-        if (!this.previewPanel) return;
-        
-        // Only make specific complex fence types non-editable
-        // SVG, HTML, Math, Mermaid already have contenteditable="false" set
-        // Syntax-highlighted code also has it set
-        
-        // Don't make regular code blocks or tables non-editable
-        // They can be edited and properly round-trip
-    }
-    
-    /**
      * Load plugins dynamically — honors both `plugins: { highlightjs, mermaid }`
      * (legacy) and the newer `preloadFences` option which can preload any
      * combination of fence libraries (or 'all') at construction time.
@@ -1805,16 +1795,16 @@ class QuikdownEditor {
         // New preloadFences option
         const pf = this.options.preloadFences;
         if (pf === 'all') {
-            Object.keys(FENCE_LIBRARIES).forEach(n => namesToLoad.add(n));
+            Object.keys(this._fenceLibraries).forEach(n => namesToLoad.add(n));
         } else if (Array.isArray(pf)) {
             for (const entry of pf) {
                 if (typeof entry === 'string') {
-                    if (FENCE_LIBRARIES[entry]) namesToLoad.add(entry);
+                    if (this._fenceLibraries[entry]) namesToLoad.add(entry);
                     else console.warn(`QuikdownEditor: unknown preloadFences entry "${entry}"`);
                 } else if (entry && typeof entry === 'object' && entry.script) {
                     // Custom library: { name, script, css? }
                     namesToLoad.add('__custom__:' + (entry.name || entry.script));
-                    FENCE_LIBRARIES['__custom__:' + (entry.name || entry.script)] = {
+                    this._fenceLibraries['__custom__:' + (entry.name || entry.script)] = {
                         check: () => false,
                         script: entry.script,
                         css: entry.css
@@ -1828,7 +1818,7 @@ class QuikdownEditor {
         // Load each in parallel; respect already-loaded state
         const promises = [];
         for (const name of namesToLoad) {
-            const lib = FENCE_LIBRARIES[name];
+            const lib = this._fenceLibraries[name];
             if (!lib || lib.check()) continue;
             if (lib.beforeLoad) lib.beforeLoad();
             const p = (async () => {
@@ -2042,7 +2032,6 @@ class QuikdownEditor {
         // destroy MathJax-typeset SVG output with raw pre-typeset HTML.
         if (mode !== 'source' && previousMode === 'source' && this._html) {
             this.previewPanel.innerHTML = this._html;
-            setTimeout(() => this.makeFencesNonEditable(), 0);
             if (typeof window !== 'undefined' && window.MathJax && window.MathJax.typesetPromise) {
                 const mathElements = this.previewPanel.querySelectorAll('.math-display');
                 if (mathElements.length > 0) {
@@ -2522,10 +2511,11 @@ class QuikdownEditor {
     
     /**
      * Copy rendered content as rich text
+     * @param {string} [output='default'] - Output profile: 'default', 'quikdown', or 'stripped'
      */
-    async copyRendered() {
+    async copyRendered(output = 'default') {
         try {
-            const result = await getRenderedContent(this.previewPanel);
+            const result = await getRenderedContent(this.previewPanel, { output });
             if (result.success) {
                 // Visual feedback
                 const btn = this.toolbar?.querySelector('[data-action="copy-rendered"]');
@@ -2620,6 +2610,9 @@ class QuikdownEditor {
 
 /** Static: curated safe HTML tag whitelist for allow_unsafe_html */
 QuikdownEditor.SAFE_HTML_TAGS = SAFE_HTML_TAGS;
+
+/** Semantic version (injected at build time) */
+QuikdownEditor.version = quikdownEditorVersion;
 
 // Export
 export default QuikdownEditor;

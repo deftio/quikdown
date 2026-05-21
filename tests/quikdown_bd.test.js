@@ -197,6 +197,70 @@ describe('quikdown_bd bidirectional parser', () => {
       expect(result).toBe('> Quote text');
     });
 
+    test('should handle multi-paragraph blockquotes with bare > continuation in BD mode', () => {
+      const input = '> Para 1\n>\n> Para 2';
+      const html = quikdown_bd(input);
+      // Should produce a single blockquote
+      const openCount = (html.match(/<blockquote/g) || []).length;
+      expect(openCount).toBe(1);
+      expect(html).toContain('Para 1');
+      expect(html).toContain('Para 2');
+      // No literal &gt; should leak outside the blockquote
+      expect(html).not.toMatch(/<p>&gt;/);
+    });
+
+    test('should round-trip multi-paragraph blockquotes through BD conversion', () => {
+      const input = '> First paragraph\n>\n> Second paragraph';
+      const html = quikdown_bd(input);
+      const markdown = quikdown_bd.toMarkdown(html);
+      // Round-tripped markdown should preserve content inside blockquote
+      expect(markdown).toContain('>');
+      expect(markdown).toContain('First paragraph');
+      expect(markdown).toContain('Second paragraph');
+    });
+
+    test('should round-trip blockquote with bold and italic', () => {
+      const input = '> **bold** and *italic*';
+      const html = quikdown_bd(input);
+      const markdown = quikdown_bd.toMarkdown(html);
+      expect(markdown).toContain('> ');
+      expect(markdown).toContain('**bold**');
+      expect(markdown).toContain('*italic*');
+    });
+
+    test('should round-trip blockquote with strikethrough and code', () => {
+      const input = '> ~~deleted~~ and `code`';
+      const html = quikdown_bd(input);
+      const markdown = quikdown_bd.toMarkdown(html);
+      expect(markdown).toContain('~~deleted~~');
+      expect(markdown).toContain('`code`');
+    });
+
+    test('should round-trip blockquote with link', () => {
+      const input = '> See [docs](https://example.com)';
+      const html = quikdown_bd(input);
+      const markdown = quikdown_bd.toMarkdown(html);
+      expect(markdown).toContain('[docs](https://example.com)');
+    });
+
+    test('should round-trip blockquote with special characters', () => {
+      const input = '> Tom & Jerry: "hello"';
+      const html = quikdown_bd(input);
+      const markdown = quikdown_bd.toMarkdown(html);
+      expect(markdown).toContain('>');
+      expect(markdown).toContain('Tom & Jerry');
+      expect(markdown).toContain('"hello"');
+    });
+
+    test('should round-trip blockquote with unicode and em dashes', () => {
+      const input = '> Résumé — café naïve';
+      const html = quikdown_bd(input);
+      const markdown = quikdown_bd.toMarkdown(html);
+      expect(markdown).toContain('Résumé');
+      expect(markdown).toContain('—');
+      expect(markdown).toContain('café');
+    });
+
     test('should convert code blocks back to markdown', () => {
       const html = '<pre data-qd-fence="```" data-qd-lang="js"><code>const x = 1;</code></pre>';
       const result = quikdown_bd.toMarkdown(html);
@@ -463,6 +527,190 @@ End of document.`;
       expect(html).toContain('Checked');
     });
     
+    describe('Blockquote continuation and embedded formatting (BD forward)', () => {
+      test('bare > lines merge into a single blockquote', () => {
+        const html = quikdown_bd('> Line A\n>\n> Line B');
+        const opens = (html.match(/<blockquote/g) || []).length;
+        expect(opens).toBe(1);
+        expect(html).toContain('Line A');
+        expect(html).toContain('Line B');
+        expect(html).not.toMatch(/<p>&gt;/);
+      });
+
+      test('blockquote with bold, italic, strikethrough, and inline code', () => {
+        const input = '> **bold** and *italic* and ~~strike~~ and `code`';
+        const html = quikdown_bd(input);
+        expect(html).toContain('<strong');
+        expect(html).toContain('data-qd="**"');
+        expect(html).toContain('<em');
+        expect(html).toContain('data-qd="*"');
+        expect(html).toContain('<del');
+        expect(html).toContain('data-qd="~~"');
+        expect(html).toContain('<code');
+        expect(html).toContain('data-qd="`"');
+      });
+
+      test('multi-paragraph blockquote with mixed inline formatting', () => {
+        const input = [
+          '> **Bold opener**',
+          '>',
+          '> Normal text with *italic* in the middle',
+          '>',
+          '> ~~Struck through~~ and `inline code`',
+          '>',
+          '> Final line with __underline bold__'
+        ].join('\n');
+        const html = quikdown_bd(input);
+        const opens = (html.match(/<blockquote/g) || []).length;
+        expect(opens).toBe(1);
+        expect(html).toContain('<strong');
+        expect(html).toContain('Bold opener');
+        expect(html).toContain('<em');
+        expect(html).toContain('italic');
+        expect(html).toContain('<del');
+        expect(html).toContain('Struck through');
+        expect(html).toContain('<code');
+        expect(html).toContain('inline code');
+        expect(html).toContain('underline bold');
+      });
+
+      test('blockquote with link and image', () => {
+        const input = '> Check [this link](https://example.com) and ![pic](img.png)';
+        const html = quikdown_bd(input);
+        expect(html).toContain('<a');
+        expect(html).toContain('href="https://example.com"');
+        expect(html).toContain('data-qd="["');
+        expect(html).toContain('<img');
+        expect(html).toContain('src="img.png"');
+        expect(html).toContain('data-qd="!"');
+      });
+
+      test('blockquote with autolink URL', () => {
+        const input = '> Visit https://example.com/path today';
+        const html = quikdown_bd(input);
+        expect(html).toContain('<a');
+        expect(html).toContain('href="https://example.com/path"');
+      });
+
+      test('blockquote with special characters: ampersand, angle brackets, quotes', () => {
+        const input = '> Tom & Jerry said "it\'s < 5 > 3"';
+        const html = quikdown_bd(input);
+        expect(html).toContain('&amp;');
+        expect(html).toContain('&lt;');
+        expect(html).toContain('&gt;');
+        expect(html).toContain('&quot;');
+        expect(html).toContain('&#39;');
+      });
+
+      test('blockquote with unicode and em dashes', () => {
+        const input = '> Text — em dash — and café résumé naïve';
+        const html = quikdown_bd(input);
+        expect(html).toContain('\u2014'); // em dash preserved
+        expect(html).toContain('caf\u00e9');
+        expect(html).toContain('r\u00e9sum\u00e9');
+        expect(html).toContain('na\u00efve');
+      });
+
+      test('blockquote with tabs and mixed whitespace', () => {
+        const input = '> \tTabbed content\n>\n> \t\tDouble tabbed';
+        const html = quikdown_bd(input);
+        const opens = (html.match(/<blockquote/g) || []).length;
+        expect(opens).toBe(1);
+        expect(html).toContain('Tabbed content');
+        expect(html).toContain('Double tabbed');
+      });
+
+      test('blockquote with leading/trailing whitespace variations', () => {
+        const input = '>  Two spaces after\n>\n>   Three spaces after';
+        const html = quikdown_bd(input);
+        const opens = (html.match(/<blockquote/g) || []).length;
+        expect(opens).toBe(1);
+        expect(html).toContain('Two spaces after');
+        expect(html).toContain('Three spaces after');
+      });
+
+      test('literal > inside blockquote text does not break parsing', () => {
+        // User types "3 > 2" inside a blockquote
+        const input = '> The value 3 > 2 is true';
+        const html = quikdown_bd(input);
+        expect(html).toContain('<blockquote');
+        expect(html).toContain('The value 3 &gt; 2 is true');
+      });
+
+      test('literal ** not closed stays as plain text in blockquote', () => {
+        const input = '> This has **unclosed bold';
+        const html = quikdown_bd(input);
+        expect(html).toContain('<blockquote');
+        expect(html).toContain('**unclosed bold');
+        // Should NOT produce a <strong> tag
+        expect(html).not.toContain('<strong');
+      });
+
+      test('literal * not closed stays as plain text in blockquote', () => {
+        const input = '> This has *unclosed italic';
+        const html = quikdown_bd(input);
+        expect(html).toContain('<blockquote');
+        expect(html).toContain('*unclosed italic');
+        expect(html).not.toContain('<em');
+      });
+
+      test('blockquote with single ` backtick (unclosed code)', () => {
+        const input = '> Use the `command without closing';
+        const html = quikdown_bd(input);
+        expect(html).toContain('<blockquote');
+        expect(html).toContain('`command without closing');
+      });
+
+      test('blockquote with markdown-like chars that are not formatting', () => {
+        // Asterisks used as bullet points or math, underscores in identifiers
+        const input = '> file_name_with_underscores has my_var and your_var';
+        const html = quikdown_bd(input);
+        expect(html).toContain('<blockquote');
+        // Intraword underscores should NOT trigger emphasis
+        expect(html).not.toContain('<em');
+      });
+
+      test('empty blockquote produces blockquote element', () => {
+        const html = quikdown_bd('>');
+        expect(html).toContain('<blockquote');
+      });
+
+      test('blockquote immediately followed by non-blockquote content', () => {
+        const input = '> Quote here\nNot a quote';
+        const html = quikdown_bd(input);
+        expect(html).toContain('<blockquote');
+        expect(html).toContain('Quote here');
+        expect(html).toContain('Not a quote');
+        // "Not a quote" should NOT be inside the blockquote
+        const bqMatch = html.match(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/);
+        expect(bqMatch).toBeTruthy();
+        expect(bqMatch[1]).not.toContain('Not a quote');
+      });
+
+      test('blockquote with inline_styles option', () => {
+        const input = '> Styled **bold** quote\n>\n> Second para';
+        const html = quikdown_bd(input, { inline_styles: true });
+        const opens = (html.match(/<blockquote/g) || []).length;
+        expect(opens).toBe(1);
+        expect(html).toContain('style=');
+        expect(html).toContain('Styled');
+        expect(html).toContain('Second para');
+      });
+
+      test('very long blockquote with many continuation lines', () => {
+        const lines = [];
+        for (let i = 0; i < 20; i++) {
+          lines.push(`> Paragraph ${i}`);
+          if (i < 19) lines.push('>');
+        }
+        const html = quikdown_bd(lines.join('\n'));
+        const opens = (html.match(/<blockquote/g) || []).length;
+        expect(opens).toBe(1);
+        expect(html).toContain('Paragraph 0');
+        expect(html).toContain('Paragraph 19');
+      });
+    });
+
     test('should handle mermaid diagrams', () => {
       const markdown = '```mermaid\ngraph TD\nA-->B\n```';
       const html = quikdown_bd(markdown);
@@ -942,6 +1190,55 @@ End of document.`;
       const html = '<table><thead></thead><tbody><tr><td>A</td></tr></tbody></table>';
       const result = quikdown_bd.toMarkdown(html);
       expect(result).toContain('| A |');
+    });
+  });
+
+  // ========================================================================
+  // Contract: forward parser output ↔ BD reverse roundtrip
+  // ========================================================================
+  describe('Forward + roundtrip contracts', () => {
+    test('contract: table alignment forward emits data-qd-align', () => {
+      const md = '| L | C | R |\n|:--|:--:|--:|\n| a | b | c |';
+      const html = quikdown_bd(md);
+      // Forward pass must emit data-qd-align on the table element
+      expect(html).toMatch(/data-qd-align="left,center,right"/);
+    });
+
+    test('contract: table alignment roundtrip preserves separator syntax', () => {
+      const md = '| Left | Center | Right |\n|:-----|:------:|------:|\n| a | b | c |';
+      const html = quikdown_bd(md);
+      expect(html).toMatch(/data-qd-align="left,center,right"/);
+      const back = quikdown_bd.toMarkdown(html);
+      // Roundtripped markdown must contain alignment markers
+      // Left alignment uses plain '---' (no colon), per markdown convention
+      expect(back).toMatch(/\| ---/);    // left (plain dashes)
+      expect(back).toMatch(/:---:/);     // center (colon both sides)
+      expect(back).toMatch(/---:/);      // right (trailing colon)
+      // Re-forward should produce same alignment attribute
+      const html2 = quikdown_bd(back);
+      expect(html2).toMatch(/data-qd-align="left,center,right"/);
+    });
+
+    test('contract: all-left alignment emits data-qd-align with all left', () => {
+      const md = '| A | B |\n|---|---|\n| 1 | 2 |';
+      const html = quikdown_bd(md);
+      expect(html).toMatch(/data-qd-align="left,left"/);
+    });
+
+    test('contract: blockquote forward emits data-qd', () => {
+      const md = '> Quote line';
+      const html = quikdown_bd(md);
+      // '>' is HTML-escaped to '&gt;' in attribute value
+      expect(html).toMatch(/data-qd="&gt;"/);
+    });
+
+    test('contract: blockquote roundtrip preserves content', () => {
+      const md = '> First line\n> Second line';
+      const html = quikdown_bd(md);
+      expect(html).toMatch(/data-qd="&gt;"/);
+      const back = quikdown_bd.toMarkdown(html);
+      expect(back).toContain('> First line');
+      expect(back).toContain('> Second line');
     });
   });
 });

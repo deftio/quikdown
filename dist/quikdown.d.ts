@@ -1,117 +1,50 @@
 /**
- * quikdown - Lightweight Markdown Parser
- * TypeScript definitions
+ * quikdown — A compact markdown-to-HTML parser with XSS protection.
  */
 
-declare module 'quikdown' {
-  /**
-   * Fence plugin for custom code block rendering (v1.1.0+)
-   */
-  export interface FencePlugin {
-    /**
-     * Render markdown fence to HTML
-     * @param content - The code block content (unescaped)
-     * @param language - The language identifier (or empty string)
-     * @returns HTML string or undefined for default rendering
-     */
-    render: (content: string, language: string) => string | undefined;
-    
-    /**
-     * Convert HTML element back to markdown fence (optional)
-     * @param element - The HTML element to convert
-     * @returns Fence details or null to use default
-     */
-    reverse?: (element: HTMLElement) => {
-      fence: string;
-      lang: string;
-      content: string;
-    } | null;
-  }
-  
-  /**
-   * Options for configuring the quikdown parser
-   */
-  export interface QuikdownOptions {
-    /**
-     * Custom renderer for fenced code blocks (v1.1.0: object format required)
-     * @since 1.1.0 - Must be an object with render function
-     */
-    fence_plugin?: FencePlugin;
-    
-    /**
-     * If true, uses inline styles instead of CSS classes.
-     * Useful for emails or environments without CSS support.
-     * @default false
-     */
-    inline_styles?: boolean;
-    
-    /**
-     * If true, allows potentially unsafe URLs (javascript:, data:, etc).
-     * Only use with trusted content.
-     * @default false
-     */
-    allow_unsafe_urls?: boolean;
-    
-    /**
-     * Controls HTML passthrough in parsed output.
-     * - false (default): all HTML tags are escaped (secure)
-     * - true: all HTML passes through unchanged (unsafe, use with trusted content only)
-     * - Record<string, any>: object whose keys are lowercase tag names to allow
-     *   (e.g. { img: 1, a: 1, div: 1 }). Use quikdown.SAFE_HTML_TAGS for a curated default.
-     * - string[]: array of tag names (converted to object internally)
-     * @default false
-     */
-    allow_unsafe_html?: boolean | Record<string, any> | string[];
-
-    /**
-     * If true, adds data-qd attributes for bidirectional conversion.
-     * Enables HTML to Markdown conversion.
-     * @default false
-     */
-    bidirectional?: boolean;
-    
-    /**
-     * If true, single newlines become <br> tags.
-     * Useful for chat/LLM applications where Enter should create a line break.
-     * @default false
-     */
-    lazy_linefeeds?: boolean;
-  }
-
-  /**
-   * Parse markdown to HTML
-   * @param markdown - The markdown source text
-   * @param options - Optional configuration
-   * @returns The rendered HTML string
-   */
-  function quikdown(markdown: string, options?: QuikdownOptions): string;
-
-  namespace quikdown {
-    /**
-     * Generate CSS styles for quikdown classes with theme support
-     * @param prefix - CSS class prefix (default: 'quikdown-')
-     * @param theme - Theme name: 'light' (default) or 'dark'
-     * @returns CSS string with themed .quikdown-* styles
-     */
-    export function emitStyles(prefix?: string, theme?: 'light' | 'dark'): string;
-    
-    /**
-     * Create a configured parser function with preset options
-     * @param options - Configuration to apply to all parsing
-     * @returns A parser function with the options pre-applied
-     */
-    export function configure(options: QuikdownOptions): (markdown: string) => string;
-    
-    /**
-     * The version of quikdown
-     */
-    export const version: string;
-
-  }
-
-  export = quikdown;
+export interface FencePlugin {
+    /** Render a fenced code block. Return undefined to fall back to default rendering. */
+    render: (code: string, lang: string) => string | undefined;
+    /** Reverse a rendered fence element back to source (for bidirectional mode). */
+    reverse?: (element: Element) => { content: string; lang: string; fence: string };
 }
 
-// For ES6 module imports
+export interface QuikdownOptions {
+    /** Custom handler for fenced code blocks. */
+    fence_plugin?: FencePlugin;
+    /** Use inline styles instead of CSS classes. Default: false. */
+    inline_styles?: boolean;
+    /** Add data-qd attributes for HTML-to-markdown roundtrip. Default: false. */
+    bidirectional?: boolean;
+    /** Single newlines become <br> tags. Default: false. */
+    lazy_linefeeds?: boolean;
+    /**
+     * HTML passthrough control. Default: false.
+     * - false: all HTML is escaped (safe default)
+     * - true: no escaping (trusted pipelines only)
+     * - string[]: whitelist of allowed tag names
+     * - Record<string, 1>: whitelist object
+     */
+    allow_unsafe_html?: boolean | string[] | Record<string, 1>;
+    /** Allow javascript: and other potentially unsafe URLs. Default: false. */
+    allow_unsafe_urls?: boolean;
+}
+
+/**
+ * Parse markdown to HTML.
+ * @param markdown  The markdown source text.
+ * @param options   Configuration options.
+ * @returns Rendered HTML string.
+ */
+declare function quikdown(markdown: string, options?: QuikdownOptions): string;
+
+declare namespace quikdown {
+    /** Emit CSS rules for quikdown element classes. */
+    function emitStyles(prefix?: string, theme?: 'light' | 'dark'): string;
+    /** Create a pre-configured parser with baked-in options. */
+    function configure(options: QuikdownOptions): (markdown: string) => string;
+    /** Semantic version string. */
+    const version: string;
+}
+
 export default quikdown;
-export { QuikdownOptions };

@@ -196,6 +196,210 @@ describe('quikdown markdown parser', () => {
             expect(result).toContain('Line 1');
             expect(result).toContain('Line 2');
         });
+
+        test('should handle bare > continuation lines between blockquote paragraphs', () => {
+            const input = '> Para 1\n>\n> Para 2';
+            const result = quikdown(input);
+            // All content should be inside a single blockquote
+            const openCount = (result.match(/<blockquote/g) || []).length;
+            const closeCount = (result.match(/<\/blockquote>/g) || []).length;
+            expect(openCount).toBe(1);
+            expect(closeCount).toBe(1);
+            expect(result).toContain('Para 1');
+            expect(result).toContain('Para 2');
+            // Bare > line should NOT appear as literal &gt; text
+            expect(result).not.toMatch(/(?<!-)&gt;(?![\s\S]*<\/blockquote>)/);
+        });
+
+        test('should handle multiple bare > continuation lines in a long blockquote', () => {
+            const input = '> Line 1\n>\n> Line 2\n>\n> Line 3\n>\n> Line 4';
+            const result = quikdown(input);
+            const openCount = (result.match(/<blockquote/g) || []).length;
+            const closeCount = (result.match(/<\/blockquote>/g) || []).length;
+            expect(openCount).toBe(1);
+            expect(closeCount).toBe(1);
+            expect(result).toContain('Line 1');
+            expect(result).toContain('Line 2');
+            expect(result).toContain('Line 3');
+            expect(result).toContain('Line 4');
+        });
+
+        test('should handle bare > line with no trailing space', () => {
+            const input = '> Hello\n>\n> World';
+            const result = quikdown(input);
+            // The bare > should not leak as literal &gt;
+            expect(result).not.toMatch(/<p>&gt;<\/p>/);
+            expect(result).not.toMatch(/<p>&gt;/);
+        });
+
+        test('should handle bare > line with trailing whitespace', () => {
+            const input = '> Hello\n>   \n> World';
+            const result = quikdown(input);
+            const openCount = (result.match(/<blockquote/g) || []).length;
+            expect(openCount).toBe(1);
+            expect(result).toContain('Hello');
+            expect(result).toContain('World');
+        });
+
+        test('should preserve inline formatting within multi-paragraph blockquotes', () => {
+            const input = '> Normal text\n>\n> *Italic text*';
+            const result = quikdown(input);
+            expect(result).toContain('Normal text');
+            expect(result).toContain('<em');
+            expect(result).toContain('Italic text');
+            const openCount = (result.match(/<blockquote/g) || []).length;
+            expect(openCount).toBe(1);
+        });
+
+        test('should handle the PowerAtlas example blockquote correctly', () => {
+            const input = [
+                '> What if site selection took an afternoon instead of six weeks?',
+                '>',
+                '> Two parcels land on your desk this morning.',
+                '>',
+                '> But one sits behind a substation with five years of headroom.',
+                '>',
+                '> One deal pencils. The other doesn\'t.',
+                '>',
+                '> *Data is the easy part.*'
+            ].join('\n');
+            const result = quikdown(input);
+            // Should be a single blockquote
+            const openCount = (result.match(/<blockquote/g) || []).length;
+            const closeCount = (result.match(/<\/blockquote>/g) || []).length;
+            expect(openCount).toBe(1);
+            expect(closeCount).toBe(1);
+            // No literal &gt; should appear outside the blockquote
+            expect(result).not.toMatch(/<p>&gt;/);
+            // Inline formatting should work
+            expect(result).toContain('<em');
+            expect(result).toContain('Data is the easy part.');
+            // All content paragraphs should be present
+            expect(result).toContain('What if site selection');
+            expect(result).toContain('Two parcels');
+            expect(result).toContain('One deal pencils');
+        });
+
+        test('should handle blockquote with only bare > lines', () => {
+            const input = '>\n>\n>';
+            const result = quikdown(input);
+            // Should produce blockquote(s), not literal &gt; text
+            expect(result).not.toMatch(/<p>&gt;<\/p>/);
+        });
+
+        test('should handle bold inside multi-paragraph blockquote', () => {
+            const input = '> **Bold text**\n>\n> Normal text';
+            const result = quikdown(input);
+            const opens = (result.match(/<blockquote/g) || []).length;
+            expect(opens).toBe(1);
+            expect(result).toContain('<strong');
+            expect(result).toContain('Bold text');
+            expect(result).toContain('Normal text');
+        });
+
+        test('should handle italic, strikethrough, and code in blockquote', () => {
+            const input = '> *italic* and ~~strike~~ and `code`';
+            const result = quikdown(input);
+            expect(result).toContain('<em');
+            expect(result).toContain('<del');
+            expect(result).toContain('<code');
+        });
+
+        test('should handle link and image inside blockquote', () => {
+            const input = '> Click [here](https://example.com) or see ![pic](img.png)';
+            const result = quikdown(input);
+            expect(result).toContain('<a');
+            expect(result).toContain('href="https://example.com"');
+            expect(result).toContain('<img');
+            expect(result).toContain('src="img.png"');
+        });
+
+        test('should handle unclosed ** inside blockquote as plain text', () => {
+            const input = '> Open **bold but never closed';
+            const result = quikdown(input);
+            expect(result).toContain('<blockquote');
+            expect(result).toContain('**bold but never closed');
+            expect(result).not.toContain('<strong');
+        });
+
+        test('should handle unclosed * inside blockquote as plain text', () => {
+            const input = '> Open *italic but never closed';
+            const result = quikdown(input);
+            expect(result).toContain('<blockquote');
+            expect(result).toContain('*italic but never closed');
+            expect(result).not.toContain('<em');
+        });
+
+        test('should handle special chars (ampersand, angle brackets, quotes) in blockquote', () => {
+            const input = '> 5 > 3 & "quotes" it\'s';
+            const result = quikdown(input);
+            expect(result).toContain('&amp;');
+            expect(result).toContain('&quot;');
+            expect(result).toContain('&#39;');
+        });
+
+        test('should handle tabs in blockquote content', () => {
+            const input = '> \tTabbed\n>\n> \tMore tabs';
+            const result = quikdown(input);
+            const opens = (result.match(/<blockquote/g) || []).length;
+            expect(opens).toBe(1);
+            expect(result).toContain('Tabbed');
+            expect(result).toContain('More tabs');
+        });
+
+        test('should handle unicode and em dashes in blockquote', () => {
+            const input = '> Text — résumé — café';
+            const result = quikdown(input);
+            expect(result).toContain('\u2014'); // em dash preserved
+            expect(result).toContain('r\u00e9sum\u00e9');
+            expect(result).toContain('caf\u00e9');
+        });
+
+        test('should not treat intraword underscores as emphasis in blockquote', () => {
+            const input = '> my_function_name and another_one';
+            const result = quikdown(input);
+            expect(result).toContain('<blockquote');
+            expect(result).not.toContain('<em');
+        });
+
+        test('should handle consecutive blockquotes merging into one', () => {
+            const input = '> Line 1\n> Line 2\n> Line 3';
+            const result = quikdown(input);
+            const opens = (result.match(/<blockquote/g) || []).length;
+            expect(opens).toBe(1);
+            expect(result).toContain('Line 1');
+            expect(result).toContain('Line 2');
+            expect(result).toContain('Line 3');
+        });
+
+        test('should handle blockquote with autolink URL', () => {
+            const input = '> Visit https://example.com/page today';
+            const result = quikdown(input);
+            expect(result).toContain('<a');
+            expect(result).toContain('href="https://example.com/page"');
+        });
+
+        test('should handle blockquote then normal text separation', () => {
+            const input = '> Quoted\n\nNot quoted';
+            const result = quikdown(input);
+            expect(result).toContain('<blockquote');
+            expect(result).toContain('Quoted');
+            expect(result).toContain('Not quoted');
+            // Normal text should not be inside blockquote
+            const bqMatch = result.match(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/);
+            expect(bqMatch).toBeTruthy();
+            expect(bqMatch[1]).not.toContain('Not quoted');
+        });
+
+        test('should handle blockquote with inline_styles option', () => {
+            const input = '> Styled\n>\n> More styled';
+            const result = quikdown(input, { inline_styles: true });
+            const opens = (result.match(/<blockquote/g) || []).length;
+            expect(opens).toBe(1);
+            expect(result).toContain('style="');
+            expect(result).toContain('Styled');
+            expect(result).toContain('More styled');
+        });
     });
     
     describe('Horizontal Rules', () => {
@@ -2077,12 +2281,39 @@ code3
             // ~~~~ (empty inner for ~~)
             expect(quikdown('~~~~')).toBe('<p>~~~~</p>');
 
-            // **** (empty inner for **)
-            expect(quikdown('****')).toBe('<p>****</p>');
+            // **** is a valid thematic break (4+ asterisks)
+            expect(quikdown('****')).toContain('<hr');
 
             // Light theme emitStyles coverage
             const lightCSS = quikdown.emitStyles('quikdown-', 'light');
             expect(lightCSS).toContain('color:#333');
+        });
+    });
+
+    // ========================================================================
+    // Underscore emphasis consistency: paragraph vs table cell
+    // ========================================================================
+    describe('Underscore emphasis consistency', () => {
+        test('foo_bar_baz renders the same in paragraph and table cell', () => {
+            const md = 'foo_bar_baz\n\n| col |\n|-----|\n| foo_bar_baz |';
+            const html = quikdown(md);
+            const bodyMatch = html.match(/<p>(.*?)<\/p>/s)?.[1];
+            const cellMatch = html.match(/<td[^>]*>(.*?)<\/td>/s)?.[1];
+            // Both should treat mid-word underscores identically (no emphasis)
+            expect(bodyMatch).toBe('foo_bar_baz');
+            expect(cellMatch).toBe('foo_bar_baz');
+        });
+
+        test('_proper_ emphasis works the same in paragraph and table cell', () => {
+            const md = '_proper_\n\n| col |\n|-----|\n| _proper_ |';
+            const html = quikdown(md);
+            const bodyMatch = html.match(/<p>(.*?)<\/p>/s)?.[1];
+            const cellMatch = html.match(/<td[^>]*>(.*?)<\/td>/s)?.[1];
+            // Both should render emphasis
+            expect(bodyMatch).toContain('<em');
+            expect(bodyMatch).toContain('proper');
+            expect(cellMatch).toContain('<em');
+            expect(cellMatch).toContain('proper');
         });
     });
 });

@@ -3,12 +3,23 @@
 This guide shows how to integrate quikdown into popular JavaScript frameworks.
 
 ## Table of Contents
+- [LLM and agent UIs](#llm-and-agent-uis)
 - [React](#react)
 - [Vue.js](#vuejs)
 - [Svelte](#svelte)
 - [Angular](#angular)
 - [Next.js](#nextjs)
 - [Nuxt](#nuxt)
+
+## LLM and agent UIs
+
+For streaming markdown, agent tool calling on `QuikdownEditor`, and pairing with the [quikchat](https://github.com/deftio/quikchat) widget, see **[LLM Integration Guide](llm-integration.md)**.
+
+Working vanilla JS demos (no React/Vue required):
+
+- [examples/llm-stream-editor/](../examples/llm-stream-editor/) — stream tokens into the editor
+- [examples/llm-tool-editor/](../examples/llm-tool-editor/) — simulated `read_editor` / `write_editor` tools
+- [pages/examples/integration-llm-stream.html](../pages/examples/integration-llm-stream.html) — parser-only stream
 
 ## React
 

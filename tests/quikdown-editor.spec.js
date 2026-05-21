@@ -13,7 +13,7 @@ test.describe('QuikdownEditor E2E Tests', () => {
     });
 
     test.describe('Initialization', () => {
-        test('should initialize editor with split view by default', async () => {
+        test('@smoke should initialize editor with split view by default', async () => {
             const sourcePanel = page.locator('.qde-source');
             const previewPanel = page.locator('.qde-preview');
             const viewport = page.viewportSize();
@@ -98,7 +98,7 @@ test.describe('QuikdownEditor E2E Tests', () => {
     });
 
     test.describe('Content Editing', () => {
-        test('should update preview when typing in source', async () => {
+        test('@smoke should update preview when typing in source', async () => {
             const sourceTextarea = await page.locator('.qde-textarea');
             const preview = await page.locator('.qde-preview');
             

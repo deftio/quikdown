@@ -1,0 +1,267 @@
+/* Shared layout for LLM integration examples under examples/ */
+
+.ex-page-header h1 {
+  font-size: 1.8rem;
+  margin: 0 0 0.4rem 0;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.ex-page-header .crumbs {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.4rem;
+}
+
+.ex-page-header .crumbs a { color: #6b7280; }
+
+.ex-page-header .lede {
+  color: #4b5563;
+  margin: 0 0 1.25rem 0;
+  max-width: 72ch;
+  line-height: 1.55;
+}
+
+.ex-pane {
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(149, 80, 187, 0.15);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+body.qd-theme-dark .ex-pane {
+  background: rgba(30, 30, 46, 0.98);
+  border-color: rgba(149, 80, 187, 0.25);
+}
+
+.ex-pane h2 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.05rem;
+}
+
+.ex-pane h3 {
+  margin: 1.25rem 0 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.ex-pane p.muted,
+.ex-pane .muted {
+  color: #4b5563;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+body.qd-theme-dark .ex-pane p.muted,
+body.qd-theme-dark .ex-pane .muted {
+  color: #9ca3af;
+}
+
+.ex-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.ex-toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.ex-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #e6e8ee;
+  background: #ffffff;
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ex-btn:hover {
+  border-color: #9550bb;
+  color: #9550bb;
+}
+
+.ex-btn-primary {
+  border: none;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #ffffff;
+}
+
+.ex-btn-primary:hover {
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.ex-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ex-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.ex-chip {
+  padding: 0.35rem 0.7rem;
+  border-radius: 100px;
+  border: 1px solid rgba(149, 80, 187, 0.25);
+  background: rgba(149, 80, 187, 0.06);
+  color: #6c47b8;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.ex-chip:hover {
+  background: rgba(149, 80, 187, 0.12);
+}
+
+.ex-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+@media (max-width: 960px) {
+  .ex-split { grid-template-columns: 1fr; }
+}
+
+.ex-panel-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9550bb;
+  margin: 0 0 0.5rem 0;
+}
+
+.ex-chat-wrap,
+.ex-editor-wrap {
+  min-height: 560px;
+  border: 1px solid #e6e8ee;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+body.qd-theme-dark .ex-chat-wrap,
+body.qd-theme-dark .ex-editor-wrap {
+  border-color: #374151;
+  background: #1e1e2e;
+}
+
+.ex-chat-wrap .quikchat {
+  height: 560px;
+  border: none;
+  border-radius: 0;
+}
+
+.ex-editor-wrap #editor {
+  height: 560px;
+}
+
+.ex-doc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin: 0.75rem 0;
+}
+
+.ex-doc-table th,
+.ex-doc-table td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid #e6e8ee;
+  vertical-align: top;
+}
+
+.ex-doc-table th {
+  background: #f8f9fb;
+  font-weight: 600;
+}
+
+body.qd-theme-dark .ex-doc-table th {
+  background: #252536;
+}
+
+.ex-doc-table code {
+  font-size: 0.85em;
+}
+
+.ex-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.88rem;
+  color: #4b5563;
+  margin: 0.75rem 0;
+}
+
+.ex-flow-step {
+  padding: 0.35rem 0.65rem;
+  background: rgba(149, 80, 187, 0.08);
+  border-radius: 6px;
+  border: 1px solid rgba(149, 80, 187, 0.15);
+}
+
+.ex-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.ex-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid #e6e8ee;
+  color: #1f2937;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.ex-nav a:hover {
+  border-color: #9550bb;
+  color: #9550bb;
+}
+
+body.qd-theme-dark .ex-nav a {
+  background: rgba(30, 30, 46, 0.98);
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+.ex-status {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+.ex-status.streaming { color: #6c47b8; font-weight: 600; }

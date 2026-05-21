@@ -1,8 +1,8 @@
 {
   "name": "quikdown",
-  "version": "1.2.13",
+  "version": "1.2.14",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
-  "author": "deftio (https://github.com/deftio",
+  "author": "deftio (https://github.com/deftio)",
   "license": "BSD-2-Clause",
   "repository": {
     "type": "git",
@@ -101,8 +101,9 @@
     "test:ast": "NODE_NO_WARNINGS=1 jest --testPathPattern='quikdown_ast|quikdown_json|quikdown_yaml|quikdown_ast_html' --coverage",
     "test:coverage": "NODE_NO_WARNINGS=1 jest tests/quikdown.test.js tests/quikdown_bd.test.js tests/quikdown_edit_esm.test.js --coverage --coverageReporters=text-summary",
     "test:unit": "jest --coverage",
-    "test:e2e": "npx playwright test --config=playwright.config.cjs",
-    "test:e2e:full": "npx playwright test --config=playwright.config.cjs",
+    "test:e2e": "npx playwright test --config=playwright.config.cjs --grep-invert @coverage",
+    "test:standalone:e2e": "npx playwright test tests/quikdown-standalone.spec.js --config=playwright.config.cjs",
+    "test:e2e:full": "npx playwright test --config=playwright.config.cjs --grep-invert @coverage",
     "test:editor:e2e": "npx playwright test tests/quikdown-editor.spec.js",
     "updateVersion": "node ./tools/updateVersion",
     "updateBadges": "node ./tools/updateBadges.js",
@@ -122,9 +123,18 @@
     "css": "npm run build:css && npm run minify:css",
     "test:perf": "node tests/performance-benchmark.js",
     "lint": "eslint src/",
+    "verify:package": "node tools/verifyPackage.cjs",
+    "verify:standalone": "node tools/checkStandalone.cjs",
+    "verify:types": "tsc --noEmit -p tests/fixtures/ts-consumer/tsconfig.json",
+    "verify:release": "node tools/verifyPackage.cjs --release && node tools/checkStandalone.cjs",
+    "build:airgap": "node tools/buildAirgapZip.cjs",
     "sizes": "node tools/printSizes.cjs",
     "clean": "node tools/clean.cjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:coverage": "rollup -c rollup.config.coverage.js",
+    "test:e2e:coverage": "npx playwright test --grep @coverage --config=playwright.config.cjs --project=chromium",
+    "coverage:merge": "node tools/mergeCoverage.cjs",
+    "coverage:full": "npm run build:coverage && npm run test:e2e:coverage && npm test && npm run coverage:merge"
   },
   "jest": {
     "testEnvironment": "jsdom",
@@ -154,7 +164,8 @@
       "html",
       "text",
       "lcov",
-      "json-summary"
+      "json-summary",
+      "json"
     ],
     "coveragePathIgnorePatterns": [
       "/node_modules/"
@@ -169,38 +180,38 @@
       "./dist/quikdown_bd.esm.js": {
         "lines": 100,
         "functions": 100,
-        "branches": 89,
-        "statements": 100
+        "branches": 97,
+        "statements": 99
       },
       "./dist/quikdown_edit.esm.js": {
-        "lines": 49,
-        "functions": 56,
-        "branches": 42,
-        "statements": 49
+        "lines": 80,
+        "functions": 85,
+        "branches": 72,
+        "statements": 80
       },
       "./dist/quikdown_ast.esm.js": {
-        "lines": 95,
+        "lines": 99,
         "functions": 100,
-        "branches": 90,
-        "statements": 94
+        "branches": 93,
+        "statements": 97
       },
       "./dist/quikdown_json.esm.js": {
-        "lines": 93,
+        "lines": 99,
         "functions": 100,
-        "branches": 75,
-        "statements": 88
+        "branches": 84,
+        "statements": 93
       },
       "./dist/quikdown_yaml.esm.js": {
-        "lines": 90,
+        "lines": 98,
         "functions": 100,
-        "branches": 78,
-        "statements": 86
+        "branches": 88,
+        "statements": 94
       },
       "./dist/quikdown_ast_html.esm.js": {
-        "lines": 91,
+        "lines": 99,
         "functions": 100,
-        "branches": 80,
-        "statements": 87
+        "branches": 89,
+        "statements": 95
       }
     }
   },
@@ -223,6 +234,7 @@
     "eslint": "^10.2.1",
     "eslint-plugin-security": "^4.0.0",
     "globals": "^17.5.0",
+    "highlight.js": "^11.11.1",
     "husky": "^9.1.7",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Streaming LLM into editor — quikdown example</title>
+  <meta name="description" content="Simulate LLM token streaming into QuikdownEditor. Markdown artifact viewer pattern for agent UIs — vanilla JS, no framework.">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <link rel="stylesheet" href="../styles/integration-example.css">
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="../../pages/examples/">Examples</a> › LLM integrations › Stream editor</div>
+        <h1>Streaming into the editor</h1>
+        <p class="lede">
+          When an LLM writes markdown, the artifact often lands in a document view — not just a chat bubble.
+          This demo streams simulated tokens into <strong>QuikdownEditor</strong> so fences, tables, and diagrams
+          render as the buffer grows. Same idea as chat streaming, but the canvas is the editor.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <div class="ex-toolbar">
+          <button type="button" class="ex-btn ex-btn-primary" id="btn-start">Start stream</button>
+          <button type="button" class="ex-btn" id="btn-stop" disabled>Stop</button>
+          <button type="button" class="ex-btn" id="btn-clear">Clear</button>
+          <label>Speed <input type="range" id="speed" min="20" max="400" value="120" /> <span id="speed-label">120 ms</span></label>
+          <label>Sample
+            <select id="sample">
+              <option value="brief">Product brief</option>
+              <option value="api">API doc</option>
+              <option value="fences">Fence showcase</option>
+            </select>
+          </label>
+          <span class="ex-status" id="status">Ready</span>
+        </div>
+        <p class="ex-panel-label">QuikdownEditor (live artifact view)</p>
+        <div class="ex-editor-wrap"><div id="editor"></div></div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>The pattern</h2>
+        <p class="muted">
+          Accumulate tokens in a buffer. On each chunk, call <code>editor.setMarkdown(buffer)</code>.
+          The editor re-renders preview + keeps source in sync. quikdown's parser is small enough that
+          full re-parses on every chunk feel instant for typical agent output sizes.
+        </p>
+<pre><code>let buffer = '';
+
+const editor = new QuikdownEditor('#editor', { mode: 'split' });
+
+for await (const chunk of streamFromLLM(prompt)) {
+  buffer += chunk;
+  editor.setMarkdown(buffer);   // ← re-render on every chunk
+}</code></pre>
+
+        <h3>When to use editor vs chat bubble</h3>
+        <table class="ex-doc-table">
+          <thead>
+            <tr><th>Surface</th><th>Best for</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Chat bubble + <code>quikdown(md)</code></td><td>Conversational replies, short answers</td></tr>
+            <tr><td><strong>QuikdownEditor</strong> stream</td><td>Long artifacts, docs users will edit, fence-heavy output</td></tr>
+            <tr><td>Tool editor (previous example)</td><td>Agent <em>mutates</em> an existing document via tools</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Production notes</h2>
+        <ul class="muted">
+          <li><strong>Debounce</strong> — for very fast streams, update every 50–100 ms instead of every token.</li>
+          <li><strong>Fences</strong> — incomplete code fences flicker; acceptable for many UIs, or wait until closing backticks.</li>
+          <li><strong>Undo</strong> — consider disabling undo during stream, then one <code>setMarkdown</code> when complete.</li>
+          <li><strong>Headless</strong> — same API with <code>showToolbar: false</code> if you only want preview chrome you control.</li>
+        </ul>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="../llm-tool-editor/">← Tool editor example</a>
+        <a href="../../pages/examples/integration-llm-stream.html">Parser-only stream →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+
+    const SAMPLES = {
+      brief: `# Release notes (streaming)
+
+quikdown **1.2.14** improves LLM-facing workflows:
+
+- Faster parser path for streaming re-renders
+- Editor \`setMarkdown\` safe to call on every chunk
+- Standalone offline bundle restored
+
+## Diagram
+
+\`\`\`mermaid
+graph TD
+  A[LLM tokens] --> B[Buffer]
+  B --> C[QuikdownEditor]
+  C --> D[Live preview]
+\`\`\`
+
+| Item | Status |
+|------|--------|
+| Parser | shipped |
+| Editor | shipped |
+| Agent tools | your glue |
+
+> Built for humans reviewing model output — not just reading raw markdown.
+`,
+      api: `# API overview
+
+Use \`quikdown(markdown, options?)\` for parse-only paths.
+
+\`\`\`javascript
+import quikdown from 'quikdown';
+
+const html = quikdown('# Hello **world**', {
+  lazy_linefeeds: true,
+});
+\`\`\`
+
+## Editor module
+
+\`\`\`javascript
+import QuikdownEditor from 'quikdown/edit';
+
+const editor = new QuikdownEditor('#el', {
+  mode: 'split',
+  onChange: (md, html) => save(md),
+});
+\`\`\`
+
+Options include \`allowUnsafeHTML\`, \`preloadFences\`, and \`customFences\`.
+`,
+      fences: `# Fence showcase
+
+\`\`\`javascript
+function greet(name) {
+  console.log(\`Hello, \${name}!\`);
+}
+greet('agent');
+\`\`\`
+
+\`\`\`mermaid
+sequenceDiagram
+  participant U as User
+  participant L as LLM
+  participant E as Editor
+  U->>L: prompt
+  L-->>E: markdown stream
+  E-->>U: rendered view
+\`\`\`
+
+- [x] Code highlighting
+- [x] Mermaid diagrams
+- [ ] Your custom fence
+`,
+    };
+
+    let timer = null;
+    let buffer = '';
+
+    const editor = new QuikdownEditor('#editor', {
+      mode: 'split',
+      theme: 'auto',
+      preloadFences: ['mermaid', 'highlightjs'],
+    });
+    window.editor = editor;
+
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
+    const btnClear = document.getElementById('btn-clear');
+    const speedInput = document.getElementById('speed');
+    const speedLabel = document.getElementById('speed-label');
+    const sampleSelect = document.getElementById('sample');
+    const statusEl = document.getElementById('status');
+
+    function setStreaming(on) {
+      btnStart.disabled = on;
+      btnStop.disabled = !on;
+      sampleSelect.disabled = on;
+      statusEl.textContent = on ? 'Streaming…' : 'Ready';
+      statusEl.classList.toggle('streaming', on);
+    }
+
+    function stopStream() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+      setStreaming(false);
+    }
+
+    function tokenize(text) {
+      const tokens = [];
+      const re = /\S+\s*|\n/g;
+      let m;
+      while ((m = re.exec(text)) !== null) tokens.push(m[0]);
+      return tokens;
+    }
+
+    function startStream() {
+      stopStream();
+      buffer = '';
+      editor.setMarkdown('');
+      const full = SAMPLES[sampleSelect.value] || SAMPLES.brief;
+      const tokens = tokenize(full);
+      let i = 0;
+      setStreaming(true);
+
+      timer = setInterval(function () {
+        if (i >= tokens.length) {
+          stopStream();
+          statusEl.textContent = 'Complete';
+          return;
+        }
+        buffer += tokens[i++];
+        editor.setMarkdown(buffer);
+        statusEl.textContent = 'Streaming… ' + Math.min(100, Math.round((i / tokens.length) * 100)) + '%';
+      }, Number(speedInput.value));
+    }
+
+    btnStart.addEventListener('click', startStream);
+    btnStop.addEventListener('click', stopStream);
+    btnClear.addEventListener('click', function () {
+      stopStream();
+      buffer = '';
+      editor.setMarkdown('');
+      statusEl.textContent = 'Ready';
+    });
+
+    speedInput.addEventListener('input', function () {
+      speedLabel.textContent = speedInput.value + ' ms';
+      if (timer) {
+        stopStream();
+        startStream();
+      }
+    });
+  </script>
+  <script src="../scripts/example-mount.js" defer></script>
+</body>
+</html>

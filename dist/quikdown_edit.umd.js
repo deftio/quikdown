@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.13
+ * @version 1.2.14
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -58,31 +58,6 @@
             if (stripped[i] !== ch) return false;
         }
         return true;
-    }
-
-    /**
-     * Dash-only HR check — exact parity with the main parser's original
-     * regex `/^---+\s*$/`.  Only matches lines of three or more dashes
-     * with optional trailing whitespace (no interspersed spaces).
-     *
-     * @param {string} trimmed  The line, already trimmed
-     * @returns {boolean}
-     */
-    function isDashHRLine(trimmed) {
-        if (trimmed.length < 3) return false;
-        for (let i = 0; i < trimmed.length; i++) {
-            const ch = trimmed[i];
-            if (ch === '-') continue;
-            // Allow trailing whitespace only
-            if (ch === ' ' || ch === '\t') {
-                for (let j = i + 1; j < trimmed.length; j++) {
-                    if (trimmed[j] !== ' ' && trimmed[j] !== '\t') return false;
-                }
-                return i >= 3; // at least 3 dashes before whitespace
-            }
-            return false;
-        }
-        return true; // all dashes
     }
 
     /**
@@ -228,7 +203,7 @@
     // ────────────────────────────────────────────────────────────────────
 
     /** Build-time version stamp (injected by tools/updateVersion) */
-    const quikdownVersion = '1.2.13';
+    const quikdownVersion = '1.2.14';
 
     /** CSS class prefix used for all generated elements */
     const CLASS_PREFIX = 'quikdown-';
@@ -255,12 +230,12 @@
      * and these same values are emitted by `quikdown.emitStyles()`.
      */
     const QUIKDOWN_STYLES = {
-        h1: 'font-size:2em;font-weight:600;margin:.67em 0;text-align:left',
-        h2: 'font-size:1.5em;font-weight:600;margin:.83em 0',
-        h3: 'font-size:1.25em;font-weight:600;margin:1em 0',
-        h4: 'font-size:1em;font-weight:600;margin:1.33em 0',
-        h5: 'font-size:.875em;font-weight:600;margin:1.67em 0',
-        h6: 'font-size:.85em;font-weight:600;margin:2em 0',
+        h1: 'font-size:2em;margin:.67em 0;text-align:left',
+        h2: 'font-size:1.5em;margin:.83em 0',
+        h3: 'font-size:1.25em;margin:1em 0',
+        h4: 'font-size:1em;margin:1.33em 0',
+        h5: 'font-size:.875em;margin:1.67em 0',
+        h6: 'font-size:.85em;margin:2em 0',
         pre: 'background:#f4f4f4;padding:10px;border-radius:4px;overflow-x:auto;margin:1em 0',
         code: 'background:#f0f0f0;padding:2px 4px;border-radius:3px;font-family:monospace',
         blockquote: 'border-left:4px solid #ddd;margin-left:0;padding-left:1em',
@@ -536,7 +511,7 @@
         // ── Step 1: Tables ──
         // Tables need multi-line lookahead (header → separator → body rows)
         // so they're handled by a dedicated line-walker first.
-        html = processTable(html, getAttr);
+        html = processTable(html, getAttr, bidirectional);
 
         // ── Step 2: Headings, HR, Blockquotes ──
         // These are simple line-level constructs.  We scan each line once
@@ -691,7 +666,7 @@
 
                 if (replacement === undefined) {
                     // Plugin declined — fall back to default rendering.
-                    const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+                    const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
                     const codeAttr = inline_styles ? getAttr('code') : langClass;
                     /* istanbul ignore next - bd-only branch */
                     const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -705,7 +680,7 @@
                 }
             } else {
                 // Default rendering — wrap in <pre><code>.
-                const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+                const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
                 const codeAttr = inline_styles ? getAttr('code') : langClass;
                 /* istanbul ignore next - bd-only branch */
                 const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -782,18 +757,19 @@
             }
 
             // ── Horizontal Rule ──
-            // Three or more dashes, optional trailing whitespace, nothing else.
-            if (isDashHRLine(line)) {
-                result.push(`<hr${getAttr('hr')}>`);
+            // Three or more identical chars (-, *, _), optional interspersed spaces.
+            if (isHRLine(line)) {
+                result.push(`<hr${getAttr('hr')}${dataQd(line.trim())}>`);
                 i++;
                 continue;
             }
 
             // ── Blockquote ──
             // After Phase 2, the '>' character has been escaped to '&gt;'.
-            // Pattern: "&gt; content" or merged consecutive blockquotes.
-            if (/^&gt;\s+/.test(line)) {
-                result.push(`<blockquote${getAttr('blockquote')}>${line.replace(/^&gt;\s+/, '')}</blockquote>`);
+            // Pattern: "&gt; content" or "&gt;" alone (blank continuation line)
+            // or merged consecutive blockquotes.
+            if (/^&gt;(\s|$)/.test(line)) {
+                result.push(`<blockquote${getAttr('blockquote')}${dataQd('>')}>${line.replace(/^&gt;\s*/, '')}</blockquote>`);
                 i++;
                 continue;
             }
@@ -804,10 +780,10 @@
         }
 
         // Merge consecutive blockquotes into a single element.
-        // <blockquote>A</blockquote>\n<blockquote>B</blockquote>
-        //   → <blockquote>A\nB</blockquote>
+        // <blockquote …>A</blockquote>\n<blockquote …>B</blockquote>
+        //   → <blockquote …>A\nB</blockquote>
         let joined = result.join('\n');
-        joined = joined.replace(/<\/blockquote>\n<blockquote>/g, '\n');
+        joined = joined.replace(/<\/blockquote>\n<blockquote[^>]*>/g, '\n');
         return joined;
     }
 
@@ -826,7 +802,7 @@
             [/\*\*(.+?)\*\*/g, 'strong'],
             [/__(.+?)__/g, 'strong'],
             [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
-            [/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/g, 'em'],
+            [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em'],
             [/~~(.+?)~~/g, 'del'],
             [/`([^`]+)`/g, 'code']
         ];
@@ -847,7 +823,7 @@
      * @param {Function} getAttr Attribute factory
      * @returns {string}         Text with tables rendered
      */
-    function processTable(text, getAttr) {
+    function processTable(text, getAttr, bidirectional) {
         const lines = text.split('\n');
         const result = [];
         let inTable = false;
@@ -864,7 +840,7 @@
                 tableLines.push(line);
             } else {
                 if (inTable) {
-                    const tableHtml = buildTable(tableLines, getAttr);
+                    const tableHtml = buildTable(tableLines, getAttr, bidirectional);
                     if (tableHtml) {
                         result.push(tableHtml);
                     } else {
@@ -879,7 +855,7 @@
 
         // Handle table at end of document
         if (inTable && tableLines.length > 0) {
-            const tableHtml = buildTable(tableLines, getAttr);
+            const tableHtml = buildTable(tableLines, getAttr, bidirectional);
             if (tableHtml) {
                 result.push(tableHtml);
             } else {
@@ -897,7 +873,7 @@
      * @param {Function} getAttr Attribute factory
      * @returns {string|null}    HTML table string, or null if invalid
      */
-    function buildTable(lines, getAttr) {
+    function buildTable(lines, getAttr, bidirectional) {
         if (lines.length < 2) return null;
 
         // Find the separator row (---|---|)
@@ -923,7 +899,9 @@
             return 'left';
         });
 
-        let html = `<table${getAttr('table')}>\n`;
+        /* istanbul ignore next - bd-only branch */
+        const alignAttr = bidirectional ? ` data-qd-align="${alignments.join(',')}"` : '';
+        let html = `<table${getAttr('table')}${alignAttr}>\n`;
 
         // Header
         html += `<thead${getAttr('thead')}>\n`;
@@ -1577,6 +1555,8 @@
         return 'unknown';
     }
 
+    const COPY_OUTPUT_PROFILES = ['default', 'stripped', 'quikdown'];
+
     const COPY_HEADING_STYLES = {
         h1: { fontSize: '24pt', marginTop: '0.6em', marginBottom: '0.35em' },
         h2: { fontSize: '18pt', marginTop: '0.55em', marginBottom: '0.3em' },
@@ -1586,9 +1566,15 @@
         h6: { fontSize: '10pt', marginTop: '0.35em', marginBottom: '0.2em' }
     };
 
-    const COPY_HEADING_CSS = Object.entries(COPY_HEADING_STYLES)
-        .map(([tag, style]) => `${tag} { font-size:${style.fontSize}; font-weight:bold; line-height:1.25; margin:${style.marginTop} 0 ${style.marginBottom}; }`)
-        .join('\n                  ');
+    function buildHeadingCSS(output) {
+        if (output === 'stripped') return '';
+        return Object.entries(COPY_HEADING_STYLES)
+            .map(([tag, style]) => {
+                const weight = output === 'quikdown' ? ' font-weight:bold;' : '';
+                return `${tag} { font-size:${style.fontSize};${weight} line-height:1.25; margin:${style.marginTop} 0 ${style.marginBottom}; }`;
+            })
+            .join('\n                  ');
+    }
 
     /**
      * Copy to clipboard using HTML selection fallback (for Safari)
@@ -1866,9 +1852,15 @@
     /**
      * Get rendered content as rich HTML suitable for clipboard
      * @param {HTMLElement} previewPanel - The preview panel element to copy from
+     * @param {Object} [options={}] - Copy options
+     * @param {string} [options.output='default'] - Output profile: 'default' (no heading font-weight), 'quikdown' (full styling with heading font-weight), or 'stripped' (minimal styling)
      * @returns {Promise<{success: boolean, html?: string, text?: string}>}
      */
-    async function getRenderedContent(previewPanel) {
+    async function getRenderedContent(previewPanel, options = {}) {
+        const output = options.output || 'default';
+        if (!COPY_OUTPUT_PROFILES.includes(output)) {
+            throw new Error(`Invalid output profile "${output}". Must be one of: ${COPY_OUTPUT_PROFILES.join(', ')}`);
+        }
         if (!previewPanel) {
             throw new Error('No preview panel available');
         }
@@ -1894,24 +1886,26 @@
         // Process different fence types for rich copy
         try {
             // Phase 1: Process basic markdown elements with inline styles
-            
+            // In 'stripped' mode, skip all inline style application
+            if (output !== 'stripped') {
+
             // 1.1 Text formatting - add inline styles
             clone.querySelectorAll('strong, b').forEach(el => {
                 el.style.fontWeight = 'bold';
             });
-            
+
             clone.querySelectorAll('em, i').forEach(el => {
                 el.style.fontStyle = 'italic';
             });
-            
+
             clone.querySelectorAll('del, s, strike').forEach(el => {
                 el.style.textDecoration = 'line-through';
             });
-            
+
             clone.querySelectorAll('u').forEach(el => {
                 el.style.textDecoration = 'underline';
             });
-            
+
             clone.querySelectorAll('code:not(pre code)').forEach(el => {
                 el.style.backgroundColor = '#f4f4f4';
                 el.style.padding = '2px 4px';
@@ -1919,38 +1913,40 @@
                 el.style.fontFamily = 'monospace';
                 el.style.fontSize = '0.9em';
             });
-            
+
             // 1.2 Block elements - add inline styles
             Object.entries(COPY_HEADING_STYLES).forEach(([tag, style]) => {
                 clone.querySelectorAll(tag).forEach(el => {
                     el.style.fontSize = style.fontSize;
-                    el.style.fontWeight = 'bold';
+                    if (output === 'quikdown') {
+                        el.style.fontWeight = 'bold';
+                    }
                     el.style.lineHeight = '1.25';
                     el.style.marginTop = style.marginTop;
                     el.style.marginBottom = style.marginBottom;
                 });
             });
-            
+
             clone.querySelectorAll('blockquote').forEach(el => {
                 el.style.borderLeft = '4px solid #ddd';
                 el.style.marginLeft = '0';
                 el.style.paddingLeft = '1em';
                 el.style.color = '#666';
             });
-            
+
             clone.querySelectorAll('hr').forEach(el => {
                 el.style.border = 'none';
                 el.style.borderTop = '1px solid #ccc';
                 el.style.margin = '1em 0';
             });
-            
+
             // 1.3 Tables - add inline styles
             clone.querySelectorAll('table').forEach(table => {
                 table.style.borderCollapse = 'collapse';
                 table.style.width = '100%';
                 table.style.marginBottom = '1em';
             });
-            
+
             clone.querySelectorAll('th').forEach(th => {
                 th.style.border = '1px solid #ccc';
                 th.style.padding = '8px';
@@ -1958,23 +1954,23 @@
                 th.style.backgroundColor = '#f0f0f0';
                 th.style.fontWeight = 'bold';
             });
-            
+
             clone.querySelectorAll('td').forEach(td => {
                 td.style.border = '1px solid #ccc';
                 td.style.padding = '8px';
                 td.style.textAlign = 'left';
             });
-            
+
             // 1.4 Links - add inline styles
             clone.querySelectorAll('a').forEach(a => {
                 a.style.color = '#0066cc';
                 a.style.textDecoration = 'underline';
             });
-            
+
             // Process code blocks - wrap in table and add syntax highlighting colors
             clone.querySelectorAll('pre code').forEach(block => {
                 const pre = block.parentElement;
-                
+
                 // Add inline styles for syntax highlighting (GitHub theme colors)
                 if (block.classList.contains('hljs')) {
                     // Apply inline styles to all highlight.js elements
@@ -2038,13 +2034,13 @@
                         el.style.color = '#6f42c1';
                     });
                 }
-                
+
                 const table = document.createElement('table');
                 table.style.width = '100%';
                 table.style.borderCollapse = 'collapse';
                 table.style.border = 'none';
                 table.style.marginBottom = '1em';
-                
+
                 const tr = document.createElement('tr');
                 const td = document.createElement('td');
                 td.style.backgroundColor = '#f7f7f7';
@@ -2056,16 +2052,18 @@
                 td.style.overflowX = 'auto';
                 td.style.border = '1px solid #ddd';
                 td.style.borderRadius = '4px';
-                
+
                 // Move the formatted code content with inline styles
                 td.innerHTML = block.innerHTML;
-                
+
                 tr.appendChild(td);
                 table.appendChild(tr);
-                
+
                 // Replace the pre element with the table
                 pre.parentNode.replaceChild(table, pre);
             });
+
+            } // end if (output !== 'stripped')
             
             // Process images - convert to data URLs and ensure proper dimensions
             const images = clone.querySelectorAll('img');
@@ -2694,6 +2692,14 @@
                         // Parse the source HTML
                         const tempDiv = document.createElement('div');
                         tempDiv.innerHTML = source;
+
+                        // Sanitize: remove script elements and on* event handlers
+                        tempDiv.querySelectorAll('script').forEach(s => s.remove());
+                        tempDiv.querySelectorAll('*').forEach(el => {
+                            for (const attr of Array.from(el.attributes)) {
+                                if (/^on/i.test(attr.name)) el.removeAttribute(attr.name);
+                            }
+                        });
                         
                         // Process all images in the HTML block
                         const htmlImages = tempDiv.querySelectorAll('img');
@@ -2902,6 +2908,25 @@
             
             // Wrap in proper HTML structure for rich text editors
             const fragment = clone.innerHTML;
+            const headingCSS = buildHeadingCSS(output);
+            const cssBlock = output === 'stripped'
+                ? '/* Minimal styles */\n                  img { max-width: 100%; height: auto; }'
+                : `${headingCSS}
+
+                  /* Table styling */
+                  table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
+                  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                  th { background-color: #f0f0f0; font-weight: bold; }
+
+                  /* Code block styling */
+                  pre { background-color: #f4f4f4; padding: 1em; border-radius: 4px; overflow-x: auto; }
+                  code { font-family: monospace; background-color: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; }
+
+                  /* Image handling */
+                  img { display: block; max-width: 100%; height: auto; margin: 0.5em 0; }
+
+                  /* Blockquote */
+                  blockquote { border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em; color: #666; }`;
             const htmlContent = `
             <!DOCTYPE html>
             <html xmlns:v="urn:schemas-microsoft-com:vml"
@@ -2910,22 +2935,7 @@
               <head>
                 <meta charset="utf-8">
                 <style>
-                  ${COPY_HEADING_CSS}
-                  
-                  /* Table styling */
-                  table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
-                  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-                  th { background-color: #f0f0f0; font-weight: bold; }
-                  
-                  /* Code block styling */
-                  pre { background-color: #f4f4f4; padding: 1em; border-radius: 4px; overflow-x: auto; }
-                  code { font-family: monospace; background-color: #f4f4f4; padding: 0.2em 0.4em; border-radius: 3px; }
-                  
-                  /* Image handling */
-                  img { display: block; max-width: 100%; height: auto; margin: 0.5em 0; }
-                  
-                  /* Blockquote */
-                  blockquote { border-left: 4px solid #ddd; margin-left: 0; padding-left: 1em; color: #666; }
+                  ${cssBlock}
                   
                   /* Math equations centered like squibview */
                   .math-display { text-align: center; margin: 1em 0; }
@@ -3005,10 +3015,12 @@
 
     /**
      * Quikdown Editor - A drop-in markdown editor control
-     * @version 1.0.5
      * @license BSD-2-Clause
      */
 
+
+    /** Build-time version stamp (injected by rollup replaceVersion plugin) */
+    const quikdownEditorVersion = '1.2.14';
 
     /**
      * Curated safe HTML tag whitelist.
@@ -3169,6 +3181,10 @@
             this._undoStack = [];
             this._redoStack = [];
             this._isUndoRedo = false;
+
+            // Instance-level copy of fence libraries so custom entries
+            // don't leak across editor instances.
+            this._fenceLibraries = { ...FENCE_LIBRARIES };
             
             // Initialize
             this.initPromise = this.init();
@@ -3957,9 +3973,7 @@
                 // Update preview if visible
                 if (this.currentMode !== 'source') {
                     this.previewPanel.innerHTML = this._html;
-                    // Make all fence blocks non-editable
-                    this.makeFencesNonEditable();
-                    
+
                     // Process all math elements with MathJax if loaded (like squibview)
                     if (window.MathJax && window.MathJax.typesetPromise) {
                         const mathElements = this.previewPanel.querySelectorAll('.math-display');
@@ -4100,7 +4114,7 @@
                         return this.options.customFences[lang](code, lang);
                     } catch (err) {
                         console.error(`Custom fence plugin error for ${lang}:`, err);
-                        return `<pre><code class="language-${lang}">${this.escapeHtml(code)}</code></pre>`;
+                        return `<pre><code class="language-${this.escapeHtml(lang)}">${this.escapeHtml(code)}</code></pre>`;
                     }
                 }
                 
@@ -4152,7 +4166,7 @@
                 if (window.hljs && lang && hljs.getLanguage(lang)) {
                     const highlighted = hljs.highlight(code, { language: lang }).value;
                     // Don't add contenteditable="false" - the bidirectional system can extract text from the highlighted code
-                    return `<pre data-qd-fence="\`\`\`" data-qd-lang="${lang}"><code class="hljs language-${lang}">${highlighted}</code></pre>`;
+                    return `<pre data-qd-fence="\`\`\`" data-qd-lang="${this.escapeHtml(lang)}"><code class="hljs language-${this.escapeHtml(lang)}">${highlighted}</code></pre>`;
                 }
                 
                 // Default: let quikdown handle it
@@ -4369,7 +4383,7 @@
                     
                     // Process any existing math elements (like squibview)
                     if (window.MathJax && window.MathJax.typesetPromise) {
-                        const mathElements = document.querySelectorAll('.math-display');
+                        const mathElements = (this.previewPanel || document).querySelectorAll('.math-display');
                         if (mathElements.length > 0) {
                             window.MathJax.typesetPromise(Array.from(mathElements)).catch(err => {
                                 console.warn('Initial MathJax processing failed:', err);
@@ -4750,7 +4764,7 @@
                     mermaid.render(id + '-svg', code).then(result => {
                         element.innerHTML = result.svg;
                     }).catch(err => {
-                        element.innerHTML = `<pre>Error rendering diagram: ${err.message}</pre>`;
+                        element.innerHTML = `<pre>Error rendering diagram: ${this.escapeHtml(err.message)}</pre>`;
                     });
                 }
             }, 0);
@@ -4777,20 +4791,6 @@
         }
         
         /**
-         * Make complex fence blocks non-editable
-         */
-        makeFencesNonEditable() {
-            if (!this.previewPanel) return;
-            
-            // Only make specific complex fence types non-editable
-            // SVG, HTML, Math, Mermaid already have contenteditable="false" set
-            // Syntax-highlighted code also has it set
-            
-            // Don't make regular code blocks or tables non-editable
-            // They can be edited and properly round-trip
-        }
-        
-        /**
          * Load plugins dynamically — honors both `plugins: { highlightjs, mermaid }`
          * (legacy) and the newer `preloadFences` option which can preload any
          * combination of fence libraries (or 'all') at construction time.
@@ -4807,16 +4807,16 @@
             // New preloadFences option
             const pf = this.options.preloadFences;
             if (pf === 'all') {
-                Object.keys(FENCE_LIBRARIES).forEach(n => namesToLoad.add(n));
+                Object.keys(this._fenceLibraries).forEach(n => namesToLoad.add(n));
             } else if (Array.isArray(pf)) {
                 for (const entry of pf) {
                     if (typeof entry === 'string') {
-                        if (FENCE_LIBRARIES[entry]) namesToLoad.add(entry);
+                        if (this._fenceLibraries[entry]) namesToLoad.add(entry);
                         else console.warn(`QuikdownEditor: unknown preloadFences entry "${entry}"`);
                     } else if (entry && typeof entry === 'object' && entry.script) {
                         // Custom library: { name, script, css? }
                         namesToLoad.add('__custom__:' + (entry.name || entry.script));
-                        FENCE_LIBRARIES['__custom__:' + (entry.name || entry.script)] = {
+                        this._fenceLibraries['__custom__:' + (entry.name || entry.script)] = {
                             check: () => false,
                             script: entry.script,
                             css: entry.css
@@ -4830,7 +4830,7 @@
             // Load each in parallel; respect already-loaded state
             const promises = [];
             for (const name of namesToLoad) {
-                const lib = FENCE_LIBRARIES[name];
+                const lib = this._fenceLibraries[name];
                 if (!lib || lib.check()) continue;
                 if (lib.beforeLoad) lib.beforeLoad();
                 const p = (async () => {
@@ -5044,7 +5044,6 @@
             // destroy MathJax-typeset SVG output with raw pre-typeset HTML.
             if (mode !== 'source' && previousMode === 'source' && this._html) {
                 this.previewPanel.innerHTML = this._html;
-                setTimeout(() => this.makeFencesNonEditable(), 0);
                 if (typeof window !== 'undefined' && window.MathJax && window.MathJax.typesetPromise) {
                     const mathElements = this.previewPanel.querySelectorAll('.math-display');
                     if (mathElements.length > 0) {
@@ -5522,10 +5521,11 @@
         
         /**
          * Copy rendered content as rich text
+         * @param {string} [output='default'] - Output profile: 'default', 'quikdown', or 'stripped'
          */
-        async copyRendered() {
+        async copyRendered(output = 'default') {
             try {
-                const result = await getRenderedContent(this.previewPanel);
+                const result = await getRenderedContent(this.previewPanel, { output });
                 if (result.success) {
                     // Visual feedback
                     const btn = this.toolbar?.querySelector('[data-action="copy-rendered"]');
@@ -5620,6 +5620,9 @@
 
     /** Static: curated safe HTML tag whitelist for allow_unsafe_html */
     QuikdownEditor.SAFE_HTML_TAGS = SAFE_HTML_TAGS;
+
+    /** Semantic version (injected at build time) */
+    QuikdownEditor.version = quikdownEditorVersion;
 
     // Export for CommonJS (needed for bundled ESM to work with Jest)
     if (typeof module !== 'undefined' && module.exports) {

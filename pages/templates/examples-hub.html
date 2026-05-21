@@ -309,9 +309,29 @@
             <span class="ex-track-sub">how it fits in your stack</span>
           </div>
           <p class="ex-track-intro">
-            How quikdown plays with other tools. Real-world patterns: rendering markdown inside an <strong>LLM chat widget</strong>, streaming markdown chunks <strong>token-by-token</strong> from an LLM API, and wrapping the editor in a <strong>React or Vue</strong> component. The chat and streaming examples are interactive — the React and Vue ones are documented patterns ready to copy into your project.
+            How quikdown plays with other tools. Real-world patterns: rendering markdown inside an <strong>LLM chat widget</strong>, streaming markdown <strong>into the editor</strong> as tokens arrive, <strong>agent tool calling</strong> that reads and writes the document canvas, and wrapping the editor in a <strong>React or Vue</strong> component. The LLM examples are interactive — the React and Vue ones are documented patterns ready to copy into your project.
           </p>
           <div class="ex-list">
+            <a class="ex-card" href="{{ROOT}}/examples/llm-tool-editor/">
+              <span class="ex-card-num">Example 17</span>
+              <h3>LLM tool editor — chat + document canvas</h3>
+              <p><strong>quikchat</strong> widget + <strong>QuikdownEditor</strong> + simulated agent tools (<code>read_editor</code>, <code>write_editor</code>, undo, stats). Same pattern as function calling — no API key required.</p>
+              <div class="ex-card-meta">
+                <span class="ex-card-tag">interactive</span>
+                <span class="ex-card-tag">LLM</span>
+                <span class="ex-card-tag">editor</span>
+              </div>
+            </a>
+            <a class="ex-card" href="{{ROOT}}/examples/llm-stream-editor/">
+              <span class="ex-card-num">Example 18</span>
+              <h3>Streaming into the editor</h3>
+              <p>Simulate LLM tokens filling <strong>QuikdownEditor</strong> — the artifact viewer pattern. Re-call <code>setMarkdown(buffer)</code> on every chunk; fences render as the document grows.</p>
+              <div class="ex-card-meta">
+                <span class="ex-card-tag">interactive</span>
+                <span class="ex-card-tag">LLM</span>
+                <span class="ex-card-tag">editor</span>
+              </div>
+            </a>
             <a class="ex-card" href="{{ROOT}}/pages/examples/integration-quikchat.html">
               <span class="ex-card-num">Example 13</span>
               <h3>quikchat — markdown in LLM chats</h3>
@@ -323,8 +343,8 @@
             </a>
             <a class="ex-card" href="{{ROOT}}/pages/examples/integration-llm-stream.html">
               <span class="ex-card-num">Example 16</span>
-              <h3>Streaming LLM output</h3>
-              <p>Render markdown chunks as they arrive from an LLM. Re-parse the buffer on every chunk — fast enough you can't see it. Live simulated stream.</p>
+              <h3>Streaming LLM output (parser-only)</h3>
+              <p>Render markdown chunks as they arrive from an LLM into a div via <code>quikdown(buffer)</code>. Re-parse on every chunk — fast enough you can't see it. Live simulated stream.</p>
               <div class="ex-card-meta">
                 <span class="ex-card-tag">interactive</span>
               </div>

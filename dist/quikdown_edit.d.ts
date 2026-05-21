@@ -1,187 +1,89 @@
 /**
- * quikdown_edit - Quikdown Editor Component
- * TypeScript definitions
+ * QuikdownEditor — A drop-in markdown editor control.
  */
 
-declare module 'quikdown/edit' {
-  /**
-   * Options for configuring the QuikdownEditor
-   */
-  export interface QuikdownEditorOptions {
-    /** Initial view mode @default 'split' */
-    mode?: 'source' | 'split' | 'preview';
-    /** Theme setting @default 'auto' */
-    theme?: 'light' | 'dark' | 'auto';
-    /** Show/hide the toolbar @default true */
+export interface EditorOptions {
+    /** Editor mode. Default: 'split'. */
+    mode?: 'source' | 'preview' | 'split';
+    /** Show the toolbar. Default: true. */
     showToolbar?: boolean;
-    /** Show "Remove HR" toolbar button @default false */
+    /** Show button to remove horizontal rules. Default: false. */
     showRemoveHR?: boolean;
-    /** Show "Fix Linefeeds" toolbar button @default false */
+    /** Show button to toggle lazy linefeeds. Default: false. */
     showLazyLinefeeds?: boolean;
-    /** Show undo/redo toolbar buttons @default false */
-    showUndoRedo?: boolean;
-    /** Enable lazy linefeeds (single \n becomes <br>) @default false */
+    /** Color theme. Default: 'auto'. */
+    theme?: 'light' | 'dark' | 'auto';
+    /** Single newlines become <br>. Default: false. */
     lazy_linefeeds?: boolean;
-    /** Use inline styles instead of CSS classes @default false */
+    /** Use inline styles instead of CSS classes. Default: false. */
     inline_styles?: boolean;
-    /** Debounce delay for updates in ms @default 20 */
+    /** Debounce delay in ms. Default: 20. */
     debounceDelay?: number;
-    /** Placeholder text for empty editor */
+    /** Placeholder text for the source panel. */
     placeholder?: string;
-    /** Initial markdown content */
-    initialContent?: string;
-    /** Maximum number of undo states to keep @default 100 */
-    undoStackSize?: number;
-    /** Enable complex fences (CSV, math, SVG, etc.) @default true */
+    /** Legacy plugin flags. */
+    plugins?: { highlightjs?: boolean; mermaid?: boolean };
+    /** Preload fence-rendering libraries. */
+    preloadFences?: 'all' | string[] | Array<{ name: string; script: string; css?: string }> | null;
+    /** Custom fence renderers. */
+    customFences?: Record<string, (code: string, lang: string) => string>;
+    /** Enable CSV tables, math rendering, SVG, etc. Default: true. */
     enableComplexFences?: boolean;
-    /** Plugin configuration (legacy — prefer preloadFences) */
-    plugins?: {
-      /** Enable Highlight.js for syntax highlighting */
-      highlightjs?: boolean;
-      /** Enable Mermaid for diagrams */
-      mermaid?: boolean;
-    };
-    /**
-     * Preload fence-rendering libraries at construction time so the first
-     * encounter with a fence type renders instantly (no lazy-load delay).
-     *
-     * - `'all'` — preload every known library
-     * - `['highlightjs', 'mermaid', 'math', 'geojson', 'stl']` — specific list
-     * - `[{ name, script, css? }]` — custom library URL
-     * - `null` (default) — lazy-load on demand
-     *
-     * Trade-off: preloading uses more upfront network but eliminates the
-     * "loading..." flicker on first render of each fence type. Developer's
-     * choice — the editor itself stays ~70 KB minified either way.
-     */
-    preloadFences?: 'all' | Array<string | { name?: string; script: string; css?: string }> | null;
-    /** Custom fence handlers keyed by language */
-    customFences?: {
-      [language: string]: (code: string, lang: string) => string;
-    };
-    /** Callback fired when content changes */
-    onChange?: (markdown: string, html: string) => void;
-    /** Callback fired when view mode changes */
-    onModeChange?: (mode: 'source' | 'split' | 'preview') => void;
-  }
-
-  /**
-   * QuikdownEditor class - Drop-in markdown editor control
-   *
-   * @example
-   * ```typescript
-   * import QuikdownEditor from 'quikdown/edit';
-   *
-   * const editor = new QuikdownEditor('#editor', {
-   *   mode: 'split',
-   *   showUndoRedo: true,
-   *   showRemoveHR: true,
-   *   onChange: (md, html) => console.log('Changed:', md.length)
-   * });
-   *
-   * editor.setMarkdown('# Hello\n\nWorld');
-   * editor.undo();
-   * editor.redo();
-   * ```
-   */
-  export class QuikdownEditor {
-    constructor(container: HTMLElement | string, options?: QuikdownEditorOptions);
-
-    // --- Properties ---
-    get markdown(): string;
-    set markdown(value: string);
-    get html(): string;
-    get mode(): 'source' | 'split' | 'preview';
-
-    // --- Content ---
-    setMarkdown(markdown: string): Promise<void>;
-    getMarkdown(): string;
-    getHTML(): string;
-
-    // --- View ---
-    setMode(mode: 'source' | 'split' | 'preview'): void;
-    setLazyLinefeeds(enabled: boolean): void;
-    getLazyLinefeeds(): boolean;
-    setDebounceDelay(delay: number): void;
-    getDebounceDelay(): number;
-    /** Change theme at runtime */
-    setTheme(theme: 'light' | 'dark' | 'auto'): void;
-    /** Get the currently configured theme */
-    getTheme(): 'light' | 'dark' | 'auto';
-
-    // --- Undo / Redo ---
-    /** Undo the last edit */
-    undo(): Promise<void>;
-    /** Redo the last undone edit */
-    redo(): Promise<void>;
-    /** Whether undo is available */
-    canUndo(): boolean;
-    /** Whether redo is available */
-    canRedo(): boolean;
-    /** Clear the undo/redo history */
-    clearHistory(): void;
-
-    // --- HR Removal ---
-    /** Remove all horizontal rules from the current markdown (fence/table-safe) */
-    removeHR(): Promise<void>;
-
-    // --- Lazy Linefeed Conversion ---
-    /** One-time transform: convert single newlines to paragraph breaks (idempotent) */
-    convertLazyLinefeeds(): Promise<void>;
-
-    // --- Static utilities (headless — no editor instance needed) ---
-    /** Remove HRs from markdown string (fence/table-safe) */
-    static removeHRFromMarkdown(markdown: string): string;
-    /** Convert lazy linefeeds in markdown string (idempotent) */
-    static convertLazyLinefeeds(markdown: string): string;
-
-    // --- Clipboard ---
-    copy(type: 'markdown' | 'html'): Promise<void>;
-    copyRendered(): Promise<void>;
-
-    // --- Plugin loading ---
-    loadScript(src: string): Promise<void>;
-    loadCSS(href: string): Promise<void>;
-
-    // --- Lifecycle ---
-    destroy(): void;
-  }
-
-  export default QuikdownEditor;
+    /** Show undo/redo toolbar buttons. Default: false. */
+    showUndoRedo?: boolean;
+    /** Maximum number of undo states. Default: 100. */
+    undoStackSize?: number;
+    /** HTML passthrough control. Default: false. */
+    allowUnsafeHTML?: false | 'limited' | true;
+    /** Show toolbar button to cycle HTML mode. Default: false. */
+    showAllowUnsafeHTML?: boolean;
 }
 
-// For direct import (non-module usage)
+/**
+ * Drop-in markdown editor with live preview.
+ */
 declare class QuikdownEditor {
-  constructor(container: HTMLElement | string, options?: import('quikdown/edit').QuikdownEditorOptions);
-  get markdown(): string;
-  set markdown(value: string);
-  get html(): string;
-  get mode(): 'source' | 'split' | 'preview';
-  setMarkdown(markdown: string): Promise<void>;
-  getMarkdown(): string;
-  getHTML(): string;
-  setMode(mode: 'source' | 'split' | 'preview'): void;
-  setLazyLinefeeds(enabled: boolean): void;
-  getLazyLinefeeds(): boolean;
-  setDebounceDelay(delay: number): void;
-  getDebounceDelay(): number;
-  setTheme(theme: 'light' | 'dark' | 'auto'): void;
-  getTheme(): 'light' | 'dark' | 'auto';
-  undo(): Promise<void>;
-  redo(): Promise<void>;
-  canUndo(): boolean;
-  canRedo(): boolean;
-  clearHistory(): void;
-  removeHR(): Promise<void>;
-  convertLazyLinefeeds(): Promise<void>;
-  static removeHRFromMarkdown(markdown: string): string;
-  static convertLazyLinefeeds(markdown: string): string;
-  copy(type: 'markdown' | 'html'): Promise<void>;
-  copyRendered(): Promise<void>;
-  loadScript(src: string): Promise<void>;
-  loadCSS(href: string): Promise<void>;
-  destroy(): void;
+    /** Curated safe HTML tag whitelist for use with allow_unsafe_html. */
+    static readonly SAFE_HTML_TAGS: Record<string, 1>;
+
+    constructor(container: string | HTMLElement, options?: EditorOptions);
+
+    /** Initialize the editor (called automatically by constructor). */
+    init(): Promise<void>;
+    /** Set the markdown source and update preview. */
+    setMarkdown(markdown: string): Promise<void>;
+    /** Get the current markdown source. */
+    getMarkdown(): string;
+    /** Get the rendered HTML from the preview panel. */
+    getHTML(): string;
+    /** Set the editor mode. */
+    setMode(mode: 'source' | 'preview' | 'split'): void;
+    /** Set the color theme. */
+    setTheme(theme: 'light' | 'dark' | 'auto'): void;
+    /** Get the current theme. */
+    getTheme(): string;
+    /** Enable or disable lazy linefeeds. */
+    setLazyLinefeeds(enabled: boolean): void;
+    /** Get whether lazy linefeeds are enabled. */
+    getLazyLinefeeds(): boolean;
+    /** Set the debounce delay. */
+    setDebounceDelay(delay: number): void;
+    /** Get the debounce delay. */
+    getDebounceDelay(): number;
+    /** Remove all horizontal rules from the markdown. */
+    removeHR(): Promise<void>;
+    /** Toggle lazy linefeeds and update. */
+    toggleLazyLinefeeds(): Promise<void>;
+    /** Undo the last edit. */
+    undo(): void;
+    /** Redo the last undone edit. */
+    redo(): void;
+    /** Whether undo is available. */
+    canUndo(): boolean;
+    /** Whether redo is available. */
+    canRedo(): boolean;
+    /** Tear down the editor and remove event listeners. */
+    destroy(): void;
 }
 
 export default QuikdownEditor;
-export { QuikdownEditorOptions } from 'quikdown/edit';

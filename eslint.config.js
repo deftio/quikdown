@@ -40,6 +40,6 @@ export default [
     },
   },
   {
-    ignores: ["dist/", "node_modules/", "coverage/", "examples/", "dev/", "tools/", "tests/", "test-results/", "exp-bd/"],
+    ignores: ["dist/", "node_modules/", "coverage/", "examples/", "dev/", "tools/", "tests/", "test-results/"],
   },
 ];

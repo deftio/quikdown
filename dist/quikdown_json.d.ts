@@ -1,48 +1,28 @@
 /**
- * quikdown_json - Markdown to JSON Converter
- * TypeScript definitions
+ * quikdown_json — Markdown to JSON converter.
  */
 
-declare module 'quikdown/json' {
-  import type { DocumentNode, QuikdownASTOptions } from 'quikdown/ast';
+import quikdown_ast from './quikdown_ast';
+import { ASTDocument } from './quikdown_ast';
 
-  /**
-   * Options for the JSON converter
-   */
-  export interface QuikdownJSONOptions extends QuikdownASTOptions {
-    /**
-     * Number of spaces for JSON indentation
-     * @default 2
-     */
+export interface JsonOptions {
+    /** JSON indentation level. Default: 2. */
     indent?: number;
-  }
-
-  /**
-   * Convert markdown to JSON string
-   * @param markdown - The markdown source text
-   * @param options - Optional configuration
-   * @returns JSON string representation of the AST
-   */
-  function quikdown_json(markdown: string, options?: QuikdownJSONOptions): string;
-
-  namespace quikdown_json {
-    /**
-     * Direct access to the AST parser
-     * @param markdown - The markdown source text
-     * @param options - Optional configuration
-     * @returns The AST document object
-     */
-    export function parse(markdown: string, options?: QuikdownASTOptions): DocumentNode;
-
-    /**
-     * The version of quikdown_json
-     */
-    export const version: string;
-  }
-
-  export = quikdown_json;
 }
 
-// For ES6 module imports
+/**
+ * Convert markdown to a JSON string representation of its AST.
+ * @param markdown  The markdown source text.
+ * @param options   Configuration options.
+ * @returns JSON string.
+ */
+declare function quikdown_json(markdown: string, options?: JsonOptions): string;
+
+declare namespace quikdown_json {
+    /** Direct access to the AST parser. */
+    const parse: typeof quikdown_ast;
+    /** Semantic version string. */
+    const version: string;
+}
+
 export default quikdown_json;
-export { QuikdownJSONOptions };

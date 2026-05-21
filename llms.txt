@@ -506,6 +506,8 @@ Detailed documentation is available in the `docs/` directory:
 - **docs/quikdown-bidirectional.md** - HTML-to-markdown roundtrip conversion
 - **docs/quikdown-editor.md** - Full editor documentation with advanced usage
 - **docs/standalone-editor.md** - Standalone/offline editor guide
+- **docs/llm-integration.md** - LLM/agent UI patterns (stream, tool editor, quikchat)
+- **docs/release-process.md** - Release workflow, standalone gates, air-gap zip
 - **docs/quikdown-ast.md** - AST, JSON, YAML structured output
 - **docs/release-notes.md** - Version history
 
@@ -522,10 +524,12 @@ Working HTML examples are in the `examples/` directory:
 - **examples/editor-api-playground.html** - Interactive API testing
 - **examples/editor-fence-custom.html** - Custom fence handling in editor
 - **examples/demo-headless.html** - Headless editor with custom UI
-- **examples/integration-react.html** - React integration
-- **examples/integration-vue.html** - Vue.js integration
-- **examples/integration-llm-stream.html** - LLM streaming output
-- **examples/integration-quikchat.html** - Chat application
+- **examples/llm-tool-editor/** - quikchat + QuikdownEditor + simulated agent tools
+- **examples/llm-stream-editor/** - Stream LLM tokens into QuikdownEditor
+- **pages/examples/integration-llm-stream.html** - Parser-only LLM streaming
+- **pages/examples/integration-quikchat.html** - quikchat + markdown in chat bubbles
+- **pages/examples/integration-react.html** - React integration
+- **pages/examples/integration-vue.html** - Vue.js integration
 
 Sample markdown files in `examples/`: sample-basic.md, sample-comprehensive.md, sample-fence.md, sample-tables.md, sample-security.md, sample-bidirectional.md, sample-many-fences.md, sample-tasks.md, sample-rich-content.md.
 
@@ -560,7 +564,9 @@ npm install                # Install dev dependencies
 npm run build              # Full build: version, CSS, Rollup, site, badges
 npm run build:standalone   # Build standalone editor bundle separately
 npm run build:all          # Build everything including standalone
-npm test                   # All tests with coverage (Jest)
+npm run verify:release     # Release gate (standalone + npm pack) — after build:all
+npm run test:standalone:e2e  # Standalone Playwright smoke (release gate)
+npm test                   # All tests with coverage (Jest) — no standalone build
 npm run test:unit          # Unit tests only
 npm run test:e2e           # Playwright end-to-end tests
 npm run test:quikdown      # Core parser tests
