@@ -2,21 +2,72 @@
 
 ## v1.2.14 (unreleased)
 
+### Parser
+- **Blockquote continuation fix**: Indented continuation lines (`> foo` followed by `bar`) are now correctly joined into the same blockquote instead of splitting into a blockquote + paragraph
+
+### Security
+- **45-payload XSS corpus**: New `tests/fixtures/xss-payloads.js` stress-tests core, BD, and AST-HTML parsers against real-world XSS vectors
+- **Editor security hardening**: Fence language XSS, URL entity bypass, Mermaid/MathJax scope isolation, cross-editor fence leak — all patched
+- **`allow_unsafe_html` documentation**: Fully documented in api-reference, security.md, and architecture.md (Phase 1.5 placeholder flow)
+
+### Editor
+- **Coverage raised to 81%+ statements / 77%+ branches / 85%+ functions** via 612 editor-specific Jest tests plus comprehensive browser API mocks (`quikdown_edit_browser_mocks.test.js`)
+- **Istanbul + Playwright coverage integration**: New `coverage:full` pipeline collects Istanbul branch data from real-browser E2E tests (Canvas, WebGL, clipboard) and merges it with Jest coverage — runs during release, not CI
+- **Heading copy styles**: Rich-copy (`copyRendered`) now applies point-sized heading styles (h1–h6) for better paste fidelity in Google Docs / Word
+
 ### Standalone / release
 - **Standalone bundle restored** to release pipeline: `build:all`, `verify:release`, `test:standalone:e2e`, air-gap zip on GitHub Release
 - **`highlight.js`** added to devDependencies so standalone Rollup bundle is fully self-contained
-- **`tools/checkStandalone.cjs`**, **`tools/buildAirgapZip.cjs`**, **`tools/verifyPackage.cjs`** release gates
+- **`tools/checkStandalone.cjs`**, **`tools/buildAirgapZip.cjs`**, **`tools/verifyPackage.cjs`** — new release gate scripts
+- **Release script** (`tools/release.sh`) now runs full coverage pipeline (instrumented build → Playwright E2E → merge) after Jest tests
 
 ### LLM / examples
 - **`examples/llm-tool-editor/`** — quikchat + QuikdownEditor + simulated agent tools
 - **`examples/llm-stream-editor/`** — stream tokens into the editor (artifact viewer)
 - **`docs/llm-integration.md`** — LLM/agent integration guide
+- **`agents.md`**, **`llms.txt`** — agent and LLM discovery files at repo root
 - Examples hub cards for Examples 17–18
 
 ### Packaging / CI
-- TypeScript `.d.ts` restored for all export subpaths
+- **TypeScript `.d.ts` restored** for all 7 export subpaths, verified in CI
 - CI: build before test; publish workflow runs full release verification
+- **CI e2e smoke**: 6 `@smoke`-tagged Playwright tests run blocking on PRs; full e2e suite runs non-blocking with `continue-on-error`
+- CI workflows default to read-only; write permissions scoped to tag/publish only
 - Table `data-qd-align` bidirectional round-trip fixes
+- **Package contract tests**: `quikdown_package_contract.test.js` verifies all module exports, `.d.ts` files, and version consistency
+
+### Testing
+- **2880 Jest tests** across 30 suites (up from ~2100 in 1.2.13)
+- **26 Playwright coverage E2E tests** exercising browser-only paths (Canvas rasterization, clipboard rich-copy, SVG→PNG, mermaid, GeoJSON, STL, themes)
+- New test suites: `quikdown_edit_browser_mocks.test.js` (1200+ lines), `quikdown_security.test.js`, `quikdown_classify.test.js`, `quikdown_package_contract.test.js`
+- **Coverage merge tooling**: `tools/mergeCoverage.cjs` merges Jest + Playwright Istanbul JSON and prints combined per-file report
+
+### Coverage thresholds (Jest)
+
+| Module | Stmts | Branches | Functions | Lines |
+|--------|-------|----------|-----------|-------|
+| `quikdown.esm.js` | 100% | 100% | 100% | 100% |
+| `quikdown_bd.esm.js` | 99% | 97% | 100% | 100% |
+| `quikdown_edit.esm.js` | 81% | 77% | 85% | 81% |
+| `quikdown_ast.esm.js` | 97% | 93% | 100% | 99% |
+| `quikdown_json.esm.js` | 93% | 84% | 100% | 99% |
+| `quikdown_yaml.esm.js` | 94% | 88% | 100% | 98% |
+| `quikdown_ast_html.esm.js` | 95% | 89% | 100% | 99% |
+
+---
+
+## v1.2.13
+
+### Parser
+- **Underscore emphasis fix** (issue #17): Single underscores inside words (`snake_case_variable`) no longer trigger false italic formatting. The `_` emphasis marker now requires word boundaries, matching CommonMark intraword emphasis rules
+- Fix applied to both the core parser (`quikdown.js`) and the AST parser (`quikdown_ast.js`)
+
+### Editor
+- **Copy headings** (issue #18): Rich-copy (`copyRendered`) heading styles rewritten — uses a point-size lookup table (`COPY_HEADING_CSS`) instead of inline `em`-based sizing, producing cleaner paste output in Google Docs and Word
+- Refactored `getRenderedContent` heading loop from 40+ lines of per-tag `el.style` assignments to a single `querySelectorAll` + lookup
+
+### Repo
+- **`agents.md`** and **`llms.txt`** added at repo root for LLM/agent discovery
 
 ---
 
@@ -120,11 +171,7 @@
 ## v1.2.5
 
 ### New feature
-- **`allow_unsafe_html` option**: New parser option that skips HTML escaping for trusted pipelines where markdown contains intentional HTML. Code blocks are still escaped. Default: `false` (safe)
-  ```javascript
-  quikdown('<div class="box">content</div>', { allow_unsafe_html: true });
-  // Output: <p><div class="box">content</div></p>
-  ```
+- **`allow_unsafe_html` option**: New parser option that skips HTML escaping for trusted pipelines where markdown contains intentional HTML. Code blocks are still escaped. Default: `false` (safe). Example: `quikdown(html, { allow_unsafe_html: true })`
 
 ### Editor
 - Fixed default text color (`color: #1f2937`) on the editor container to prevent inheritance issues from parent pages
@@ -285,21 +332,7 @@
 - **Data attributes**: Automatic data-qd-* attributes for roundtrip conversion
 - **Better TypeScript**: Clean interface definition with FencePlugin type
 
-**Migration:**
-```javascript
-// OLD (v1.0.x) - No longer supported
-const plugin = (content, lang) => '<pre>' + content + '</pre>';
-
-// NEW (v1.1.0) - Required format
-const plugin = {
-  render: (content, lang) => '<pre>' + content + '</pre>',
-  reverse: (element) => ({ // Optional
-    fence: '```',
-    lang: 'custom',
-    content: element.textContent
-  })
-};
-```
+**Migration:** Fence plugins changed from plain functions to objects with a `render` method and an optional `reverse` method for bidirectional support. See `docs/plugin-guide.md` for the current API.
 
 ### 🎯 New Features
 
@@ -310,7 +343,7 @@ const plugin = {
 - **Plugin ecosystem ready**: Enables rich bidirectional plugins for mermaid, math, etc.
 
 #### Editor Enhancements
-- **Remove HR button**: New toolbar button to remove horizontal rules (---) from markdown
+- **Remove HR button**: New toolbar button to remove horizontal rules from markdown
 - **API method**: `removeHR()` method to programmatically remove all horizontal rules
 - **Configurable display**: `showRemoveHR` option (default: false) to show/hide button
 - **LLM-friendly**: Helps clean up markdown from AI-generated content
@@ -477,11 +510,7 @@ const plugin = {
 - Perfect for chat interfaces where users expect Enter to create a new line
 - Preserves double newlines for paragraph breaks
 - Code blocks and lists maintain proper formatting
-- Example:
-  ```javascript
-  quikdown('Line 1\nLine 2', { lazy_linefeeds: true });
-  // Output: <p>Line 1<br>Line 2</p>
-  ```
+- Example: `quikdown('Line 1\nLine 2', { lazy_linefeeds: true })` outputs `<p>Line 1<br>Line 2</p>`
 
 ### 📚 Documentation Updates
 
@@ -505,13 +534,7 @@ const plugin = {
 - Previously, alignment only worked with `inline_styles: true` option
 - Now applies alignment as inline style attribute even when using CSS classes
 - Eliminated duplicate `text-align` properties in inline styles mode
-- Example:
-  ```markdown
-  | Left | Center | Right |
-  |:-----|:------:|------:|
-  | L    |   C    |     R |
-  ```
-  Now correctly renders with proper text alignment in all cells
+- Tables with `:---|:---:|---:` alignment markers now render correctly in all cells
 
 ### 🛠️ Technical Improvements
 - **Module imports**: Converted all tests from CommonJS to ESM imports
@@ -554,11 +577,7 @@ const plugin = {
 ### 📦 Package Improvements
 
 #### Module Exports
-- Added `exports` field in package.json for clean imports:
-  ```javascript
-  import quikdown from 'quikdown';        // Core parser
-  import quikdown_bd from 'quikdown/bd';  // Bidirectional parser
-  ```
+- Added `exports` field in package.json for clean imports: `import quikdown from 'quikdown'` (core) and `import quikdown_bd from 'quikdown/bd'` (bidirectional)
 - Multiple format support: ESM, UMD, CommonJS for both modules
 - TypeScript definitions for both core and bidirectional modules
 
@@ -644,26 +663,8 @@ const plugin = {
 
 #### Upgrading from 1.0.3
 - No breaking changes for existing `quikdown` usage
-- To add bidirectional support:
-  ```javascript
-  // Change from:
-  import quikdown from 'quikdown';
-  
-  // To:
-  import quikdown_bd from 'quikdown/bd';
-  
-  // Then use toMarkdown:
-  const markdown = quikdown_bd.toMarkdown(html);
-  ```
-
-#### Browser Usage
-```html
-<!-- Core only -->
-<script src="https://unpkg.com/quikdown@1.0.4/dist/quikdown.umd.min.js"></script>
-
-<!-- Bidirectional -->
-<script src="https://unpkg.com/quikdown@1.0.4/dist/quikdown_bd.umd.min.js"></script>
-```
+- To add bidirectional support: import `quikdown/bd` instead of `quikdown`, then call `quikdown_bd.toMarkdown(html)` to convert HTML back to markdown
+- Browser: load `dist/quikdown_bd.umd.min.js` via CDN (unpkg or jsdelivr)
 
 ### 📝 Notes
 - The `toMarkdown()` method is only available in `quikdown_bd`, not in regular `quikdown`
@@ -677,7 +678,7 @@ const plugin = {
 - **Achieved 24% size reduction**: Bundle now ~7.0KB (down from 9.2KB)
   - Implemented minifier-aware optimizations across dev2-dev4 phases
   - Module-level constant hoisting (QUIKDOWN_STYLES, CLASS_PREFIX, PLACEHOLDER_CB, ESC_MAP)
-  - Optimized placeholder strings (§CB§ vs %%%CODEBLOCK%%%)
+  - Optimized placeholder strings (shorter internal markers vs verbose delimiters)
   - CSS string optimization (removed spaces after colons)
   - Build-time version injection instead of runtime imports
   - Shorter variable names in critical paths
@@ -744,9 +745,9 @@ const plugin = {
 ## v1.0.2 
 
 ### Bug Fixes
-- Fixed critical ~~~ fence regex bug that was matching fence markers in the middle of text
+- Fixed critical tilde-fence regex bug that was matching fence markers in the middle of text
   - Now requires fence markers to be at the start of lines
-  - Properly handles text like "## Test with ~~~" without creating empty code blocks
+  - Properly handles text like headings with tilde characters without creating empty code blocks
 
 ### Improvements
 - Simplified theme styles for minimal footprint
@@ -781,7 +782,7 @@ const plugin = {
 - Core markdown parser with CommonMark subset support
 - Built-in XSS protection with HTML escaping
 - URL sanitization for links and images
-- Support for both ``` and ~~~ fence markers
+- Support for both backtick and tilde fence markers
 - Flexible table parsing (with/without leading pipes)
 - Task list support with checkboxes
 - Autolink detection for bare URLs

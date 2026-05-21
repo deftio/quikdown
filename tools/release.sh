@@ -48,6 +48,19 @@ info "=== Checking version ==="
 node tools/checkVersion.cjs || die "Version check failed. Bump the version before releasing."
 echo ""
 
+# --- stamp release notes ------------------------------------------------------
+
+NOTES=docs/release-notes.md
+if grep -q "(unreleased)" "$NOTES"; then
+  info "Stamping release notes: removing '(unreleased)' from $TAG"
+  # portable sed -i (macOS needs '' arg, Linux does not)
+  if [[ "$OSTYPE" == darwin* ]]; then
+    sed -i '' "s/## v${VERSION} (unreleased)/## v${VERSION}/" "$NOTES"
+  else
+    sed -i "s/## v${VERSION} (unreleased)/## v${VERSION}/" "$NOTES"
+  fi
+fi
+
 # --- run quality gates -------------------------------------------------------
 
 info "=== Running build (core + standalone offline editor) ==="

@@ -132472,31 +132472,6 @@ function isHRLine(trimmed) {
 }
 
 /**
- * Dash-only HR check — exact parity with the main parser's original
- * regex `/^---+\s*$/`.  Only matches lines of three or more dashes
- * with optional trailing whitespace (no interspersed spaces).
- *
- * @param {string} trimmed  The line, already trimmed
- * @returns {boolean}
- */
-function isDashHRLine(trimmed) {
-    if (trimmed.length < 3) return false;
-    for (let i = 0; i < trimmed.length; i++) {
-        const ch = trimmed[i];
-        if (ch === '-') continue;
-        // Allow trailing whitespace only
-        if (ch === ' ' || ch === '\t') {
-            for (let j = i + 1; j < trimmed.length; j++) {
-                if (trimmed[j] !== ' ' && trimmed[j] !== '\t') return false;
-            }
-            return i >= 3; // at least 3 dashes before whitespace
-        }
-        return false;
-    }
-    return true; // all dashes
-}
-
-/**
  * Check if a trimmed line opens a code fence.
  * Returns { char, len, lang } if it does, or null otherwise.
  *
@@ -133102,7 +133077,7 @@ function quikdown(markdown, options = {}) {
 
             if (replacement === undefined) {
                 // Plugin declined — fall back to default rendering.
-                const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+                const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
                 const codeAttr = inline_styles ? getAttr('code') : langClass;
                 /* istanbul ignore next - bd-only branch */
                 const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -133116,7 +133091,7 @@ function quikdown(markdown, options = {}) {
             }
         } else {
             // Default rendering — wrap in <pre><code>.
-            const langClass = !inline_styles && block.lang ? ` class="language-${block.lang}"` : '';
+            const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
             const codeAttr = inline_styles ? getAttr('code') : langClass;
             /* istanbul ignore next - bd-only branch */
             const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -133193,9 +133168,9 @@ function scanLineBlocks(text, getAttr, dataQd) {
         }
 
         // ── Horizontal Rule ──
-        // Three or more dashes, optional trailing whitespace, nothing else.
-        if (isDashHRLine(line)) {
-            result.push(`<hr${getAttr('hr')}>`);
+        // Three or more identical chars (-, *, _), optional interspersed spaces.
+        if (isHRLine(line)) {
+            result.push(`<hr${getAttr('hr')}${dataQd(line.trim())}>`);
             i++;
             continue;
         }
