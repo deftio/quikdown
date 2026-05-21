@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.2.14 (unreleased)
+## v1.2.14
 
 ### Parser
 - **Blockquote continuation fix**: Indented continuation lines (`> foo` followed by `bar`) are now correctly joined into the same blockquote instead of splitting into a blockquote + paragraph
