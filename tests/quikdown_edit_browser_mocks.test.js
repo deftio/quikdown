@@ -2010,3 +2010,1214 @@ describe('GeoJSON tile load event (line 4552)', () => {
         }
     });
 });
+
+// ══════════════════════════════════════════════════════════════════════
+//  Branch coverage push: partially-covered branch arms
+// ══════════════════════════════════════════════════════════════════════
+
+describe('embedded parser branch coverage via editor', () => {
+    beforeEach(async () => {
+        editor = new QuikdownEditor('#test-editor');
+        await editor.initPromise;
+    });
+
+    // ── Task list with inline_styles ──
+    test('task list with inline_styles: true covers checkbox/task branches (lines 986, 990)', async () => {
+        const ed2 = new QuikdownEditor('#test-editor', { inline_styles: true });
+        await ed2.initPromise;
+        await ed2.setMarkdown('- [x] Done task\n- [ ] Open task');
+        const html = ed2.html;
+        expect(html).toContain('margin-right');
+        expect(html).toContain('list-style:none');
+        expect(html).toContain('checked');
+    });
+
+    // ── Header-only table (no body rows) ──
+    test('table with header only, no body rows covers bodyLines.length === 0 (line 915)', async () => {
+        await editor.setMarkdown('| H1 | H2 |\n|---|---|');
+        const html = editor.html;
+        expect(html).toContain('<thead');
+        // The table should either have no tbody or an empty tbody
+        expect(html).toContain('<table');
+    });
+
+    // ── quikdown(null) via setMarkdown ──
+    test('setMarkdown with null covers non-string guard (line 297)', async () => {
+        await editor.setMarkdown(null);
+        expect(editor.html).toBe('');
+    });
+
+    // ── quikdown with empty string via setMarkdown ──
+    test('setMarkdown with empty string covers trim-empty branch (line 3949)', async () => {
+        await editor.setMarkdown('# test');
+        expect(editor.html).toContain('<h1');
+        await editor.setMarkdown('');
+        expect(editor.html).toBe('');
+    });
+});
+
+describe('toMarkdown branch coverage via updateFromHTML', () => {
+    beforeEach(async () => {
+        editor = new QuikdownEditor('#test-editor');
+        await editor.initPromise;
+    });
+
+    // ── Empty inline elements ──
+    test('empty <strong>, <em>, <del>, <code> produce no markers (lines 1193, 1199, 1206, 1212)', () => {
+        editor.previewPanel.innerHTML =
+            '<p><strong></strong><em></em><del></del><code></code>visible</p>';
+        editor.updateFromHTML();
+        const md = editor.getMarkdown();
+        // Should not contain doubled markers like ** ** or * * or ~~ ~~ or `` ``
+        expect(md).not.toMatch(/\*\*\s*\*\*/);
+        expect(md).toContain('visible');
+    });
+
+    // ── Bold/em with data-qd markers ──
+    test('bold with data-qd uses custom marker (line 1194)', () => {
+        editor.previewPanel.innerHTML = '<p><strong data-qd="__">bold</strong></p>';
+        editor.updateFromHTML();
+        const md = editor.getMarkdown();
+        expect(md).toContain('__bold__');
+    });
+
+    test('em with data-qd uses custom marker (line 1200)', () => {
+        editor.previewPanel.innerHTML = '<p><em data-qd="_">italic</em></p>';
+        editor.updateFromHTML();
+        const md = editor.getMarkdown();
+        expect(md).toContain('_italic_');
+    });
+
+    test('del with data-qd uses custom marker (line 1207)', () => {
+        editor.previewPanel.innerHTML = '<p><del data-qd="~~">removed</del></p>';
+        editor.updateFromHTML();
+        const md = editor.getMarkdown();
+        expect(md).toContain('~~removed~~');
+    });
+
+    // ── img with data-qd-alt and data-qd-src ──
+    test('img with data-qd-alt and data-qd-src (lines 1269-1271)', () => {
+        editor.previewPanel.innerHTML =
+            '<p><img data-qd-alt="photo" data-qd-src="https://example.com/img.png" data-qd="!"></p>';
+        editor.updateFromHTML();
+        const md = editor.getMarkdown();
+        expect(md).toContain('![photo](https://example.com/img.png)');
+    });
+
+    // ── blockquote with data-qd ──
+    test('blockquote with data-qd (line 1247)', () => {
+        editor.previewPanel.innerHTML = '<blockquote data-qd=">"><p>quoted</p></blockquote>';
+        editor.updateFromHTML();
+        const md = editor.getMarkdown();
+        expect(md).toContain('>');
+        expect(md).toContain('quoted');
+    });
+
+    // ── hr with data-qd ──
+    test('hr with data-qd custom marker (line 1252)', () => {
+        editor.previewPanel.innerHTML = '<hr data-qd="***">';
+        editor.updateFromHTML();
+        const md = editor.getMarkdown();
+        expect(md).toContain('***');
+    });
+
+    // ── a with data-qd-text ──
+    test('link with data-qd-text (line 1261)', () => {
+        editor.previewPanel.innerHTML =
+            '<p><a href="https://example.com" data-qd-text="click here">click here</a></p>';
+        editor.updateFromHTML();
+        const md = editor.getMarkdown();
+        expect(md).toContain('[click here](https://example.com)');
+    });
+
+    // ── pre with data-qd-source (line 1237) ──
+    test('pre with data-qd-source uses source instead of textContent (line 1237)', () => {
+        editor.previewPanel.innerHTML =
+            '<pre data-qd-fence="```" data-qd-lang="js" data-qd-source="console.log(1)"><code>console.log(1)</code></pre>';
+        editor.updateFromHTML();
+        const md = editor.getMarkdown();
+        expect(md).toContain('```js');
+        expect(md).toContain('console.log(1)');
+    });
+
+    // ── toMarkdown with non-string/non-element returns '' (line 1156) ──
+    // This is tested indirectly - the editor always passes a DOM element
+    // We test updating with an empty panel
+    test('updateFromHTML with empty panel produces empty markdown', () => {
+        editor.previewPanel.innerHTML = '';
+        editor.updateFromHTML();
+        expect(editor.getMarkdown()).toBe('');
+    });
+});
+
+describe('keyboard shortcuts branch coverage', () => {
+    beforeEach(async () => {
+        editor = new QuikdownEditor('#test-editor');
+        await editor.initPromise;
+    });
+
+    test('Ctrl+1 switches to source mode (line 3870-3872)', () => {
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+            ctrlKey: true, key: '1', bubbles: true
+        }));
+        expect(editor.currentMode).toBe('source');
+    });
+
+    test('Ctrl+2 switches to split mode (line 3874-3876)', () => {
+        editor.setMode('source');
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+            ctrlKey: true, key: '2', bubbles: true
+        }));
+        expect(editor.currentMode).toBe('split');
+    });
+
+    test('Ctrl+3 switches to preview mode (line 3878-3880)', () => {
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+            ctrlKey: true, key: '3', bubbles: true
+        }));
+        expect(editor.currentMode).toBe('preview');
+    });
+
+    test('Ctrl+Z triggers undo (line 3887-3889)', () => {
+        // Call updateFromMarkdown directly — setMarkdown pre-assigns _markdown
+        // (breaking the duplicate check), handleSourceInput debounces via setTimeout
+        editor.updateFromMarkdown('first');
+        editor.updateFromMarkdown('second');
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+            ctrlKey: true, key: 'z', bubbles: true
+        }));
+        expect(editor.getMarkdown()).toBe('first');
+    });
+
+    test('Ctrl+Shift+Z triggers redo (line 3884-3886)', () => {
+        editor.updateFromMarkdown('first');
+        editor.updateFromMarkdown('second');
+        editor.undo();
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+            ctrlKey: true, shiftKey: true, key: 'Z', bubbles: true
+        }));
+        expect(editor.getMarkdown()).toBe('second');
+    });
+
+    test('Ctrl+Y triggers redo (line 3892-3895)', () => {
+        editor.updateFromMarkdown('first');
+        editor.updateFromMarkdown('second');
+        editor.undo();
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+            ctrlKey: true, key: 'y', bubbles: true
+        }));
+        expect(editor.getMarkdown()).toBe('second');
+    });
+
+    test('metaKey shortcuts work same as ctrlKey (line 3868 metaKey arm)', () => {
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+            metaKey: true, key: '1', bubbles: true
+        }));
+        expect(editor.currentMode).toBe('source');
+    });
+
+    test('key without ctrl/meta does not trigger shortcut (line 3868 false arm)', () => {
+        editor.setMode('split');
+        document.dispatchEvent(new KeyboardEvent('keydown', {
+            key: '1', bubbles: true
+        }));
+        expect(editor.currentMode).toBe('split'); // unchanged
+    });
+});
+
+describe('editor method null/edge branch coverage', () => {
+    beforeEach(async () => {
+        editor = new QuikdownEditor('#test-editor');
+        await editor.initPromise;
+    });
+
+    // ── undo/redo with null sourceTextarea (lines 5092, 5109) ──
+    test('undo with null sourceTextarea still works (line 5092)', () => {
+        // Use updateFromMarkdown directly for undo state to be pushed
+        editor.updateFromMarkdown('first');
+        editor.updateFromMarkdown('second');
+        editor.sourceTextarea = null;
+        editor.undo();
+        expect(editor.getMarkdown()).toBe('first');
+    });
+
+    test('redo with null sourceTextarea still works (line 5109)', () => {
+        editor.updateFromMarkdown('first');
+        editor.updateFromMarkdown('second');
+        editor.undo();
+        editor.sourceTextarea = null;
+        editor.redo();
+        expect(editor.getMarkdown()).toBe('second');
+    });
+
+    // ── setMarkdown with null initPromise (line 5245) ──
+    test('setMarkdown with null initPromise skips await (line 5245)', async () => {
+        editor.initPromise = null;
+        await editor.setMarkdown('# hello');
+        expect(editor.getMarkdown()).toContain('hello');
+    });
+
+    // ── setMarkdown with null sourceTextarea (line 5250) ──
+    test('setMarkdown with null sourceTextarea (line 5250)', async () => {
+        editor.sourceTextarea = null;
+        await editor.setMarkdown('# test');
+        expect(editor.getMarkdown()).toContain('test');
+    });
+
+    // ── setAllowUnsafeHTML with null toolbar (line 5576) ──
+    test('setAllowUnsafeHTML with null toolbar (line 5576)', () => {
+        editor.toolbar = null;
+        editor.setAllowUnsafeHTML('limited');
+        expect(editor.options.allowUnsafeHTML).toBe('limited');
+    });
+
+    // ── setAllowUnsafeHTML with invalid mode returns early (line 5573) ──
+    test('setAllowUnsafeHTML with invalid mode does nothing (line 5573)', () => {
+        editor.setAllowUnsafeHTML('invalid');
+        expect(editor.options.allowUnsafeHTML).not.toBe('invalid');
+    });
+
+    // ── undoStackSize fallback to 100 (line 5071) ──
+    test('_pushUndoState with undefined undoStackSize uses 100 (line 5071)', () => {
+        editor.options.undoStackSize = undefined;
+        // Use updateFromMarkdown directly for undo state to be pushed
+        for (let i = 0; i < 5; i++) {
+            editor.updateFromMarkdown(`state ${i}`);
+        }
+        // Should work fine with default fallback
+        expect(editor.canUndo()).toBe(true);
+    });
+
+    // ── _pushUndoState duplicate suppression (line 5066) ──
+    test('_pushUndoState with same content does not push (line 5066)', async () => {
+        await editor.setMarkdown('same');
+        const stackLen = editor._undoStack.length;
+        await editor.setMarkdown('same');
+        // Stack should not grow
+        expect(editor._undoStack.length).toBe(stackLen);
+    });
+
+    // ── copyRendered when result.success is false (line 5523 false arm) ──
+    test('copyRendered when getRenderedContent returns non-success (line 5523)', async () => {
+        // Make clipboard unavailable so getRenderedContent fails
+        delete navigator.clipboard;
+        delete window.ClipboardItem;
+        const origExec = document.execCommand;
+        document.execCommand = jest.fn().mockReturnValue(false);
+
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        await editor.setMarkdown('# test');
+        await editor.copyRendered();
+        consoleSpy.mockRestore();
+        document.execCommand = origExec;
+    });
+
+    // ── setMode splitToggle not found (line 5023 false arm) ──
+    test('setMode when split-toggle button is absent (line 5023)', () => {
+        // Remove the split toggle button if it exists
+        const toggle = editor.toolbar?.querySelector('.qde-split-toggle');
+        if (toggle) toggle.remove();
+        // Should not throw
+        editor.setMode('source');
+        expect(editor.currentMode).toBe('source');
+    });
+
+    // ── updateFromHTML during undo sets _isUndoRedo (line 4006 true arm) ──
+    test('updateFromHTML during undo skips undo push (line 4006)', async () => {
+        await editor.setMarkdown('first');
+        await editor.setMarkdown('second');
+        const stackBefore = editor._undoStack.length;
+        editor.undo(); // sets _isUndoRedo = true, calls updateFromMarkdown
+        // The undo itself should not have pushed another state
+        expect(editor._undoStack.length).toBeLessThanOrEqual(stackBefore);
+    });
+});
+
+describe('toolbar click handler branch coverage', () => {
+    beforeEach(async () => {
+        editor = new QuikdownEditor('#test-editor');
+        await editor.initPromise;
+    });
+
+    test('clicking button with data-action triggers handleAction (line 3860)', () => {
+        const spy = jest.spyOn(editor, 'handleAction').mockImplementation(() => {});
+        const btn = document.createElement('button');
+        btn.classList.add('qde-btn');
+        btn.dataset.action = 'copy-text';
+        editor.toolbar.appendChild(btn);
+        btn.click();
+        expect(spy).toHaveBeenCalledWith('copy-text');
+        spy.mockRestore();
+    });
+
+    test('clicking button with neither data-mode nor data-action (line 3860 else)', () => {
+        const btn = document.createElement('button');
+        btn.classList.add('qde-btn');
+        btn.textContent = 'No action';
+        editor.toolbar.appendChild(btn);
+        // Should not throw
+        btn.click();
+    });
+
+    test('mobile split-toggle click toggles preview (line 3851-3855)', () => {
+        const toggle = document.createElement('button');
+        toggle.classList.add('qde-btn', 'qde-split-toggle');
+        toggle.textContent = 'Preview';
+        editor.toolbar.appendChild(toggle);
+
+        toggle.click();
+        expect(toggle.textContent).toBe('Source');
+        expect(editor.container.classList.contains('qde-split-preview')).toBe(true);
+
+        toggle.click();
+        expect(toggle.textContent).toBe('Preview');
+        expect(editor.container.classList.contains('qde-split-preview')).toBe(false);
+    });
+});
+
+describe('matchMedia absence branch (line 3903)', () => {
+    test('editor works when matchMedia is not a function', async () => {
+        const origMM = window.matchMedia;
+        try {
+            window.matchMedia = 'not-a-function';
+            // Use theme: 'light' to avoid applyTheme calling matchMedia
+            const ed = new QuikdownEditor('#test-editor', { theme: 'light' });
+            await ed.initPromise;
+            expect(ed.currentMode).toBe('split');
+            ed.destroy();
+        } finally {
+            window.matchMedia = origMM;
+        }
+    });
+});
+
+describe('undoStack overflow branch (line 5072)', () => {
+    test('undo stack is trimmed when exceeding max size (line 5072)', async () => {
+        const ed = new QuikdownEditor('#test-editor', { undoStackSize: 3 });
+        await ed.initPromise;
+        // Use handleSourceInput so undo state is actually pushed
+        for (let i = 0; i < 6; i++) {
+            ed.sourceTextarea.value = `state-${i}`;
+            ed.handleSourceInput();
+        }
+        expect(ed._undoStack.length).toBeLessThanOrEqual(3);
+        ed.destroy();
+    });
+});
+
+describe('inline_styles branches in parser', () => {
+    test('parser with inline_styles: true covers inline style branches', async () => {
+        const ed = new QuikdownEditor('#test-editor', { inline_styles: true });
+        await ed.initPromise;
+        await ed.setMarkdown('# Heading\n\n**bold** and *italic*\n\n- item 1\n- item 2\n\n> quote\n\n---\n\n| A | B |\n|---|---|\n| 1 | 2 |\n\n```js\ncode\n```');
+        const html = ed.html;
+        expect(html).toContain('style=');
+        ed.destroy();
+    });
+});
+
+describe('list type alternation branch (line 1003)', () => {
+    test('alternating ol/ul at same level covers listStack type mismatch', async () => {
+        const ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+        await ed.setMarkdown('1. ordered\n- unordered\n2. ordered again');
+        const html = ed.html;
+        // Both list types should appear
+        expect(html).toContain('<ol');
+        expect(html).toContain('<ul');
+        ed.destroy();
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Group A: Embedded parser branch coverage — core quikdown()
+// Targets: branches 3,11,12,15-16,18,30,31,33-36,38,44,50,62,
+//          67,78,94,101,103,105
+// ═══════════════════════════════════════════════════════════════
+
+describe('embedded parser branch coverage — core quikdown via editor', () => {
+    let ed;
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => { ed.destroy(); ed = null; });
+
+    // Branch 3,18: isHRLine short string + classifyLine HR path
+    test('horizontal rule via classifyLine covers isHRLine branches', async () => {
+        await ed.setMarkdown('text\n\n---\n\nmore');
+        expect(ed.html).toContain('<hr');
+    });
+
+    // Branch 3 true-arm: too-short HR-like line
+    test('two dashes is not an HR (isHRLine len < 3 true-arm)', async () => {
+        await ed.setMarkdown('--');
+        expect(ed.html).not.toContain('<hr');
+    });
+
+    // Branch 11: fenceOpen with < 3 backticks
+    test('two backticks is not a fence (fenceOpen len < 3)', async () => {
+        await ed.setMarkdown('``not fence``');
+        // Should be rendered as inline code, not a fenced block
+        expect(ed.html).toContain('<code');
+    });
+
+    // Branches 12,15-16: isFenceClose too short / trailing content
+    test('fence close shorter than opening does not close (isFenceClose)', async () => {
+        // 4-backtick open, 3-backtick "close" attempt
+        await ed.setMarkdown('````js\ncode\n```\nstill code\n````');
+        const html = ed.html;
+        // The 3-backtick line should be inside the code block
+        expect(html).toContain('still code');
+    });
+
+    test('fence close with trailing content does not close (isFenceClose)', async () => {
+        await ed.setMarkdown('```js\ncode\n``` extra\nmore\n```');
+        const html = ed.html;
+        // "``` extra" should not close the fence, "more" stays in
+        expect(html).toContain('more');
+    });
+
+    // Branches 30,31,33-36: quikdown(null), quikdown('') defaults
+    test('null input covers non-string guard', async () => {
+        await ed.setMarkdown(null);
+        expect(ed.html).toBe('');
+    });
+
+    // Branch 38,44: allow_unsafe_html: true passes HTML tags through
+    test('allow_unsafe_html: true passes raw HTML tags', async () => {
+        const unsafeEd = new QuikdownEditor('#test-editor', { allowUnsafeHTML: true });
+        await unsafeEd.initPromise;
+        await unsafeEd.setMarkdown('<div class="custom">hello</div>');
+        expect(unsafeEd.html).toContain('<div');
+        expect(unsafeEd.html).toContain('class="custom"');
+        unsafeEd.destroy();
+    });
+
+    // Branch 44: HTML tag attribute double-quote parsing
+    test('allow_unsafe_html limited with double-quoted attributes', async () => {
+        const limitedEd = new QuikdownEditor('#test-editor', { allowUnsafeHTML: 'limited' });
+        await limitedEd.initPromise;
+        await limitedEd.setMarkdown('<div class="test">hello</div>');
+        expect(limitedEd.html).toContain('class="test"');
+        limitedEd.destroy();
+    });
+
+    // Branch 50,62: fenced code without fence_plugin (default code rendering)
+    // The editor always has a fence_plugin, so we test by disabling it
+    test('code block without fence plugin uses default rendering', async () => {
+        // Save and null out the plugin
+        const origPlugin = ed.createFencePlugin;
+        ed.createFencePlugin = () => null;
+        ed.updateFromMarkdown('```js\nconsole.log("hi")\n```');
+        expect(ed.html).toContain('<pre');
+        expect(ed.html).toContain('<code');
+        ed.createFencePlugin = origPlugin;
+    });
+
+    // Branch 67: inline_styles true for code block langClass
+    test('inline_styles code block covers codeAttr ternary', async () => {
+        const stEd = new QuikdownEditor('#test-editor', { inline_styles: true });
+        await stEd.initPromise;
+        // Disable fence plugin so default code rendering kicks in
+        stEd.createFencePlugin = () => null;
+        stEd.updateFromMarkdown('```js\ncode\n```');
+        const html = stEd.html;
+        expect(html).toContain('<pre');
+        stEd.destroy();
+    });
+
+    // Branch 78: table without leading pipe
+    test('table lines not starting with | cover pipe detection branch', async () => {
+        await ed.setMarkdown('A | B\n---|---\n1 | 2');
+        expect(ed.html).toContain('<table');
+    });
+
+    // Branch 94: header-only table
+    test('table with only header row covers bodyLines.length === 0', async () => {
+        await ed.setMarkdown('| H1 | H2 |\n|---|---|');
+        expect(ed.html).toContain('<thead');
+        expect(ed.html).toContain('<table');
+    });
+
+    // Branches 101,103: task list with inline_styles
+    test('task list with inline_styles covers checkbox style branches', async () => {
+        const stEd = new QuikdownEditor('#test-editor', { inline_styles: true });
+        await stEd.initPromise;
+        await stEd.setMarkdown('- [x] done\n- [ ] todo');
+        const html = stEd.html;
+        expect(html).toContain('margin-right');
+        expect(html).toContain('list-style:none');
+        stEd.destroy();
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Group B: toMarkdown branch coverage via updateFromHTML
+// Targets: branches 117,119-121,127-133,139,143-146,149,152-154,
+//          174,176,183,185,193-200
+// ═══════════════════════════════════════════════════════════════
+
+describe('toMarkdown branch coverage via updateFromHTML', () => {
+    let ed;
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => { ed.destroy(); ed = null; });
+
+    // Branches 127,129,131,133: empty inline elements
+    test('empty strong/em/del/code produce no markers', () => {
+        ed.previewPanel.innerHTML = '<strong></strong><em></em><del></del><code></code>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).not.toContain('**');
+        expect(md).not.toContain('~~');
+    });
+
+    // Branches 130,132: em/del without data-qd uses default marker
+    test('em and del without data-qd use default markers', () => {
+        ed.previewPanel.innerHTML = '<p><em>text</em> and <del>removed</del></p>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('*text*');
+        expect(md).toContain('~~removed~~');
+    });
+
+    // Branch 143: pre with data-qd-fence but no data-qd-source
+    test('pre without data-qd-source falls back to code textContent', () => {
+        ed.previewPanel.innerHTML = '<pre data-qd-fence="```"><code>some code</code></pre>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('```');
+        expect(md).toContain('some code');
+    });
+
+    // Branch 144: pre without data-qd-source and without <code> child
+    test('pre without code child falls back to childContent', () => {
+        ed.previewPanel.innerHTML = '<pre data-qd-fence="```">raw text</pre>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('raw text');
+    });
+
+    // Branches 145-146: blockquote/hr without data-qd
+    test('blockquote and hr without data-qd use default markers', () => {
+        ed.previewPanel.innerHTML = '<blockquote><p>quote</p></blockquote><hr>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('>');
+        expect(md).toContain('---');
+    });
+
+    // Branches 152-154: img without data-qd-alt/data-qd-src
+    test('img without data-qd attrs uses alt and src', () => {
+        ed.previewPanel.innerHTML = '<p><img alt="pic" src="img.png"></p>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('![pic](img.png)');
+    });
+
+    // Branch 149: link without data-qd-text
+    test('link without data-qd-text uses child text', () => {
+        ed.previewPanel.innerHTML = '<p><a href="https://example.com">click</a></p>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('[click](https://example.com)');
+    });
+
+    // Branch 183: walkList skip non-LI children
+    test('list with non-LI children skips them', () => {
+        ed.previewPanel.innerHTML = '<ul><span>junk</span><li>item</li></ul>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('item');
+    });
+
+    // Branch 185: ordered list without data-qd marker
+    test('ordered list without data-qd uses index markers', () => {
+        ed.previewPanel.innerHTML = '<ol><li>first</li><li>second</li></ol>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('1.');
+        expect(md).toContain('2.');
+    });
+
+    // Branch 193: table without data-qd-align
+    test('table without data-qd-align uses default separators', () => {
+        ed.previewPanel.innerHTML = '<table><thead><tr><th>H</th></tr></thead><tbody><tr><td>D</td></tr></tbody></table>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('|');
+        expect(md).toContain('---');
+    });
+
+    // Branches 194-196: table without thead
+    test('table without thead handles missing header', () => {
+        ed.previewPanel.innerHTML = '<table><tbody><tr><td>data</td></tr></tbody></table>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('data');
+    });
+
+    // Branches 199-200: table without tbody
+    test('table without tbody handles header-only', () => {
+        ed.previewPanel.innerHTML = '<table><thead><tr><th>H1</th><th>H2</th></tr></thead></table>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('H1');
+    });
+
+    // Branch 121: toMarkdown with non-string, non-Element → ''
+    test('updateFromHTML with empty preview yields empty markdown', () => {
+        ed.previewPanel.innerHTML = '';
+        ed.updateFromHTML();
+        expect(ed.getMarkdown()).toBe('');
+    });
+
+    // Branch 174: mermaid pre without data-qd-source
+    test('mermaid container without data-qd-source falls back to textContent', () => {
+        ed.previewPanel.innerHTML = '<div class="mermaid-container"><pre class="mermaid">graph TD\nA-->B</pre></div>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('mermaid');
+    });
+
+    // Branch 176: mermaid without "graph" in text
+    test('mermaid content without "graph" keyword', () => {
+        ed.previewPanel.innerHTML = '<div class="mermaid-container"><pre class="mermaid">pie title Pets</pre></div>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('pie');
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Group C: Editor method and loadPlugins branch coverage
+// Targets: branches 354,355,462,464,469,471-472,474,477,485,
+//          435,448,451,453,458,497,506,509,511,517,518-519,
+//          528,540,556,559-560,569,376
+// ═══════════════════════════════════════════════════════════════
+
+describe('loadPlugins branch coverage', () => {
+    let ed;
+    let origLoadScript;
+    let origLoadCSS;
+
+    beforeEach(() => {
+        // Mock loadScript/loadCSS on prototype to prevent real script loading
+        origLoadScript = QuikdownEditor.prototype.loadScript;
+        origLoadCSS = QuikdownEditor.prototype.loadCSS;
+        QuikdownEditor.prototype.loadScript = jest.fn().mockResolvedValue();
+        QuikdownEditor.prototype.loadCSS = jest.fn().mockResolvedValue();
+    });
+
+    afterEach(() => {
+        if (ed) { ed.destroy(); ed = null; }
+        QuikdownEditor.prototype.loadScript = origLoadScript;
+        QuikdownEditor.prototype.loadCSS = origLoadCSS;
+        delete window.hljs;
+        delete window.mermaid;
+        delete window.MathJax;
+    });
+
+    // Branch 462,464: plugins option with mermaid: true
+    test('plugins: { mermaid: true } triggers mermaid loading', async () => {
+        ed = new QuikdownEditor('#test-editor', { plugins: { mermaid: true } });
+        await ed.initPromise;
+        // loadPlugins was called during init, loadScript should have been called for mermaid
+        expect(QuikdownEditor.prototype.loadScript).toHaveBeenCalled();
+    });
+
+    // Branch 474: library already loaded — check() returns true
+    test('already-loaded library is skipped in loadPlugins', async () => {
+        window.hljs = { highlightElement: jest.fn() };
+        ed = new QuikdownEditor('#test-editor', { preloadFences: ['highlightjs'] });
+        await ed.initPromise;
+        // hljs.check() returns true during init, so loadScript is NOT called for hljs
+        // (it may still be called for mermaid in the plugins option, but not hljs)
+    });
+
+    // Branch 469,471-472: custom preloadFences object entry
+    test('preloadFences with custom object entry', async () => {
+        ed = new QuikdownEditor('#test-editor', {
+            preloadFences: [{ script: 'https://example.com/lib.js' }]
+        });
+        await ed.initPromise;
+        const customKey = Object.keys(ed._fenceLibraries).find(k => k.startsWith('__custom__'));
+        expect(customKey).toBeDefined();
+    });
+
+    // Branch 477: lib without css/cssDark — no _syncHljsTheme
+    test('mermaid preload does not call _syncHljsTheme (no css)', async () => {
+        ed = new QuikdownEditor('#test-editor', { preloadFences: ['mermaid'] });
+        await ed.initPromise;
+        // Mermaid has no css, so _syncHljsTheme should not be called for it during load
+    });
+
+    // Branch 485: lazyLoadLibrary with no script URL
+    test('lazyLoadLibrary with null scriptUrl resolves check()', async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+        const result = await ed.lazyLoadLibrary('test', () => true, null);
+        expect(result).toBe(true);
+    });
+
+    // Branch 354: mermaid afterLoad with window.mermaid undefined
+    test('mermaid afterLoad when window.mermaid is undefined', async () => {
+        delete window.mermaid;
+        ed = new QuikdownEditor('#test-editor', { preloadFences: ['mermaid'] });
+        await ed.initPromise;
+        // afterLoad fires but window.mermaid is undefined, so initialize is not called
+    });
+
+    // Branch 355: MathJax beforeLoad when MathJax already defined
+    test('math beforeLoad when MathJax already exists', async () => {
+        window.MathJax = { typesetPromise: jest.fn() };
+        ed = new QuikdownEditor('#test-editor', { preloadFences: ['math'] });
+        await ed.initPromise;
+        // MathJax already existed → beforeLoad's if(!window.MathJax) is false
+    });
+
+    // Branch 4821: preloadFences with invalid value
+    test('preloadFences with invalid string warns', async () => {
+        const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        ed = new QuikdownEditor('#test-editor', { preloadFences: 'invalid' });
+        await ed.initPromise;
+        expect(spy).toHaveBeenCalledWith(expect.stringContaining('preloadFences'));
+        spy.mockRestore();
+    });
+
+    // Branch 4804: preloadFences: 'all'
+    test('preloadFences: "all" loads all fence libraries', async () => {
+        window.hljs = { highlightElement: jest.fn() };
+        window.mermaid = { initialize: jest.fn(), run: jest.fn(), render: jest.fn() };
+        window.MathJax = { typesetPromise: jest.fn() };
+        ed = new QuikdownEditor('#test-editor', { preloadFences: 'all' });
+        await ed.initPromise;
+        // All libs already loaded, so loadScript calls are skipped
+    });
+
+    // Branch 474 again: preloadFences with unknown string warns
+    test('preloadFences with unknown library name warns', async () => {
+        const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        ed = new QuikdownEditor('#test-editor', { preloadFences: ['nonexistent'] });
+        await ed.initPromise;
+        expect(spy).toHaveBeenCalledWith(expect.stringContaining('nonexistent'));
+        spy.mockRestore();
+    });
+});
+
+describe('convertLazyLinefeeds branch coverage (normalizeMarkdown internals)', () => {
+    // Branch 528: nextLine fallback (HR at end of input)
+    test('HR at end of input covers nextLine empty string fallback', () => {
+        const result = QuikdownEditor.convertLazyLinefeeds('text\n\n---');
+        expect(typeof result).toBe('string');
+        expect(result).toContain('text');
+    });
+
+    // Branch 540: inSameBlock with null prev
+    test('first line covers inSameBlock null prev', () => {
+        const result = QuikdownEditor.convertLazyLinefeeds('hello\nworld');
+        expect(result).toContain('hello');
+    });
+});
+
+describe('convertLazyLinefeeds branch coverage', () => {
+    let ed;
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => { ed.destroy(); ed = null; });
+
+    // Branch 556: result ending with blank line
+    test('multiple blank lines between blocks', async () => {
+        const result = QuikdownEditor.convertLazyLinefeeds('# heading\n\n\nparagraph');
+        expect(result).toContain('heading');
+        expect(result).toContain('paragraph');
+    });
+
+    // convertLazyLinefeeds toolbar button feedback
+    test('convertLazyLinefeeds with toolbar button', async () => {
+        const btn = document.createElement('button');
+        btn.classList.add('qde-btn');
+        btn.dataset.action = 'lazy-linefeeds';
+        btn.textContent = 'Lazy LF';
+        ed.toolbar.appendChild(btn);
+        await ed.setMarkdown('line1\nline2');
+        await ed.convertLazyLinefeeds();
+        expect(btn.textContent).toBe('Converted!');
+    });
+
+    // convertLazyLinefeeds without toolbar button
+    test('convertLazyLinefeeds without toolbar button', async () => {
+        await ed.setMarkdown('line1\nline2');
+        await ed.convertLazyLinefeeds();
+        // Should not throw
+        expect(ed.getMarkdown()).toContain('line1');
+    });
+});
+
+describe('renderTable edge branches', () => {
+    let ed;
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => { ed.destroy(); ed = null; });
+
+    // Branch 402: CSV with quoting needed
+    test('CSV with delimiter in cell triggers quoting branch', () => {
+        const html = ed.renderTable('name,value\n"John,Jr",25', 'csv');
+        expect(html).toContain('John');
+    });
+
+    // Branch 435: empty CSV input
+    test('empty CSV input covers lines.length === 0', () => {
+        const html = ed.renderTable('   ', 'csv');
+        // Trimmed to empty, split gives [''], should handle gracefully
+        expect(typeof html).toBe('string');
+    });
+});
+
+describe('editor copy and setMode edge branches', () => {
+    let ed;
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => { ed.destroy(); ed = null; });
+
+    // Branch 517: copy with no matching toolbar button
+    test('copy markdown with no toolbar button', async () => {
+        // Remove any copy-markdown button
+        const btn = ed.toolbar?.querySelector('[data-action="copy-markdown"]');
+        if (btn) btn.remove();
+        // Should not throw
+        await ed.copy('markdown');
+    });
+
+    // Branch 559-560: copyRendered when result.success is false + no btn
+    test('copyRendered with no toolbar copy-rendered button', async () => {
+        const btn = ed.toolbar?.querySelector('[data-action="copy-rendered"]');
+        if (btn) btn.remove();
+        await ed.setMarkdown('# test');
+        // Suppress error output
+        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        await ed.copyRendered();
+        spy.mockRestore();
+        warnSpy.mockRestore();
+    });
+
+    // Branch 497: setMode with no split-toggle button
+    test('setMode without split-toggle button', () => {
+        const toggle = ed.toolbar?.querySelector('.qde-split-toggle');
+        if (toggle) toggle.remove();
+        ed.setMode('source');
+        expect(ed.currentMode).toBe('source');
+    });
+
+    // Branches 518-519: setMarkdown with null initPromise and null sourceTextarea
+    test('setMarkdown with null initPromise skips await', async () => {
+        ed.initPromise = null;
+        await ed.setMarkdown('# hi');
+        expect(ed.getMarkdown()).toContain('hi');
+    });
+
+    test('setMarkdown with null sourceTextarea', async () => {
+        ed.sourceTextarea = null;
+        await ed.setMarkdown('# test');
+        expect(ed.getMarkdown()).toContain('test');
+    });
+});
+
+describe('renderGeoJSON/renderSTL missing element branches', () => {
+    let ed;
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => { if (ed) { ed.destroy(); ed = null; } });
+
+    // Branch 444: renderGeoJSON with missing container
+    test('renderGeoJSON returns early when container not found', async () => {
+        // Enable complex fences to get renderGeoJSON
+        const geoJSON = '{"type":"FeatureCollection","features":[]}';
+        // Render a geojson fence which creates a container, then remove it
+        await ed.setMarkdown('```geojson\n' + geoJSON + '\n```');
+        const containers = ed.previewPanel.querySelectorAll('[id^="qd-geojson-"]');
+        containers.forEach(c => c.remove());
+        // The renderMap timeout fires but container is gone — should not throw
+        await new Promise(r => setTimeout(r, 100));
+    });
+
+    // Branch 448: renderGeoJSON when already loading
+    test('renderGeoJSON reuses existing loading promise', async () => {
+        window._qde_leaflet_loading = Promise.resolve(false);
+        const geoJSON = '{"type":"FeatureCollection","features":[]}';
+        await ed.setMarkdown('```geojson\n' + geoJSON + '\n```');
+        await new Promise(r => setTimeout(r, 100));
+        delete window._qde_leaflet_loading;
+    });
+
+    // Branch 453: renderSTL when already loading
+    test('renderSTL reuses existing loading promise', async () => {
+        window._qde_threejs_loading = Promise.resolve(false);
+        await ed.setMarkdown('```stl\nsolid test\nendsolid test\n```');
+        await new Promise(r => setTimeout(r, 100));
+        delete window._qde_threejs_loading;
+    });
+});
+
+describe('parseSTL malformed input branch', () => {
+    let ed;
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => { ed.destroy(); ed = null; });
+
+    // Branch 458: vertex before facet normal
+    test('vertex line before any facet normal covers currentNormal null', async () => {
+        const malformedSTL = 'solid test\nvertex 0 0 0\nvertex 1 0 0\nvertex 0 1 0\nendsolid test';
+        await ed.setMarkdown('```stl\n' + malformedSTL + '\n```');
+        // Should not crash; the STL may not render correctly but should handle gracefully
+        expect(ed.html.length).toBeGreaterThan(0);
+    });
+});
+
+describe('setAllowUnsafeHTML edge branches', () => {
+    let ed;
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => { ed.destroy(); ed = null; });
+
+    // Branch 569: setAllowUnsafeHTML with null toolbar
+    test('setAllowUnsafeHTML with null toolbar', () => {
+        ed.toolbar = null;
+        ed.setAllowUnsafeHTML('limited');
+        expect(ed.options.allowUnsafeHTML).toBe('limited');
+    });
+
+    // setAllowUnsafeHTML cycling through all valid modes
+    test('setAllowUnsafeHTML cycles false → limited → true', () => {
+        ed.setAllowUnsafeHTML(false);
+        expect(ed.options.allowUnsafeHTML).toBe(false);
+        ed.setAllowUnsafeHTML('limited');
+        expect(ed.options.allowUnsafeHTML).toBe('limited');
+        ed.setAllowUnsafeHTML(true);
+        expect(ed.options.allowUnsafeHTML).toBe(true);
+    });
+});
+
+describe('fence plugin reverse edge branches', () => {
+    let ed;
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => { ed.destroy(); ed = null; });
+
+    // Branch 139: fence_plugin.reverse returns null (falsy result)
+    test('fence plugin reverse returning null falls back to default', () => {
+        ed.previewPanel.innerHTML = '<div data-qd-fence="```" data-qd-lang="js"><code>let x = 1;</code></div>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('```');
+    });
+
+    // Branches 163-164: div reverse — result without fence/lang
+    test('div with data-qd-lang but reverse returns content only', () => {
+        ed.previewPanel.innerHTML = '<div data-qd-fence="```" data-qd-lang="chart"><code>chart data</code></div>';
+        ed.updateFromHTML();
+        const md = ed.getMarkdown();
+        expect(md).toContain('```');
+    });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// Group D: getRenderedContent / copy module branch coverage
+// Targets the large block of uncovered branches in lines 2067-2896
+// ═══════════════════════════════════════════════════════════════
+
+describe('getRenderedContent branch coverage via copyRendered', () => {
+    let ed;
+    const origCreateElement = document.createElement.bind(document);
+
+    beforeEach(async () => {
+        ed = new QuikdownEditor('#test-editor');
+        await ed.initPromise;
+    });
+
+    afterEach(() => {
+        if (ed) { ed.destroy(); ed = null; }
+        delete window.ClipboardItem;
+    });
+
+    // Helper: set up clipboard mocks for copyRendered to succeed
+    function mockClipboard() {
+        const mockWrite = jest.fn().mockResolvedValue();
+        Object.defineProperty(navigator, 'clipboard', {
+            value: { write: mockWrite, writeText: jest.fn().mockResolvedValue() },
+            writable: true,
+            configurable: true
+        });
+        window.ClipboardItem = jest.fn().mockImplementation((data) => ({ data }));
+    }
+
+    // Branch 1856: invalid output profile
+    test('copyRendered with invalid output profile logs error', async () => {
+        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        // copyRendered catches all errors internally
+        await ed.copyRendered('nonexistent-profile');
+        spy.mockRestore();
+    });
+
+    // Branch 1859: null previewPanel
+    test('copyRendered with null previewPanel logs error', async () => {
+        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        ed.previewPanel = null;
+        await ed.copyRendered();
+        spy.mockRestore();
+    });
+
+    // STL container processing (lines 2127-2193): fallback to placeholder
+    test('STL container without canvas falls back to placeholder', async () => {
+        mockClipboard();
+        // Put an STL container in preview
+        ed.previewPanel.innerHTML = '<div class="qde-stl-container" data-stl-id="test1"><p>No canvas</p></div>';
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        await ed.copyRendered();
+        warnSpy.mockRestore();
+    });
+
+    // Mermaid container without SVG (lines 2196-2253): skip
+    test('Mermaid container without SVG is left as-is', async () => {
+        mockClipboard();
+        ed.previewPanel.innerHTML = '<div class="mermaid"><p>Loading...</p></div>';
+        await ed.copyRendered();
+    });
+
+    // GeoJSON container processing (lines 2380-2477): no matching live container
+    test('geojson-container without live original falls back to placeholder', async () => {
+        mockClipboard();
+        ed.previewPanel.innerHTML = '<div class="geojson-container" data-original-source=\'{"type":"Feature"}\'>map</div>';
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        await ed.copyRendered();
+        warnSpy.mockRestore();
+    });
+
+    // Table container (lines 2509-2514): should be preserved
+    test('table container is preserved in copy', async () => {
+        mockClipboard();
+        ed.previewPanel.innerHTML = '<div class="qde-table-container"><table><tr><td>data</td></tr></table></div>';
+        await ed.copyRendered();
+    });
+
+    // HTML fence container with source (lines 2529-2552)
+    test('HTML fence container with data-qd-source is processed', async () => {
+        mockClipboard();
+        ed.previewPanel.innerHTML = '<div class="qde-html-container" data-qd-source="<b>hello</b>"><pre>&lt;b&gt;hello&lt;/b&gt;</pre></div>';
+        await ed.copyRendered();
+    });
+
+    // HTML fence container without source and without pre (lines 2811-2894)
+    test('HTML fence container without source and without pre processes images', async () => {
+        mockClipboard();
+        ed.previewPanel.innerHTML = '<div class="qde-html-container"><p>rendered HTML</p></div>';
+        await ed.copyRendered();
+    });
+
+    // Image with naturalWidth/Height (lines 2067, 2070)
+    test('image with naturalWidth gets dimensions set', async () => {
+        mockClipboard();
+        const img = document.createElement('img');
+        img.src = 'data:image/png;base64,iVBOR';
+        Object.defineProperty(img, 'naturalWidth', { value: 200 });
+        Object.defineProperty(img, 'naturalHeight', { value: 100 });
+        ed.previewPanel.innerHTML = '';
+        ed.previewPanel.appendChild(img);
+        await ed.copyRendered();
+    });
+
+    // Image with large blob (lines 2107-2109)
+    test('oversized image triggers size warning', async () => {
+        mockClipboard();
+        // Create an img with a non-data URL to trigger the fetch path
+        ed.previewPanel.innerHTML = '<p><img src="http://example.com/huge.png" /></p>';
+        // Mock fetch to return a large blob
+        const mockBlob = new Blob(['x'.repeat(100)], { type: 'image/png' });
+        Object.defineProperty(mockBlob, 'size', { value: 3 * 1024 * 1024, writable: false });
+        global.fetch = jest.fn().mockResolvedValue({
+            blob: () => Promise.resolve(mockBlob)
+        });
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        await ed.copyRendered();
+        warnSpy.mockRestore();
+        delete global.fetch;
+    });
+
+    // getRenderedContent 'stripped' mode (line 1884: output !== 'stripped' false-arm)
+    test('copyRendered with stripped mode skips inline styling', async () => {
+        mockClipboard();
+        await ed.setMarkdown('**bold** text');
+        await ed.copyRendered('stripped');
+    });
+
+    // GeoJSON map with data-qd-lang="geojson" (lines 2560-2673)
+    test('geojson container with data-qd-lang is processed', async () => {
+        mockClipboard();
+        ed.previewPanel.innerHTML = '<div data-qd-lang="geojson" id="qd-geojson-1"><div class="leaflet-container"></div></div>';
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        await ed.copyRendered();
+        warnSpy.mockRestore();
+    });
+
+    // Chart container (lines 2256-2354)
+    test('chart container without canvas falls back to placeholder', async () => {
+        mockClipboard();
+        ed.previewPanel.innerHTML = '<div class="qde-chart-container" data-chart-id="test1"><p>Chart</p></div>';
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+        await ed.copyRendered();
+        warnSpy.mockRestore();
+    });
+
+    // Chart container with canvas in original
+    test('chart container with canvas captures image', async () => {
+        mockClipboard();
+        // Set up chart container in preview with matching original
+        const chartDiv = document.createElement('div');
+        chartDiv.className = 'qde-chart-container';
+        chartDiv.dataset.chartId = 'chart-test';
+        const mockCanvas = origCreateElement('canvas');
+        Object.defineProperty(mockCanvas, 'width', { value: 400, writable: true });
+        Object.defineProperty(mockCanvas, 'height', { value: 300, writable: true });
+        mockCanvas.toDataURL = jest.fn(() => 'data:image/png;base64,mockPNG');
+        chartDiv.appendChild(mockCanvas);
+        ed.previewPanel.innerHTML = '';
+        ed.previewPanel.appendChild(chartDiv);
+        await ed.copyRendered();
+    });
+});

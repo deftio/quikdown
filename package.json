@@ -101,9 +101,9 @@
     "test:ast": "NODE_NO_WARNINGS=1 jest --testPathPattern='quikdown_ast|quikdown_json|quikdown_yaml|quikdown_ast_html' --coverage",
     "test:coverage": "NODE_NO_WARNINGS=1 jest tests/quikdown.test.js tests/quikdown_bd.test.js tests/quikdown_edit_esm.test.js --coverage --coverageReporters=text-summary",
     "test:unit": "jest --coverage",
-    "test:e2e": "npx playwright test --config=playwright.config.cjs",
+    "test:e2e": "npx playwright test --config=playwright.config.cjs --grep-invert @coverage",
     "test:standalone:e2e": "npx playwright test tests/quikdown-standalone.spec.js --config=playwright.config.cjs",
-    "test:e2e:full": "npx playwright test --config=playwright.config.cjs",
+    "test:e2e:full": "npx playwright test --config=playwright.config.cjs --grep-invert @coverage",
     "test:editor:e2e": "npx playwright test tests/quikdown-editor.spec.js",
     "updateVersion": "node ./tools/updateVersion",
     "updateBadges": "node ./tools/updateBadges.js",
@@ -130,7 +130,11 @@
     "build:airgap": "node tools/buildAirgapZip.cjs",
     "sizes": "node tools/printSizes.cjs",
     "clean": "node tools/clean.cjs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:coverage": "rollup -c rollup.config.coverage.js",
+    "test:e2e:coverage": "npx playwright test --grep @coverage --config=playwright.config.cjs --project=chromium",
+    "coverage:merge": "node tools/mergeCoverage.cjs",
+    "coverage:full": "npm run build:coverage && npm run test:e2e:coverage && npm test && npm run coverage:merge"
   },
   "jest": {
     "testEnvironment": "jsdom",
@@ -160,7 +164,8 @@
       "html",
       "text",
       "lcov",
-      "json-summary"
+      "json-summary",
+      "json"
     ],
     "coveragePathIgnorePatterns": [
       "/node_modules/"

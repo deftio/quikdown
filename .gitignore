@@ -44,3 +44,6 @@ coverage/
 
 # Generated test results
 /test-results/
+
+# Istanbul-instrumented bundle (built by npm run build:coverage)
+dist/quikdown_edit.esm.cov.js
