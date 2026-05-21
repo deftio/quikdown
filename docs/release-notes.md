@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.2.15 (unreleased)
+## v1.2.15
 
 ### Release pipeline
 - **Fixed publish workflow**: `gzip -9 -k -f` in `publish.yml` prevents failure when `.gz` files already exist from the build step
