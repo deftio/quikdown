@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.2.14
+ * @version 1.2.15
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -123,7 +123,7 @@ function isHRLine(trimmed) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.14';
+const quikdownVersion = '1.2.15';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
