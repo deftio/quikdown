@@ -330,9 +330,13 @@ npx quikdown-mcp --root=/path/to/docs  # custom sandbox root
 
 | Group | Tools | When Available |
 |-------|-------|----------------|
-| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info` | Always |
+| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info`, `markdown_to_ast`, `markdown_to_json` | Always |
 | Filesystem | `read_file_info`, `read_file_lines`, `read_file_markdown`, `write_markdown_to_file`, `write_html_to_file` | `--root` set |
-| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo` | Editor binding |
+| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo`, `load_file_to_editor`, `get_rendered`, `write_rendered_to_file` | Editor binding |
+
+### When to Use MCP Tools vs Raw Edits
+
+Use MCP tools when an agent needs quikdown-specific parsing, bidirectional conversion, sandboxed file I/O, or structured editor control (regex search with line numbers, undo/redo, rendered export). Use raw string edits when modifying known files without needing quikdown's parser.
 
 ### AI Host Configuration
 

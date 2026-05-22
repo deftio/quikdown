@@ -14,7 +14,7 @@
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="quikdown">
   <meta property="og:title" content="quikdown MCP Server">
-  <meta property="og:description" content="AI agent integration via Model Context Protocol. 19 tools for markdown parsing, file I/O, and editor control.">
+  <meta property="og:description" content="AI agent integration via Model Context Protocol. 24 tools for markdown parsing, file I/O, and editor control.">
   <meta property="og:url" content="https://deftio.github.io/quikdown/pages/mcp/">
 
   <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
@@ -103,7 +103,7 @@
         <span class="qd-hero-eyebrow">MCP Server &middot; v1.2.16</span>
         <h1 style="font-size: clamp(1.8rem, 4vw, 2.6rem); max-width: 32ch;">Give your AI agent markdown superpowers.</h1>
         <p class="qd-hero-sub">
-          The quikdown MCP server exposes 19 tools over JSON-RPC 2.0 &mdash; markdown parsing, bidirectional conversion, file I/O, and full editor control. Works with Cursor, Claude Desktop, VS Code, and any MCP-compatible host.
+          The quikdown MCP server exposes 24 tools over JSON-RPC 2.0 &mdash; markdown parsing, bidirectional conversion, file I/O, and full editor control. Works with Cursor, Claude Desktop, VS Code, and any MCP-compatible host.
         </p>
       </div>
     </section>
@@ -138,10 +138,36 @@
           </div>
         </div>
 
+        <!-- Path A vs Path B -->
+        <div class="mcp-section">
+          <h2>Path A vs Path B</h2>
+          <p>One MCP package, two setups. The human&rsquo;s UI is different in each case.</p>
+          <div class="mcp-grid">
+            <div class="mcp-card">
+              <h3>Path A <span class="mcp-badge">Shipped</span></h3>
+              <p><strong>Run:</strong> <code>npx quikdown-mcp --root=.</code> in your MCP config.</p>
+              <p><strong>Human:</strong> Your IDE (Cursor, VS Code) &mdash; edit <code>.md</code> files as usual. <strong>No browser window.</strong></p>
+              <p><strong>Agent:</strong> Parse, convert, read/write files by path (headless + filesystem tools).</p>
+            </div>
+            <div class="mcp-card">
+              <h3>Path B <span class="mcp-badge">Doc copilot</span></h3>
+              <p><strong>Run:</strong> A small <strong>Node.js host</strong> (opens MCP on stdio for Cursor).</p>
+              <p><strong>Human:</strong> A <strong>browser tab</strong> with QuikdownEditor &mdash; split view, live preview, fences. You interact here.</p>
+              <p><strong>Node:</strong> Launcher + bridge only &mdash; not the editor UI. Forwards agent tool calls to the browser editor.</p>
+              <p><strong>Agent:</strong> Full buffer control + rich render export (when host is running).</p>
+            </div>
+          </div>
+          <p style="font-size:0.9rem;color:#4b5563;margin-top:1rem;">
+            Path B is <strong>both</strong> a Node process and a browser window &mdash; not either/or.
+            Installing MCP does <strong>not</strong> turn Cursor into QuikdownEditor.
+            See <a href="https://github.com/deftio/quikdown/blob/main/docs/quikdown-mcp.md#path-a-vs-path-b" target="_blank" rel="noopener">docs/quikdown-mcp.md</a> for architecture and limits.
+          </p>
+        </div>
+
         <!-- Tool Groups -->
         <div class="mcp-section">
           <h2>Tool Groups</h2>
-          <p>The server organizes 19 tools into three groups, activated by configuration.</p>
+          <p>The server organizes 24 tools into three groups, activated by configuration.</p>
           <div class="mcp-grid">
             <div class="mcp-card">
               <h3>Headless <span class="mcp-badge">Always on</span></h3>
@@ -151,6 +177,8 @@
                 <tr><td><code>html_to_markdown</code></td><td>HTML &rarr; Markdown</td></tr>
                 <tr><td><code>markdown_stats</code></td><td>Word/line/paragraph counts</td></tr>
                 <tr><td><code>quikdown_info</code></td><td>Version, modules, active groups</td></tr>
+                <tr><td><code>markdown_to_ast</code></td><td>Markdown &rarr; AST (structured tree)</td></tr>
+                <tr><td><code>markdown_to_json</code></td><td>Markdown &rarr; JSON string</td></tr>
               </table>
             </div>
             <div class="mcp-card">
@@ -178,6 +206,9 @@
                 <tr><td><code>get_html</code></td><td>Get parsed HTML output</td></tr>
                 <tr><td><code>undo</code></td><td>Undo last change</td></tr>
                 <tr><td><code>redo</code></td><td>Redo last undo</td></tr>
+                <tr><td><code>load_file_to_editor</code></td><td>Load file into buffer</td></tr>
+                <tr><td><code>get_rendered</code></td><td>Rich HTML export (Path B)</td></tr>
+                <tr><td><code>write_rendered_to_file</code></td><td>Export rendered to file</td></tr>
               </table>
             </div>
           </div>

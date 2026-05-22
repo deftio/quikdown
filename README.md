@@ -13,7 +13,7 @@ A small, secure markdown parser and editor for browsers and Node.js. Three modul
 - **quikdown_edit.js** (84.3 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.
 - **quikdown_edit_standalone.js** (3.8 MB) — Offline/air-gapped editor. Same as above but bundles highlight.js, Mermaid, DOMPurify, Leaflet, and Three.js — no CDN required. See [Standalone Docs](docs/standalone-editor.md).
 - **quikdown_ast.js** / **quikdown_json.js** / **quikdown_yaml.js** / **quikdown_ast_html.js** — AST companion libraries for structured output.
-- **quikdown_mcp.js** — MCP (Model Context Protocol) server. Exposes 19 tools for AI agents over JSON-RPC 2.0 on stdio. Works with Cursor, Claude Desktop, VS Code, and any MCP host.
+- **quikdown_mcp.js** — MCP (Model Context Protocol) server. Exposes 24 tools for AI agents over JSON-RPC 2.0 on stdio. Works with Cursor, Claude Desktop, VS Code, and any MCP host.
 
 **[Live Site](https://deftio.github.io/quikdown/pages/)** | **[Try the Editor](https://deftio.github.io/quikdown/pages/edit/)** | **[Examples](https://deftio.github.io/quikdown/pages/examples/)** | **[Frameworks](https://deftio.github.io/quikdown/pages/frameworks/)** | **[Downloads](https://deftio.github.io/quikdown/pages/downloads/)** | **[Docs](docs/)**
 
@@ -153,20 +153,29 @@ Overview: [docs/llm-integration.md](docs/llm-integration.md)
 
 ## MCP Server (AI Agent Integration)
 
-quikdown includes an MCP server that lets AI agents parse markdown, convert between formats, read/write files, and control the editor — all over JSON-RPC 2.0.
+quikdown includes an MCP server that lets AI agents parse markdown, convert between formats, read/write files, and (with a doc host) control the editor — all over JSON-RPC 2.0.
+
+**Two paths:**
+
+| Path | Human UI | Command |
+|------|----------|---------|
+| **A — IDE** (shipped) | Cursor / VS Code file editor; no browser | `npx quikdown-mcp --root=.` |
+| **B — Doc copilot** (example planned) | **Browser tab** with QuikdownEditor; Node host bridges MCP | `node examples/mcp-doc-host/start-mcp.js` |
+
+Path B is a **Node launcher + browser window** — you work in the browser; the agent drives the same doc via MCP through Node. See [Path A vs Path B](docs/quikdown-mcp.md#path-a-vs-path-b).
 
 ```bash
 npm install quikdown
 npx quikdown-mcp --root=.
 ```
 
-**19 tools** in three groups:
+**24 tools** in three groups:
 
 | Group | Tools | Activated by |
 |-------|-------|-------------|
-| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info` | Always |
+| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info`, `markdown_to_ast`, `markdown_to_json` | Always |
 | Filesystem | `read_file_info`, `read_file_lines`, `read_file_markdown`, `write_markdown_to_file`, `write_html_to_file` | `--root` flag |
-| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo` | Editor binding |
+| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo`, `load_file_to_editor`, `get_rendered`, `write_rendered_to_file` | Editor binding |
 
 **Cursor** — add to `.cursor/mcp.json`:
 ```json

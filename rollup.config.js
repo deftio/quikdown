@@ -461,6 +461,8 @@ export default [
         if (importer && importer.includes('quikdown_mcp')) {
           if (source === './quikdown.js') return { id: `./quikdown${ext}`, external: true };
           if (source === './quikdown_bd.js') return { id: `./quikdown_bd${ext}`, external: true };
+          if (source === './quikdown_ast.js') return { id: `./quikdown_ast${ext}`, external: true };
+          if (source === './quikdown_json.js') return { id: `./quikdown_json${ext}`, external: true };
         }
         return null;
       }

@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Canvas — quikdown chat + document editor</title>
+  <meta name="description" content="Canvas-style editing: an AI agent drives document editing via chat. Simulated mode works without an API key; live mode uses any OpenAI-compatible provider (BYOK).">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <link rel="stylesheet" href="../styles/integration-example.css">
+  <style>
+    /* AI Canvas page-specific styles (ac- prefix) */
+    .ac-settings {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .ac-settings label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    .ac-settings select,
+    .ac-settings input[type="text"],
+    .ac-settings input[type="password"] {
+      padding: 0.35rem 0.55rem;
+      border: 1px solid #e6e8ee;
+      border-radius: 6px;
+      font-size: 0.83rem;
+      font-family: inherit;
+      background: #fff;
+      color: #1f2937;
+    }
+    body.qd-theme-dark .ac-settings select,
+    body.qd-theme-dark .ac-settings input[type="text"],
+    body.qd-theme-dark .ac-settings input[type="password"] {
+      background: #1e1e2e;
+      border-color: #374151;
+      color: #e5e7eb;
+    }
+    .ac-settings .ac-input-wide {
+      min-width: 160px;
+    }
+
+    .ac-canvas-split {
+      display: grid;
+      grid-template-columns: 35fr 65fr;
+      gap: 1rem;
+      align-items: stretch;
+    }
+    @media (max-width: 960px) {
+      .ac-canvas-split { grid-template-columns: 1fr; }
+    }
+
+    /* Chat container */
+    .ac-chat-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 560px;
+      border: 1px solid #e6e8ee;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    body.qd-theme-dark .ac-chat-container {
+      border-color: #374151;
+      background: #1e1e2e;
+    }
+
+    .ac-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    /* Chat bubbles */
+    .ac-msg {
+      max-width: 88%;
+      padding: 0.55rem 0.75rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      word-wrap: break-word;
+    }
+    .ac-msg p { margin: 0 0 0.4rem 0; }
+    .ac-msg p:last-child { margin-bottom: 0; }
+    .ac-msg code { font-size: 0.82em; }
+    .ac-msg pre { margin: 0.4rem 0; font-size: 0.82rem; overflow-x: auto; }
+    .ac-msg ul, .ac-msg ol { margin: 0.3rem 0; padding-left: 1.2rem; }
+
+    .ac-msg-user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+    }
+    .ac-msg-user a { color: #ddd; }
+
+    .ac-msg-assistant {
+      align-self: flex-start;
+      background: #f3f4f6;
+      color: #1f2937;
+    }
+    body.qd-theme-dark .ac-msg-assistant {
+      background: #252536;
+      color: #e5e7eb;
+    }
+
+    .ac-msg-system {
+      align-self: center;
+      background: #fef3c7;
+      color: #92400e;
+      font-size: 0.82rem;
+      text-align: center;
+    }
+    body.qd-theme-dark .ac-msg-system {
+      background: #422006;
+      color: #fcd34d;
+    }
+
+    .ac-msg-tool {
+      align-self: flex-start;
+      max-width: 92%;
+      font-size: 0.8rem;
+    }
+    .ac-msg-tool summary {
+      cursor: pointer;
+      color: #6c47b8;
+      font-weight: 600;
+      font-size: 0.78rem;
+    }
+    .ac-msg-tool pre {
+      background: #f8f9fb;
+      padding: 0.4rem;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 0.78rem;
+      margin: 0.3rem 0 0 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    body.qd-theme-dark .ac-msg-tool pre {
+      background: #1a1a2e;
+    }
+
+    /* Input area */
+    .ac-input-area {
+      display: flex;
+      gap: 0.4rem;
+      padding: 0.5rem 0.75rem;
+      border-top: 1px solid #e6e8ee;
+      background: #fafbfc;
+    }
+    body.qd-theme-dark .ac-input-area {
+      border-color: #374151;
+      background: #16161e;
+    }
+    .ac-input-area textarea {
+      flex: 1;
+      resize: none;
+      border: 1px solid #e6e8ee;
+      border-radius: 6px;
+      padding: 0.4rem 0.55rem;
+      font-family: inherit;
+      font-size: 0.87rem;
+      line-height: 1.4;
+      min-height: 38px;
+      max-height: 120px;
+      background: #fff;
+      color: #1f2937;
+    }
+    body.qd-theme-dark .ac-input-area textarea {
+      background: #1e1e2e;
+      border-color: #374151;
+      color: #e5e7eb;
+    }
+    .ac-input-area textarea:focus { outline: 2px solid #9550bb; outline-offset: -1px; }
+
+    /* Typing indicator */
+    .ac-typing {
+      align-self: flex-start;
+      padding: 0.5rem 0.75rem;
+      display: flex;
+      gap: 0.25rem;
+    }
+    .ac-typing span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #9ca3af;
+      animation: ac-bounce 1.2s infinite;
+    }
+    .ac-typing span:nth-child(2) { animation-delay: 0.2s; }
+    .ac-typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes ac-bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+
+    /* Live-mode disabled fields */
+    .ac-settings select:disabled,
+    .ac-settings input:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .ac-mode-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.5rem;
+      border-radius: 100px;
+      background: rgba(149, 80, 187, 0.1);
+      color: #6c47b8;
+    }
+    .ac-mode-badge.live {
+      background: rgba(34, 197, 94, 0.12);
+      color: #15803d;
+    }
+    body.qd-theme-dark .ac-mode-badge.live {
+      color: #4ade80;
+    }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="../../pages/examples/">Examples</a> &rsaquo; LLM integrations &rsaquo; AI Canvas</div>
+        <h1>AI Canvas</h1>
+        <p class="lede">
+          Canvas-style editing: chat with an AI agent that reads, writes, and transforms your document.
+          <strong>Simulated mode</strong> works without an API key.
+          Toggle <strong>live mode</strong> to use any OpenAI-compatible provider (BYOK).
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <div class="ac-settings">
+          <span class="ex-panel-label" style="margin:0;">Settings</span>
+          <label>
+            <input type="checkbox" id="toggle-live">
+            Live LLM
+          </label>
+          <span class="ac-mode-badge" id="mode-badge">Simulated</span>
+
+          <select id="sel-provider" disabled>
+            <option value="openai">OpenAI</option>
+            <option value="groq">Groq</option>
+            <option value="together">Together</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="ollama">Ollama (local)</option>
+            <option value="custom">Custom</option>
+          </select>
+          <input type="password" id="inp-apikey" placeholder="API key" class="ac-input-wide" disabled>
+          <input type="text" id="inp-model" placeholder="Model" disabled>
+          <label>
+            <input type="checkbox" id="toggle-tools">
+            Show tools
+          </label>
+          <button type="button" class="ex-btn" id="btn-clear">Clear chat</button>
+          <button type="button" class="ex-btn" id="btn-reset">Reset doc</button>
+        </div>
+
+        <div class="ac-canvas-split">
+          <div>
+            <p class="ex-panel-label">Chat</p>
+            <div class="ac-chat-container">
+              <div class="ac-messages" id="messages"></div>
+              <div class="ac-input-area">
+                <textarea id="chat-input" rows="1" placeholder="Ask the agent to edit your document..."></textarea>
+                <button type="button" class="ex-btn-primary ex-btn" id="btn-send">Send</button>
+              </div>
+            </div>
+          </div>
+          <div>
+            <p class="ex-panel-label">Document canvas (QuikdownEditor)</p>
+            <div class="ex-editor-wrap"><div id="editor"></div></div>
+          </div>
+        </div>
+
+        <p class="muted" style="margin-top:0.75rem;">Try a command:</p>
+        <div class="ex-chips" id="command-chips"></div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>How it works</h2>
+        <div class="ex-flow">
+          <span class="ex-flow-step">1. User types in chat</span>
+          <span>&rarr;</span>
+          <span class="ex-flow-step">2. Agent picks tools</span>
+          <span>&rarr;</span>
+          <span class="ex-flow-step">3. Browser runs tools on editor</span>
+          <span>&rarr;</span>
+          <span class="ex-flow-step">4. Agent replies in chat</span>
+        </div>
+        <p class="muted">
+          <strong>Simulated mode</strong> maps natural-language commands to hard-coded tool sequences.
+          <strong>Live mode</strong> sends messages to an OpenAI-compatible API and executes tool calls returned by the model.
+        </p>
+
+        <h3>Tool reference</h3>
+        <table class="ex-doc-table">
+          <thead>
+            <tr><th>Tool</th><th>Parameters</th><th>Editor API</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>read_editor</code></td><td>&mdash;</td><td><code>editor.getMarkdown()</code></td></tr>
+            <tr><td><code>write_editor</code></td><td><code>content</code></td><td><code>editor.setMarkdown(content)</code></td></tr>
+            <tr><td><code>replace_text</code></td><td><code>find</code>, <code>replace</code></td><td>get &rarr; replace first match &rarr; set</td></tr>
+            <tr><td><code>extract_text</code></td><td><code>start_line</code>, <code>end_line</code></td><td>line slice (read-only)</td></tr>
+            <tr><td><code>get_stats</code></td><td>&mdash;</td><td>character / word / line counts</td></tr>
+            <tr><td><code>undo</code></td><td>&mdash;</td><td><code>editor.undo()</code></td></tr>
+            <tr><td><code>redo</code></td><td>&mdash;</td><td><code>editor.redo()</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="../llm-tool-editor/">LLM tool editor (quikchat) &rarr;</a>
+        <a href="../llm-stream-editor/">Stream into editor &rarr;</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script src="../shared/agent-tools.js"></script>
+  <script type="module">
+    import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+    import quikdown from '../../dist/quikdown.esm.js';
+
+    // ── Initial document ────────────────────────────────────────────
+    const INITIAL_MARKDOWN = `# Project Lighthouse
+
+A next-generation platform for **real-time collaboration** across distributed teams.
+
+## Vision
+
+Build a unified workspace that combines document editing, task tracking, and communication — all in one place.
+
+## Architecture
+
+\`\`\`mermaid
+graph TD
+  Client[Web Client] --> Gateway[API Gateway]
+  Gateway --> Auth[Auth Service]
+  Gateway --> Docs[Document Service]
+  Gateway --> Tasks[Task Service]
+  Docs --> DB[(PostgreSQL)]
+  Tasks --> DB
+  Auth --> Cache[(Redis)]
+\`\`\`
+
+## Key Features
+
+- **Real-time sync** — operational transform for conflict-free editing
+- **Markdown-native** — write in markdown, render beautifully
+- **Plugin system** — extend with custom fence blocks (diagrams, charts, code)
+- **Offline support** — service worker caches documents locally
+- **Role-based access** — viewer, editor, admin permission levels
+
+## Milestones
+
+| Phase | Deliverable | Status |
+|-------|-------------|--------|
+| Alpha | Core editor + auth | Complete |
+| Beta | Real-time sync + sharing | In progress |
+| GA | Plugin marketplace | Planned |
+| v2 | Mobile apps | Planned |
+
+## Technical Stack
+
+\`\`\`javascript
+// Server configuration
+const config = {
+  database: 'postgresql://localhost:5432/lighthouse',
+  redis: 'redis://localhost:6379',
+  port: process.env.PORT || 3000,
+  cors: {
+    origin: ['https://lighthouse.app', 'http://localhost:5173'],
+    credentials: true
+  }
+};
+\`\`\`
+
+## Team
+
+- **Alice Chen** — Lead architect
+- **Bob Martinez** — Frontend engineer
+- **Carol Wu** — Backend engineer
+- **Dave Okonkwo** — DevOps / SRE
+
+---
+
+*Last updated: Q1 2025 planning cycle*
+`;
+
+    // ── Command chips ───────────────────────────────────────────────
+    const COMMANDS = [
+      'Summarize this',
+      'Add a table of contents',
+      'Show stats',
+      'Add a Mermaid diagram',
+      'Make it professional',
+      'Add code examples',
+      "What's in this document?",
+      'Undo',
+    ];
+
+    // ── Provider presets ────────────────────────────────────────────
+    const PROVIDERS = {
+      openai:     { url: 'https://api.openai.com/v1/chat/completions',         model: 'gpt-4o',                          needsKey: true  },
+      groq:       { url: 'https://api.groq.com/openai/v1/chat/completions',    model: 'llama-3.3-70b-versatile',         needsKey: true  },
+      together:   { url: 'https://api.together.xyz/v1/chat/completions',       model: 'meta-llama/Llama-3-70b-chat-hf',  needsKey: true  },
+      openrouter: { url: 'https://openrouter.ai/api/v1/chat/completions',      model: 'anthropic/claude-sonnet-4',     needsKey: true  },
+      ollama:     { url: 'http://localhost:11434/v1/chat/completions',          model: 'llama3.1',                        needsKey: false },
+      custom:     { url: '',                                                    model: '',                                needsKey: true  },
+    };
+
+    // ── OpenAI function-calling tool definitions ────────────────────
+    const TOOL_DEFS = [
+      {
+        type: 'function',
+        function: {
+          name: 'read_editor',
+          description: 'Read the full markdown content from the editor.',
+          parameters: { type: 'object', properties: {}, required: [] }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'write_editor',
+          description: 'Replace the entire editor content with new markdown. Use sparingly — prefer replace_text for targeted edits.',
+          parameters: {
+            type: 'object',
+            properties: { content: { type: 'string', description: 'Full markdown content to write' } },
+            required: ['content']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'replace_text',
+          description: 'Find and replace the first occurrence of a string in the document. Prefer this over write_editor for targeted changes.',
+          parameters: {
+            type: 'object',
+            properties: {
+              find: { type: 'string', description: 'Exact text to find' },
+              replace: { type: 'string', description: 'Replacement text' }
+            },
+            required: ['find', 'replace']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'extract_text',
+          description: 'Extract a range of lines from the document (1-based, inclusive).',
+          parameters: {
+            type: 'object',
+            properties: {
+              start_line: { type: 'integer', description: 'First line (1-based)' },
+              end_line: { type: 'integer', description: 'Last line (1-based, inclusive)' }
+            },
+            required: ['start_line', 'end_line']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'get_stats',
+          description: 'Get character, word, line, and paragraph counts for the document.',
+          parameters: { type: 'object', properties: {}, required: [] }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'undo',
+          description: 'Undo the last editor change.',
+          parameters: { type: 'object', properties: {}, required: [] }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'redo',
+          description: 'Redo the last undone editor change.',
+          parameters: { type: 'object', properties: {}, required: [] }
+        }
+      }
+    ];
+
+    const SYSTEM_PROMPT = `You are a document editing assistant embedded in a markdown editor. You help users write, edit, analyze, and transform their documents.
+
+Available tools:
+- read_editor: Read the current document. Always read before editing.
+- write_editor: Replace the entire document. Use only for full rewrites.
+- replace_text: Find and replace text. Prefer this for targeted edits.
+- extract_text: Read specific line ranges.
+- get_stats: Get document statistics.
+- undo / redo: Undo or redo changes.
+
+Guidelines:
+- Always call read_editor first to see the current content before making changes.
+- Prefer replace_text over write_editor for targeted modifications.
+- The editor supports Mermaid diagrams, syntax-highlighted code blocks, math (KaTeX), CSV tables, and SVG — use them when appropriate.
+- Be concise in your responses. Summarize what you changed.`;
+
+    // ── State ───────────────────────────────────────────────────────
+    let isLiveMode = false;
+    let showToolCalls = false;
+    let conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
+
+    // ── DOM refs ────────────────────────────────────────────────────
+    const messagesEl = document.getElementById('messages');
+    const inputEl = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('btn-send');
+    const providerSel = document.getElementById('sel-provider');
+    const apiKeyInp = document.getElementById('inp-apikey');
+    const modelInp = document.getElementById('inp-model');
+    const liveToggle = document.getElementById('toggle-live');
+    const toolsToggle = document.getElementById('toggle-tools');
+    const clearBtn = document.getElementById('btn-clear');
+    const resetBtn = document.getElementById('btn-reset');
+    const modeBadge = document.getElementById('mode-badge');
+    const chipsEl = document.getElementById('command-chips');
+
+    // ── Editor init ─────────────────────────────────────────────────
+    const editor = new QuikdownEditor('#editor', {
+      mode: 'split',
+      theme: 'auto',
+      showUndoRedo: true,
+      enableComplexFences: true,
+      preloadFences: ['mermaid', 'highlightjs'],
+    });
+    editor.setMarkdown(INITIAL_MARKDOWN);
+    window.editor = editor;
+
+    // ── Chat UI helpers ─────────────────────────────────────────────
+    function addMessage(content, role, options = {}) {
+      const el = document.createElement('div');
+      if (role === 'tool') {
+        el.className = 'ac-msg-tool';
+        el.setAttribute('data-tag', 'tool-call');
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = 'Tool: ' + (options.toolName || 'unknown');
+        details.appendChild(summary);
+        const pre = document.createElement('pre');
+        pre.textContent = content;
+        details.appendChild(pre);
+        el.appendChild(details);
+        if (!showToolCalls) el.style.display = 'none';
+      } else {
+        el.className = 'ac-msg ac-msg-' + role;
+        if (role === 'assistant') {
+          el.innerHTML = quikdown(content, { inline_styles: true });
+        } else {
+          el.textContent = content;
+        }
+      }
+      messagesEl.appendChild(el);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      return el;
+    }
+
+    function showTyping() {
+      const el = document.createElement('div');
+      el.className = 'ac-typing';
+      el.id = 'typing-indicator';
+      el.innerHTML = '<span></span><span></span><span></span>';
+      messagesEl.appendChild(el);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function hideTyping() {
+      const el = document.getElementById('typing-indicator');
+      if (el) el.remove();
+    }
+
+    function setInputEnabled(enabled) {
+      inputEl.disabled = !enabled;
+      sendBtn.disabled = !enabled;
+      sendBtn.textContent = enabled ? 'Send' : 'Thinking\u2026';
+    }
+
+    function clearMessages() {
+      messagesEl.innerHTML = '';
+      conversationHistory = [{ role: 'system', content: SYSTEM_PROMPT }];
+    }
+
+    function toggleToolCallVisibility(visible) {
+      messagesEl.querySelectorAll('[data-tag="tool-call"]').forEach(function (el) {
+        el.style.display = visible ? '' : 'none';
+      });
+    }
+
+    // ── Simulated mode ──────────────────────────────────────────────
+    function simulateCanvasCommand(editor, userText) {
+      const text = userText.trim().toLowerCase();
+      const tools = [];
+
+      function run(name, args) {
+        const result = window.QdAgentTools.executeEditorTool(editor, name, args || {});
+        tools.push({ name, args: args || {}, result });
+        return result;
+      }
+
+      // Table of contents
+      if (/table of contents|toc/i.test(text)) {
+        const md = run('read_editor', {});
+        const headings = md.split('\n').filter(function (l) { return /^#{1,4}\s/.test(l); });
+        if (headings.length === 0) {
+          return { reply: 'No headings found to build a table of contents.', tools };
+        }
+        const toc = headings.map(function (h) {
+          const level = h.match(/^(#+)/)[1].length;
+          const title = h.replace(/^#+\s*/, '');
+          const anchor = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+          return '  '.repeat(level - 1) + '- [' + title + '](#' + anchor + ')';
+        }).join('\n');
+        run('write_editor', { content: '## Table of Contents\n\n' + toc + '\n\n---\n\n' + md });
+        return { reply: 'Added a table of contents with ' + headings.length + ' entries at the top of the document.', tools };
+      }
+
+      // Mermaid diagram
+      if (/mermaid|diagram|flowchart/i.test(text)) {
+        const md = run('read_editor', {});
+        const headings = md.split('\n').filter(function (l) { return /^#{1,3}\s/.test(l); });
+        const nodes = headings.map(function (h, i) {
+          return '  N' + i + '["' + h.replace(/^#+\s*/, '') + '"]';
+        });
+        const edges = [];
+        for (let i = 0; i < nodes.length - 1; i++) {
+          edges.push('  N' + i + ' --> N' + (i + 1));
+        }
+        const diagram = '\n\n## Document Structure\n\n```mermaid\ngraph TD\n' + nodes.join('\n') + '\n' + edges.join('\n') + '\n```\n';
+        run('write_editor', { content: md + diagram });
+        return { reply: 'Appended a Mermaid flowchart showing the document structure (' + headings.length + ' sections).', tools };
+      }
+
+      // Professional / formal tone
+      if (/professional|formal/i.test(text)) {
+        const md = run('read_editor', {});
+        let updated = md;
+        const replacements = [
+          [/\bget\b/gi, 'obtain'],
+          [/\bbuild\b/gi, 'develop'],
+          [/\bbig\b/gi, 'significant'],
+          [/\bfix\b/gi, 'resolve'],
+          [/\buse\b/gi, 'utilize'],
+        ];
+        let count = 0;
+        for (const [pattern, replacement] of replacements) {
+          const before = updated;
+          updated = updated.replace(pattern, replacement);
+          if (updated !== before) count++;
+        }
+        if (count > 0) {
+          run('write_editor', { content: updated });
+          return { reply: 'Applied professional tone adjustments (' + count + ' substitution patterns). Note: a real LLM would produce a much more nuanced rewrite.', tools };
+        }
+        return { reply: 'The document already reads fairly formal. A live LLM could refine the tone further.', tools };
+      }
+
+      // Add code examples
+      if (/code example|add code/i.test(text)) {
+        const md = run('read_editor', {});
+        const codeSection = `
+
+## Code Examples
+
+### JavaScript — Fetch API
+
+\`\`\`javascript
+async function fetchDocuments(projectId) {
+  const response = await fetch(\`/api/projects/\${projectId}/docs\`, {
+    headers: { 'Authorization': \`Bearer \${token}\` }
+  });
+  if (!response.ok) throw new Error(\`HTTP \${response.status}\`);
+  return response.json();
+}
+\`\`\`
+
+### Python — Data Processing
+
+\`\`\`python
+import pandas as pd
+
+def analyze_metrics(filepath: str) -> dict:
+    df = pd.read_csv(filepath)
+    return {
+        "total_records": len(df),
+        "avg_response_ms": df["response_time"].mean(),
+        "p99_response_ms": df["response_time"].quantile(0.99),
+    }
+\`\`\`
+`;
+        run('write_editor', { content: md + codeSection });
+        return { reply: 'Appended JavaScript and Python code examples to the document.', tools };
+      }
+
+      // Analyze / what's in this
+      if (/what.*in this|analyze/i.test(text)) {
+        const md = run('read_editor', {});
+        const statsJson = run('get_stats', {});
+        const stats = JSON.parse(statsJson);
+        const headings = md.split('\n').filter(function (l) { return /^#{1,4}\s/.test(l); });
+        const codeBlocks = (md.match(/```/g) || []).length / 2;
+        const tables = (md.match(/^\|.+\|$/gm) || []).length;
+        const mermaidCount = (md.match(/```mermaid/g) || []).length;
+
+        const analysis = '**Document analysis:**\n\n' +
+          '- **' + stats.words + '** words across **' + stats.lines + '** lines\n' +
+          '- **' + headings.length + '** headings\n' +
+          '- **' + Math.floor(codeBlocks) + '** code blocks' + (mermaidCount ? ' (' + mermaidCount + ' Mermaid)' : '') + '\n' +
+          '- **' + (tables > 0 ? Math.floor(tables / 2) : 0) + '** tables\n' +
+          '- **' + stats.paragraphs + '** paragraphs\n\n' +
+          'Sections: ' + headings.map(function (h) { return '`' + h.replace(/^#+\s*/, '') + '`'; }).join(', ');
+        return { reply: analysis, tools };
+      }
+
+      // Replace pattern
+      if (/replace .+ with .+/i.test(text)) {
+        const match = userText.match(/replace\s+(.+?)\s+with\s+(.+)/i);
+        if (match) {
+          const result = run('replace_text', { find: match[1], replace: match[2] });
+          return { reply: result, tools };
+        }
+      }
+
+      // Fallback to shared agent-tools
+      const fallback = window.QdAgentTools.simulateAgentCommand(editor, userText);
+      return fallback;
+    }
+
+    // ── Live LLM mode ───────────────────────────────────────────────
+    async function runLiveLLM(userText) {
+      const provider = PROVIDERS[providerSel.value] || PROVIDERS.openai;
+      let endpoint = provider.url;
+      let apiKey = apiKeyInp.value.trim();
+      const model = modelInp.value.trim() || provider.model;
+
+      if (providerSel.value === 'custom') {
+        endpoint = apiKeyInp.value.trim();
+        if (!endpoint) {
+          addMessage('Custom mode: enter the endpoint URL in the API key field.', 'system');
+          return;
+        }
+        apiKey = '';
+      }
+
+      if (provider.needsKey && !apiKey && providerSel.value !== 'custom') {
+        addMessage('Please enter an API key for ' + providerSel.value + '.', 'system');
+        return;
+      }
+
+      // Add user message to conversation history
+      conversationHistory.push({ role: 'user', content: userText });
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['Authorization'] = 'Bearer ' + apiKey;
+      if (providerSel.value === 'openrouter') {
+        headers['HTTP-Referer'] = window.location.href;
+        headers['X-Title'] = 'quikdown AI Canvas';
+      }
+
+      const MAX_ROUNDS = 10;
+      let round = 0;
+      let pendingToolCalls = [];
+
+      try {
+        while (round < MAX_ROUNDS) {
+          round++;
+          const body = {
+            model: model,
+            messages: conversationHistory,
+            tools: TOOL_DEFS,
+            temperature: 0.3,
+            stream: false,
+          };
+
+          const resp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+          if (!resp.ok) {
+            const errText = await resp.text();
+            throw new Error('API ' + resp.status + ': ' + errText.slice(0, 200));
+          }
+
+          const data = await resp.json();
+          const choice = data.choices && data.choices[0];
+          if (!choice) throw new Error('No response from API');
+
+          const msg = choice.message;
+          conversationHistory.push(msg);
+
+          // If the model made tool calls, execute them
+          if (msg.tool_calls && msg.tool_calls.length > 0) {
+            for (const tc of msg.tool_calls) {
+              const fn = tc.function;
+              let args = {};
+              try { args = JSON.parse(fn.arguments || '{}'); } catch (e) { /* empty */ }
+              const result = window.QdAgentTools.executeEditorTool(editor, fn.name, args);
+
+              addMessage('Args: ' + JSON.stringify(args) + '\nResult: ' + String(result).slice(0, 1200), 'tool', { toolName: fn.name });
+
+              conversationHistory.push({
+                role: 'tool',
+                tool_call_id: tc.id,
+                content: String(result),
+              });
+            }
+            // Continue loop so the model can respond after seeing tool results
+            continue;
+          }
+
+          // Model responded with text (no more tool calls)
+          if (msg.content) {
+            addMessage(msg.content, 'assistant');
+          }
+          break;
+        }
+
+        if (round >= MAX_ROUNDS) {
+          addMessage('Stopped after ' + MAX_ROUNDS + ' tool rounds.', 'system');
+        }
+      } catch (err) {
+        addMessage('Error: ' + err.message, 'system');
+        // Remove the failed user message from history
+        conversationHistory.pop();
+      }
+    }
+
+    // ── Main handler ────────────────────────────────────────────────
+    async function handleUserMessage(text) {
+      if (!text.trim()) return;
+      addMessage(text, 'user');
+      setInputEnabled(false);
+      showTyping();
+
+      try {
+        if (isLiveMode) {
+          await runLiveLLM(text);
+        } else {
+          // Small delay for visual feedback
+          await new Promise(function (r) { setTimeout(r, 300); });
+          const { reply, tools } = simulateCanvasCommand(editor, text);
+          for (const t of tools) {
+            addMessage('Args: ' + JSON.stringify(t.args) + '\nResult: ' + String(t.result).slice(0, 1200), 'tool', { toolName: t.name });
+          }
+          addMessage(reply, 'assistant');
+        }
+      } catch (err) {
+        addMessage('Error: ' + err.message, 'system');
+      } finally {
+        hideTyping();
+        setInputEnabled(true);
+        inputEl.focus();
+      }
+    }
+
+    // ── Event wiring ────────────────────────────────────────────────
+    sendBtn.addEventListener('click', function () {
+      const text = inputEl.value.trim();
+      if (text) {
+        inputEl.value = '';
+        inputEl.style.height = 'auto';
+        handleUserMessage(text);
+      }
+    });
+
+    inputEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendBtn.click();
+      }
+    });
+
+    // Auto-resize textarea
+    inputEl.addEventListener('input', function () {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // Live mode toggle
+    liveToggle.addEventListener('change', function () {
+      isLiveMode = this.checked;
+      providerSel.disabled = !isLiveMode;
+      apiKeyInp.disabled = !isLiveMode;
+      modelInp.disabled = !isLiveMode;
+      modeBadge.textContent = isLiveMode ? 'Live' : 'Simulated';
+      modeBadge.classList.toggle('live', isLiveMode);
+    });
+
+    // Provider change
+    providerSel.addEventListener('change', function () {
+      const p = PROVIDERS[this.value];
+      if (p) {
+        modelInp.placeholder = p.model || 'Model';
+        modelInp.value = '';
+        if (this.value === 'custom') {
+          apiKeyInp.placeholder = 'Endpoint URL';
+          apiKeyInp.type = 'text';
+        } else {
+          apiKeyInp.placeholder = p.needsKey ? 'API key' : 'Not required';
+          apiKeyInp.type = 'password';
+        }
+      }
+    });
+
+    // Persist API key
+    const savedKey = localStorage.getItem('ac-api-key');
+    const savedProvider = localStorage.getItem('ac-provider');
+    if (savedKey) apiKeyInp.value = savedKey;
+    if (savedProvider) providerSel.value = savedProvider;
+
+    apiKeyInp.addEventListener('change', function () {
+      localStorage.setItem('ac-api-key', this.value);
+    });
+    providerSel.addEventListener('change', function () {
+      localStorage.setItem('ac-provider', this.value);
+    });
+
+    // Show/hide tool calls
+    toolsToggle.addEventListener('change', function () {
+      showToolCalls = this.checked;
+      toggleToolCallVisibility(showToolCalls);
+    });
+
+    // Clear / Reset
+    clearBtn.addEventListener('click', clearMessages);
+    resetBtn.addEventListener('click', function () {
+      editor.setMarkdown(INITIAL_MARKDOWN);
+    });
+
+    // Command chips
+    COMMANDS.forEach(function (cmd) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'ex-chip';
+      btn.textContent = cmd;
+      btn.addEventListener('click', function () {
+        handleUserMessage(cmd);
+      });
+      chipsEl.appendChild(btn);
+    });
+
+    // Welcome message
+    addMessage('Document loaded. I can help you edit, analyze, and transform it. Try one of the command chips below, or type your own request.', 'assistant');
+  </script>
+  <script src="../scripts/example-mount.js" defer></script>
+</body>
+</html>

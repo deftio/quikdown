@@ -80,6 +80,34 @@ Live BYOK demo: [quikchat example_tool_editor.html](https://deftio.github.io/qui
 
 Pair with the **[quikchat](https://github.com/deftio/quikchat)** chat widget for UI, or your own input component.
 
+### 4. MCP server (Model Context Protocol)
+
+For agents that support MCP (Cursor, Claude Desktop, VS Code Copilot, Windsurf), quikdown ships a JSON-RPC 2.0 server that exposes 24 tools over stdio:
+
+```bash
+npx quikdown-mcp --root=.          # headless + filesystem tools
+```
+
+**Path A (IDE):** Agent calls MCP tools (`markdown_to_html`, `read_file_markdown`, `write_html_to_file`, etc.) while the human edits files in their IDE as usual. No browser window.
+
+**Path B (Doc copilot):** A Node host serves QuikdownEditor in a browser tab and bridges MCP stdio to the editor. Agent drives the same buffer the human sees — full buffer control, regex search, rendered HTML export.
+
+| Tool group | Count | What it does |
+|------------|-------|--------------|
+| Headless | 4 | Parse, convert, stats — no file I/O or editor |
+| Filesystem | 5 | Sandboxed read/write of markdown and HTML files |
+| Editor | 13 | Buffer control, regex search/replace, undo/redo, rendered export |
+
+Configuration: add `npx quikdown-mcp --root=.` to your host's MCP config file. See [docs/quikdown-mcp.md](quikdown-mcp.md) for setup guides per tool (Cursor, Claude Desktop, VS Code, Claude Code, Windsurf).
+
+Programmatic use:
+
+```javascript
+import { createMcpServer } from 'quikdown/mcp';
+const mcp = createMcpServer({ root: '.' });
+const result = mcp.callTool('markdown_to_html', { markdown: '# Hello' });
+```
+
 ## Dependencies and footprint
 
 | Module | Runtime deps | Typical size |
@@ -88,6 +116,7 @@ Pair with the **[quikchat](https://github.com/deftio/quikchat)** chat widget for
 | `quikdown/bd` | Zero | ~15 KB min |
 | `quikdown/edit` | Lazy CDN for fences | ~84 KB + on-demand libs |
 | `quikdown_edit_standalone` | Bundled fences | ~3.8 MB min |
+| `quikdown/mcp` | quikdown + quikdown_bd | ~20 KB (JSON-RPC server) |
 
 For **air-gapped** agent UIs, use the [standalone editor](standalone-editor.md) — highlight.js, Mermaid, DOMPurify, Leaflet, Three.js bundled; MathJax still needs network.
 
@@ -105,6 +134,7 @@ Full editor API: [quikdown-editor.md](quikdown-editor.md)
 
 ## Related
 
+- [MCP Server](quikdown-mcp.md) — tool reference, setup guides, JSON-RPC protocol
 - [Architecture](architecture.md) — parser phases
 - [Release process](release-process.md) — standalone ships on every release
 - [Examples hub](../pages/examples/) — all interactive demos

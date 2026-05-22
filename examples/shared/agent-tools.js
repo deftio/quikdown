@@ -3,6 +3,12 @@
  * Agent tool helpers shared by llm-tool-editor demo.
  * Implements the same tool surface documented in quikchat's tool-editor example,
  * operating on a QuikdownEditor instance.
+ *
+ * @deprecated For new integrations, use the MCP server instead:
+ *   import { createMcpServer } from 'quikdown/mcp';
+ * The MCP server provides these same tools plus filesystem, regex search,
+ * rendered export, and JSON-RPC protocol support.
+ * See docs/quikdown-mcp.md and examples/mcp-doc-host/ for details.
  */
 'use strict';
 

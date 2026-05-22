@@ -247,12 +247,12 @@
   },
   {
     "file": "quikdown_mcp.d.ts",
-    "size": 2418,
+    "size": 2769,
     "type": "types"
   },
   {
     "file": "quikdown_mcp.esm.js",
-    "size": 21925,
+    "size": 27179,
     "format": "ESM",
     "minified": false
   },

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>quikdown doc host — MCP Path B</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; height: 100vh; display: flex; flex-direction: column; }
+    #status {
+      background: #1e1e2e; color: #a6adc8; font-size: 0.8rem; padding: 4px 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    #status .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #f38ba8;
+      transition: background 0.3s;
+    }
+    #status .dot.connected { background: #a6e3a1; }
+    #editor-container { flex: 1; }
+  </style>
+</head>
+<body>
+  <div id="status">
+    <span class="dot" id="ws-dot"></span>
+    <span id="ws-label">Connecting...</span>
+  </div>
+  <div id="editor-container"></div>
+
+  <script type="module">
+    import QuikdownEditor from '/dist/quikdown_edit.esm.js';
+
+    // ── Create editor ──────────────────────────────────────────────
+    const editor = new QuikdownEditor('#editor-container', {
+      mode: 'split',
+      theme: 'auto',
+      showToolbar: true,
+      showUndoRedo: true,
+      enableComplexFences: true,
+      plugins: { highlightjs: true, mermaid: true },
+      initialContent: '# Welcome\n\nThis editor is connected to your AI agent via MCP.\n\nEdit here or let the agent make changes — you\'ll see them live.\n'
+    });
+
+    // ── WebSocket connection ───────────────────────────────────────
+    const dot = document.getElementById('ws-dot');
+    const label = document.getElementById('ws-label');
+    let ws;
+
+    function connect() {
+      ws = new WebSocket(`ws://${location.host}`);
+
+      ws.onopen = () => {
+        dot.classList.add('connected');
+        label.textContent = 'Agent connected';
+      };
+
+      ws.onclose = () => {
+        dot.classList.remove('connected');
+        label.textContent = 'Disconnected — reconnecting...';
+        setTimeout(connect, 2000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+
+      ws.onmessage = async (event) => {
+        let msg;
+        try { msg = JSON.parse(event.data); } catch { return; }
+
+        const { id, method, args } = msg;
+        let result, error;
+
+        try {
+          result = await dispatch(method, args || {});
+        } catch (err) {
+          error = err.message;
+        }
+
+        ws.send(JSON.stringify({ id, result, error }));
+      };
+    }
+
+    // ── Dispatch tool calls from the MCP host ──────────────────────
+
+    /** Helper: get markdown stats */
+    function markdownStats(md) {
+      const text = (md || '').trim();
+      return {
+        characters: text.length,
+        words: text.split(/\s+/).filter(Boolean).length,
+        lines: (md || '').split('\n').length,
+        paragraphs: (md || '').split(/\n\s*\n/).filter(p => p.trim()).length
+      };
+    }
+
+    /** Helper: extract lines */
+    function extractLines(md, start, end) {
+      return (md || '').split('\n').slice((start || 1) - 1, end || 1).join('\n');
+    }
+
+    /** Editor tool definitions — sent to the host for tools/list merge */
+    function getEditorToolDefs() {
+      return [
+        { name: 'read_editor', description: 'Read the current markdown content from the editor buffer.', inputSchema: { type: 'object', properties: {} } },
+        { name: 'write_editor', description: 'Replace the entire editor buffer with new markdown content.', inputSchema: { type: 'object', properties: { content: { type: 'string' } }, required: ['content'] } },
+        { name: 'find_regex', description: 'Search editor buffer with a regex pattern.', inputSchema: { type: 'object', properties: { pattern: { type: 'string' }, flags: { type: 'string' }, max_matches: { type: 'integer' } }, required: ['pattern'] } },
+        { name: 'replace_regex', description: 'Replace text in editor buffer using a regex pattern.', inputSchema: { type: 'object', properties: { pattern: { type: 'string' }, replacement: { type: 'string' }, flags: { type: 'string' }, limit: { type: 'string' } }, required: ['pattern', 'replacement'] } },
+        { name: 'replace_text', description: 'Replace the first occurrence of a literal string.', inputSchema: { type: 'object', properties: { find: { type: 'string' }, replace: { type: 'string' } }, required: ['find', 'replace'] } },
+        { name: 'extract_text', description: 'Extract a range of lines from the editor buffer.', inputSchema: { type: 'object', properties: { start_line: { type: 'integer' }, end_line: { type: 'integer' } }, required: ['start_line', 'end_line'] } },
+        { name: 'get_stats', description: 'Get word/line/character/paragraph counts.', inputSchema: { type: 'object', properties: {} } },
+        { name: 'get_html', description: 'Get the HTML output of the current editor buffer.', inputSchema: { type: 'object', properties: {} } },
+        { name: 'undo', description: 'Undo the last editor change.', inputSchema: { type: 'object', properties: {} } },
+        { name: 'redo', description: 'Redo the last undone editor change.', inputSchema: { type: 'object', properties: {} } },
+        { name: 'get_rendered', description: 'Get rich rendered HTML from the preview (rasterized SVGs, Mermaid, etc.).', inputSchema: { type: 'object', properties: { output: { type: 'string', enum: ['default', 'stripped', 'quikdown'] } } } },
+        { name: 'load_file_to_editor', description: 'Read a file and load it into the editor.', inputSchema: { type: 'object', properties: { path: { type: 'string' } }, required: ['path'] } },
+        { name: 'write_rendered_to_file', description: 'Write rendered HTML to a file.', inputSchema: { type: 'object', properties: { path: { type: 'string' }, output: { type: 'string' } }, required: ['path'] } },
+      ];
+    }
+
+    async function dispatch(method, args) {
+      switch (method) {
+        // Direct editor method calls (used by proxy binding)
+        case 'getMarkdown': return editor.getMarkdown();
+        case 'setMarkdown': editor.setMarkdown(args.md); return 'ok';
+        case 'getHTML': return editor.getHTML();
+        case 'canUndo': return editor.canUndo ? editor.canUndo() : false;
+        case 'canRedo': return editor.canRedo ? editor.canRedo() : false;
+        case 'undo': if (editor.undo) editor.undo(); return 'ok';
+        case 'redo': if (editor.redo) editor.redo(); return 'ok';
+        case 'getRenderedContent': {
+          // Import the copy module's getRenderedContent
+          const { getRenderedContent } = await import('/src/quikdown_edit_copy.js');
+          const previewPanel = document.querySelector('.qde-preview');
+          if (!previewPanel) throw new Error('No preview panel found');
+          return await getRenderedContent(previewPanel, args);
+        }
+        case 'getToolDefs': return getEditorToolDefs();
+
+        // Full MCP tool execution (used by handleMcpMessage for editor tools)
+        case 'mcpTool': return executeMcpTool(args.name, args.arguments || {});
+
+        default:
+          throw new Error(`Unknown method: ${method}`);
+      }
+    }
+
+    /** Execute an MCP editor tool in the browser context */
+    async function executeMcpTool(name, args) {
+      const md = () => editor.getMarkdown();
+
+      switch (name) {
+        case 'read_editor':
+          return { content: [{ type: 'text', text: md() }] };
+
+        case 'write_editor':
+          editor.setMarkdown(String(args.content || ''));
+          return { content: [{ type: 'text', text: 'Document replaced.' }] };
+
+        case 'find_regex': {
+          const pattern = String(args.pattern || '');
+          if (pattern.length > 200) throw new Error('Pattern exceeds 200 character limit');
+          const flags = String(args.flags || 'gi');
+          const maxMatches = Math.min(args.max_matches || 50, 200);
+          const re = new RegExp(pattern, flags);
+          const src = md();
+          const lines = src.split('\n');
+          const matches = [];
+          let m;
+          while ((m = re.exec(src)) !== null && matches.length < maxMatches) {
+            const lineNum = src.substring(0, m.index).split('\n').length;
+            matches.push({
+              match: m[0], line: lineNum,
+              column: m.index - src.lastIndexOf('\n', m.index - 1),
+              excerpt: lines[lineNum - 1] || ''
+            });
+            if (!re.global) break;
+          }
+          return { content: [{ type: 'text', text: JSON.stringify({ count: matches.length, matches }, null, 2) }] };
+        }
+
+        case 'replace_regex': {
+          const pattern = String(args.pattern || '');
+          if (pattern.length > 200) throw new Error('Pattern exceeds 200 character limit');
+          const flags = args.limit === 'first'
+            ? String(args.flags || 'g').replace('g', '')
+            : String(args.flags || 'g');
+          const re = new RegExp(pattern, flags);
+          const src = md();
+          const result = src.replace(re, args.replacement);
+          const changed = result !== src;
+          if (changed) editor.setMarkdown(result);
+          return { content: [{ type: 'text', text: changed ? 'Replacement applied.' : 'No matches found.' }] };
+        }
+
+        case 'replace_text': {
+          const src = md();
+          const idx = src.indexOf(String(args.find || ''));
+          if (idx < 0) return { content: [{ type: 'text', text: 'No match found.' }] };
+          editor.setMarkdown(src.slice(0, idx) + String(args.replace || '') + src.slice(idx + String(args.find || '').length));
+          return { content: [{ type: 'text', text: 'Replaced first occurrence.' }] };
+        }
+
+        case 'extract_text':
+          return { content: [{ type: 'text', text: extractLines(md(), args.start_line, args.end_line) }] };
+
+        case 'get_stats':
+          return { content: [{ type: 'text', text: JSON.stringify(markdownStats(md()), null, 2) }] };
+
+        case 'get_html':
+          return { content: [{ type: 'text', text: editor.getHTML() }] };
+
+        case 'undo':
+          if (editor.canUndo && editor.canUndo()) {
+            editor.undo();
+            return { content: [{ type: 'text', text: md() }] };
+          }
+          return { content: [{ type: 'text', text: 'Nothing to undo.' }] };
+
+        case 'redo':
+          if (editor.canRedo && editor.canRedo()) {
+            editor.redo();
+            return { content: [{ type: 'text', text: md() }] };
+          }
+          return { content: [{ type: 'text', text: 'Nothing to redo.' }] };
+
+        case 'get_rendered': {
+          const { getRenderedContent } = await import('/src/quikdown_edit_copy.js');
+          const previewPanel = document.querySelector('.qde-preview');
+          if (!previewPanel) throw new Error('No preview panel');
+          const result = await getRenderedContent(previewPanel, { output: args.output || 'default' });
+          if (!result || !result.success) throw new Error('Failed to get rendered content');
+          return { content: [{ type: 'text', text: result.html || result.text || '' }] };
+        }
+
+        case 'load_file_to_editor':
+          // This is handled server-side (filesystem read) then setMarkdown via WS
+          // The host sends the file content directly
+          throw new Error('load_file_to_editor should be handled by the Node host');
+
+        case 'write_rendered_to_file':
+          // Render in browser, then the host writes to disk
+          throw new Error('write_rendered_to_file should be handled by the Node host');
+
+        default:
+          throw new Error(`Unknown editor tool: ${name}`);
+      }
+    }
+
+    // Start connection
+    connect();
+  </script>
+</body>
+</html>

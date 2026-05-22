@@ -9,15 +9,97 @@ The Quikdown MCP (Model Context Protocol) server exposes quikdown's parsing, bid
 
 ## Overview
 
-The server provides **19 tools** organized in three groups:
+The server provides **24 tools** organized in three groups:
 
 | Group | Tools | When available |
 |-------|-------|----------------|
-| **Headless** | 4 | Always — parse markdown, convert HTML, get stats |
+| **Headless** | 6 | Always — parse markdown, convert HTML, AST/JSON, get stats |
 | **Filesystem** | 5 | When `--root` is set — read/write files in a sandboxed directory |
-| **Editor** | 10 | When a host binds a `QuikdownEditor` instance — full buffer control |
+| **Editor** | 13 | When a host binds a `QuikdownEditor` instance — full buffer control |
 
-The CLI binary (`npx quikdown-mcp`) activates the headless and filesystem groups. Editor tools require a host application that creates the server programmatically and passes an editor binding.
+The CLI binary (`npx quikdown-mcp`) activates the headless and filesystem groups only (**Path A**). Editor and render tools require **Path B** — a host that runs QuikdownEditor in a **browser** and binds the instance to MCP. See [Path A vs Path B](#path-a-vs-path-b) below.
+
+---
+
+## Path A vs Path B
+
+One package (`quikdown/mcp`), one server, two **deployment paths**. Choose by where the human edits and whether you need live preview / rich render export.
+
+### Path A — IDE + `quikdown-mcp` bin (shipped)
+
+**What you run:** `npx quikdown-mcp --root=.` (stdio MCP; no browser, no editor window).
+
+**Who uses what:**
+
+| Role | UI / transport |
+|------|----------------|
+| **Human** | Your IDE (Cursor, VS Code, etc.) — edit `.md` files as usual |
+| **Agent** | MCP → headless + filesystem tools (parse, BD, read/write files by path) |
+
+**Good for:** Repo markdown, doc refactors, HTML↔MD migration, fence checks, exporting `get_html` to disk without loading huge strings into chat.
+
+**Not included:** QuikdownEditor preview, Mermaid/math live render, `get_rendered`, agent driving a split-view doc pane.
+
+### Path B — Doc copilot (Node host + browser; planned example)
+
+**What you run:** A small **Node.js host** (e.g. `node examples/mcp-doc-host/start-mcp.js`) that:
+
+1. Serves a page with **QuikdownEditor** (split or preview)
+2. Opens your **browser** (auto-launch or manual `http://localhost:…`)
+3. Exposes MCP on **stdio** for Cursor (Node bridges tool calls to the editor in the page via WebSocket)
+
+**Who uses what:**
+
+| Role | UI / transport |
+|------|----------------|
+| **Human** | **Browser tab** — QuikdownEditor; you watch preview update, edit manually, undo |
+| **Agent** | MCP → Cursor → Node host → same editor instance (buffer + preview DOM) |
+
+Path B is **both** processes: Node is the launcher/bridge, **not** the editor UI. The human always interacts in the **browser**. The agent never replaces that window — it edits the same document through MCP while you watch.
+
+**Good for:** Long-form doc drafting, fence-heavy content, rich export (`get_rendered`, `write_rendered_to_file`), “copilot rewrites doc while I watch.”
+
+**Requires (explicit limits):**
+
+- A **real browser** with preview DOM — `get_rendered` cannot run in pure Node or from the Path A bin alone
+- **Two surfaces** unless you embed chat+editor in one page (e.g. quikchat + editor): typically Cursor + browser tab
+- **Async render** — Mermaid/MathJax need time to settle in preview before `get_rendered`
+- Doc host must be **running** before editor MCP tools work
+
+**Planned example layout:**
+
+```
+examples/mcp-doc-host/
+  start-mcp.js       # Cursor MCP entry: Node stdio + browser launcher
+  server.js          # Static server + WebSocket bridge to editor
+  editor-host.html   # QuikdownEditor — human works here
+  README.md          # Setup + known limitations
+```
+
+**Cursor config (Path B)** — command starts the **host**, not bare `quikdown-mcp`:
+
+```json
+{
+  "mcpServers": {
+    "quikdown-doc": {
+      "command": "node",
+      "args": ["examples/mcp-doc-host/start-mcp.js"]
+    }
+  }
+}
+```
+
+### Quick comparison
+
+| | **Path A** | **Path B** |
+|--|------------|------------|
+| Human UI | IDE file editor | **Browser** — QuikdownEditor |
+| Node process | MCP bin only | Host + MCP + file sandbox + bridge |
+| Browser | Not used | **Required** (preview + render) |
+| Agent tools | Headless + filesystem | + editor + render + export (when implemented) |
+| Daily friction | Low (MCP config once) | Run doc host before session |
+
+**Do not claim:** “Install MCP → Cursor becomes QuikdownEditor.” Path A keeps IDE editing. Path B adds a separate browser doc session.
 
 ---
 
@@ -215,6 +297,22 @@ Returns JSON with `characters`, `words`, `lines`, `paragraphs`.
 
 Get server metadata: version, available modules, active tool groups, and usage hints. Takes no parameters.
 
+#### `markdown_to_ast`
+
+Parse markdown into an AST (Abstract Syntax Tree) object. Returns a structured node tree as JSON.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `markdown` | string | yes | Markdown content to parse |
+
+#### `markdown_to_json`
+
+Parse markdown into a JSON string representation of the AST.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `markdown` | string | yes | Markdown content to parse |
+
 ---
 
 ### Filesystem Tools (requires `--root`)
@@ -338,6 +436,31 @@ Undo the last editor change. Takes no parameters.
 
 Redo the last undone editor change. Takes no parameters.
 
+#### `load_file_to_editor`
+
+Read a file from the filesystem sandbox and load it into the editor buffer. Requires both an editor binding and a filesystem root. Files over 100 KB are skipped (returns stats instead of loading).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `path` | string | yes | File path (relative to root) |
+
+#### `get_rendered`
+
+Get the rendered HTML from the editor's preview panel, including rasterized SVGs, Mermaid diagrams, MathJax, etc. Requires the editor binding to implement `getRenderedContent()` (Path B only).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `output` | string | no | Output profile: `"default"`, `"stripped"`, or `"quikdown"` (default: `"default"`) |
+
+#### `write_rendered_to_file`
+
+Get the rendered HTML from the editor preview and write it to a file. Requires both filesystem root and editor with `getRenderedContent()`.
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `path` | string | yes | File path (relative to root) |
+| `output` | string | no | Output profile (default: `"default"`) |
+
 ---
 
 ## Resources
@@ -369,9 +492,11 @@ Query it with `resources/read`:
 
 ---
 
-## Editor Binding
+## Editor Binding (Path B)
 
-To expose editor tools, create the server with an editor instance:
+Editor tools (and future `get_rendered` / export tools) require **Path B**: QuikdownEditor running in a **browser**, bound to MCP from a Node host. The binding is not available from `npx quikdown-mcp` alone.
+
+Typical pattern inside the doc-host page:
 
 ```javascript
 import QuikdownEditor from 'quikdown/edit';
@@ -384,9 +509,10 @@ const mcp = createMcpServer({
   editor: editor
 });
 
-// Now all 19 tools are available
-console.log(mcp.getTools().length); // 19
+// Node host forwards stdio JSON-RPC ↔ WebSocket ↔ this page
 ```
+
+The human edits and views preview in the **browser tab**. Cursor talks to the **Node** process on stdio; Node forwards `tools/call` to the bound editor.
 
 The editor binding expects any object implementing this interface:
 
@@ -399,10 +525,11 @@ interface McpEditorBinding {
   canRedo?(): boolean;
   undo?(): void;
   redo?(): void;
+  getRenderedContent?(options?: { output?: string }): { success: boolean; html?: string; text?: string };
 }
 ```
 
-`canUndo`, `canRedo`, `undo`, and `redo` are optional. If missing, the undo/redo tools report "Nothing to undo/redo."
+`canUndo`, `canRedo`, `undo`, `redo`, and `getRenderedContent` are optional. If missing, the corresponding tools report an appropriate message. `getRenderedContent` is required for `get_rendered` and `write_rendered_to_file` (Path B only).
 
 ---
 
@@ -510,3 +637,16 @@ The agent calls `get_stats` (if editor bound) or `markdown_stats` (headless) and
 **Server doesn't start:** Ensure `quikdown` is installed (`npm ls quikdown`). The `npx quikdown-mcp` command requires the package to be available locally or globally.
 
 **No response on stdin:** The server expects one complete JSON object per line. Multi-line JSON or trailing whitespace may cause buffering. Each message must be a single line terminated by `\n`.
+
+---
+
+## Contributing
+
+When developing locally from the repo, you must build before running the MCP server:
+
+```bash
+npm run build              # builds dist/quikdown_mcp.esm.js + .cjs
+npx quikdown-mcp --root=.  # now uses the local build
+```
+
+The `bin/quikdown-mcp` entry point imports from `../dist/quikdown_mcp.esm.js`, which does not exist until the Rollup build runs. If you see `ERR_MODULE_NOT_FOUND`, run `npm run build` first.

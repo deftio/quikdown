@@ -426,9 +426,18 @@ Working HTML examples in `examples/` and `pages/examples/`:
 
 ## MCP Server (Model Context Protocol)
 
-quikdown ships an MCP server that exposes parsing, bidirectional conversion, file I/O, and editor control as tools for AI agents. It communicates over JSON-RPC 2.0 on stdio.
+quikdown ships an MCP server that exposes parsing, bidirectional conversion, file I/O, and (with a doc host) editor control as tools for AI agents. It communicates over JSON-RPC 2.0 on stdio.
 
-### Running the MCP server
+### Path A vs Path B
+
+| Path | Human UI | MCP entry |
+|------|----------|-----------|
+| **A — IDE** | Cursor/VS Code; **no browser** | `npx quikdown-mcp --root=.` |
+| **B — Doc copilot** | **Browser** QuikdownEditor; Node host bridges stdio ↔ editor | `node examples/mcp-doc-host/start-mcp.js` (planned) |
+
+Path B = Node launcher/bridge + browser tab you interact with. Not pure Node; not IDE-only. Full detail: [docs/quikdown-mcp.md](docs/quikdown-mcp.md#path-a-vs-path-b).
+
+### Running the MCP server (Path A)
 
 ```bash
 npx quikdown-mcp                       # headless + filesystem (cwd as root)
@@ -451,9 +460,15 @@ npx quikdown-mcp --root=/path/to/docs  # custom sandbox root
 
 | Group | Tools | When available |
 |-------|-------|----------------|
-| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info` | Always |
+| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info`, `markdown_to_ast`, `markdown_to_json` | Always |
 | Filesystem | `read_file_info`, `read_file_lines`, `read_file_markdown`, `write_markdown_to_file`, `write_html_to_file` | `--root` set |
-| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo` | Editor binding passed |
+| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo`, `load_file_to_editor`, `get_rendered`, `write_rendered_to_file` | Editor binding passed |
+
+### When to use MCP tools vs raw string edits
+
+Use **MCP tools** when an AI agent needs structured access to quikdown's parser, bidirectional converter, or editor buffer — particularly for multi-step workflows, format conversion, file I/O in a sandboxed directory, or regex-powered search and replace with line-number context.
+
+Use **raw string edits** (direct file read/write) when the agent only needs to modify markdown source in a known file without quikdown-specific parsing, or when MCP is not available in the host environment.
 
 ### Programmatic usage
 

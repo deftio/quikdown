@@ -136,14 +136,16 @@ describe('MCP headless tools', () => {
     mcp = createMcpServer();
   });
 
-  test('headless-only server has exactly 4 tools', () => {
+  test('headless-only server has exactly 6 tools', () => {
     const tools = mcp.getTools();
-    expect(tools).toHaveLength(4);
+    expect(tools).toHaveLength(6);
     const names = tools.map(t => t.name);
     expect(names).toContain('markdown_to_html');
     expect(names).toContain('html_to_markdown');
     expect(names).toContain('markdown_stats');
     expect(names).toContain('quikdown_info');
+    expect(names).toContain('markdown_to_ast');
+    expect(names).toContain('markdown_to_json');
   });
 
   test('markdown_to_html converts basic markdown', () => {
@@ -195,6 +197,37 @@ describe('MCP headless tools', () => {
     expect(info.modules).toContain('quikdown/mcp');
   });
 
+  test('markdown_to_ast returns structured AST', () => {
+    const result = mcp.callTool('markdown_to_ast', { markdown: '# Hello\n\nA paragraph.' });
+    const ast = JSON.parse(result.content[0].text);
+    expect(ast).toBeDefined();
+    expect(ast.type).toBe('document');
+    expect(Array.isArray(ast.children)).toBe(true);
+    expect(ast.children.length).toBeGreaterThan(0);
+  });
+
+  test('markdown_to_ast with empty input', () => {
+    const result = mcp.callTool('markdown_to_ast', { markdown: '' });
+    const ast = JSON.parse(result.content[0].text);
+    expect(ast).toBeDefined();
+    expect(ast.type).toBe('document');
+  });
+
+  test('markdown_to_json returns JSON string', () => {
+    const result = mcp.callTool('markdown_to_json', { markdown: '**bold** text' });
+    const text = result.content[0].text;
+    expect(typeof text).toBe('string');
+    const parsed = JSON.parse(text);
+    expect(parsed.type).toBe('document');
+    expect(parsed.children.length).toBeGreaterThan(0);
+  });
+
+  test('markdown_to_json with empty input', () => {
+    const result = mcp.callTool('markdown_to_json', { markdown: '' });
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.type).toBe('document');
+  });
+
   test('unknown tool throws error', () => {
     expect(() => mcp.callTool('nonexistent_tool', {})).toThrow('Unknown tool');
   });
@@ -242,7 +275,7 @@ describe('MCP filesystem tools', () => {
     expect(names).toContain('read_file_markdown');
     expect(names).toContain('write_markdown_to_file');
     expect(names).toContain('write_html_to_file');
-    expect(tools.length).toBe(9); // 4 headless + 5 filesystem
+    expect(tools.length).toBe(11); // 6 headless + 5 filesystem
   });
 
   test('quikdown_info reports filesystem group', () => {
@@ -356,7 +389,10 @@ describe('MCP editor tools', () => {
     expect(names).toContain('get_html');
     expect(names).toContain('undo');
     expect(names).toContain('redo');
-    expect(tools.length).toBe(14); // 4 headless + 10 editor
+    expect(names).toContain('load_file_to_editor');
+    expect(names).toContain('get_rendered');
+    expect(names).toContain('write_rendered_to_file');
+    expect(tools.length).toBe(19); // 6 headless + 13 editor
   });
 
   test('read_editor returns current buffer', () => {
@@ -515,11 +551,14 @@ describe('MCP full server (headless + filesystem + editor)', () => {
   test('full server has all three groups', () => {
     const tools = mcp.getTools();
     const names = tools.map(t => t.name);
-    // 4 headless + 5 filesystem + 10 editor = 19
-    expect(tools.length).toBe(19);
+    // 6 headless + 5 filesystem + 13 editor = 24
+    expect(tools.length).toBe(24);
     expect(names).toContain('markdown_to_html');
     expect(names).toContain('read_file_info');
     expect(names).toContain('read_editor');
+    expect(names).toContain('load_file_to_editor');
+    expect(names).toContain('get_rendered');
+    expect(names).toContain('write_rendered_to_file');
   });
 
   test('quikdown_info reports all groups', () => {
@@ -554,12 +593,12 @@ describe('MCP full server (headless + filesystem + editor)', () => {
 describe('MCP edge cases', () => {
   test('createMcpServer with no options works', () => {
     const mcp = createMcpServer();
-    expect(mcp.getTools().length).toBe(4);
+    expect(mcp.getTools().length).toBe(6);
   });
 
   test('createMcpServer with empty object works', () => {
     const mcp = createMcpServer({});
-    expect(mcp.getTools().length).toBe(4);
+    expect(mcp.getTools().length).toBe(6);
   });
 
   test('tools/call with missing arguments defaults to empty object', () => {
@@ -873,6 +912,227 @@ describe('MCP branch coverage — resources/read meta with mixed groups', () => 
     const content = JSON.parse(res.result.contents[0].text);
     expect(content.guidance).toBeDefined();
     expect(typeof content.guidance).toBe('string');
+  });
+});
+
+// ── New tools: load_file_to_editor, get_rendered, write_rendered_to_file ─────
+
+describe('MCP load_file_to_editor', () => {
+  let mcp;
+  let editor;
+  let tmpRoot;
+
+  beforeAll(() => {
+    tmpRoot = join(tmpdir(), `quikdown-mcp-load-${Date.now()}`);
+    mkdirSync(tmpRoot, { recursive: true });
+    editor = createMockEditor('initial');
+    mcp = createMcpServer({ editor, root: tmpRoot });
+  });
+
+  afterAll(() => {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  test('loads file into editor', () => {
+    writeFileSync(join(tmpRoot, 'doc.md'), '# Loaded\n\nContent here');
+    const result = mcp.callTool('load_file_to_editor', { path: 'doc.md' });
+    const info = JSON.parse(result.content[0].text);
+    expect(info.loaded).toBe(true);
+    expect(info.lines).toBe(3);
+    expect(editor.getMarkdown()).toBe('# Loaded\n\nContent here');
+  });
+
+  test('rejects large files (over 100KB)', () => {
+    const largeContent = 'x'.repeat(101 * 1024);
+    writeFileSync(join(tmpRoot, 'large.md'), largeContent);
+    const result = mcp.callTool('load_file_to_editor', { path: 'large.md' });
+    const info = JSON.parse(result.content[0].text);
+    expect(info.skipped).toBe(true);
+    expect(info.reason).toContain('threshold');
+    // Editor should NOT have been updated
+    expect(editor.getMarkdown()).not.toBe(largeContent);
+  });
+
+  test('throws without filesystem root', () => {
+    const noRootMcp = createMcpServer({ editor: createMockEditor('') });
+    expect(() => {
+      noRootMcp.callTool('load_file_to_editor', { path: 'file.md' });
+    }).toThrow('Filesystem root required');
+  });
+
+  test('rejects path traversal', () => {
+    expect(() => {
+      mcp.callTool('load_file_to_editor', { path: '../../etc/passwd' });
+    }).toThrow('outside sandbox');
+  });
+
+  test('throws for nonexistent file', () => {
+    expect(() => {
+      mcp.callTool('load_file_to_editor', { path: 'nonexistent.md' });
+    }).toThrow();
+  });
+});
+
+describe('MCP get_rendered', () => {
+  test('calls getRenderedContent on editor binding', () => {
+    const editor = createMockEditor('# Hello');
+    editor.getRenderedContent = (options) => ({
+      success: true,
+      html: '<h1>Hello</h1>',
+      text: 'Hello'
+    });
+    const mcp = createMcpServer({ editor });
+    const result = mcp.callTool('get_rendered', { output: 'default' });
+    expect(result.content[0].text).toBe('<h1>Hello</h1>');
+  });
+
+  test('passes output option through', () => {
+    let capturedOptions;
+    const editor = createMockEditor('');
+    editor.getRenderedContent = (options) => {
+      capturedOptions = options;
+      return { success: true, html: '<p>stripped</p>' };
+    };
+    const mcp = createMcpServer({ editor });
+    mcp.callTool('get_rendered', { output: 'stripped' });
+    expect(capturedOptions.output).toBe('stripped');
+  });
+
+  test('defaults to "default" output when not specified', () => {
+    let capturedOptions;
+    const editor = createMockEditor('');
+    editor.getRenderedContent = (options) => {
+      capturedOptions = options;
+      return { success: true, html: '<p>test</p>' };
+    };
+    const mcp = createMcpServer({ editor });
+    mcp.callTool('get_rendered', {});
+    expect(capturedOptions.output).toBe('default');
+  });
+
+  test('throws when editor lacks getRenderedContent', () => {
+    const editor = createMockEditor('');
+    const mcp = createMcpServer({ editor });
+    expect(() => {
+      mcp.callTool('get_rendered', {});
+    }).toThrow('does not support getRenderedContent');
+  });
+
+  test('throws when getRenderedContent returns failure', () => {
+    const editor = createMockEditor('');
+    editor.getRenderedContent = () => ({ success: false });
+    const mcp = createMcpServer({ editor });
+    expect(() => {
+      mcp.callTool('get_rendered', {});
+    }).toThrow('Failed to get rendered content');
+  });
+
+  test('throws when getRenderedContent returns a promise (async)', () => {
+    const editor = createMockEditor('');
+    editor.getRenderedContent = () => Promise.resolve({ success: true, html: '<p>async</p>' });
+    const mcp = createMcpServer({ editor });
+    expect(() => {
+      mcp.callTool('get_rendered', {});
+    }).toThrow('Async getRenderedContent');
+  });
+
+  test('falls back to text when html is empty', () => {
+    const editor = createMockEditor('');
+    editor.getRenderedContent = () => ({ success: true, text: 'plain text' });
+    const mcp = createMcpServer({ editor });
+    const result = mcp.callTool('get_rendered', {});
+    expect(result.content[0].text).toBe('plain text');
+  });
+
+  test('returns empty string when both html and text are empty', () => {
+    const editor = createMockEditor('');
+    editor.getRenderedContent = () => ({ success: true });
+    const mcp = createMcpServer({ editor });
+    const result = mcp.callTool('get_rendered', {});
+    expect(result.content[0].text).toBe('');
+  });
+});
+
+describe('MCP write_rendered_to_file', () => {
+  let tmpRoot;
+
+  beforeAll(() => {
+    tmpRoot = join(tmpdir(), `quikdown-mcp-render-write-${Date.now()}`);
+    mkdirSync(tmpRoot, { recursive: true });
+  });
+
+  afterAll(() => {
+    rmSync(tmpRoot, { recursive: true, force: true });
+  });
+
+  test('writes rendered HTML to file', () => {
+    const editor = createMockEditor('# Hello');
+    editor.getRenderedContent = () => ({
+      success: true,
+      html: '<h1 style="font-size:2em">Hello</h1>'
+    });
+    const mcp = createMcpServer({ editor, root: tmpRoot });
+    const result = mcp.callTool('write_rendered_to_file', { path: 'rendered.html' });
+    const info = JSON.parse(result.content[0].text);
+    expect(info.path).toBe('rendered.html');
+    expect(info.bytes_written).toBeGreaterThan(0);
+    const written = readFileSync(join(tmpRoot, 'rendered.html'), 'utf-8');
+    expect(written).toBe('<h1 style="font-size:2em">Hello</h1>');
+  });
+
+  test('creates subdirectories', () => {
+    const editor = createMockEditor('');
+    editor.getRenderedContent = () => ({ success: true, html: '<p>nested</p>' });
+    const mcp = createMcpServer({ editor, root: tmpRoot });
+    mcp.callTool('write_rendered_to_file', { path: 'sub/dir/out.html' });
+    expect(existsSync(join(tmpRoot, 'sub/dir/out.html'))).toBe(true);
+  });
+
+  test('throws without filesystem root', () => {
+    const editor = createMockEditor('');
+    editor.getRenderedContent = () => ({ success: true, html: '<p>x</p>' });
+    const mcp = createMcpServer({ editor });
+    expect(() => {
+      mcp.callTool('write_rendered_to_file', { path: 'out.html' });
+    }).toThrow('Filesystem root required');
+  });
+
+  test('throws without getRenderedContent', () => {
+    const editor = createMockEditor('');
+    const mcp = createMcpServer({ editor, root: tmpRoot });
+    expect(() => {
+      mcp.callTool('write_rendered_to_file', { path: 'out.html' });
+    }).toThrow('does not support getRenderedContent');
+  });
+
+  test('throws when getRenderedContent returns failure', () => {
+    const editor = createMockEditor('');
+    editor.getRenderedContent = () => ({ success: false });
+    const mcp = createMcpServer({ editor, root: tmpRoot });
+    expect(() => {
+      mcp.callTool('write_rendered_to_file', { path: 'fail.html' });
+    }).toThrow('Failed to get rendered content');
+  });
+
+  test('throws when getRenderedContent returns a promise', () => {
+    const editor = createMockEditor('');
+    editor.getRenderedContent = () => Promise.resolve({ success: true, html: '<p>x</p>' });
+    const mcp = createMcpServer({ editor, root: tmpRoot });
+    expect(() => {
+      mcp.callTool('write_rendered_to_file', { path: 'async.html' });
+    }).toThrow('Async getRenderedContent');
+  });
+
+  test('passes output option through', () => {
+    let capturedOptions;
+    const editor = createMockEditor('');
+    editor.getRenderedContent = (options) => {
+      capturedOptions = options;
+      return { success: true, html: '<p>quikdown</p>' };
+    };
+    const mcp = createMcpServer({ editor, root: tmpRoot });
+    mcp.callTool('write_rendered_to_file', { path: 'qd.html', output: 'quikdown' });
+    expect(capturedOptions.output).toBe('quikdown');
   });
 });
 

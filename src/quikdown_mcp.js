@@ -17,6 +17,8 @@
 
 import quikdown from './quikdown.js';
 import quikdown_bd from './quikdown_bd.js';
+import quikdown_ast from './quikdown_ast.js';
+import quikdown_json from './quikdown_json.js';
 import { quikdownVersion } from './quikdown_version.js';
 import nodePath from 'path';
 import nodeFs from 'fs';
@@ -101,6 +103,28 @@ function headlessTools() {
       name: 'quikdown_info',
       description: 'Get quikdown version, available modules, active tool groups, and usage hints.',
       inputSchema: { type: 'object', properties: {} }
+    },
+    {
+      name: 'markdown_to_ast',
+      description: 'Parse markdown into an AST (Abstract Syntax Tree) object. Returns structured node tree.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          markdown: { type: 'string', description: 'Markdown content to parse' }
+        },
+        required: ['markdown']
+      }
+    },
+    {
+      name: 'markdown_to_json',
+      description: 'Parse markdown into a JSON string representation of the AST.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          markdown: { type: 'string', description: 'Markdown content to parse' }
+        },
+        required: ['markdown']
+      }
     }
   ];
 }
@@ -168,6 +192,9 @@ function filesystemTools() {
     }
   ];
 }
+
+/** Large file threshold for load_file_to_editor (100 KB) */
+const LARGE_FILE_THRESHOLD = 100 * 1024;
 
 function editorTools() {
   return [
@@ -257,6 +284,39 @@ function editorTools() {
       name: 'redo',
       description: 'Redo the last undone editor change.',
       inputSchema: { type: 'object', properties: {} }
+    },
+    {
+      name: 'load_file_to_editor',
+      description: 'Read a file from disk and load it into the editor buffer. Requires filesystem root. Files over 100 KB return stats instead of loading.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path to file (relative to root)' }
+        },
+        required: ['path']
+      }
+    },
+    {
+      name: 'get_rendered',
+      description: 'Get the rendered HTML from the editor preview (includes rasterized SVGs, Mermaid diagrams, etc.). Requires editor with getRenderedContent.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          output: { type: 'string', enum: ['default', 'stripped', 'quikdown'], description: 'Output profile (default: "default")', default: 'default' }
+        }
+      }
+    },
+    {
+      name: 'write_rendered_to_file',
+      description: 'Get the rendered HTML from the editor preview and write it to a file. Requires filesystem root and editor with getRenderedContent.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'Path to write (relative to root)' },
+          output: { type: 'string', enum: ['default', 'stripped', 'quikdown'], description: 'Output profile (default: "default")', default: 'default' }
+        },
+        required: ['path']
+      }
     }
   ];
 }
@@ -288,6 +348,10 @@ function executeHeadlessTool(name, args, ctx) {
       };
       return { content: [{ type: 'text', text: JSON.stringify(info, null, 2) }] };
     }
+    case 'markdown_to_ast':
+      return { content: [{ type: 'text', text: JSON.stringify(quikdown_ast(args.markdown), null, 2) }] };
+    case 'markdown_to_json':
+      return { content: [{ type: 'text', text: quikdown_json(args.markdown) }] };
     default:
       return null;
   }
@@ -445,6 +509,60 @@ function executeEditorTool(name, args, ctx) {
         return { content: [{ type: 'text', text: editor.getMarkdown() }] };
       }
       return { content: [{ type: 'text', text: 'Nothing to redo.' }] };
+    case 'load_file_to_editor': {
+      if (!ctx.root) throw new Error('Filesystem root required for load_file_to_editor');
+      const fp = safePath(ctx.root, args.path);
+      const stat = nodeFs.statSync(fp);
+      if (stat.size > LARGE_FILE_THRESHOLD) {
+        const stats = {
+          path: args.path,
+          size: stat.size,
+          lines: nodeFs.readFileSync(fp, 'utf-8').split('\n').length,
+          skipped: true,
+          reason: `File exceeds ${LARGE_FILE_THRESHOLD} byte threshold. Use read_file_lines for excerpts.`
+        };
+        return { content: [{ type: 'text', text: JSON.stringify(stats, null, 2) }] };
+      }
+      const content = nodeFs.readFileSync(fp, 'utf-8');
+      editor.setMarkdown(content);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ path: args.path, bytes: stat.size, lines: content.split('\n').length, loaded: true })
+        }]
+      };
+    }
+    case 'get_rendered': {
+      if (!editor.getRenderedContent) throw new Error('Editor binding does not support getRenderedContent (requires Path B host with preview DOM)');
+      const output = args.output || 'default';
+      const result = editor.getRenderedContent({ output });
+      // Support both sync and async getRenderedContent
+      if (result && typeof result.then === 'function') {
+        throw new Error('Async getRenderedContent not supported in synchronous tool call. Use a Path B host with WebSocket bridge.');
+      }
+      if (!result || !result.success) throw new Error('Failed to get rendered content');
+      return { content: [{ type: 'text', text: result.html || result.text || '' }] };
+    }
+    case 'write_rendered_to_file': {
+      if (!ctx.root) throw new Error('Filesystem root required for write_rendered_to_file');
+      if (!editor.getRenderedContent) throw new Error('Editor binding does not support getRenderedContent (requires Path B host with preview DOM)');
+      const output = args.output || 'default';
+      const result = editor.getRenderedContent({ output });
+      if (result && typeof result.then === 'function') {
+        throw new Error('Async getRenderedContent not supported in synchronous tool call. Use a Path B host with WebSocket bridge.');
+      }
+      if (!result || !result.success) throw new Error('Failed to get rendered content');
+      const html = result.html || result.text || '';
+      const fp = safePath(ctx.root, args.path);
+      nodeFs.mkdirSync(nodePath.dirname(fp), { recursive: true });
+      nodeFs.writeFileSync(fp, html, 'utf-8');
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ path: args.path, bytes_written: Buffer.byteLength(html, 'utf-8') })
+        }]
+      };
+    }
     default:
       return null;
   }

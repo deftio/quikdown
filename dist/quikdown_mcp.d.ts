@@ -40,6 +40,13 @@ export interface JsonRpcResponse {
     error?: { code: number; message: string };
 }
 
+/** Result from getRenderedContent (rich HTML export). */
+export interface RenderedContentResult {
+    success: boolean;
+    html?: string;
+    text?: string;
+}
+
 /** Minimal editor interface expected by the MCP server. */
 export interface McpEditorBinding {
     getMarkdown(): string;
@@ -49,6 +56,8 @@ export interface McpEditorBinding {
     canRedo?(): boolean;
     undo?(): void;
     redo?(): void;
+    /** Rich rendered content export (requires Path B host with preview DOM). */
+    getRenderedContent?(options?: { output?: 'default' | 'stripped' | 'quikdown' }): RenderedContentResult;
 }
 
 /** Options for createMcpServer(). */
