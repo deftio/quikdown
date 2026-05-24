@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage](https://img.shields.io/badge/coverage-99.5%25-brightgreen)](https://github.com/deftio/quikdown)
+[![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-10.9KB-green.svg)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-12.8KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 A small, secure markdown parser and editor for browsers and Node.js. Three modules — use only what you need.
 
@@ -138,6 +138,20 @@ The AST parsers are "forgiving" - they handle malformed markdown gracefully with
 
 This keeps the initial bundle small while providing rich functionality on-demand.
 
+## Integration
+
+quikdown meets three common integration patterns. Pick the entry point that matches who drives the document:
+
+| Audience | What you need | Entry point |
+|----------|---------------|-------------|
+| **Parse-only** | Render markdown, AST/JSON/YAML, streaming HTML in your app | `import quikdown from 'quikdown'` — or `quikdown/ast`, `quikdown/json`, `quikdown/yaml` |
+| **File agents** | An AI agent reads and writes `.md` / HTML files in a repo sandbox | **Path A:** `npx quikdown-mcp --root=.` — IDE editing, no browser |
+| **Doc copilot** | Human edits in a live preview; agent drives the same buffer | **Path B:** `node examples/mcp-doc-host/start-mcp.js` — browser QuikdownEditor + Node MCP bridge |
+
+**Parse-only** is the default: zero config, embed anywhere. **File agents** add MCP filesystem tools under a `--root` sandbox — best when the human stays in Cursor or VS Code. **Doc copilot** binds the full editor surface (regex, undo, rich render export) when the human works in a browser tab.
+
+Browser demos and streaming patterns: [docs/llm-integration.md](docs/llm-integration.md). MCP setup and tool reference: [docs/quikdown-mcp.md](docs/quikdown-mcp.md).
+
 ## LLM and agent UIs
 
 quikdown fits the **model writes markdown, human sees rendered output** loop:
@@ -160,9 +174,9 @@ quikdown includes an MCP server that lets AI agents parse markdown, convert betw
 | Path | Human UI | Command |
 |------|----------|---------|
 | **A — IDE** (shipped) | Cursor / VS Code file editor; no browser | `npx quikdown-mcp --root=.` |
-| **B — Doc copilot** (example planned) | **Browser tab** with QuikdownEditor; Node host bridges MCP | `node examples/mcp-doc-host/start-mcp.js` |
+| **B — Doc copilot** (shipped) | **Browser tab** with QuikdownEditor; Node host bridges MCP | `node examples/mcp-doc-host/start-mcp.js` |
 
-Path B is a **Node launcher + browser window** — you work in the browser; the agent drives the same doc via MCP through Node. See [Path A vs Path B](docs/quikdown-mcp.md#path-a-vs-path-b).
+Path B is a **Node launcher + browser window** — you work in the browser; the agent drives the same doc via MCP through Node. Setup: [examples/mcp-doc-host/README.md](examples/mcp-doc-host/README.md). Overview: [Path A vs Path B](docs/quikdown-mcp.md#path-a-vs-path-b).
 
 ```bash
 npm install quikdown
@@ -177,7 +191,7 @@ npx quikdown-mcp --root=.
 | Filesystem | `read_file_info`, `read_file_lines`, `read_file_markdown`, `write_markdown_to_file`, `write_html_to_file` | `--root` flag |
 | Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo`, `load_file_to_editor`, `get_rendered`, `write_rendered_to_file` | Editor binding |
 
-**Cursor** — add to `.cursor/mcp.json`:
+**Cursor (Path A — IDE + repo files):**
 ```json
 {
   "mcpServers": {
@@ -186,7 +200,20 @@ npx quikdown-mcp --root=.
 }
 ```
 
-**Claude Desktop** — add to `claude_desktop_config.json`:
+**Cursor (Path B — doc copilot, from quikdown repo):** run `npm run build` first, then:
+```json
+{
+  "mcpServers": {
+    "quikdown-doc": {
+      "command": "node",
+      "args": ["examples/mcp-doc-host/start-mcp.js"]
+    }
+  }
+}
+```
+Opens a browser tab with QuikdownEditor; you edit in the browser while the agent uses MCP. See [examples/mcp-doc-host/README.md](examples/mcp-doc-host/README.md).
+
+**Claude Desktop (Path A):**
 ```json
 {
   "mcpServers": {
@@ -329,6 +356,8 @@ For size and security, quikdown doesn't support:
 - Reference-style links  
 - Footnotes
 - Definition lists
+
+Optional **heading slugs**: pass `heading_ids: true` to add `id` attributes on headings for in-page anchor links.
 
 Note that raw html, svg, etc can be rendered using appropriate fences
 ```html

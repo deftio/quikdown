@@ -40,13 +40,15 @@ One package (`quikdown/mcp`), one server, two **deployment paths**. Choose by wh
 
 **Not included:** QuikdownEditor preview, Mermaid/math live render, `get_rendered`, agent driving a split-view doc pane.
 
-### Path B — Doc copilot (Node host + browser; planned example)
+### Path B — Doc copilot (Node host + browser; shipped)
 
-**What you run:** A small **Node.js host** (e.g. `node examples/mcp-doc-host/start-mcp.js`) that:
+**What you run:** The **doc-host example** — `node examples/mcp-doc-host/start-mcp.js` (from the quikdown repo after `npm run build`):
 
 1. Serves a page with **QuikdownEditor** (split or preview)
-2. Opens your **browser** (auto-launch or manual `http://localhost:…`)
+2. Opens your **browser** (auto-launch or manual `http://localhost:7744`)
 3. Exposes MCP on **stdio** for Cursor (Node bridges tool calls to the editor in the page via WebSocket)
+
+See [examples/mcp-doc-host/README.md](../examples/mcp-doc-host/README.md) for setup, env vars, and known limitations.
 
 **Who uses what:**
 
@@ -66,15 +68,7 @@ Path B is **both** processes: Node is the launcher/bridge, **not** the editor UI
 - **Async render** — Mermaid/MathJax need time to settle in preview before `get_rendered`
 - Doc host must be **running** before editor MCP tools work
 
-**Planned example layout:**
-
-```
-examples/mcp-doc-host/
-  start-mcp.js       # Cursor MCP entry: Node stdio + browser launcher
-  server.js          # Static server + WebSocket bridge to editor
-  editor-host.html   # QuikdownEditor — human works here
-  README.md          # Setup + known limitations
-```
+**Example (shipped):** [examples/mcp-doc-host/](../examples/mcp-doc-host/) — `start-mcp.js`, `editor-host.html`, README with limitations.
 
 **Cursor config (Path B)** — command starts the **host**, not bare `quikdown-mcp`:
 
@@ -96,7 +90,7 @@ examples/mcp-doc-host/
 | Human UI | IDE file editor | **Browser** — QuikdownEditor |
 | Node process | MCP bin only | Host + MCP + file sandbox + bridge |
 | Browser | Not used | **Required** (preview + render) |
-| Agent tools | Headless + filesystem | + editor + render + export (when implemented) |
+| Agent tools | Headless + filesystem | + editor + render + export (via doc host) |
 | Daily friction | Low (MCP config once) | Run doc host before session |
 
 **Do not claim:** “Install MCP → Cursor becomes QuikdownEditor.” Path A keeps IDE editing. Path B adds a separate browser doc session.

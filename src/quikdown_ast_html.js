@@ -471,15 +471,19 @@ function renderNode(node, getAttr, options) {
         case 'code':
             return `<code${getAttr('code')}>${escapeHtml(node.value || '')}</code>`;
 
-        case 'link':
+        case 'link': {
             const sanitizedHref = sanitizeUrl(node.url, options.allow_unsafe_urls);
             const isExternal = /^https?:\/\//i.test(sanitizedHref);
             const rel = isExternal ? ' rel="noopener noreferrer"' : '';
-            return `<a${getAttr('a')} href="${sanitizedHref}"${rel}>${renderChildren(node.children, getAttr, options)}</a>`;
+            const titleAttr = node.title ? ` title="${escapeHtml(node.title)}"` : '';
+            return `<a${getAttr('a')} href="${escapeHtml(sanitizedHref)}"${rel}${titleAttr}>${renderChildren(node.children, getAttr, options)}</a>`;
+        }
 
-        case 'image':
+        case 'image': {
             const sanitizedSrc = sanitizeUrl(node.url, options.allow_unsafe_urls);
-            return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${escapeHtml(node.alt || '')}">`;
+            const titleAttr = node.title ? ` title="${escapeHtml(node.title)}"` : '';
+            return `<img${getAttr('img')} src="${escapeHtml(sanitizedSrc)}" alt="${escapeHtml(node.alt || '')}"${titleAttr}>`;
+        }
 
         case 'br':
             return '<br>';

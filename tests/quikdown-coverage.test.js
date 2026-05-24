@@ -333,16 +333,17 @@ describe('quikdown edge cases and coverage', () => {
     });
 
     test('should handle malformed tables gracefully', () => {
-      // Table with only one line (no separator)
+      // Single pipe row — not enough for a table
       const md1 = '| Header 1 | Header 2 |';
       const html1 = quikdown(md1);
       expect(html1).not.toContain('<table');
       expect(html1).toContain('| Header 1 | Header 2 |');
-      
-      // Table with invalid separator
+
+      // Two rows without separator — rendered as table (LLM-friendly)
       const md2 = '| Header 1 | Header 2 |\n| not | separator |';
       const html2 = quikdown(md2);
-      expect(html2).not.toContain('<table');
+      expect(html2).toContain('<table');
+      expect(html2).toContain('Header 1');
     });
 
     test('should handle configure with bidirectional for quikdown_bd', () => {

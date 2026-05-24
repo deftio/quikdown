@@ -24,8 +24,8 @@ Cursor (agent)  ──stdio JSON-RPC──►  start-mcp.js (Node)
 ### Prerequisites
 
 - Node.js 18+
-- `ws` package: `npm install ws`
 - quikdown built: `npm run build` (if running from the repo)
+- `ws` is included in quikdown devDependencies (`npm install` at repo root)
 
 ### 1. Cursor config
 

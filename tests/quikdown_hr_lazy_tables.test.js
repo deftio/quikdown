@@ -681,10 +681,12 @@ describe('Table parsing', () => {
             expect(tableCount).toBe(2);
         });
 
-        test('table-like content without separator is NOT a table', () => {
+        test('table-like content without separator is rendered as table', () => {
             const md = '| A | B |\n| 1 | 2 |';
             const html = parse(md);
-            expect(html).not.toContain('<table');
+            expect(html).toContain('<table');
+            expect(html).toContain('A');
+            expect(html).toContain('2');
         });
 
         test('wide table (many columns)', () => {

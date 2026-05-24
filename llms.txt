@@ -321,10 +321,13 @@ quikdown includes an MCP server that exposes parsing, bidirectional conversion, 
 
 ### Running
 
+**Path A (IDE + repo files):**
 ```bash
 npx quikdown-mcp                       # headless + filesystem (cwd as root)
 npx quikdown-mcp --root=/path/to/docs  # custom sandbox root
 ```
+
+**Path B (doc copilot):** Node host + browser QuikdownEditor — from quikdown repo after `npm run build`, point MCP at `node examples/mcp-doc-host/start-mcp.js`. See `examples/mcp-doc-host/README.md`.
 
 ### Tool Groups
 
@@ -340,12 +343,17 @@ Use MCP tools when an agent needs quikdown-specific parsing, bidirectional conve
 
 ### AI Host Configuration
 
-**Cursor** (`.cursor/mcp.json`):
+**Path A — Cursor** (`.cursor/mcp.json`):
 ```json
 { "mcpServers": { "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] } } }
 ```
 
-**Claude Desktop** (`claude_desktop_config.json`):
+**Path B — Cursor doc copilot** (from quikdown repo; run `npm run build` first):
+```json
+{ "mcpServers": { "quikdown-doc": { "command": "node", "args": ["examples/mcp-doc-host/start-mcp.js"] } } }
+```
+
+**Claude Desktop** (`claude_desktop_config.json`, Path A):
 ```json
 { "mcpServers": { "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] } } }
 ```

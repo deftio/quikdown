@@ -167,12 +167,12 @@ describe('quikdown markdown parser', () => {
             expect(result).toContain('<th class="quikdown-th">Left</th>');
         });
         
-        test('should handle tables without header', () => {
+        test('should handle tables without separator row (first row is header)', () => {
             const input = '| A | B |\n| C | D |';
             const result = quikdown(input);
-            // Without separator, this might not be recognized as a table
-            // This is expected behavior - tables need separators
-            expect(result).toContain('|');
+            expect(result).toContain('<table');
+            expect(result).toContain('A');
+            expect(result).toContain('D');
         });
         
         test('should handle table with separator', () => {
@@ -795,8 +795,9 @@ def analyze():
         test('should handle table-like content without separator', () => {
             const input = '| A | B |\n| C | D |';
             const result = quikdown(input);
-            expect(result).not.toContain('<table>');
-            expect(result).toContain('|');
+            expect(result).toContain('<table');
+            expect(result).toContain('A');
+            expect(result).toContain('C');
         });
         
         test('should handle switching between list types at same level', () => {
@@ -1025,13 +1026,10 @@ def analyze():
         });
 
         test('should handle buildTable returning null when invalid', () => {
-            // This tests the branch where buildTable returns null and original lines are restored
-            const input = '| Not |\n| Valid |\n| Table |';
+            const input = '| Only one row |';
             const result = quikdown(input);
-            // When buildTable returns null, the original lines should be in the output
-            expect(result).toContain('| Not |');
-            expect(result).toContain('| Valid |');
-            expect(result).toContain('| Table |');
+            expect(result).toContain('| Only one row |');
+            expect(result).not.toContain('<table');
         });
 
         test('should handle table processing with inline styles through processTable', () => {
@@ -1059,12 +1057,10 @@ def analyze():
         });
 
         test('should handle invalid table that gets restored - coverage for buildTable null', () => {
-            // Create a scenario where we have table-like lines but buildTable returns null
-            const input = 'Text\n\n| Line 1 |\n| Line 2 without separator |\n\nMore text';
+            const input = 'Text\n\n| only one |\n\nMore text';
             const result = quikdown(input);
-            // These should be treated as regular text, not a table
-            expect(result).toContain('| Line 1 |');
-            expect(result).toContain('| Line 2 without separator |');
+            expect(result).toContain('| only one |');
+            expect(result).not.toContain('<table');
         });
 
         test('should handle processInlineMarkdown function directly', () => {
@@ -1093,12 +1089,11 @@ def analyze():
         });
 
         test('should restore non-table lines when buildTable fails', () => {
-            // Force the specific branch where buildTable returns null and lines are restored
-            const input = 'Start\n\n| Fake |\n| Table |\n| Without |\n| Separator |\n\nEnd';
+            const input = 'Start\n\n| single |\n\nEnd';
             const result = quikdown(input);
-            expect(result).toContain('| Fake |');
-            expect(result).toContain('| Without |');
+            expect(result).toContain('| single |');
             expect(result).not.toContain('<table');
+            expect(result).toContain('End');
         });
 
         test('should handle single pipe line not as table', () => {
@@ -1110,12 +1105,10 @@ def analyze():
         });
 
         test('should test processTable with buildTable returning null mid-document', () => {
-            // Specific test to hit line 277 where buildTable returns null
-            const input = 'Para 1\n\n| Col |\n| No Sep |\nNormal text\n\nPara 2';
+            const input = 'Para 1\n\n| Col |\nNormal text\n\nPara 2';
             const result = quikdown(input);
-            // The pipe lines should be preserved as-is since no valid table
             expect(result).toContain('| Col |');
-            expect(result).toContain('| No Sep |');
+            expect(result).not.toContain('<table');
             expect(result).toContain('Para 1');
             expect(result).toContain('Para 2');
         });

@@ -22,6 +22,7 @@ Converts markdown text to HTML.
 | `bidirectional` | `boolean` | `false` | Add data-qd attributes for source tracking (v1.0.5+) |
 | `lazy_linefeeds` | `boolean` | `false` | Single newlines become `<br>` tags (v1.0.5+) |
 | `allow_unsafe_urls` | `boolean` | `false` | Allow javascript: and other potentially unsafe URLs |
+| `heading_ids` | `boolean` | `false` | Add `id` slug attributes to headings for anchor links |
 | `allow_unsafe_html` | `boolean \| string[] \| object` | `false` | HTML passthrough control (v1.2.13+). `false` = escape all HTML (safe default). `true` = no escaping (trusted pipelines only). Array of tag names or object with tag keys = whitelist mode — listed tags pass through with sanitized attributes, all others are escaped. Event handler attributes (`on*`) are always stripped in whitelist mode. See [Security Guide](security.md) for details. |
 
 #### Returns
@@ -673,6 +674,8 @@ declare module 'quikdown' {
     bidirectional?: boolean;
     lazy_linefeeds?: boolean;
     allow_unsafe_urls?: boolean;
+    /** Add id slug attributes to headings for anchor links. Default: false. */
+    heading_ids?: boolean;
   }
   
   interface QuikdownFunction {

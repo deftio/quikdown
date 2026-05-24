@@ -94,11 +94,26 @@ npx quikdown-mcp --root=.          # headless + filesystem tools
 
 | Tool group | Count | What it does |
 |------------|-------|--------------|
-| Headless | 4 | Parse, convert, stats — no file I/O or editor |
+| Headless | 6 | Parse, convert, AST/JSON, stats — no file I/O or editor |
 | Filesystem | 5 | Sandboxed read/write of markdown and HTML files |
 | Editor | 13 | Buffer control, regex search/replace, undo/redo, rendered export |
 
-Configuration: add `npx quikdown-mcp --root=.` to your host's MCP config file. See [docs/quikdown-mcp.md](quikdown-mcp.md) for setup guides per tool (Cursor, Claude Desktop, VS Code, Claude Code, Windsurf).
+**Path A config:** add `npx quikdown-mcp --root=.` to your host's MCP config.
+
+**Path B config (doc copilot, from quikdown repo after `npm run build`):**
+```json
+{
+  "mcpServers": {
+    "quikdown-doc": {
+      "command": "node",
+      "args": ["examples/mcp-doc-host/start-mcp.js"]
+    }
+  }
+}
+```
+Opens a browser tab with QuikdownEditor; see [examples/mcp-doc-host/README.md](../examples/mcp-doc-host/README.md).
+
+Setup guides per host: [docs/quikdown-mcp.md](quikdown-mcp.md).
 
 Programmatic use:
 

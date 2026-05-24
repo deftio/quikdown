@@ -96,6 +96,90 @@ describe('quikdown core — coverage gap fills', () => {
         const html = quikdown('- [x] done\n- [ ] todo');
         expect(html).toContain('checked');
     });
+
+    // v1.2.17 parser gap fixes — coverage for new helpers
+    test('link titles with escaped quotes post-Phase-2', () => {
+        const html = quikdown('[a](https://x.com "tip")');
+        expect(html).toContain('href="https://x.com"');
+        expect(html).toContain('title="tip"');
+    });
+
+    test('image titles and single-quoted titles', () => {
+        expect(quikdown('![i](x.png "alt")')).toContain('title="alt"');
+        expect(quikdown("[l](/ 't')")).toContain('title="t"');
+    });
+
+    test('angle-bracket link destination', () => {
+        const html = quikdown('[x](<https://example.com/a b>)');
+        expect(html).toContain('href="https://example.com/a b"');
+    });
+
+    test('indented code blocks and blank line inside', () => {
+        const html = quikdown('    a\n\n    b');
+        expect(html).toMatch(/<pre[^>]*><code/);
+        expect(html).toContain('a');
+        expect(html).toContain('b');
+    });
+
+    test('indented code with tab and mixed-indent strip fallback', () => {
+        const html = quikdown('\tcode');
+        expect(html).toMatch(/<pre[^>]*><code/);
+    });
+
+    test('ragged table without separator row', () => {
+        const html = quikdown('| H1 | H2 |\n| a | b |');
+        expect(html).toContain('<table');
+        expect(html).toContain('<th');
+    });
+
+    test('table with separator row (buildTable separator branch)', () => {
+        const html = quikdown('| A | B |\n|---|---|\n| 1 | 2 |');
+        expect(html).toContain('<table');
+    });
+
+    test('heading_ids with duplicate and empty-ish slug fallback', () => {
+        const html = quikdown('# \n\n# ---', { heading_ids: true });
+        expect(html).toContain('id="section"');
+    });
+
+    test('nested blockquotes with depth decrease', () => {
+        const html = quikdown('> a\n>> b\n> c');
+        expect(html.match(/<blockquote/g).length).toBeGreaterThanOrEqual(2);
+        expect(html).toContain('b');
+        expect(html).toContain('c');
+    });
+
+    test('indented code ends when dedented line appears', () => {
+        const html = quikdown('    code\nplain');
+        expect(html).toMatch(/<pre[^>]*>[\s\S]*code/);
+        expect(html).toContain('<p>plain</p>');
+    });
+
+    test('indented code strip fallback for space-tab indent', () => {
+        const html = quikdown('   \tline');
+        expect(html).toMatch(/<pre[^>]*><code[^>]*>line/);
+    });
+
+    test('fence plugin undefined fallback with inline_styles', () => {
+        const html = quikdown('```js\ncode\n```', {
+            inline_styles: true,
+            fence_plugin: { render: () => undefined }
+        });
+        expect(html).toContain('<pre');
+        expect(html).toMatch(/<code[^>]*style=/);
+    });
+
+    test('table with separator but no body rows', () => {
+        const html = quikdown('| A | B |\n|---|---|');
+        expect(html).toContain('<thead');
+        expect(html).not.toContain('<tbody');
+    });
+
+    test('emitStyles light theme applies text color overrides', () => {
+        const css = quikdown.emitStyles('test-', 'light');
+        expect(css).toContain('test-h1');
+        expect(css).toMatch(/color:/);
+    });
 });
 
 // ========================================================================

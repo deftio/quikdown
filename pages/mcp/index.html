@@ -149,12 +149,12 @@
               <p><strong>Human:</strong> Your IDE (Cursor, VS Code) &mdash; edit <code>.md</code> files as usual. <strong>No browser window.</strong></p>
               <p><strong>Agent:</strong> Parse, convert, read/write files by path (headless + filesystem tools).</p>
             </div>
-            <div class="mcp-card">
-              <h3>Path B <span class="mcp-badge">Doc copilot</span></h3>
-              <p><strong>Run:</strong> A small <strong>Node.js host</strong> (opens MCP on stdio for Cursor).</p>
+            <div class="mcp-card" id="path-b">
+              <h3>Path B <span class="mcp-badge">Shipped</span></h3>
+              <p><strong>Run:</strong> <code>node examples/mcp-doc-host/start-mcp.js</code> in MCP config (from quikdown repo).</p>
               <p><strong>Human:</strong> A <strong>browser tab</strong> with QuikdownEditor &mdash; split view, live preview, fences. You interact here.</p>
               <p><strong>Node:</strong> Launcher + bridge only &mdash; not the editor UI. Forwards agent tool calls to the browser editor.</p>
-              <p><strong>Agent:</strong> Full buffer control + rich render export (when host is running).</p>
+              <p><strong>Agent:</strong> Full buffer control + rich render export.</p>
             </div>
           </div>
           <p style="font-size:0.9rem;color:#4b5563;margin-top:1rem;">

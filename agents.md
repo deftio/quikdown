@@ -433,9 +433,9 @@ quikdown ships an MCP server that exposes parsing, bidirectional conversion, fil
 | Path | Human UI | MCP entry |
 |------|----------|-----------|
 | **A — IDE** | Cursor/VS Code; **no browser** | `npx quikdown-mcp --root=.` |
-| **B — Doc copilot** | **Browser** QuikdownEditor; Node host bridges stdio ↔ editor | `node examples/mcp-doc-host/start-mcp.js` (planned) |
+| **B — Doc copilot** | **Browser** QuikdownEditor; Node host bridges stdio ↔ editor | `node examples/mcp-doc-host/start-mcp.js` |
 
-Path B = Node launcher/bridge + browser tab you interact with. Not pure Node; not IDE-only. Full detail: [docs/quikdown-mcp.md](docs/quikdown-mcp.md#path-a-vs-path-b).
+Path B = Node launcher/bridge + browser tab you interact with. Not pure Node; not IDE-only. Example: [examples/mcp-doc-host/](examples/mcp-doc-host/). Full detail: [docs/quikdown-mcp.md](docs/quikdown-mcp.md#path-a-vs-path-b).
 
 ### Running the MCP server (Path A)
 
@@ -455,6 +455,16 @@ npx quikdown-mcp --root=/path/to/docs  # custom sandbox root
 ```json
 { "mcpServers": { "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] } } }
 ```
+
+### Path B doc-host (Cursor)
+
+From repo root after `npm run build`:
+
+```json
+{ "mcpServers": { "quikdown-doc": { "command": "node", "args": ["examples/mcp-doc-host/start-mcp.js"] } } }
+```
+
+Human uses the **browser tab**; agent uses MCP via Node. See `examples/mcp-doc-host/README.md`.
 
 ### Tool groups
 

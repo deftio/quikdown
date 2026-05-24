@@ -326,6 +326,23 @@ function parseList(lines, startIndex, options) {
     };
 }
 
+/** Parse link/image destination with optional title (mirrors quikdown.js). */
+function parseLinkDestinationAst(raw) {
+    if (raw === undefined || raw === null || raw === '') return { url: '', title: null };
+
+    const dblQuote = raw.match(/^(.*)\s+"([^"]*)"\s*$/);
+    if (dblQuote) return { url: dblQuote[1].replace(/\s+$/, ''), title: dblQuote[2] };
+
+    const sglQuote = raw.match(/^(.*)\s+'([^']*)'\s*$/);
+    if (sglQuote) return { url: sglQuote[1].replace(/\s+$/, ''), title: sglQuote[2] };
+
+    if (raw.startsWith('<') && raw.endsWith('>')) {
+        return { url: raw.slice(1, -1), title: null };
+    }
+
+    return { url: raw, title: null };
+}
+
 /**
  * Parse inline elements
  */
@@ -356,26 +373,32 @@ function parseInline(text, options) {
             }
         }
 
-        // Images: ![alt](url)
-        const imgMatch = remaining.match(/^!\[([^\]]*)\]\(\s*([^)\s]+)\s*\)/);
+        // Images: ![alt](url) or ![alt](url "title")
+        const imgMatch = remaining.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
         if (imgMatch) {
-            nodes.push({
+            const { url, title } = parseLinkDestinationAst(imgMatch[2]);
+            const node = {
                 type: 'image',
                 alt: imgMatch[1],
-                url: imgMatch[2].trim()  // Forgiving: trim whitespace in URL
-            });
+                url: url.trim()
+            };
+            if (title) node.title = title;
+            nodes.push(node);
             remaining = remaining.slice(imgMatch[0].length);
             continue;
         }
 
-        // Links: [text](url)
-        const linkMatch = remaining.match(/^\[([^\]]+)\]\(\s*([^)\s]+)\s*\)/);
+        // Links: [text](url) or [text](url "title")
+        const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
         if (linkMatch) {
-            nodes.push({
+            const { url, title } = parseLinkDestinationAst(linkMatch[2]);
+            const node = {
                 type: 'link',
-                url: linkMatch[2].trim(),  // Forgiving: trim whitespace in URL
+                url: url.trim(),
                 children: parseInlineContent(linkMatch[1])
-            });
+            };
+            if (title) node.title = title;
+            nodes.push(node);
             remaining = remaining.slice(linkMatch[0].length);
             continue;
         }
@@ -974,15 +997,19 @@ function renderNode(node, getAttr, options) {
         case 'code':
             return `<code${getAttr('code')}>${escapeHtml(node.value || '')}</code>`;
 
-        case 'link':
+        case 'link': {
             const sanitizedHref = sanitizeUrl(node.url, options.allow_unsafe_urls);
             const isExternal = /^https?:\/\//i.test(sanitizedHref);
             const rel = isExternal ? ' rel="noopener noreferrer"' : '';
-            return `<a${getAttr('a')} href="${sanitizedHref}"${rel}>${renderChildren(node.children, getAttr, options)}</a>`;
+            const titleAttr = node.title ? ` title="${escapeHtml(node.title)}"` : '';
+            return `<a${getAttr('a')} href="${escapeHtml(sanitizedHref)}"${rel}${titleAttr}>${renderChildren(node.children, getAttr, options)}</a>`;
+        }
 
-        case 'image':
+        case 'image': {
             const sanitizedSrc = sanitizeUrl(node.url, options.allow_unsafe_urls);
-            return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${escapeHtml(node.alt || '')}">`;
+            const titleAttr = node.title ? ` title="${escapeHtml(node.title)}"` : '';
+            return `<img${getAttr('img')} src="${escapeHtml(sanitizedSrc)}" alt="${escapeHtml(node.alt || '')}"${titleAttr}>`;
+        }
 
         case 'br':
             return '<br>';
