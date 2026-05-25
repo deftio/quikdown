@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.2.16
+ * @version 1.2.17
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -77,11 +77,13 @@
      * block detection and a **per-block inline pass** for formatting:
      *
      *   ┌─────────────────────────────────────────────────────────┐
-     *   │  Phase 1 — Code Extraction                             │
-     *   │  Scan for fenced code blocks (``` / ~~~) and inline    │
-     *   │  code spans (`…`). Replace with §CB§ / §IC§ place-    │
-     *   │  holders so code content is never touched by later      │
-     *   │  phases.                                                │
+     *   │  Phase 1 — Code + Escape Extraction                     │
+     *   │  1a. Fenced code blocks (``` / ~~~) → §CB§ placeholders│
+     *   │  1b. Escaped backticks (\`) → §BE§ placeholders        │
+     *   │  1c. Inline code spans (`…`) → §IC§ placeholders       │
+     *   │      Cannot cross newlines (scoped to single line).     │
+     *   │  1d. Remaining backslash escapes (\* \_ etc.) → §BE§   │
+     *   │      Only ASCII punctuation is escapable; \a stays.     │
      *   ├─────────────────────────────────────────────────────────┤
      *   │  Phase 2 — HTML Escaping                                │
      *   │  Escape &, <, >, ", ' in the remaining text to prevent │
@@ -129,7 +131,7 @@
     // ────────────────────────────────────────────────────────────────────
 
     /** Build-time version stamp (injected by tools/updateVersion) */
-    const quikdownVersion = '1.2.16';
+    const quikdownVersion = '1.2.17';
 
     /** CSS class prefix used for all generated elements */
     const CLASS_PREFIX = 'quikdown-';
@@ -138,6 +140,7 @@
     const PLACEHOLDER_CB = '§CB';   // fenced code blocks
     const PLACEHOLDER_IC = '§IC';   // inline code spans
     const PLACEHOLDER_HT = '§HT';  // safe HTML tags (limited mode)
+    const PLACEHOLDER_BE = '§BE';  // backslash escapes
 
     /** Attributes whose values need URL sanitization */
     const URL_ATTRIBUTES = { href:1, src:1, action:1, formaction:1 };
@@ -519,12 +522,36 @@
             return placeholder;
         });
 
+        // ── Escaped backticks ──
+        // Extract \` before inline code extraction so an escaped backtick
+        // does not participate in code span pairing.
+        const backslashEscapes = [];
+        html = html.replace(/\\`/g, () => {
+            const placeholder = `${PLACEHOLDER_BE}${backslashEscapes.length}§`;
+            backslashEscapes.push('`');
+            return placeholder;
+        });
+
         // ── Inline code spans ──
         // Matches a single backtick pair: `content`.
         // Content is captured and HTML-escaped immediately.
-        html = html.replace(/`([^`]+)`/g, (match, code) => {
+        html = html.replace(/`([^`\n]+)`/g, (match, code) => {
             const placeholder = `${PLACEHOLDER_IC}${inlineCodes.length}§`;
             inlineCodes.push(escapeHtml(code));
+            return placeholder;
+        });
+
+        // ────────────────────────────────────────────────────────────────
+        //  Phase 1.25 — Backslash Escape Extraction
+        // ────────────────────────────────────────────────────────────────
+        // Extract remaining backslash-escaped ASCII punctuation so those
+        // characters are not interpreted as markdown formatting.  Runs
+        // after code extraction (so \* inside code blocks and inline code
+        // is already protected) and before HTML escaping.
+
+        html = html.replace(/\\([\\*_{}[\]()#+\-.!~|>])/g, (match, char) => {
+            const placeholder = `${PLACEHOLDER_BE}${backslashEscapes.length}§`;
+            backslashEscapes.push(escapeHtml(char));
             return placeholder;
         });
 
@@ -799,6 +826,11 @@
             html = html.replace(placeholder, `<code${getAttr('code')}${dataQd('`')}>${code}</code>`);
         });
 
+        // Restore backslash escapes
+        backslashEscapes.forEach((char, i) => {
+            html = html.replace(`${PLACEHOLDER_BE}${i}§`, char);
+        });
+
         return html.trim();
     }
 
@@ -910,7 +942,7 @@
             [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
             [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em'],
             [/~~(.+?)~~/g, 'del'],
-            [/`([^`]+)`/g, 'code']
+            [/`([^`\n]+)`/g, 'code']
         ];
         patterns.forEach(([pattern, tag]) => {
             text = text.replace(pattern, `<${tag}${getAttr(tag)}>$1</${tag}>`);

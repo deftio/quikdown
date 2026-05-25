@@ -201,3 +201,139 @@ describe('parser gap fixes', () => {
         });
     });
 });
+
+// ════════════════════════════════════════════════════════════════════
+//  Inline code line boundary + backslash escape tests
+// ════════════════════════════════════════════════════════════════════
+
+describe('inline code must not cross newlines', () => {
+  test('same-line pair still works', () => {
+    const result = quikdown('`code here`');
+    expect(result).toContain('<code');
+    expect(result).toContain('code here');
+  });
+
+  test('cross-line pair produces no code', () => {
+    const result = quikdown('`code\nnewline`');
+    expect(result).not.toContain('<code');
+  });
+
+  test('lone backtick does not poison next paragraph', () => {
+    const result = quikdown('a ` here\n\n`real` code');
+    expect(result).toContain('<code');
+    expect(result).toContain('real');
+  });
+
+  test('lone backtick in table cell — table intact', () => {
+    const input = '| Name | Symbol | Desc |\n|------|--------|------|\n| backtick | ` | used for code |';
+    const result = quikdown(input);
+    expect(result).toContain('<table');
+    const tdCount = (result.match(/<td/g) || []).length;
+    expect(tdCount).toBeGreaterThanOrEqual(3);
+    // Should not have a runaway <code> spanning cells
+    expect(result).not.toMatch(/<code[^>]*>.*used for code/);
+  });
+
+  test('two tables, first has lone backtick — second renders', () => {
+    const input = '| A | B |\n|---|---|\n| ` | x |\n\n| C | D |\n|---|---|\n| y | z |';
+    const result = quikdown(input);
+    const tableCount = (result.match(/<table/g) || []).length;
+    expect(tableCount).toBe(2);
+  });
+
+  test('xelp scenario — full row with backtick cell', () => {
+    const input = '| Symbol | Name | Description |\n|--------|------|-------------|\n| `X` | ` (backtick) | used in code |';
+    const result = quikdown(input);
+    expect(result).toContain('<table');
+    expect(result).toContain('(backtick)');
+    const trCount = (result.match(/<tr/g) || []).length;
+    expect(trCount).toBeGreaterThanOrEqual(2);
+  });
+
+  test('backtick in blockquote stays per-line', () => {
+    const result = quikdown('> `start\n> end`');
+    expect(result).not.toMatch(/<code[^>]*>start[\s\S]*end<\/code>/);
+  });
+});
+
+describe('backslash escapes', () => {
+  test('\\* prevents italic', () => {
+    const result = quikdown('\\*not italic\\*');
+    expect(result).not.toContain('<em');
+    expect(result).toContain('*not italic*');
+  });
+
+  test('\\_ prevents italic', () => {
+    const result = quikdown('\\_not italic\\_');
+    expect(result).not.toContain('<em');
+  });
+
+  test('\\*\\* prevents bold', () => {
+    const result = quikdown('\\*\\*not bold\\*\\*');
+    expect(result).not.toContain('<strong');
+  });
+
+  test('\\` prevents code', () => {
+    const result = quikdown('\\`not code\\`');
+    expect(result).not.toContain('<code');
+  });
+
+  test('\\~~ prevents strikethrough', () => {
+    const result = quikdown('\\~~not del\\~~');
+    expect(result).not.toContain('<del');
+  });
+
+  test('\\[ prevents link', () => {
+    const result = quikdown('\\[text\\](url)');
+    expect(result).not.toContain('<a');
+  });
+
+  test('\\\\ produces single backslash', () => {
+    const result = quikdown('\\\\');
+    expect(result).toContain('\\');
+  });
+
+  test('\\# not a heading', () => {
+    const result = quikdown('\\# not heading');
+    expect(result).not.toContain('<h1');
+  });
+
+  test('escapes in fenced code preserved literally', () => {
+    const result = quikdown('```\n\\*text\\*\n```');
+    expect(result).toContain('\\*text\\*');
+  });
+
+  test('escapes in inline code preserved literally', () => {
+    const result = quikdown('`\\*text\\*`');
+    expect(result).toContain('\\*text\\*');
+  });
+
+  test('non-escapable char — backslash kept', () => {
+    const result = quikdown('\\a');
+    expect(result).toContain('\\a');
+  });
+
+  test('mixed escaped and unescaped', () => {
+    const result = quikdown('\\*literal\\* and *italic*');
+    expect(result).not.toMatch(/<em[^>]*>\s*literal/);
+    expect(result).toContain('<em');
+    expect(result).toContain('italic');
+  });
+});
+
+describe('inline code + backslash escape integration', () => {
+  test('table cell with escaped backtick', () => {
+    const input = '| A | B |\n|---|---|\n| \\` | val |';
+    const result = quikdown(input);
+    expect(result).toContain('<table');
+    expect(result).toContain('`');
+  });
+
+  test('escaped backtick in paragraph near real code', () => {
+    const result = quikdown('use \\` for escaping and `real code` here');
+    const codeMatches = result.match(/<code/g) || [];
+    expect(codeMatches.length).toBe(1);
+    expect(result).toContain('real code');
+    expect(result).toContain('`');
+  });
+});

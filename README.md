@@ -4,7 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
 [![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-12.8KB-green.svg)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-13.0KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 Quikdown is a small secure bidirectional markdown parser and editor for browsers and Node.js. Nine modules — use only what you need.
 

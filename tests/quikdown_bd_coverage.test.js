@@ -908,6 +908,37 @@ describe('quikdown_bd edge cases and full coverage', () => {
     });
   });
   
+  describe('Backslash Escapes in BD', () => {
+    test('escaped asterisk prevents italic in BD output', () => {
+      const html = quikdown_bd('\\*not italic\\*');
+      expect(html).not.toContain('<em');
+      expect(html).toContain('*not italic*');
+    });
+
+    test('escaped backtick prevents code in BD output', () => {
+      const html = quikdown_bd('\\`not code\\`');
+      expect(html).not.toContain('<code');
+      expect(html).toContain('`');
+    });
+
+    test('escaped hash prevents heading in BD output', () => {
+      const html = quikdown_bd('\\# not heading');
+      expect(html).not.toContain('<h1');
+    });
+
+    test('double backslash produces single backslash in BD output', () => {
+      const html = quikdown_bd('\\\\');
+      expect(html).toContain('\\');
+    });
+
+    test('mixed escaped and unescaped formatting in BD', () => {
+      const html = quikdown_bd('\\*literal\\* and *italic*');
+      expect(html).toContain('<em');
+      expect(html).toContain('italic');
+      expect(html).not.toMatch(/<em[^>]*>\s*literal/);
+    });
+  });
+
   describe('Complex Round-trip Scenarios', () => {
     let dom;
     

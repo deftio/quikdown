@@ -4382,4 +4382,27 @@ describe('QuikdownEditor Coverage', () => {
             expect(editor.html).toContain('disabled');
         });
     });
+
+    describe('Backslash Escapes in Editor', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('escaped asterisk prevents italic', async () => {
+            editor.updateFromMarkdown('\\*not italic\\*');
+            expect(editor.html).not.toContain('<em');
+            expect(editor.html).toContain('*not italic*');
+        });
+
+        test('escaped backtick prevents code', async () => {
+            editor.updateFromMarkdown('\\`not code\\`');
+            expect(editor.html).not.toContain('<code');
+        });
+
+        test('double backslash produces single backslash', async () => {
+            editor.updateFromMarkdown('\\\\');
+            expect(editor.html).toContain('\\');
+        });
+    });
 });

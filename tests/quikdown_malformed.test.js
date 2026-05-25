@@ -30,10 +30,10 @@ describe('Malformed markdown and exotic features', () => {
       expect(result).toContain('~~strike');
     });
 
-    test('inline code spanning newline still creates code (parser allows it)', () => {
+    test('inline code spanning newline should NOT create code', () => {
       const result = quikdown('`code\nnewline`');
-      expect(result).toContain('<code');
-      expect(result).toContain('code\nnewline');
+      expect(result).not.toContain('<code');
+      expect(result).toContain('`');
     });
 
     test('bold with lazy_linefeeds spanning newline should NOT create bold', () => {

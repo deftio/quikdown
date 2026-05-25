@@ -1,6 +1,6 @@
 /**
  * quikdown_json - JSON Markdown Parser
- * @version 1.2.16
+ * @version 1.2.17
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -13,7 +13,7 @@
  */
 
 // Version will be injected at build time
-const quikdownVersion$1 = '1.2.16';
+const quikdownVersion$1 = '1.2.17';
 
 // Safety limit to prevent infinite loops in list parsing
 const MAX_LOOP_ITERATIONS = 1000;
@@ -402,7 +402,7 @@ function parseInline(text, options) {
         }
 
         // Inline code: `code`
-        const codeMatch = remaining.match(/^`([^`]+)`/);
+        const codeMatch = remaining.match(/^`([^`\n]+)`/);
         if (codeMatch) {
             nodes.push({
                 type: 'code',
@@ -534,7 +534,7 @@ if (typeof window !== 'undefined') {
 
 
 // Version will be injected at build time
-const quikdownVersion = '1.2.16';
+const quikdownVersion = '1.2.17';
 
 /**
  * Convert markdown to JSON

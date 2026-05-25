@@ -396,7 +396,7 @@ function parseInline(text, options) {
         }
 
         // Inline code: `code`
-        const codeMatch = remaining.match(/^`([^`]+)`/);
+        const codeMatch = remaining.match(/^`([^`\n]+)`/);
         if (codeMatch) {
             nodes.push({
                 type: 'code',
