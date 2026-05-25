@@ -151,6 +151,46 @@
     margin-right: .5em;
 }
 
+.quikdown-dark .quikdown-alert {
+    padding: 1em;
+    margin: 1em 0;
+    border-left: 4px solid #0969da;
+    border-radius: 4px;
+    background: #162d50;
+    color: #e0e0e0;
+}
+
+.quikdown-dark .quikdown-alert-title {
+    font-weight: 600;
+    margin: 0 0 .4em;
+    color: #e0e0e0;
+}
+
+.quikdown-dark .quikdown-alert-note {
+    border-left-color: #0969da;
+    background: #162d50;
+}
+
+.quikdown-dark .quikdown-alert-tip {
+    border-left-color: #1a7f37;
+    background: #16351d;
+}
+
+.quikdown-dark .quikdown-alert-important {
+    border-left-color: #8250df;
+    background: #2d1a42;
+}
+
+.quikdown-dark .quikdown-alert-warning {
+    border-left-color: #9a6700;
+    background: #342a10;
+}
+
+.quikdown-dark .quikdown-alert-caution {
+    border-left-color: #cf222e;
+    background: #3d1418;
+}
+
 /* ============================================
    Container Styling
    ============================================ */

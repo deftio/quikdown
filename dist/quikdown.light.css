@@ -151,6 +151,46 @@
     margin-right: .5em;
 }
 
+.quikdown-light .quikdown-alert {
+    padding: 1em;
+    margin: 1em 0;
+    border-left: 4px solid #0969da;
+    border-radius: 4px;
+    background: #ddf4ff;
+    color: #333;
+}
+
+.quikdown-light .quikdown-alert-title {
+    font-weight: 600;
+    margin: 0 0 .4em;
+    color: #333;
+}
+
+.quikdown-light .quikdown-alert-note {
+    border-left-color: #0969da;
+    background: #ddf4ff;
+}
+
+.quikdown-light .quikdown-alert-tip {
+    border-left-color: #1a7f37;
+    background: #dafbe1;
+}
+
+.quikdown-light .quikdown-alert-important {
+    border-left-color: #8250df;
+    background: #fbefff;
+}
+
+.quikdown-light .quikdown-alert-warning {
+    border-left-color: #9a6700;
+    background: #fff8c5;
+}
+
+.quikdown-light .quikdown-alert-caution {
+    border-left-color: #cf222e;
+    background: #ffebe9;
+}
+
 /* ============================================
    Container Styling
    ============================================ */

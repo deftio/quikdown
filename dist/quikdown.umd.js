@@ -181,7 +181,14 @@
         ol: 'margin:.5em 0;padding-left:2em',
         li: 'margin:.25em 0',
         'task-item': 'list-style:none',
-        'task-checkbox': 'margin-right:.5em'
+        'task-checkbox': 'margin-right:.5em',
+        'alert': 'padding:1em;margin:1em 0;border-left:4px solid #0969da;border-radius:4px;background:#ddf4ff',
+        'alert-title': 'font-weight:600;margin:0 0 .4em',
+        'alert-note': 'border-left-color:#0969da;background:#ddf4ff',
+        'alert-tip': 'border-left-color:#1a7f37;background:#dafbe1',
+        'alert-important': 'border-left-color:#8250df;background:#fbefff',
+        'alert-warning': 'border-left-color:#9a6700;background:#fff8c5',
+        'alert-caution': 'border-left-color:#cf222e;background:#ffebe9'
     };
 
     // ────────────────────────────────────────────────────────────────────
@@ -270,6 +277,28 @@
     }
 
     /**
+     * Strip trailing punctuation from an autolinked URL.
+     * Handles balanced parentheses (e.g. Wikipedia URLs).
+     * @param {string} url  The matched URL text
+     * @returns {{ url: string, trailing: string }}
+     */
+    function stripTrailingPunctuation(url) {
+        let trailing = '';
+        const punct = /[.,;:!?)]/;
+        while (url.length > 0 && punct.test(url[url.length - 1])) {
+            const ch = url[url.length - 1];
+            if (ch === ')') {
+                const opens = (url.match(/\(/g) || []).length;
+                const closes = (url.match(/\)/g) || []).length;
+                if (opens >= closes) break; // balanced — ) is part of URL
+            }
+            trailing = ch + trailing;
+            url = url.slice(0, -1);
+        }
+        return { url, trailing };
+    }
+
+    /**
      * Count leading blockquote depth on an HTML-escaped line (&gt; markers).
      * @returns {{ depth: number, content: string }}
      */
@@ -284,31 +313,94 @@
         return { depth, content: line.slice(pos) };
     }
 
+    /**
+     * Check if a line breaks lazy blockquote continuation.
+     * @param {string} line  HTML-escaped line text
+     * @returns {boolean}
+     */
+    function isLazyContinuationBreaker(line) {
+        const trimmed = line.trim();
+        if (trimmed === '') return true;                          // blank line
+        if (/^#{1,6}\s/.test(trimmed)) return true;              // heading
+        if (isHRLine(trimmed)) return true;                       // HR
+        /* istanbul ignore next -- defensive: &gt; lines are caught by parseBlockquoteLine first */
+        if (/^&gt;/.test(trimmed)) return true;                   // new blockquote
+        if (/^[-*+]\s/.test(trimmed)) return true;               // unordered list
+        if (/^\d+\.\s/.test(trimmed)) return true;               // ordered list
+        if (trimmed.startsWith('|')) return true;                  // table row
+        if (trimmed.startsWith(PLACEHOLDER_CB)) return true;      // code block placeholder
+        return false;
+    }
+
+    /** GFM alert type labels */
+    const ALERT_LABELS = {
+        NOTE: 'Note', TIP: 'Tip', IMPORTANT: 'Important',
+        WARNING: 'Warning', CAUTION: 'Caution'
+    };
+
     /** Render nested blockquotes from a run of parsed lines. */
     function renderNestedBlockquotes(items, getAttr, dataQd) {
+        // ── GFM alert detection ──
+        // Check if the first item's content matches [!TYPE]
+        /* istanbul ignore next -- depth is always 1 for outermost blockquote */
+        const alertMatch = items.length > 0 && items[0].depth === 1
+            ? items[0].content.trim().match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i)
+            : null;
+
         let html = '';
         const stack = [];
+        const useInlineStyles = getAttr('blockquote').includes('style=');
 
         for (let idx = 0; idx < items.length; idx++) {
             const { depth, content } = items[idx];
             /* istanbul ignore next -- depth is always >= 1 from parseBlockquoteLine gate */
             if (depth <= 0) continue;
 
+            // Skip the [!TYPE] marker line — we'll render it as a title
+            if (alertMatch && idx === 0) {
+                const alertType = alertMatch[1].toUpperCase();
+                const typeLower = alertType.toLowerCase();
+                if (useInlineStyles) {
+                    const baseStyle = QUIKDOWN_STYLES['alert'];
+                    const typeStyle = QUIKDOWN_STYLES['alert-' + typeLower];
+                    /* istanbul ignore next -- typeStyle is always defined for valid alert types */
+                    const merged = typeStyle ? `${baseStyle};${typeStyle}` : baseStyle;
+                    html += `<div style="${merged}"${dataQd('>')}>`;
+                } else {
+                    html += `<div class="${CLASS_PREFIX}alert ${CLASS_PREFIX}alert-${typeLower}"${dataQd('>')}>`;
+                }
+                // Title
+                const label = ALERT_LABELS[alertType];
+                if (useInlineStyles) {
+                    html += `<p style="${QUIKDOWN_STYLES['alert-title']}">${label}</p>`;
+                } else {
+                    html += `<p class="${CLASS_PREFIX}alert-title">${label}</p>`;
+                }
+                stack.push('alert');
+                continue;
+            }
+
             while (stack.length > depth) {
-                html += '</blockquote>';
-                stack.pop();
+                const tag = stack.pop();
+                /* istanbul ignore next -- alert closing uses </div>, blockquote uses </blockquote> */
+                html += tag === 'alert' ? '</div>' : '</blockquote>';
             }
             while (stack.length < depth) {
-                html += `<blockquote${getAttr('blockquote')}${dataQd('>')}>`;
-                stack.push(true);
+                /* istanbul ignore next -- defensive: alert div already opened at depth 0 */
+                if (stack.length === 0 && alertMatch) {
+                    stack.push('alert');
+                } else {
+                    html += `<blockquote${getAttr('blockquote')}${dataQd('>')}>`;
+                    stack.push('blockquote');
+                }
             }
             html += content;
             if (idx < items.length - 1) html += '\n';
         }
 
         while (stack.length > 0) {
-            html += '</blockquote>';
-            stack.pop();
+            const tag = stack.pop();
+            html += tag === 'alert' ? '</div>' : '</blockquote>';
         }
 
         return html.trimEnd();
@@ -677,9 +769,10 @@
         });
 
         // Autolinks — bare https?:// URLs become clickable <a> tags
-        html = html.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (match, prefix, url) => {
+        html = html.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (match, prefix, rawUrl) => {
+            const { url, trailing } = stripTrailingPunctuation(rawUrl);
             const sanitizedUrl = sanitizeUrl(url, options.allow_unsafe_urls);
-            return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>`;
+            return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>${trailing}`;
         });
 
         // Protect rendered tags so emphasis regexes don't see attribute
@@ -768,6 +861,8 @@
             [/(<\/table>)<\/p>/g, '$1'],
             [/<p>(<pre[^>]*>)/g, '$1'],
             [/(<\/pre>)<\/p>/g, '$1'],
+            [/<p>(<div[^>]*>)/g, '$1'],
+            [/(<\/div>)<\/p>/g, '$1'],
             [new RegExp(`<p>(${PLACEHOLDER_CB}\\d+§)</p>`, 'g'), '$1']
         ];
         cleanupPatterns.forEach(([pattern, replacement]) => {
@@ -775,7 +870,7 @@
         });
 
         // When a block element is followed by a newline and then text, open a <p>.
-        html = html.replace(/(<\/(?:h[1-6]|blockquote|ul|ol|table|pre|hr)>)\n([^<])/g, '$1\n<p>$2');
+        html = html.replace(/(<\/(?:h[1-6]|blockquote|div|ul|ol|table|pre|hr)>)\n([^<])/g, '$1\n<p>$2');
 
         // ────────────────────────────────────────────────────────────────
         //  Phase 4 — Code Restoration
@@ -907,11 +1002,23 @@
             // ── Blockquote ──
             // After Phase 2, the '>' character has been escaped to '&gt;'.
             // Supports nested levels: >> inner, > > inner
+            // Supports lazy continuation: lines without > prefix continue
+            // the blockquote at the previous depth.
             if (parseBlockquoteLine(line).depth > 0) {
                 const bqLines = [];
-                while (i < lines.length && parseBlockquoteLine(lines[i]).depth > 0) {
-                    bqLines.push(parseBlockquoteLine(lines[i]));
-                    i++;
+                let lastDepth = 0;
+                while (i < lines.length) {
+                    const parsed = parseBlockquoteLine(lines[i]);
+                    if (parsed.depth > 0) {
+                        bqLines.push(parsed);
+                        lastDepth = parsed.depth;
+                        i++;
+                    } else if (lastDepth > 0 && !isLazyContinuationBreaker(lines[i])) {
+                        bqLines.push({ depth: lastDepth, content: lines[i] });
+                        i++;
+                    } else {
+                        break;
+                    }
                 }
                 result.push(renderNestedBlockquotes(bqLines, getAttr, dataQd));
                 continue;
@@ -1046,6 +1153,8 @@
             });
         }
 
+        const colCount = alignments.length;
+
         /* istanbul ignore next - bd-only branch */
         const alignAttr = bidirectional ? ` data-qd-align="${alignments.join(',')}"` : '';
         let html = `<table${getAttr('table')}${alignAttr}>\n`;
@@ -1055,11 +1164,12 @@
         headerLines.forEach(line => {
             html += `<tr${getAttr('tr')}>\n`;
             const cells = parseTableCells(line);
-            cells.forEach((cell, i) => {
+            for (let i = 0; i < colCount; i++) {
+                const cell = i < cells.length ? cells[i] : '';
                 const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
                 const processedCell = processInlineMarkdown(cell.trim(), getAttr);
                 html += `<th${getAttr('th', alignStyle)}>${processedCell}</th>\n`;
-            });
+            }
             html += '</tr>\n';
         });
         html += '</thead>\n';
@@ -1070,11 +1180,12 @@
             bodyLines.forEach(line => {
                 html += `<tr${getAttr('tr')}>\n`;
                 const cells = parseTableCells(line);
-                cells.forEach((cell, i) => {
+                for (let i = 0; i < colCount; i++) {
+                    const cell = i < cells.length ? cells[i] : '';
                     const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
                     const processedCell = processInlineMarkdown(cell.trim(), getAttr);
                     html += `<td${getAttr('td', alignStyle)}>${processedCell}</td>\n`;
-                });
+                }
                 html += '</tr>\n';
             });
             html += '</tbody>\n';
@@ -1205,6 +1316,11 @@
                 '#f2f2f2': '#2a2a2a',   // th background
                 '#ddd': '#3a3a3a',      // borders
                 '#06c': '#6db3f2',      // links
+                '#ddf4ff': '#162d50',   // alert-note bg
+                '#dafbe1': '#16351d',   // alert-tip bg
+                '#fbefff': '#2d1a42',   // alert-important bg
+                '#fff8c5': '#342a10',   // alert-warning bg
+                '#ffebe9': '#3d1418',   // alert-caution bg
                 _textColor: '#e0e0e0'
             },
             light: {
@@ -1222,12 +1338,12 @@
                         themedStyle = themedStyle.replaceAll(oldColor, newColor);
                     }
                 }
-                const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];
+                const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote', 'alert', 'alert-title'];
                 if (needsTextColor.includes(tag)) {
                     themedStyle += `;color:${themeOverrides.dark._textColor}`;
                 }
             } else /* istanbul ignore next */ if (theme === 'light' && themeOverrides.light) {
-                const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];
+                const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote', 'alert', 'alert-title'];
                 if (needsTextColor.includes(tag)) {
                     themedStyle += `;color:${themeOverrides.light._textColor}`;
                 }

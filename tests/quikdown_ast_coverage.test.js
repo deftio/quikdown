@@ -311,4 +311,148 @@ describe('quikdown_ast coverage boost', () => {
             expect(hasBr).toBe(true);
         });
     });
+
+    describe('autolink trailing punctuation (AST)', () => {
+        test('strips trailing period', () => {
+            const ast = quikdown_ast('Visit https://example.com.');
+            const json = JSON.stringify(ast);
+            expect(json).toContain('"url":"https://example.com"');
+        });
+
+        test('balanced parens preserved in URL', () => {
+            const ast = quikdown_ast('https://en.wikipedia.org/wiki/Foo_(bar)');
+            const json = JSON.stringify(ast);
+            expect(json).toContain('Foo_(bar)');
+        });
+
+        test('unbalanced trailing paren stripped', () => {
+            const ast = quikdown_ast('(see https://example.com)');
+            const json = JSON.stringify(ast);
+            expect(json).toContain('"url":"https://example.com"');
+        });
+    });
+
+    describe('blockquote lazy continuation (AST)', () => {
+        test('continuation line in blockquote', () => {
+            const ast = quikdown_ast('> start\ncontinuation');
+            const bqs = ast.children.filter(c => c.type === 'blockquote' || c.type === 'alert');
+            expect(bqs.length).toBe(1);
+            expect(JSON.stringify(bqs[0])).toContain('continuation');
+        });
+
+        test('heading breaks blockquote', () => {
+            const ast = quikdown_ast('> quote\n# Heading');
+            expect(ast.children.some(c => c.type === 'heading')).toBe(true);
+        });
+
+        test('HR breaks blockquote', () => {
+            const ast = quikdown_ast('> quote\n---');
+            expect(ast.children.some(c => c.type === 'hr')).toBe(true);
+        });
+
+        test('list breaks blockquote', () => {
+            const ast = quikdown_ast('> quote\n- item');
+            expect(ast.children.some(c => c.type === 'list')).toBe(true);
+        });
+
+        test('ordered list breaks blockquote', () => {
+            const ast = quikdown_ast('> quote\n1. item');
+            expect(ast.children.some(c => c.type === 'list')).toBe(true);
+        });
+
+        test('new blockquote breaks continuation', () => {
+            const ast = quikdown_ast('> quote one\n> quote two');
+            const bqs = ast.children.filter(c => c.type === 'blockquote');
+            expect(bqs.length).toBe(1);
+        });
+
+        test('table row breaks blockquote', () => {
+            const ast = quikdown_ast('> quote\n| A | B |\n|---|---|\n| 1 | 2 |');
+            expect(ast.children.some(c => c.type === 'table')).toBe(true);
+        });
+
+        test('code fence breaks blockquote', () => {
+            const ast = quikdown_ast('> quote\n```\ncode\n```');
+            expect(ast.children.some(c => c.type === 'code_block')).toBe(true);
+        });
+
+        test('blank line breaks blockquote', () => {
+            const ast = quikdown_ast('> quote\n\nparagraph');
+            const paras = ast.children.filter(c => c.type === 'paragraph');
+            expect(paras.length).toBeGreaterThanOrEqual(1);
+        });
+
+        test('*** HR breaks blockquote', () => {
+            const ast = quikdown_ast('> quote\n***');
+            expect(ast.children.some(c => c.type === 'hr')).toBe(true);
+        });
+
+        test('___ HR breaks blockquote', () => {
+            const ast = quikdown_ast('> quote\n___');
+            expect(ast.children.some(c => c.type === 'hr')).toBe(true);
+        });
+    });
+
+    describe('GFM alert detection (AST)', () => {
+        test('NOTE alert produces alert node', () => {
+            const ast = quikdown_ast('> [!NOTE]\n> text');
+            expect(ast.children[0].type).toBe('alert');
+            expect(ast.children[0].alertType).toBe('note');
+        });
+
+        test('TIP alert', () => {
+            const ast = quikdown_ast('> [!TIP]\n> text');
+            expect(ast.children[0].alertType).toBe('tip');
+        });
+
+        test('IMPORTANT alert', () => {
+            const ast = quikdown_ast('> [!IMPORTANT]\n> text');
+            expect(ast.children[0].alertType).toBe('important');
+        });
+
+        test('WARNING alert', () => {
+            const ast = quikdown_ast('> [!WARNING]\n> text');
+            expect(ast.children[0].alertType).toBe('warning');
+        });
+
+        test('CAUTION alert', () => {
+            const ast = quikdown_ast('> [!CAUTION]\n> text');
+            expect(ast.children[0].alertType).toBe('caution');
+        });
+
+        test('case insensitive', () => {
+            const ast = quikdown_ast('> [!note]\n> text');
+            expect(ast.children[0].type).toBe('alert');
+        });
+
+        test('invalid type stays as blockquote', () => {
+            const ast = quikdown_ast('> [!INVALID]\n> text');
+            expect(ast.children[0].type).toBe('blockquote');
+        });
+
+        test('not on first line stays as blockquote', () => {
+            const ast = quikdown_ast('> first\n> [!NOTE]\n> text');
+            expect(ast.children[0].type).toBe('blockquote');
+        });
+    });
+
+    describe('table column normalization (AST)', () => {
+        test('short body row padded', () => {
+            const ast = quikdown_ast('| A | B | C |\n|---|---|---|\n| 1 |');
+            const table = ast.children[0];
+            expect(table.rows[0].length).toBe(3);
+        });
+
+        test('long body row trimmed', () => {
+            const ast = quikdown_ast('| A | B |\n|---|---|\n| 1 | 2 | 3 | 4 |');
+            const table = ast.children[0];
+            expect(table.rows[0].length).toBe(2);
+        });
+
+        test('short header padded', () => {
+            const ast = quikdown_ast('| A |\n|---|---|---|\n| 1 | 2 | 3 |');
+            const table = ast.children[0];
+            expect(table.headers.length).toBe(3);
+        });
+    });
 });

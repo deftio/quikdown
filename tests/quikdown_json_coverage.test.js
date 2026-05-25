@@ -186,4 +186,81 @@ describe('quikdown_json coverage boost', () => {
             expect(result).toContain('child');
         });
     });
+
+    describe('new parser features in JSON output', () => {
+        test('blockquote lazy continuation', () => {
+            const result = quikdown_json('> start\ncontinuation');
+            expect(result).toContain('blockquote');
+            expect(result).toContain('continuation');
+        });
+
+        test('GFM alert produces alert node', () => {
+            const result = quikdown_json('> [!NOTE]\n> text');
+            expect(result).toContain('"type": "alert"');
+            expect(result).toContain('"alertType": "note"');
+        });
+
+        test('all 5 alert types', () => {
+            for (const t of ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION']) {
+                const result = quikdown_json(`> [!${t}]\n> text`);
+                expect(result).toContain('"type": "alert"');
+            }
+        });
+
+        test('autolink trailing punctuation stripped', () => {
+            const result = quikdown_json('https://example.com.');
+            expect(result).toContain('"url": "https://example.com"');
+        });
+
+        test('autolink balanced parens preserved', () => {
+            const result = quikdown_json('https://en.wikipedia.org/wiki/Foo_(bar)');
+            expect(result).toContain('Foo_(bar)');
+        });
+
+        test('autolink unbalanced paren stripped', () => {
+            const result = quikdown_json('(see https://example.com)');
+            expect(result).toContain('"url": "https://example.com"');
+        });
+
+        test('table column normalization', () => {
+            const result = quikdown_json('| A | B | C |\n|---|---|---|\n| 1 |');
+            const parsed = JSON.parse(result);
+            const table = parsed.children.find(c => c.type === 'table');
+            expect(table.rows[0].length).toBe(3);
+        });
+
+        test('lazy continuation breakers', () => {
+            // heading
+            const r1 = quikdown_json('> quote\n# Heading');
+            expect(r1).toContain('"type": "heading"');
+
+            // HR
+            const r2 = quikdown_json('> quote\n---');
+            expect(r2).toContain('"type": "hr"');
+
+            // list
+            const r3 = quikdown_json('> quote\n- item');
+            expect(r3).toContain('"type": "list"');
+
+            // ordered list
+            const r4 = quikdown_json('> quote\n1. item');
+            expect(r4).toContain('"type": "list"');
+
+            // table
+            const r5 = quikdown_json('> quote\n| A | B |\n|---|---|\n| 1 | 2 |');
+            expect(r5).toContain('"type": "table"');
+
+            // code fence
+            const r6 = quikdown_json('> quote\n```\ncode\n```');
+            expect(r6).toContain('"type": "code_block"');
+
+            // *** HR
+            const r7 = quikdown_json('> quote\n***');
+            expect(r7).toContain('"type": "hr"');
+
+            // ___ HR
+            const r8 = quikdown_json('> quote\n___');
+            expect(r8).toContain('"type": "hr"');
+        });
+    });
 });

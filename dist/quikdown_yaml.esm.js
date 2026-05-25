@@ -41,6 +41,43 @@ function quikdown_ast(markdown, options = {}) {
 }
 
 /**
+ * Check if a line breaks lazy blockquote continuation (AST version).
+ * Uses raw markdown (not HTML-escaped).
+ */
+function isAstLazyContinuationBreaker(line) {
+    const trimmed = line.trim();
+    if (trimmed === '') return true;
+    if (/^#{1,6}\s/.test(trimmed)) return true;
+    if (/^---+\s*$/.test(trimmed) || /^\*\*\*+\s*$/.test(trimmed) || /^___+\s*$/.test(trimmed)) return true;
+    if (/^>\s*/.test(trimmed)) return true;
+    if (/^[-*+]\s/.test(trimmed)) return true;
+    if (/^\d+\.\s/.test(trimmed)) return true;
+    if (trimmed.startsWith('|')) return true;
+    if (/^(```|~~~)/.test(trimmed)) return true;
+    return false;
+}
+
+/**
+ * Strip trailing punctuation from an autolinked URL (AST version).
+ * Handles balanced parentheses (e.g. Wikipedia URLs).
+ */
+function stripTrailingPunctuationAst(url) {
+    let trailing = '';
+    const punct = /[.,;:!?)]/;
+    while (url.length > 0 && punct.test(url[url.length - 1])) {
+        const ch = url[url.length - 1];
+        if (ch === ')') {
+            const opens = (url.match(/\(/g) || []).length;
+            const closes = (url.match(/\)/g) || []).length;
+            if (opens >= closes) break;
+        }
+        trailing = ch + trailing;
+        url = url.slice(0, -1);
+    }
+    return { url, trailing };
+}
+
+/**
  * Parse block-level elements
  */
 function parseBlocks(text, options) {
@@ -115,17 +152,41 @@ function parseBlocks(text, options) {
             }
         }
 
-        // Blockquote
+        // Blockquote (with lazy continuation + GFM alert detection)
         if (line.match(/^>\s*/)) {
             const quoteLines = [];
-            while (i < lines.length && lines[i].match(/^>\s*/)) {
-                quoteLines.push(lines[i].replace(/^>\s*/, ''));
-                i++;
+            let inQuote = true;
+            while (i < lines.length) {
+                if (lines[i].match(/^>\s*/)) {
+                    quoteLines.push(lines[i].replace(/^>\s*/, ''));
+                    inQuote = true;
+                    i++;
+                } else if (inQuote && !isAstLazyContinuationBreaker(lines[i])) {
+                    quoteLines.push(lines[i]);
+                    i++;
+                } else {
+                    break;
+                }
             }
-            blocks.push({
-                type: 'blockquote',
-                children: parseBlocks(quoteLines.join('\n'))
-            });
+
+            // Check for GFM alert syntax on first line
+            const alertMatch = quoteLines.length > 0
+                ? quoteLines[0].trim().match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i)
+                : null;
+
+            if (alertMatch) {
+                const alertType = alertMatch[1].toLowerCase();
+                blocks.push({
+                    type: 'alert',
+                    alertType,
+                    children: parseBlocks(quoteLines.slice(1).join('\n'))
+                });
+            } else {
+                blocks.push({
+                    type: 'blockquote',
+                    children: parseBlocks(quoteLines.join('\n'))
+                });
+            }
             continue;
         }
 
@@ -197,10 +258,16 @@ function tryParseTable(lines, startIndex, options) {
         return 'left';
     });
 
-    // Parse headers with inline formatting
-    const headers = headerCells.map(cell => parseInline(cell.trim()));
+    const colCount = alignments.length;
 
-    // Parse body rows
+    // Parse headers with inline formatting, normalized to colCount
+    const headers = [];
+    for (let c = 0; c < colCount; c++) {
+        const cell = c < headerCells.length ? headerCells[c] : '';
+        headers.push(parseInline(cell.trim()));
+    }
+
+    // Parse body rows, normalized to colCount
     const rows = [];
     let i = startIndex + 2;
     while (i < lines.length) {
@@ -208,7 +275,12 @@ function tryParseTable(lines, startIndex, options) {
         if (!rowLine.includes('|') || rowLine.trim() === '') break;
 
         const cells = parseTableRow(rowLine);
-        rows.push(cells.map(cell => parseInline(cell.trim())));
+        const row = [];
+        for (let c = 0; c < colCount; c++) {
+            const cell = c < cells.length ? cells[c] : '';
+            row.push(parseInline(cell.trim()));
+        }
+        rows.push(row);
         i++;
     }
 
@@ -452,11 +524,15 @@ function parseInline(text, options) {
         // Autolinks: URLs starting with http:// or https://
         const urlMatch = remaining.match(/^(https?:\/\/[^\s<>[\]]+)/);
         if (urlMatch) {
+            const { url: cleanUrl, trailing } = stripTrailingPunctuationAst(urlMatch[1]);
             nodes.push({
                 type: 'link',
-                url: urlMatch[1],
-                children: [{ type: 'text', value: urlMatch[1] }]
+                url: cleanUrl,
+                children: [{ type: 'text', value: cleanUrl }]
             });
+            if (trailing) {
+                nodes.push({ type: 'text', value: trailing });
+            }
             remaining = remaining.slice(urlMatch[0].length);
             continue;
         }

@@ -1008,8 +1008,10 @@ describe('stress tests: complex and semi-valid markdown', () => {
             const md = '| A | B |\n|---|---|\n| 1 | 2 | 3 | 4 |';
             const html = parse(md);
             expect(html).toContain('<table');
-            // Extra body cells should still render
-            expect(html).toContain('3');
+            // Extra body cells are trimmed to match separator column count
+            expect(html).toContain('1');
+            expect(html).toContain('2');
+            expect(html).not.toContain('>3<');
         });
 
         test('table where header has more columns than separator', () => {

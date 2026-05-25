@@ -1,5 +1,83 @@
 # Release Notes
 
+## v1.2.17
+
+### Parser robustness
+
+Six fixes that improve real-world document rendering and bring quikdown closer to CommonMark and GFM behavior.
+
+### Inline code scoped to single lines
+
+- **Breaking fix**: Inline code spans (`` `...` ``) can no longer cross newline boundaries. The regex character class changed from `` [^`] `` to `` [^`\n] `` in both the Phase 1 extraction pass and the table-cell inline formatter.
+- **Why**: A lone backtick in a table cell (e.g. `` ` (backtick) ``) would pair with a backtick on a subsequent line, swallowing the rest of the document into a single `<code>` span. This caused catastrophic rendering failure on real documents.
+- **Scope**: Applied to `quikdown.js` (2 locations) and `quikdown_ast.js` (1 location, defense-in-depth).
+- Matches CommonMark and Dillinger behavior.
+
+### Backslash escape support
+
+- **New feature**: Backslash-escaped ASCII punctuation (`\*`, `` \` ``, `\_`, `\#`, `\\`, `\[`, `\~`, `\|`, `\>`, `\!`, `\.`, `\-`, `\+`, `\(`, `\)`, `\{`, `\}`, `\]`) is now recognized. The escaped character renders literally without triggering formatting.
+- Implemented as a two-phase extraction using `\xA7BE` placeholders:
+  - Phase 1b: Escaped backticks (`` \` ``) extracted before inline code pairing
+  - Phase 1.25: All other escaped punctuation extracted after inline code extraction (so backslash sequences inside code spans are preserved verbatim)
+- Non-escapable characters (e.g. `\a`, `\n`) pass through unchanged with the backslash intact.
+- Escapes inside fenced code blocks and inline code spans are not processed (content is already protected by `\xA7CB`/`\xA7IC` placeholders).
+
+### Autolink trailing punctuation stripping
+
+- **Fix**: Bare autolinked URLs (`https://example.com.`) no longer include trailing sentence punctuation (`. , ; : ! ? )`) in the `href`.
+- Balanced parentheses are preserved — Wikipedia-style URLs like `https://en.wikipedia.org/wiki/Foo_(bar)` keep the closing `)` as part of the URL.
+- Unbalanced trailing `)` is stripped (e.g. `(see https://example.com)` links to `https://example.com`).
+- Applied to both `quikdown.js` (HTML parser) and `quikdown_ast.js` (AST parser).
+
+### Blockquote lazy continuation
+
+- **Fix**: Lines without a `>` prefix immediately following a blockquote line are now included in the blockquote (CommonMark lazy continuation). Previously, `> line 1\nline 2` would close the blockquote after line 1.
+- Continuation is broken by blank lines, headings, HRs, list items, table rows, and code blocks — matching CommonMark spec.
+- Added `isLazyContinuationBreaker()` helper in `quikdown.js` and `isAstLazyContinuationBreaker()` in `quikdown_ast.js`.
+
+### Table column count normalization
+
+- **Fix**: Table body rows with fewer cells than the separator row are padded with empty `<td>` cells. Rows with more cells are trimmed to match the separator column count.
+- Produces well-formed, rectangular HTML tables regardless of ragged markdown input.
+- Applied to `quikdown.js` (`buildTable`), `quikdown_ast.js` (`tryParseTable`), and `quikdown_ast_html.js` (`renderTable`).
+
+### GFM alert blocks
+
+- **New feature**: GitHub-Flavored Markdown alert syntax is now supported. `> [!NOTE]`, `> [!TIP]`, `> [!IMPORTANT]`, `> [!WARNING]`, and `> [!CAUTION]` on the first line of a blockquote render as styled alert blocks instead of plain blockquotes.
+- In `inline_styles` mode, alerts render as `<div>` elements with type-specific border and background colors.
+- In CSS class mode, alerts use `quikdown-alert`, `quikdown-alert-{type}`, and `quikdown-alert-title` classes.
+- `emitStyles()` output includes all alert styles. Dark theme overrides are included for all five alert types.
+- Case insensitive — `[!note]` works the same as `[!NOTE]`.
+- Invalid types (e.g. `[!INVALID]`) render as normal blockquotes.
+- AST parser produces `{ type: 'alert', alertType: '...' }` nodes; AST HTML renderer handles them.
+
+### Testing
+
+- **117 new tests** across 6 test files covering all six fixes
+- **2 updated tests**: table trimming behavior in `quikdown_hr_lazy_tables.test.js`, lazy continuation in `quikdown_bd.test.js`
+- **1 updated test** in `quikdown_malformed.test.js`: cross-line inline code now expects no `<code>` output
+- **3215 unit tests pass**, all coverage thresholds met
+- **164 E2E tests pass**, no regressions
+- Coverage: 98.3% weighted total, 100% on core `quikdown.esm.js`
+
+### Files modified
+
+- `src/quikdown.js` — inline code regex fix, backslash escape support, `stripTrailingPunctuation`, autolink fix, `isLazyContinuationBreaker`, blockquote lazy continuation, table `colCount` normalization, GFM alert detection + styles + dark overrides
+- `src/quikdown_ast.js` — inline code regex fix, `stripTrailingPunctuationAst`, autolink fix, `isAstLazyContinuationBreaker`, blockquote lazy continuation, table normalization, alert node type
+- `src/quikdown_ast_html.js` — table `renderTable` normalization, `case 'alert'` rendering, alert styles
+- `tests/quikdown_parser_gaps.test.js` — new tests for all fixes
+- `tests/quikdown_ast_coverage.test.js` — AST coverage tests
+- `tests/quikdown_ast_html_coverage.test.js` — AST HTML coverage tests
+- `tests/quikdown_bd_coverage.test.js` — BD coverage tests
+- `tests/quikdown_json_coverage.test.js` — JSON coverage tests
+- `tests/quikdown_yaml_coverage.test.js` — YAML coverage tests
+- `tests/quikdown_hr_lazy_tables.test.js` — 1 updated test
+- `tests/quikdown_bd.test.js` — 1 updated test
+- `tests/quikdown_malformed.test.js` — 1 updated test
+- `tests/quikdown_edit_coverage.test.js` — 3 new tests
+
+---
+
 ## v1.2.16
 
 ### MCP integration (new integration surface)

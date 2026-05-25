@@ -2,15 +2,15 @@
 
 [![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)](https://github.com/deftio/quikdown)
+[![Coverage](https://img.shields.io/badge/coverage-98.3%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-13.0KB-green.svg)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-14.9KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 Quikdown is a small secure bidirectional markdown parser and editor for browsers and Node.js. Nine modules — use only what you need.
 
-- **quikdown.js** (12.6 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.
-- **quikdown_bd.js** (17.4 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.
-- **quikdown_edit.js** (89.7 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.
+- **quikdown.js** (14.7 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.
+- **quikdown_bd.js** (19.5 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.
+- **quikdown_edit.js** (91.8 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.
 - **quikdown_edit_standalone.js** (3.9 MB) — Offline/air-gapped editor. Same as above but bundles highlight.js, Mermaid, DOMPurify, Leaflet, and Three.js — no CDN required. See [Standalone Docs](docs/standalone-editor.md).
 - **quikdown_mcp.js** (26 KB) — MCP (Model Context Protocol) server. Exposes 24 tools for AI agents over JSON-RPC 2.0 on stdio. Works with Cursor, Claude Desktop, VS Code, and any MCP host.
 
