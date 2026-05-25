@@ -6,14 +6,16 @@
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![Bundle Size](https://img.shields.io/badge/minified-12.8KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
-A small, secure markdown parser and editor for browsers and Node.js. Nine modules — use only what you need.
+Quikdown is a small secure bidirectional markdown parser and editor for browsers and Node.js. Nine modules — use only what you need.
 
-- **quikdown.js** (9.8 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.
-- **quikdown_bd.js** (14.6 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.
-- **quikdown_edit.js** (84.3 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.
-- **quikdown_edit_standalone.js** (3.8 MB) — Offline/air-gapped editor. Same as above but bundles highlight.js, Mermaid, DOMPurify, Leaflet, and Three.js — no CDN required. See [Standalone Docs](docs/standalone-editor.md).
+- **quikdown.js** (12.6 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.
+- **quikdown_bd.js** (17.4 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.
+- **quikdown_edit.js** (89.7 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.
+- **quikdown_edit_standalone.js** (3.9 MB) — Offline/air-gapped editor. Same as above but bundles highlight.js, Mermaid, DOMPurify, Leaflet, and Three.js — no CDN required. See [Standalone Docs](docs/standalone-editor.md).
+- **quikdown_mcp.js** (26 KB) — MCP (Model Context Protocol) server. Exposes 24 tools for AI agents over JSON-RPC 2.0 on stdio. Works with Cursor, Claude Desktop, VS Code, and any MCP host.
+
+### Extras
 - **quikdown_ast.js** / **quikdown_json.js** / **quikdown_yaml.js** / **quikdown_ast_html.js** — AST companion libraries for structured output.
-- **quikdown_mcp.js** — MCP (Model Context Protocol) server. Exposes 24 tools for AI agents over JSON-RPC 2.0 on stdio. Works with Cursor, Claude Desktop, VS Code, and any MCP host.
 
 **[Live Site](https://deftio.github.io/quikdown/pages/)** | **[Try the Editor](https://deftio.github.io/quikdown/pages/edit/)** | **[Examples](https://deftio.github.io/quikdown/pages/examples/)** | **[Frameworks](https://deftio.github.io/quikdown/pages/frameworks/)** | **[Downloads](https://deftio.github.io/quikdown/pages/downloads/)** | **[Docs](docs/)**
 
@@ -27,12 +29,12 @@ A small, secure markdown parser and editor for browsers and Node.js. Nine module
 - **Drop-in editor** — one `<div>`, one import. Source, split, and preview modes. Undo/redo, toolbar, copy as rich text, light/dark/auto themes.
 - **Fence plugins** — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, raw HTML. All bidirectional.
 - **XSS-safe** — HTML entities escaped by default. URL sanitization blocks `javascript:`, `vbscript:`, and non-image `data:` URIs.
-- **Browser and Node.js** — parser and bidirectional modules work in both. Editor requires DOM.
-- **Zero runtime deps (core)** — parser and bidirectional modules have no dependencies. The editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, etc.) from CDN on demand, or use the [standalone offline bundle](docs/standalone-editor.md) (~3.8 MB, no CDN).
-- **TypeScript definitions** — hand-maintained `.d.ts` files for all modules.
+- **Browser and Node.js** — forward parser and bidirectional parser work in both. Quikdown Editor requires DOM.
+- **Zero runtime deps (core)** — parser and bidirectional modules have no dependencies. The editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, etc.) from CDN on demand, or use the [standalone offline bundle](docs/standalone-editor.md) (~3.9 MB, no CDN).
+- **TypeScript definitions** — maintained `.d.ts` files for all modules.
 - **Inline styles or CSS classes** — built-in light/dark themes, or bring your own CSS.
 - **Copy as rich text** — copies the rendered preview to clipboard with images, tables, and rendered fences. Paste into Gmail, Word, Slack, Notion.
-- **Headless mode** — run the editor without a toolbar. Wire `undo()`, `setTheme()`, `setMode()` to your own UI.
+- **Headless mode** — run the editor without a toolbar. Wire `undo()`, `setTheme()`, `setMode()` to your own UI.  Rich API for controlling / selecting / manipulating markdown and rendered text with undo/redo support.
 - **Structured output** — parse markdown into AST, JSON, or YAML via companion libraries.
 
 ## Installation
