@@ -35,8 +35,10 @@ Citizenship: \<Country\>
 
 ## Assignee
 
-BSMH Labs LLC
-Small Entity Status Claimed
+Joe Smith
+123 AnyString
+SuperTown USA
+Citizenship : USA
 
 ## Priority Filing
 

@@ -8,13 +8,13 @@ quikdown is a zero-dependency markdown parser for browser and Node.js. It conver
 - License: BSD-2-Clause
 - Repository: https://github.com/deftio/quikdown
 - Bundle size: ~10 KB minified (core parser), ~86 KB (editor), ~3.8 MB (standalone editor with all fence libraries)
-- Test coverage: 96%
+- Test coverage: 98%
 - Zero runtime dependencies
 - TypeScript definitions included
 
 ## Modules
 
-quikdown ships eight modules, each available as ESM, UMD, and/or CommonJS:
+quikdown ships nine modules, each available as ESM, UMD, and/or CommonJS:
 
 | Module | Import Path | Purpose | Minified Size |
 |--------|-------------|---------|---------------|
@@ -582,6 +582,8 @@ Working HTML examples are in the `examples/` directory:
 - **examples/editor-api-playground.html** - Interactive API testing
 - **examples/editor-fence-custom.html** - Custom fence handling in editor
 - **examples/demo-headless.html** - Headless editor with custom UI
+- **examples/ai-canvas/** - AI Canvas: chat + document editor with simulated and live LLM modes (BYOK)
+- **examples/mcp-doc-host/** - MCP Path B doc copilot: Node bridges MCP to QuikdownEditor in browser via WebSocket
 - **examples/llm-tool-editor/** - quikchat + QuikdownEditor + simulated agent tools
 - **examples/llm-stream-editor/** - Stream LLM tokens into QuikdownEditor
 - **pages/examples/integration-llm-stream.html** - Parser-only LLM streaming

@@ -149,7 +149,7 @@ The version of quikdown.
 #### Example
 
 ```javascript
-console.log(quikdown.version); // "1.2.14"
+console.log(quikdown.version); // "1.2.16"
 ```
 
 ## Fence Plugin API

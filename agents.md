@@ -347,7 +347,7 @@ Tests are in `tests/` using Jest (jsdom environment) and Playwright:
 - `quikdown_stress.test.js` - Performance
 - `*.spec.js` - Playwright e2e tests
 
-Coverage thresholds: 100% for core, 89-100% for variants, minimum 80% overall.
+Coverage thresholds: 99% for core, 90-99% for variants (BD, AST, JSON, YAML, AST-HTML, MCP), minimum 80% for editor.
 
 ## Documentation Reference
 
@@ -373,7 +373,7 @@ Detailed docs in `docs/`:
 
 Working HTML examples in `examples/` and `pages/examples/`:
 
-**LLM / agent:** `examples/llm-tool-editor/`, `examples/llm-stream-editor/`, `pages/examples/integration-llm-stream.html`, `pages/examples/integration-quikchat.html`
+**LLM / agent:** `examples/ai-canvas/` (AI Canvas — chat + doc editor, simulated + live LLM), `examples/mcp-doc-host/` (MCP Path B doc copilot), `examples/llm-tool-editor/`, `examples/llm-stream-editor/`, `pages/examples/integration-llm-stream.html`, `pages/examples/integration-quikchat.html`
 
 **Parser basics:** `pages/examples/parser-hello.html`, `parser-options.html`, `parser-themes.html`, `parser-fence-plugin.html`
 

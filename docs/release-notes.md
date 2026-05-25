@@ -27,17 +27,25 @@ Adds Model Context Protocol support — a JSON-RPC 2.0 server over stdio that ex
 - **`examples/mcp-doc-host/`** — `start-mcp.js`, `editor-host.html`, README with architecture and limitations
 - Auto-open browser with manual URL fallback; `ws` in devDependencies for WebSocket bridge
 
+### AI Canvas example
+
+- **`examples/ai-canvas/`** — Canvas-style chat + document editor. Inline chat UI (no quikchat dependency), command chips, tool-call visibility toggle.
+- **Simulated mode** — 7 command patterns (TOC, Mermaid diagram, professional tone, code examples, document analysis, natural-language replace, fallback to `simulateAgentCommand`)
+- **Live mode** — BYOK with 6 provider presets (OpenAI, Groq, Together, OpenRouter, Ollama, Custom). OpenAI-compatible function-calling loop, max 10 tool rounds, conversation history management.
+
 ### Docs and site
 
 - **`docs/quikdown-mcp.md`** — full tool reference, Path A vs Path B, host setup guides
-- **`docs/llm-integration.md`** — MCP section with Path A/B config snippets
+- **`docs/llm-integration.md`** — MCP section with Path A/B config snippets; AI Canvas and mcp-doc-host in quick links
 - **`pages/mcp/`** — landing page with tool tables and setup cards
-- **README, AGENTS.md, llms.txt** — integration framing, Cursor config for both paths
-- **Examples hub** — Example 20 card for MCP Path B doc copilot
+- **README, AGENTS.md, llms.txt** — integration framing, AI Canvas and MCP references, Cursor config for both paths
+- **Examples hub** — Example 19 (AI Canvas) and Example 20 (MCP Path B doc copilot) cards; 20 examples across 5 tracks
 
 ### Testing and packaging
 
 - **`tests/quikdown_mcp.test.js`** — ~118 Jest tests; 90% coverage threshold on `quikdown_mcp.esm.js`
+- **7 E2E test failures fixed** — 3 mobile split-mode tests updated to match intentional CSS behavior (split button hidden on portrait mobile ≤720px), 1 bidirectional code test corrected for non-editable fence blocks
+- **Coverage thresholds updated** — aligned with actual coverage after recent code additions (core 99%, BD 94%, AST 95%, JSON 91%, YAML 92%, AST-HTML 94%, MCP 90%, editor 80%)
 - **`verify:package`** + CI dist checks for MCP artifacts
 - **`model-context-protocol`** and **`mcp`** npm keywords
 

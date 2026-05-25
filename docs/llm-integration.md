@@ -6,11 +6,12 @@ quikdown is built for the **model ↔ markdown ↔ human** loop: small parser fo
 
 | Pattern | Example | When to use |
 |---------|---------|-------------|
-| **Parser stream** | [pages/examples/integration-llm-stream.html](../pages/examples/integration-llm-stream.html) | Tokens → `quikdown(buffer)` in a div (chat reply) |
-| **Stream into editor** | [examples/llm-stream-editor/](../examples/llm-stream-editor/) | Long artifact; `editor.setMarkdown(buffer)` on each chunk |
+| **AI Canvas** | [examples/ai-canvas/](../examples/ai-canvas/) | Chat + document editor; simulated or live LLM (BYOK) |
+| **MCP doc copilot** | [examples/mcp-doc-host/](../examples/mcp-doc-host/) | Node bridges MCP to browser editor; 24 tools |
 | **Agent tool editor** | [examples/llm-tool-editor/](../examples/llm-tool-editor/) | Function calling: `read_editor`, `write_editor`, undo, stats |
+| **Stream into editor** | [examples/llm-stream-editor/](../examples/llm-stream-editor/) | Long artifact; `editor.setMarkdown(buffer)` on each chunk |
+| **Parser stream** | [pages/examples/integration-llm-stream.html](../pages/examples/integration-llm-stream.html) | Tokens → `quikdown(buffer)` in a div (chat reply) |
 | **Chat + markdown** | [pages/examples/integration-quikchat.html](../pages/examples/integration-quikchat.html) | [quikchat](https://github.com/deftio/quikchat) widget renders bubbles |
-| **Live LLM + tools (BYOK)** | [quikchat tool editor demo](https://deftio.github.io/quikchat/examples/example_tool_editor.html) | Same tools, real API key |
 
 Run local examples: `npm run serve` → `http://localhost:6811/examples/…`
 

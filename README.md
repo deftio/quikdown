@@ -6,7 +6,7 @@
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![Bundle Size](https://img.shields.io/badge/minified-12.8KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
-A small, secure markdown parser and editor for browsers and Node.js. Three modules — use only what you need.
+A small, secure markdown parser and editor for browsers and Node.js. Nine modules — use only what you need.
 
 - **quikdown.js** (9.8 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.
 - **quikdown_bd.js** (14.6 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.
@@ -158,9 +158,11 @@ quikdown fits the **model writes markdown, human sees rendered output** loop:
 
 | Pattern | Doc / demo |
 |---------|------------|
-| Stream tokens into HTML | [integration-llm-stream](https://deftio.github.io/quikdown/pages/examples/integration-llm-stream.html) |
-| Stream into **QuikdownEditor** | [examples/llm-stream-editor](examples/llm-stream-editor/) |
+| **AI Canvas** — chat + document editor | [examples/ai-canvas](examples/ai-canvas/) — simulated or live LLM (BYOK) |
 | Agent **tool calling** on editor | [examples/llm-tool-editor](examples/llm-tool-editor/) |
+| **MCP doc copilot** (Node + browser) | [examples/mcp-doc-host](examples/mcp-doc-host/) — 24 MCP tools via WebSocket |
+| Stream into **QuikdownEditor** | [examples/llm-stream-editor](examples/llm-stream-editor/) |
+| Stream tokens into HTML | [integration-llm-stream](https://deftio.github.io/quikdown/pages/examples/integration-llm-stream.html) |
 | Chat bubbles + markdown | [quikchat](https://github.com/deftio/quikchat) + [integration example](https://deftio.github.io/quikdown/pages/examples/integration-quikchat.html) |
 
 Overview: [docs/llm-integration.md](docs/llm-integration.md)
