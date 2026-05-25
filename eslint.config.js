@@ -39,6 +39,19 @@ export default [
       "security/detect-non-literal-regexp": "error",
     },
   },
+  // Node-only module: quikdown_mcp uses fs, path, process, Buffer
+  {
+    files: ["src/quikdown_mcp.js"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      "security/detect-non-literal-regexp": "off",
+      "security/detect-non-literal-fs-filename": "off",
+    },
+  },
   {
     ignores: ["dist/", "node_modules/", "coverage/", "examples/", "dev/", "tools/", "tests/", "test-results/"],
   },

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Quikdown Standalone Editor — Offline Bundle</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        h1 { margin-bottom: 0.25em; }
+        .subtitle { color: #555; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.25rem; }
+        #editor { height: 600px; }
+    </style>
+</head>
+<body>
+    <h1>Quikdown Standalone Editor</h1>
+    <p class="subtitle">
+        This editor bundles all fence-rendering libraries (highlight.js, Mermaid, DOMPurify, Leaflet, Three.js) into a single ~3.8 MB file.
+        No CDN requests, no lazy loading — everything renders instantly and works fully offline or in air-gapped environments.
+        MathJax is the only exception; it requires a network connection due to its dynamic font loading.
+    </p>
+    <div id="editor"></div>
+
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit_standalone.esm.min.js';
+
+        const editor = new QuikdownEditor('#editor', {
+            mode: 'split',
+            showRemoveHR: true,
+            showLazyLinefeeds: true,
+            showUndoRedo: true
+        });
+
+        window.editor = editor;
+
+        const md = `# Quikdown Standalone Editor
+
+Welcome to the **Quikdown** standalone editor. This is a single-file offline bundle with all fence renderers built in — no CDN requests required. Edit markdown on the left, see the rendered output on the right.
+
+[Code is on GitHub](https://github.com/deftio/quikdown)
+
+## Diagram Example
+
+Below is a Mermaid diagram demonstrating a simple flow:
+
+\`\`\`mermaid
+graph TD;
+A[Start] --> B{Is it working?};
+B -- Yes --> C[Great!];
+B -- No --> D[Fix it!];
+D --> B;
+style A fill:#39f,stroke:#333,stroke-width:4px;
+style B fill:#fef,stroke:#03e,stroke-width:2px;
+style C fill:#de0f,stroke:#333,stroke-width:4px;
+style D fill:#8f2,stroke:#333,stroke-width:4px;
+\`\`\`
+
+## Code Example
+
+Here's a JavaScript code snippet with syntax highlighting:
+
+\`\`\`javascript
+// A simple greeting function
+let name = "World";
+function greet(name) {
+    console.log(\\\`Hello, \\\${name}!\\\`);
+}
+
+greet("World");
+
+let config = {
+    "name": "quikdown",
+    "features": ["parser", "bidirectional", "editor"],
+    "size": { "core": 9, "bd": 14, "editor": 72 }
+};
+\`\`\`
+
+## Basic Table Example
+
+| Feature           | Supported |
+| ----------------- | --------- |
+| Live Preview      | Yes       |
+| Mermaid Diagrams  | Yes       |
+| Syntax Highlight  | Yes       |
+| Table Styling     | Yes       |
+| SVG Rendering     | Yes       |
+| HTML Fences       | Yes       |
+| Bidirectional     | Yes       |
+
+## Inline SVG Example
+
+\`\`\`svg
+<svg width="400" height="100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+    <rect x="150" y="10" width="80" height="80" stroke="orange" stroke-width="4" fill="blue" />
+    <text x="260" y="55" font-family="sans-serif" font-size="20" fill="purple">quikdown</text>
+</svg>
+\`\`\`
+
+## CSV / TSV / PSV Tables
+
+Quikdown renders inline tables from CSV, TSV, or PSV separated entries.
+
+### CSV Example
+
+\`\`\`csv
+Name,Age,City
+Alice,30,New York
+Bob,24,Paris
+Charlie,35,London
+David,29,Berlin
+Eve,42,Tokyo
+\`\`\`
+
+### TSV Example
+
+\`\`\`tsv
+Fruit\tColor\tTaste
+Apple\tRed\tSweet
+Banana\tYellow\tSweet
+Lemon\tYellow\tSour
+Orange\tOrange\tSweet
+\`\`\`
+
+### PSV Example
+
+\`\`\`psv
+ID|Product|Price|InStock
+101|Laptop|1200|Yes
+102|Mouse|25|Yes
+103|Keyboard|75|No
+104|Monitor|300|Yes
+\`\`\`
+
+## HTML Fence Example
+
+\`\`\`html
+<div style="padding: 10px; background: #e3f2fd; border-radius: 4px;">
+  <strong>HTML fence</strong> — sanitized by DOMPurify
+</div>
+\`\`\`
+
+## JSON Example
+
+\`\`\`json
+{
+  "project": "quikdown",
+  "version": "1.2.8",
+  "standalone": true,
+  "bundled": ["highlight.js", "mermaid", "DOMPurify", "Leaflet", "Three.js"]
+}
+\`\`\`
+
+## Additional Content
+
+You can include regular markdown features:
+
+- **Bold** and *italic* text work seamlessly
+- ~~Strikethrough~~ and \`inline code\`
+- Task lists:
+  - [x] Bidirectional editing
+  - [x] Fence plugins
+  - [x] Light, dark, auto themes
+  - [ ] Your next markdown app
+- [Links](https://github.com/deftio/quikdown) to external sites
+
+> A blockquote with **formatting**
+> spanning multiple lines.
+
+---
+
+Built with [quikdown](https://github.com/deftio/quikdown).
+`;
+
+        editor.setMarkdown(md);
+    </script>
+</body>
+</html>

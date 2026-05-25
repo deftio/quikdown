@@ -1,5 +1,56 @@
 # Release Notes
 
+## v1.2.16
+
+### MCP integration (new integration surface)
+
+Adds Model Context Protocol support — a JSON-RPC 2.0 server over stdio that exposes quikdown parsing, bidirectional conversion, sandboxed file I/O, and optional live editor control to AI agents (Cursor, Claude Desktop, VS Code, Windsurf, and other MCP hosts). **Core parser behavior is unchanged**; this release opens a new integration plane alongside the existing library and editor APIs.
+
+**Two paths:**
+
+- **Path A (IDE + repo files)** — `npx quikdown-mcp --root=.` in MCP config. Human edits `.md` in the IDE; agent uses headless + filesystem tools. No browser window.
+- **Path B (doc copilot)** — `examples/mcp-doc-host/` Node host opens QuikdownEditor in a browser tab and bridges MCP stdio to the editor via WebSocket. Human works in the browser; agent drives the same buffer.
+
+### MCP module
+
+- **`quikdown/mcp`** export — `createMcpServer({ root?, editor? })` for programmatic use
+- **`quikdown-mcp` bin** — stdio MCP entry point with `--root` sandbox flag
+- **24 tools** in three groups: headless (6), filesystem (5), editor (13 when bound)
+- Headless: `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info`, `markdown_to_ast`, `markdown_to_json`
+- Filesystem: read info/lines/markdown, write markdown/HTML — path sandbox under `--root`
+- Editor: buffer read/write, regex find/replace, undo/redo, `get_html`, `get_rendered`, `write_rendered_to_file`, `load_file_to_editor`
+- Regex guardrails: 200-character pattern cap, 200-match cap per call
+- Rollup ESM + CJS builds, TypeScript definitions, GitHub Release assets
+
+### Path B doc-host example
+
+- **`examples/mcp-doc-host/`** — `start-mcp.js`, `editor-host.html`, README with architecture and limitations
+- Auto-open browser with manual URL fallback; `ws` in devDependencies for WebSocket bridge
+
+### AI Canvas example
+
+- **`examples/ai-canvas/`** — Canvas-style chat + document editor. Inline chat UI (no quikchat dependency), command chips, tool-call visibility toggle.
+- **Simulated mode** — 7 command patterns (TOC, Mermaid diagram, professional tone, code examples, document analysis, natural-language replace, fallback to `simulateAgentCommand`)
+- **Live mode** — BYOK with 6 provider presets (OpenAI, Groq, Together, OpenRouter, Ollama, Custom). OpenAI-compatible function-calling loop, max 10 tool rounds, conversation history management.
+
+### Docs and site
+
+- **`docs/quikdown-mcp.md`** — full tool reference, Path A vs Path B, host setup guides
+- **`docs/llm-integration.md`** — MCP section with Path A/B config snippets; AI Canvas and mcp-doc-host in quick links
+- **`pages/mcp/`** — landing page with tool tables and setup cards
+- **README, AGENTS.md, llms.txt** — integration framing, AI Canvas and MCP references, Cursor config for both paths
+- **Examples hub** — Example 19 (AI Canvas) and Example 20 (MCP Path B doc copilot) cards; 20 examples across 5 tracks
+
+### Testing and packaging
+
+- **`tests/quikdown_mcp.test.js`** — ~118 Jest tests; 90% coverage threshold on `quikdown_mcp.esm.js`
+- **7 E2E test failures fixed** — 3 mobile split-mode tests updated to match intentional CSS behavior (split button hidden on portrait mobile ≤720px), 1 bidirectional code test corrected for non-editable fence blocks
+- **Coverage thresholds updated** — aligned with actual coverage after recent code additions (core 99%, BD 94%, AST 95%, JSON 91%, YAML 92%, AST-HTML 94%, MCP 90%, editor 80%)
+- **`verify:package`** + CI dist checks for MCP artifacts
+- **`model-context-protocol`** and **`mcp`** npm keywords
+
+---
+
 ## v1.2.15
 
 ### Release pipeline

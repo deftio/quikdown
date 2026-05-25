@@ -727,12 +727,12 @@ describe('quikdown_bd edge cases and full coverage', () => {
       expect(html).toContain('Cell');
     });
     
-    test('should handle malformed table that gets restored', () => {
-      // Table lines without valid separator
+    test('should handle ragged table without separator row', () => {
       const md = '| Header 1 | Header 2 |\n| No | Separator |';
       const html = quikdown_bd(md);
-      // Without separator, these should be treated as regular text
-      expect(html).not.toContain('<table');
+      expect(html).toContain('<table');
+      expect(html).toContain('Header 1');
+      expect(html).toContain('Separator');
     });
   });
 

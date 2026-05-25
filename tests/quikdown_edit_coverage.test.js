@@ -3338,11 +3338,12 @@ describe('QuikdownEditor Coverage', () => {
             expect(html).toContain('</table>');
         });
 
-        test('invalid table (no separator) is not rendered as table', async () => {
+        test('ragged table (no separator) is rendered as table', async () => {
             await editor.setMarkdown('| A | B |\n| 1 | 2 |');
             const html = editor.getHTML();
-            // Without a separator row, should not render as a table
-            expect(html).not.toContain('<table');
+            expect(html).toContain('<table');
+            expect(html).toContain('A');
+            expect(html).toContain('2');
         });
 
         test('image rendering', async () => {

@@ -125,16 +125,16 @@ export const fixtures = {
             shouldContain: ['<table', '<td']
         },
         {
-            name: 'NOT a table - missing separator',
+            name: 'table without separator row (LLM style)',
             markdown: '| A | B |\n| 1 | 2 |',
-            shouldNotContain: ['<table'],
-            notes: 'Without separator row, this is not a table'
+            shouldContain: ['<table', 'A', 'B', '1', '2'],
+            notes: 'Without separator row, first row is treated as header'
         },
         {
-            name: 'NOT a table - invalid separator',
+            name: 'multi-row without separator (first row header)',
             markdown: '| A | B |\n| x | y |\n| 1 | 2 |',
-            shouldNotContain: ['<table'],
-            notes: 'Separator must have dashes'
+            shouldContain: ['<table', '<thead', '<tbody', 'A', 'x', '1'],
+            notes: 'No dash separator — all pipe rows form a table'
         },
         {
             name: 'table followed by paragraph',
@@ -929,10 +929,10 @@ Final paragraph.`,
             notes: 'First should not be heading, second should'
         },
         {
-            name: 'strict: table needs proper separator',
+            name: 'forgiveness: table without separator row',
             markdown: '| A | B |\n| C | D |',
-            shouldNotContain: ['<table'],
-            notes: 'Without separator row, not recognized as table'
+            shouldContain: ['<table', 'A', 'C'],
+            notes: 'Without separator row, first row is header (LLM-friendly)'
         },
         {
             name: 'forgiveness: table with loose separator formatting',

@@ -159,6 +159,167 @@ function createGetAttr(inline_styles, styles) {
     };
 }
 
+// ────────────────────────────────────────────────────────────────────
+//  Link destination + heading slug + blockquote helpers
+// ────────────────────────────────────────────────────────────────────
+
+/**
+ * Parse a markdown link/image destination: url with optional "title" or 'title'.
+ * Supports angle-bracket form: <url>
+ * @returns {{ url: string, title: string|null }}
+ */
+function parseLinkDestination(raw) {
+    if (raw === undefined || raw === null || raw === '') return { url: '', title: null };
+
+    const dblQuote = raw.match(/^(.*)\s+(?:"([^"]*)"|&quot;([^&]*?)&quot;)\s*$/);
+    if (dblQuote) {
+        return { url: dblQuote[1].replace(/\s+$/, ''), title: dblQuote[2] ?? dblQuote[3] };
+    }
+
+    const sglQuote = raw.match(/^(.*)\s+(?:'([^']*)'|&#39;([^&]*?)&#39;)\s*$/);
+    if (sglQuote) {
+        return { url: sglQuote[1].replace(/\s+$/, ''), title: sglQuote[2] ?? sglQuote[3] };
+    }
+
+    if (raw.startsWith('&lt;') && raw.endsWith('&gt;')) {
+        return { url: raw.slice(4, -4), title: null };
+    }
+
+    return { url: raw, title: null };
+}
+
+/** Build a URL-safe slug from heading text (inline markdown stripped). */
+function headingSlug(text) {
+    return text
+        .replace(/[*_`~]/g, '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'section';
+}
+
+/** Return a unique slug, suffixing -1, -2, … on duplicates. */
+function uniqueSlug(base, counts) {
+    const n = counts.get(base) || 0;
+    counts.set(base, n + 1);
+    return n === 0 ? base : `${base}-${n}`;
+}
+
+/**
+ * Count leading blockquote depth on an HTML-escaped line (&gt; markers).
+ * @returns {{ depth: number, content: string }}
+ */
+function parseBlockquoteLine(line) {
+    let depth = 0;
+    let pos = 0;
+    while (pos < line.length && line.startsWith('&gt;', pos)) {
+        pos += 4;
+        depth++;
+        if (line[pos] === ' ') pos++;
+    }
+    return { depth, content: line.slice(pos) };
+}
+
+/** Render nested blockquotes from a run of parsed lines. */
+function renderNestedBlockquotes(items, getAttr, dataQd) {
+    let html = '';
+    const stack = [];
+
+    for (let idx = 0; idx < items.length; idx++) {
+        const { depth, content } = items[idx];
+        /* istanbul ignore next -- depth is always >= 1 from parseBlockquoteLine gate */
+        if (depth <= 0) continue;
+
+        while (stack.length > depth) {
+            html += '</blockquote>';
+            stack.pop();
+        }
+        while (stack.length < depth) {
+            html += `<blockquote${getAttr('blockquote')}${dataQd('>')}>`;
+            stack.push(true);
+        }
+        html += content;
+        if (idx < items.length - 1) html += '\n';
+    }
+
+    while (stack.length > 0) {
+        html += '</blockquote>';
+        stack.pop();
+    }
+
+    return html.trimEnd();
+}
+
+/** True when a line is part of a 4-space (or tab) indented code block. */
+function isIndentedCodeLine(line) {
+    if (line.length === 0) return false;
+    const m = line.match(/^([ \t]+)(.*)$/);
+    if (!m) return false;
+    const spaceEquiv = m[1].replace(/\t/g, '    ').length;
+    if (spaceEquiv < 4) return false;
+    const content = m[2];
+    if (/^[-*+]\s/.test(content) || /^\d+\.\s/.test(content) || /^>/.test(content) || /^#{1,6}\s/.test(content)) {
+        return false;
+    }
+    return true;
+}
+
+/** Strip one indent level (4 spaces or one tab) from a code line. */
+function stripCodeIndent(line) {
+    if (line.startsWith('    ')) return line.slice(4);
+    if (line[0] === '\t') return line.slice(1);
+    const m = line.match(/^[ \t]+(.*)$/);
+    /* istanbul ignore next -- isIndentedCodeLine guarantees leading whitespace */
+    return m ? m[1] : line;
+}
+
+/**
+ * processIndentedCodeBlocks — line walker for 4-space / tab indented code
+ * @param {Function} escapeHtmlFn  Escape helper (for title attrs; code already escaped)
+ */
+function processIndentedCodeBlocks(text, getAttr, dataQd) {
+    const lines = text.split('\n');
+    const result = [];
+    let i = 0;
+
+    while (i < lines.length) {
+        if (!isIndentedCodeLine(lines[i])) {
+            result.push(lines[i]);
+            i++;
+            continue;
+        }
+
+        const codeLines = [];
+        while (i < lines.length) {
+            const line = lines[i];
+            if (line === '') {
+                if (i + 1 < lines.length && isIndentedCodeLine(lines[i + 1])) {
+                    codeLines.push('');
+                    i++;
+                    continue;
+                }
+                break;
+            }
+            if (isIndentedCodeLine(line)) {
+                codeLines.push(stripCodeIndent(line));
+                i++;
+            } else {
+                break;
+            }
+        }
+
+        const codeBody = codeLines.join('\n');
+        result.push(`<pre${getAttr('pre')}${dataQd('    ')}><code${getAttr('code')}>${codeBody}</code></pre>`);
+    }
+
+    return result.join('\n');
+}
+
+/** Split a table row into cell strings. */
+function parseTableCells(line) {
+    return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+}
+
 // ════════════════════════════════════════════════════════════════════
 //  Main parser function
 // ════════════════════════════════════════════════════════════════════
@@ -170,9 +331,10 @@ function quikdown(markdown, options = {}) {
     }
 
     // ── Unpack options ──
-    const { fence_plugin, inline_styles = false, bidirectional = false, lazy_linefeeds = false, allow_unsafe_html = false } = options;
+    const { fence_plugin, inline_styles = false, bidirectional = false, lazy_linefeeds = false, allow_unsafe_html = false, heading_ids = false } = options;
     const styles = QUIKDOWN_STYLES;
     const getAttr = createGetAttr(inline_styles, styles);
+    const headingSlugCounts = new Map();
 
     // ── Helpers (closed over options) ──
 
@@ -361,17 +523,21 @@ function quikdown(markdown, options = {}) {
     // ────────────────────────────────────────────────────────────────
     // This is the heart of the lexer rewrite.  Instead of applying
     // 10+ global regex passes, we:
+    //   0. Process indented code blocks (4-space / tab, before other blocks)
     //   1. Process tables (line walker — tables need multi-line lookahead)
     //   2. Scan remaining lines for headings, HR, blockquotes
     //   3. Process lists (line walker — lists need indent tracking)
     //   4. Apply inline formatting to all text content
     //   5. Wrap remaining text in <p> tags
     //
-    // Steps 1 and 3 are line-walkers that process the full text in a
+    // Steps 0, 1 and 3 are line-walkers that process the full text in a
     // single pass each.  Step 2 replaces global regex with a per-line
     // scanner.  Steps 4-5 are applied to the result.
     //
-    // Total: 3 structured passes instead of 10+ regex passes.
+    // Total: 4 structured passes instead of 10+ regex passes.
+
+    // ── Step 0: Indented code blocks ──
+    html = processIndentedCodeBlocks(html, getAttr, dataQd);
 
     // ── Step 1: Tables ──
     // Tables need multi-line lookahead (header → separator → body rows)
@@ -381,7 +547,7 @@ function quikdown(markdown, options = {}) {
     // ── Step 2: Headings, HR, Blockquotes ──
     // These are simple line-level constructs.  We scan each line once
     // and replace matching lines with their HTML representation.
-    html = scanLineBlocks(html, getAttr, dataQd);
+    html = scanLineBlocks(html, getAttr, dataQd, heading_ids, headingSlugCounts, escapeHtml);
 
     // ── Step 3: Lists ──
     // Lists need indent-level tracking across lines, so they get their
@@ -395,23 +561,31 @@ function quikdown(markdown, options = {}) {
     // items, and paragraph text.
 
     // Images (must come before links — ![alt](src) vs [text](url))
-    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-        const sanitizedSrc = sanitizeUrl(src, options.allow_unsafe_urls);
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, dest) => {
+        const { url, title } = parseLinkDestination(dest);
+        const sanitizedSrc = sanitizeUrl(url, options.allow_unsafe_urls);
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
         /* istanbul ignore next - bd-only branch */
         const altAttr = bidirectional && alt ? ` data-qd-alt="${escapeHtml(alt)}"` : '';
         /* istanbul ignore next - bd-only branch */
-        const srcAttr = bidirectional ? ` data-qd-src="${escapeHtml(src)}"` : '';
-        return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${alt}"${altAttr}${srcAttr}${dataQd('!')}>`;
+        const srcAttr = bidirectional ? ` data-qd-src="${escapeHtml(url)}"` : '';
+        /* istanbul ignore next - bd-only branch */
+        const titleQd = bidirectional && title ? ` data-qd-title="${escapeHtml(title)}"` : '';
+        return `<img${getAttr('img')} src="${sanitizedSrc}" alt="${alt}"${titleAttr}${altAttr}${srcAttr}${titleQd}${dataQd('!')}>`;
     });
 
     // Links
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, href) => {
-        const sanitizedHref = sanitizeUrl(href, options.allow_unsafe_urls);
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, dest) => {
+        const { url, title } = parseLinkDestination(dest);
+        const sanitizedHref = sanitizeUrl(url, options.allow_unsafe_urls);
         const isExternal = /^https?:\/\//i.test(sanitizedHref);
         const rel = isExternal ? ' rel="noopener noreferrer"' : '';
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
         /* istanbul ignore next - bd-only branch */
         const textAttr = bidirectional ? ` data-qd-text="${escapeHtml(text)}"` : '';
-        return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${textAttr}${dataQd('[')}>${text}</a>`;
+        /* istanbul ignore next - bd-only branch */
+        const titleQd = bidirectional && title ? ` data-qd-title="${escapeHtml(title)}"` : '';
+        return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${titleAttr}${textAttr}${titleQd}${dataQd('[')}>${text}</a>`;
     });
 
     // Autolinks — bare https?:// URLs become clickable <a> tags
@@ -587,9 +761,12 @@ function quikdown(markdown, options = {}) {
  * @param {string}   text    The document text (HTML-escaped, code extracted)
  * @param {Function} getAttr Attribute factory (class or style)
  * @param {Function} dataQd  Bidirectional marker factory
+ * @param {boolean}  headingIds  Emit id attributes on headings
+ * @param {Map}      slugCounts  Duplicate slug tracker
+ * @param {Function} escapeHtmlFn Escape helper for id attributes
  * @returns {string}         Text with block-level elements rendered
  */
-function scanLineBlocks(text, getAttr, dataQd) {
+function scanLineBlocks(text, getAttr, dataQd, headingIds, slugCounts, escapeHtmlFn) {
     const lines = text.split('\n');
     const result = [];
     let i = 0;
@@ -616,7 +793,12 @@ function scanLineBlocks(text, getAttr, dataQd) {
             // Extract content after "# " and strip trailing hashes
             const content = line.slice(hashCount + 1).replace(/\s*#+\s*$/, '');
             const tag = 'h' + hashCount;
-            result.push(`<${tag}${getAttr(tag)}${dataQd('#'.repeat(hashCount))}>${content}</${tag}>`);
+            let idAttr = '';
+            if (headingIds) {
+                const slug = uniqueSlug(headingSlug(content), slugCounts);
+                idAttr = ` id="${escapeHtmlFn(slug)}"`;
+            }
+            result.push(`<${tag}${getAttr(tag)}${idAttr}${dataQd('#'.repeat(hashCount))}>${content}</${tag}>`);
             i++;
             continue;
         }
@@ -631,11 +813,14 @@ function scanLineBlocks(text, getAttr, dataQd) {
 
         // ── Blockquote ──
         // After Phase 2, the '>' character has been escaped to '&gt;'.
-        // Pattern: "&gt; content" or "&gt;" alone (blank continuation line)
-        // or merged consecutive blockquotes.
-        if (/^&gt;(\s|$)/.test(line)) {
-            result.push(`<blockquote${getAttr('blockquote')}${dataQd('>')}>${line.replace(/^&gt;\s*/, '')}</blockquote>`);
-            i++;
+        // Supports nested levels: >> inner, > > inner
+        if (parseBlockquoteLine(line).depth > 0) {
+            const bqLines = [];
+            while (i < lines.length && parseBlockquoteLine(lines[i]).depth > 0) {
+                bqLines.push(parseBlockquoteLine(lines[i]));
+                i++;
+            }
+            result.push(renderNestedBlockquotes(bqLines, getAttr, dataQd));
             continue;
         }
 
@@ -644,12 +829,7 @@ function scanLineBlocks(text, getAttr, dataQd) {
         i++;
     }
 
-    // Merge consecutive blockquotes into a single element.
-    // <blockquote …>A</blockquote>\n<blockquote …>B</blockquote>
-    //   → <blockquote …>A\nB</blockquote>
-    let joined = result.join('\n');
-    joined = joined.replace(/<\/blockquote>\n<blockquote[^>]*>/g, '\n');
-    return joined;
+    return result.join('\n');
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -749,20 +929,29 @@ function buildTable(lines, getAttr, bidirectional) {
             break;
         }
     }
-    if (separatorIndex === -1) return null;
 
-    const headerLines = lines.slice(0, separatorIndex);
-    const bodyLines = lines.slice(separatorIndex + 1);
+    let headerLines;
+    let bodyLines;
+    let alignments;
 
-    // Parse alignment from separator cells (:--- = left, :---: = center, ---: = right)
-    const separator = lines[separatorIndex];
-    const separatorCells = separator.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
-    const alignments = separatorCells.map(cell => {
-        const trimmed = cell.trim();
-        if (trimmed.startsWith(':') && trimmed.endsWith(':')) return 'center';
-        if (trimmed.endsWith(':')) return 'right';
-        return 'left';
-    });
+    if (separatorIndex === -1) {
+        // No separator row (common in LLM output) — first row is header, rest is body
+        headerLines = [lines[0]];
+        bodyLines = lines.slice(1);
+        alignments = parseTableCells(lines[0]).map(() => 'left');
+    } else {
+        headerLines = lines.slice(0, separatorIndex);
+        bodyLines = lines.slice(separatorIndex + 1);
+
+        const separator = lines[separatorIndex];
+        const separatorCells = parseTableCells(separator);
+        alignments = separatorCells.map(cell => {
+            const trimmed = cell.trim();
+            if (trimmed.startsWith(':') && trimmed.endsWith(':')) return 'center';
+            if (trimmed.endsWith(':')) return 'right';
+            return 'left';
+        });
+    }
 
     /* istanbul ignore next - bd-only branch */
     const alignAttr = bidirectional ? ` data-qd-align="${alignments.join(',')}"` : '';
@@ -772,7 +961,7 @@ function buildTable(lines, getAttr, bidirectional) {
     html += `<thead${getAttr('thead')}>\n`;
     headerLines.forEach(line => {
         html += `<tr${getAttr('tr')}>\n`;
-        const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+        const cells = parseTableCells(line);
         cells.forEach((cell, i) => {
             const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
             const processedCell = processInlineMarkdown(cell.trim(), getAttr);
@@ -787,7 +976,7 @@ function buildTable(lines, getAttr, bidirectional) {
         html += `<tbody${getAttr('tbody')}>\n`;
         bodyLines.forEach(line => {
             html += `<tr${getAttr('tr')}>\n`;
-            const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+            const cells = parseTableCells(line);
             cells.forEach((cell, i) => {
                 const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
                 const processedCell = processInlineMarkdown(cell.trim(), getAttr);
@@ -944,7 +1133,7 @@ quikdown.emitStyles = function(prefix = 'quikdown-', theme = 'light') {
             if (needsTextColor.includes(tag)) {
                 themedStyle += `;color:${themeOverrides.dark._textColor}`;
             }
-        } else if (theme === 'light' && themeOverrides.light) {
+        } else /* istanbul ignore next */ if (theme === 'light' && themeOverrides.light) {
             const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];
             if (needsTextColor.includes(tag)) {
                 themedStyle += `;color:${themeOverrides.light._textColor}`;

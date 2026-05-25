@@ -152,6 +152,79 @@ This file contains all completed tasks moved from todo.md to reduce clutter.
   - ~7.9KB minified (0.9KB larger than regex version)
   - 4-8% slower but better maintainability
   - See docs/lexer-implementation.md for details
+## 1.2.14–1.2.16 code review — completed (May 2026)
+
+Moved from `dev/issues-tracked.md` to reduce clutter. See that file for **open** items only.
+
+### Packaging & TypeScript
+- [x] Restored `dist/*.d.ts` for all seven modules (+ MCP `.d.ts` in 1.2.16)
+- [x] `tools/verifyPackage.cjs`, `npm run verify:package`, wired into PR CI
+- [x] `verify:release` for publish (standalone + npm pack)
+- [x] CI build → test order (no stale dist)
+- [x] CI checks all `.d.ts` exist after build
+- [x] Package contract tests (`tests/quikdown_package_contract.test.js`, 45 tests)
+- [x] Fixed `package.json` author field typo
+
+### CI & permissions
+- [x] GitHub Actions default `contents: read`; write only on tag/publish
+- [x] Playwright e2e job on PR CI (full suite non-blocking)
+- [x] Blocking `@smoke` e2e job (`e2e-smoke` in ci.yml)
+- [x] `gzip -9 -k -f` in publish.yml release job (fix half-published releases)
+
+### Bidirectional fidelity
+- [x] Table `data-qd-align` emission + contract tests
+- [x] Blockquote `data-qd` for roundtrip
+- [x] Unified underscore emphasis (body + tables)
+- [x] HR policy aligned (parser, classifier, editor)
+- [x] Weak table alignment test assertions fixed
+
+### Security (core + editor + AST)
+- [x] Fence lang XSS (core + editor + AST-HTML)
+- [x] AST-HTML URL entity bypass fix; `allow_unsafe_urls` aligned with core
+- [x] Security QA corpus (45 XSS payloads)
+- [x] Mermaid error escape, MathJax scoping, rich copy re-sanitize
+- [x] contenteditable / customFences trust documented
+- [x] `FENCE_LIBRARIES` instance copy (no cross-editor leak)
+
+### Editor quality
+- [x] Editor coverage 49% → 79.5%; threshold 78% stmts; 612+ editor tests
+- [x] Editor version from build (`__QUIKDOWN_VERSION__`)
+- [x] Removed `makeFencesNonEditable` stub, `exp-bd/` tree
+- [x] Fixed broken `performance-benchmark.js`
+- [x] Direct `quikdown_classify.js` unit tests (90 tests)
+- [x] Coverage thresholds ratcheted across all modules
+
+### Standalone release pipeline
+- [x] `build:all`, `checkStandalone.cjs`, `test:standalone:e2e` on publish + release.sh
+- [x] highlight.js in devDependencies for standalone bundle
+- [x] Air-gap zip on GitHub Release
+
+### Documentation & LLM
+- [x] `allow_unsafe_html` in api-reference + security + architecture Phase 1.5
+- [x] Version strings synced; `docs/llm-integration.md`
+- [x] LLM examples: `llm-tool-editor/`, `llm-stream-editor/`
+- [x] README LLM section + zero-deps clarification
+- [x] GitHub Release: standalone + air-gap + all `.d.ts` + CSS
+
+### Release process
+- [x] `release.sh` preflight: build:all → verify:release → standalone e2e → airgap → test
+- [x] `docs/release-process.md` synced
+- [x] Contract tests for BD roundtrip + package exports
+- [x] `verify:types` ts-consumer fixture
+- [x] Placeholder collision tests documented in malformed suite
+
+### MCP — Path A (1.2.16)
+- [x] `src/quikdown_mcp.js` — one server, three tool groups, JSON-RPC 2.0 stdio
+- [x] Headless tools (4): parse, BD, stats, info
+- [x] Filesystem tools (5): read info/lines/markdown, write md/html + sandbox
+- [x] Editor tools (10): read/write, regex find/replace, extract, stats, get_html, undo/redo
+- [x] `bin/quikdown-mcp`, export `quikdown/mcp`, Rollup ESM+CJS, `.d.ts`
+- [x] ~94 Jest tests, 90% coverage threshold on `quikdown_mcp.esm.js`
+- [x] `docs/quikdown-mcp.md` + `pages/mcp/` landing + README/AGENTS sections
+- [x] `verify:package` + CI dist checks for MCP artifacts
+
+---
+
 * ✅ **CSS Theme System Improvements**
   - ✅ Container-based theme scoping with parent-child selectors
   - ✅ Generate theme CSS files from emitStyles() function

@@ -20,7 +20,7 @@
 
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="quikdown Examples — Learning Ladder">
-  <meta name="twitter:description" content="Four tracks of working examples: parser, bidirectional, editor, integrations.">
+  <meta name="twitter:description" content="Five tracks of working examples: parser, bidirectional, editor, integrations, standalone.">
 
   <link rel="stylesheet" href="{{ROOT}}/pages/styles/quikdown-site.css">
   <style>
@@ -143,7 +143,7 @@
         <span class="qd-hero-eyebrow">Learning ladder</span>
         <h1 style="font-size: clamp(1.8rem, 4vw, 2.6rem); max-width: 28ch;">Learn quikdown by building, one example at a time.</h1>
         <p class="qd-hero-sub">
-          Four tracks. Sixteen examples. From a 10-line "render markdown to HTML" snippet to a fully headless editor wired to your own app shell. Work top-to-bottom or jump in anywhere.
+          Five tracks. Twenty examples. From a 10-line "render markdown to HTML" snippet to a fully headless editor wired to your own app shell. Work top-to-bottom or jump in anywhere.
         </p>
       </div>
     </section>
@@ -312,6 +312,28 @@
             How quikdown plays with other tools. Real-world patterns: rendering markdown inside an <strong>LLM chat widget</strong>, streaming markdown <strong>into the editor</strong> as tokens arrive, <strong>agent tool calling</strong> that reads and writes the document canvas, and wrapping the editor in a <strong>React or Vue</strong> component. The LLM examples are interactive — the React and Vue ones are documented patterns ready to copy into your project.
           </p>
           <div class="ex-list">
+            <a class="ex-card" href="{{ROOT}}/pages/mcp/#path-b">
+              <span class="ex-card-num">Example 20</span>
+              <h3>MCP Path B — doc copilot (Node + browser)</h3>
+              <p><strong>Cursor MCP</strong> via <code>start-mcp.js</code>: Node bridges stdio to <strong>QuikdownEditor</strong> in a browser tab. You edit in the browser; the agent uses 24 MCP tools including render export. See <code>examples/mcp-doc-host/</code>.</p>
+              <div class="ex-card-meta">
+                <span class="ex-card-tag">MCP</span>
+                <span class="ex-card-tag">LLM</span>
+                <span class="ex-card-tag">editor</span>
+                <span class="ex-card-tag">Node</span>
+              </div>
+            </a>
+            <a class="ex-card" href="{{ROOT}}/examples/ai-canvas/">
+              <span class="ex-card-num">Example 19</span>
+              <h3>AI Canvas — chat + document editor</h3>
+              <p>Canvas-style editing: <strong>inline chat UI</strong> + <strong>QuikdownEditor</strong> with simulated <em>and</em> live LLM modes. Bring your own API key for OpenAI, Groq, Together, OpenRouter, or Ollama — or use simulated mode with no key.</p>
+              <div class="ex-card-meta">
+                <span class="ex-card-tag">interactive</span>
+                <span class="ex-card-tag">LLM</span>
+                <span class="ex-card-tag">editor</span>
+                <span class="ex-card-tag">BYOK</span>
+              </div>
+            </a>
             <a class="ex-card" href="{{ROOT}}/examples/llm-tool-editor/">
               <span class="ex-card-num">Example 17</span>
               <h3>LLM tool editor — chat + document canvas</h3>

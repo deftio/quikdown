@@ -28,6 +28,8 @@ export interface QuikdownOptions {
     allow_unsafe_html?: boolean | string[] | Record<string, 1>;
     /** Allow javascript: and other potentially unsafe URLs. Default: false. */
     allow_unsafe_urls?: boolean;
+    /** Add id attributes to headings for in-page anchor links. Default: false. */
+    heading_ids?: boolean;
 }
 
 /**

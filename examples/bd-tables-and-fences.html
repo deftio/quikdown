@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tables &amp; fences round-trip — Bidirectional example 7 · quikdown</title>
+  <meta name="description" content="A pre-built document with tables, code blocks, and inline formatting. Edit it freely; reverse-convert; verify the source still parses. Round-trip is non-destructive.">
+  <meta name="keywords" content="quikdown_bd round trip, markdown table round trip, contenteditable markdown table">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/examples/bd-tables-and-fences.html">
+  <link rel="icon" type="image/svg+xml" href="/quikdown/favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Tables &amp; fences round-trip — quikdown_bd">
+
+  <link rel="stylesheet" href="/quikdown/site/styles/quikdown-site.css">
+  <style>
+    .ex-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+    .ex-page-header h1 {
+      font-size: 1.8rem; margin: 0 0 0.4rem 0;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .ex-page-header .crumbs { font-size: 0.85rem; color: #6b7280; margin-bottom: 0.4rem; }
+    .ex-page-header .crumbs a { color: #6b7280; }
+    .ex-pane {
+      background: rgba(255, 255, 255, 0.98); border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .ex-pane h2 { margin: 0 0 0.75rem 0; font-size: 1.05rem; }
+    .two-pane { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 880px) { .two-pane { grid-template-columns: 1fr; } }
+    .editable-preview {
+      min-height: 400px; max-height: 60vh; overflow-y: auto;
+      padding: 1.5rem; border: 1px solid #e6e8ee;
+      border-radius: 6px; background: white;
+    }
+    body.qd-theme-dark .editable-preview { background: #181828; }
+    .editable-preview:focus {
+      border-color: #9550bb;
+      box-shadow: 0 0 0 3px #f3e6ff;
+      outline: none;
+    }
+    .source-out {
+      min-height: 400px; max-height: 60vh; overflow: auto;
+      padding: 1.5rem; border: 1px solid #e6e8ee;
+      border-radius: 6px; background: #ffffff;
+      font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace; font-size: 0.82rem; white-space: pre-wrap;
+      margin: 0;
+    }
+    .ex-nav {
+      display: flex; justify-content: space-between; gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .ex-nav a {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.1rem; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.98); border: 1px solid #e6e8ee;
+      color: #1f2937; text-decoration: none; font-weight: 600; font-size: 0.92rem;
+    }
+    .ex-nav a:hover { border-color: #9550bb; color: #9550bb; }
+  </style>
+</head>
+<body class="qd-theme-auto">
+  <div id="qd-nav-mount"></div>
+
+  <main>
+    <div class="ex-page">
+      <header class="ex-page-header">
+        <div class="crumbs"><a href="/quikdown/examples/">Examples</a> › Track 2 — Bidirectional › Example 7</div>
+        <h1>Tables &amp; fences round-trip</h1>
+        <p style="color: #4b5563;">
+          A pre-built document with tables, code blocks, lists, and inline formatting. Edit the rendered preview directly — change cell values, reorder rows, edit code, type new paragraphs — and the right pane shows the markdown rebuilt by <code>toMarkdown()</code>. The round-trip preserves structure.
+        </p>
+      </header>
+
+      <div class="ex-pane">
+        <h2>Edit the preview &mdash; the markdown rebuilds live</h2>
+        <div class="two-pane">
+          <div>
+            <h3 style="font-size:0.78rem; color:#9550bb; text-transform:uppercase; letter-spacing:0.08em; margin:0 0 0.4rem 0;">Editable preview</h3>
+            <div id="preview" class="editable-preview" contenteditable="true"></div>
+          </div>
+          <div>
+            <h3 style="font-size:0.78rem; color:#9550bb; text-transform:uppercase; letter-spacing:0.08em; margin:0 0 0.4rem 0;">Reconstructed markdown</h3>
+            <pre id="back" class="source-out"></pre>
+          </div>
+        </div>
+      </div>
+
+      <div class="ex-pane">
+        <h2>Things to try</h2>
+        <ul>
+          <li>Click in a table cell and change the value</li>
+          <li>Click in the code block and edit the code (the language tag is preserved)</li>
+          <li>Add a new paragraph at the end</li>
+          <li>Delete a list item</li>
+          <li>Edit the heading text</li>
+          <li>Type new <strong>bold</strong> or <em>italic</em> using your browser's contenteditable shortcuts (Ctrl+B / Ctrl+I)</li>
+        </ul>
+        <p>The reconstructed markdown on the right always represents the current state of the preview, ready to be saved or sent over the wire.</p>
+      </div>
+
+      <nav class="ex-nav">
+        <a href="/quikdown/examples/bd-fence-reverse.html">← Previous: Reverse fence handlers</a>
+        <a href="/quikdown/examples/editor-embed-minimal.html">Next track: Editor →</a>
+      </nav>
+    </div>
+  </main>
+
+  <div id="qd-footer-mount"></div>
+
+  <script type="module">
+    import quikdown_bd from '/quikdown/dist/quikdown_bd.esm.js';
+
+    const initial = `# Round-trip showcase
+
+This entire document round-trips losslessly. **Edit anything** in the preview — the reconstructed markdown updates on every keystroke.
+
+## Why bidirectional matters
+
+For a contenteditable preview to be useful, edits must round-trip back to markdown. Otherwise you lose the source representation as soon as the user starts typing.
+
+## A table
+
+| Module        | Bundle | Has DOM API |
+|:--------------|------:|:-----------:|
+| quikdown      | 9 KB  | ✗           |
+| quikdown_bd   | 14 KB | ✓           |
+| quikdown_edit | 72 KB | ✓ (full)    |
+
+## Code
+
+\`\`\`javascript
+import quikdown_bd from 'quikdown/bd';
+
+// Forward
+preview.innerHTML = quikdown_bd(markdownString);
+
+// Reverse — after the user has edited the preview
+const updated = quikdown_bd.toMarkdown(preview);
+\`\`\`
+
+## A list
+
+1. **Forward**: markdown → HTML with <code>data-qd-*</code> attributes
+2. **Edit**: user modifies the rendered HTML in a contenteditable region
+3. **Reverse**: walk the DOM, read the data attributes, reconstruct markdown
+4. **Save**: send the reconstructed markdown back to your store
+
+> Try editing this blockquote. Add some **bold** to it. The right pane updates.`;
+
+    const preview = document.getElementById('preview');
+    const back = document.getElementById('back');
+
+    preview.innerHTML = quikdown_bd(initial);
+    back.textContent = quikdown_bd.toMarkdown(preview);
+
+    preview.addEventListener('input', () => {
+      back.textContent = quikdown_bd.toMarkdown(preview);
+    });
+  </script>
+  <script src="/quikdown/site/scripts/example-page.js" defer></script>
+</body>
+</html>

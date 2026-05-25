@@ -446,5 +446,53 @@ export default [
       banner: banner.replace('quikdown - Lightweight', 'quikdown_ast_html - AST to HTML')
     },
     plugins: [replaceVersion(), nodeResolve()]
-  }
+  },
+
+  // ========== quikdown_mcp (MCP Server) Builds ==========
+
+  // Strip UMD module.exports guards that break bundled CJS/ESM output
+  // when quikdown.js and quikdown_bd.js are inlined.
+  ...(function mcpBuilds() {
+    // Rewrite internal src/ imports to sibling dist/ files.
+    // ESM → .esm.js, CJS → .cjs
+    const rewriteImports = (ext) => ({
+      name: 'rewrite-mcp-imports',
+      resolveId(source, importer) {
+        if (importer && importer.includes('quikdown_mcp')) {
+          if (source === './quikdown.js') return { id: `./quikdown${ext}`, external: true };
+          if (source === './quikdown_bd.js') return { id: `./quikdown_bd${ext}`, external: true };
+          if (source === './quikdown_ast.js') return { id: `./quikdown_ast${ext}`, external: true };
+          if (source === './quikdown_json.js') return { id: `./quikdown_json${ext}`, external: true };
+        }
+        return null;
+      }
+    });
+
+    return [
+      // MCP ESM build
+      {
+        input: 'src/quikdown_mcp.js',
+        external: ['path', 'fs', 'readline'],
+        output: {
+          file: 'dist/quikdown_mcp.esm.js',
+          format: 'es',
+          banner: banner.replace('quikdown - Lightweight', 'quikdown_mcp - MCP Server')
+        },
+        plugins: [replaceVersion(), rewriteImports('.esm.js'), nodeResolve()]
+      },
+
+      // MCP CommonJS build
+      {
+        input: 'src/quikdown_mcp.js',
+        external: ['path', 'fs', 'readline'],
+        output: {
+          file: 'dist/quikdown_mcp.cjs',
+          format: 'cjs',
+          exports: 'named',
+          banner: banner.replace('quikdown - Lightweight', 'quikdown_mcp - MCP Server')
+        },
+        plugins: [replaceVersion(), rewriteImports('.cjs'), nodeResolve()]
+      }
+    ];
+  }())
 ];

@@ -106,3 +106,6 @@ jobs:
           dist/quikdown_json.d.ts
           dist/quikdown_yaml.d.ts
           dist/quikdown_ast_html.d.ts
+          dist/quikdown_mcp.esm.js
+          dist/quikdown_mcp.cjs
+          dist/quikdown_mcp.d.ts

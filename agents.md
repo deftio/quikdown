@@ -8,7 +8,7 @@ quikdown is a lightweight, zero-dependency markdown-to-HTML parser with built-in
 
 - **Repository:** https://github.com/deftio/quikdown
 - **License:** BSD-2-Clause
-- **Version:** 1.2.14
+- **Version:** 1.2.16
 - **Language:** JavaScript (ES modules, UMD, CommonJS)
 - **TypeScript:** Definitions included in `dist/*.d.ts`
 - **Test framework:** Jest (unit) + Playwright (e2e)
@@ -29,6 +29,7 @@ quikdown/
 │   ├── quikdown_json.js             # AST to JSON
 │   ├── quikdown_yaml.js             # AST to YAML
 │   ├── quikdown_ast_html.js         # AST to HTML renderer
+│   ├── quikdown_mcp.js              # MCP server (Model Context Protocol)
 │   ├── quikdown_classify.js         # Line classification utilities
 │   └── quikdown_version.js          # Version constant
 ├── dist/                             # Build output (ESM, UMD, CJS, d.ts, CSS)
@@ -37,6 +38,8 @@ quikdown/
 ├── docs/                             # Detailed documentation (13 markdown files)
 ├── pages/                            # Static site templates and generated pages
 ├── tools/                            # Build scripts (version, CSS, badges, site)
+├── bin/                              # CLI entry points
+│   └── quikdown-mcp                 # MCP server CLI (stdio JSON-RPC)
 ├── rollup.config.js                 # Rollup build configuration
 ├── playwright.config.cjs            # Playwright e2e test config
 ├── package.json                     # Package metadata and scripts
@@ -102,6 +105,7 @@ The core parser (`src/quikdown.js`) processes markdown in four phases:
 | JSON | `src/quikdown_json.js` | `quikdown/json` | Markdown to JSON |
 | YAML | `src/quikdown_yaml.js` | `quikdown/yaml` | Markdown to YAML |
 | AST to HTML | `src/quikdown_ast_html.js` | `quikdown/ast-html` | Render AST to HTML |
+| MCP server | `src/quikdown_mcp.js` | `quikdown/mcp` | Model Context Protocol server (JSON-RPC 2.0) |
 
 ### Build Outputs
 
@@ -343,7 +347,7 @@ Tests are in `tests/` using Jest (jsdom environment) and Playwright:
 - `quikdown_stress.test.js` - Performance
 - `*.spec.js` - Playwright e2e tests
 
-Coverage thresholds: 100% for core, 89-100% for variants, minimum 80% overall.
+Coverage thresholds: 99% for core, 90-99% for variants (BD, AST, JSON, YAML, AST-HTML, MCP), minimum 80% for editor.
 
 ## Documentation Reference
 
@@ -363,12 +367,13 @@ Detailed docs in `docs/`:
 | `docs/quikdown-ast.md` | AST, JSON, YAML structured output |
 | `docs/release-notes.md` | Complete version history |
 | `docs/release-process.md` | Release workflow (standalone, verify:release, air-gap zip) |
+| `docs/quikdown-mcp.md` | MCP server setup, tool reference, AI host configuration |
 
 ## Examples Reference
 
 Working HTML examples in `examples/` and `pages/examples/`:
 
-**LLM / agent:** `examples/llm-tool-editor/`, `examples/llm-stream-editor/`, `pages/examples/integration-llm-stream.html`, `pages/examples/integration-quikchat.html`
+**LLM / agent:** `examples/ai-canvas/` (AI Canvas — chat + doc editor, simulated + live LLM), `examples/mcp-doc-host/` (MCP Path B doc copilot), `examples/llm-tool-editor/`, `examples/llm-stream-editor/`, `pages/examples/integration-llm-stream.html`, `pages/examples/integration-quikchat.html`
 
 **Parser basics:** `pages/examples/parser-hello.html`, `parser-options.html`, `parser-themes.html`, `parser-fence-plugin.html`
 
@@ -418,6 +423,79 @@ Working HTML examples in `examples/` and `pages/examples/`:
 - `tools/minifyThemeCSS.js` minifies theme CSS.
 - `tools/buildSite.js` generates pages from templates.
 - Output goes to `dist/`.
+
+## MCP Server (Model Context Protocol)
+
+quikdown ships an MCP server that exposes parsing, bidirectional conversion, file I/O, and (with a doc host) editor control as tools for AI agents. It communicates over JSON-RPC 2.0 on stdio.
+
+### Path A vs Path B
+
+| Path | Human UI | MCP entry |
+|------|----------|-----------|
+| **A — IDE** | Cursor/VS Code; **no browser** | `npx quikdown-mcp --root=.` |
+| **B — Doc copilot** | **Browser** QuikdownEditor; Node host bridges stdio ↔ editor | `node examples/mcp-doc-host/start-mcp.js` |
+
+Path B = Node launcher/bridge + browser tab you interact with. Not pure Node; not IDE-only. Example: [examples/mcp-doc-host/](examples/mcp-doc-host/). Full detail: [docs/quikdown-mcp.md](docs/quikdown-mcp.md#path-a-vs-path-b).
+
+### Running the MCP server (Path A)
+
+```bash
+npx quikdown-mcp                       # headless + filesystem (cwd as root)
+npx quikdown-mcp --root=/path/to/docs  # custom sandbox root
+```
+
+### Configuring in AI tools
+
+**Cursor** (`.cursor/mcp.json`):
+```json
+{ "mcpServers": { "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] } } }
+```
+
+**Claude Desktop** (`claude_desktop_config.json`):
+```json
+{ "mcpServers": { "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] } } }
+```
+
+### Path B doc-host (Cursor)
+
+From repo root after `npm run build`:
+
+```json
+{ "mcpServers": { "quikdown-doc": { "command": "node", "args": ["examples/mcp-doc-host/start-mcp.js"] } } }
+```
+
+Human uses the **browser tab**; agent uses MCP via Node. See `examples/mcp-doc-host/README.md`.
+
+### Tool groups
+
+| Group | Tools | When available |
+|-------|-------|----------------|
+| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info`, `markdown_to_ast`, `markdown_to_json` | Always |
+| Filesystem | `read_file_info`, `read_file_lines`, `read_file_markdown`, `write_markdown_to_file`, `write_html_to_file` | `--root` set |
+| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo`, `load_file_to_editor`, `get_rendered`, `write_rendered_to_file` | Editor binding passed |
+
+### When to use MCP tools vs raw string edits
+
+Use **MCP tools** when an AI agent needs structured access to quikdown's parser, bidirectional converter, or editor buffer — particularly for multi-step workflows, format conversion, file I/O in a sandboxed directory, or regex-powered search and replace with line-number context.
+
+Use **raw string edits** (direct file read/write) when the agent only needs to modify markdown source in a known file without quikdown-specific parsing, or when MCP is not available in the host environment.
+
+### Programmatic usage
+
+```javascript
+import { createMcpServer } from 'quikdown/mcp';
+
+const mcp = createMcpServer({ root: process.cwd() });
+
+// Call a tool directly
+const result = mcp.callTool('markdown_to_html', { markdown: '# Hello' });
+console.log(result.content[0].text);
+
+// Or listen on stdio for JSON-RPC
+mcp.listenStdio();
+```
+
+Full documentation: [docs/quikdown-mcp.md](docs/quikdown-mcp.md)
 
 ## Important Conventions
 

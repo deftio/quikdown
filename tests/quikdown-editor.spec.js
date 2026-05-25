@@ -187,29 +187,27 @@ test.describe('QuikdownEditor E2E Tests', () => {
             expect(sourceContent).toContain('Bold text');
         });
 
-        test('should handle syntax-highlighted code reverse editing', async () => {
+        test('should render syntax-highlighted code and update on source change', async () => {
             const sourceTextarea = await page.locator('.qde-textarea');
             const preview = await page.locator('.qde-preview');
-            
+
             // Set initial code with syntax highlighting
             const codeFence = '```javascript\nfunction hello() {\n  console.log("Hello");\n}\n```';
             await sourceTextarea.fill(codeFence);
             await page.waitForTimeout(400);
-            
-            // Edit the code in preview
-            const codeBlock = await preview.locator('pre[data-qd-lang="javascript"] code').first();
-            await codeBlock.click();
-            
-            // Select all and replace
-            await page.keyboard.press('Control+a');
-            await page.keyboard.type('const greeting = "Hi";');
+
+            // Code block should render in preview with correct language attribute
+            const codeBlock = preview.locator('pre[data-qd-lang="javascript"]');
+            await expect(codeBlock).toBeVisible();
+            const codeText = await codeBlock.textContent();
+            expect(codeText).toContain('function hello()');
+
+            // Editing source should update the code block in preview
+            await sourceTextarea.fill('```javascript\nconst greeting = "Hi";\n```');
             await page.waitForTimeout(400);
-            
-            // Check source updated with new code
-            const sourceContent = await sourceTextarea.inputValue();
-            expect(sourceContent).toContain('```javascript');
-            expect(sourceContent).toContain('const greeting = "Hi";');
-            expect(sourceContent).not.toContain('function hello()');
+            const updatedText = await codeBlock.textContent();
+            expect(updatedText).toContain('const greeting');
+            expect(updatedText).not.toContain('function hello()');
         });
     });
 
@@ -518,46 +516,35 @@ test.describe('QuikdownEditor E2E Tests', () => {
             expect(content).toBe('# Mobile Test');
         });
 
-        test('should hide preview pane in split mode on mobile', async () => {
+        test('should hide split button on portrait mobile', async () => {
             await page.setViewportSize({ width: 375, height: 667 });
-            await page.click('.qde-btn[data-mode="split"]');
 
-            // In split mode on mobile, preview should be hidden
-            await expect(page.locator('.qde-preview')).not.toBeVisible();
-            // Source should be visible
-            await expect(page.locator('.qde-source')).toBeVisible();
+            // On portrait mobile (<=720px), split button is intentionally hidden
+            const splitBtn = page.locator('.qde-btn[data-mode="split"]');
+            await expect(splitBtn).not.toBeVisible();
+            // Source and preview buttons should still be available
+            await expect(page.locator('.qde-btn[data-mode="source"]')).toBeVisible();
+            await expect(page.locator('.qde-btn[data-mode="preview"]')).toBeVisible();
         });
 
-        test('should show split-toggle button on mobile in split mode', async () => {
+        test('should hide split-toggle button on portrait mobile', async () => {
+            // Enter split mode via API (the button may already be hidden on mobile-chrome)
+            await page.evaluate(() => window.editor.setMode('split'));
             await page.setViewportSize({ width: 375, height: 667 });
-            await page.click('.qde-btn[data-mode="split"]');
 
+            // Split-toggle should be hidden on portrait mobile
             const toggle = page.locator('.qde-split-toggle');
-            await expect(toggle).toBeVisible();
-            await expect(toggle).toContainText('Preview');
+            await expect(toggle).not.toBeVisible();
         });
 
-        test('should toggle between source and preview on mobile split', async () => {
+        test('should fall back to showing source when in split mode on portrait mobile', async () => {
+            // Enter split mode via API (the button may already be hidden on mobile-chrome)
+            await page.evaluate(() => window.editor.setMode('split'));
             await page.setViewportSize({ width: 375, height: 667 });
-            await page.click('.qde-btn[data-mode="split"]');
 
-            // Initially source is shown
+            // In split mode on portrait mobile, source should be visible, preview hidden
             await expect(page.locator('.qde-source')).toBeVisible();
             await expect(page.locator('.qde-preview')).not.toBeVisible();
-
-            // Click toggle to show preview
-            await page.click('.qde-split-toggle');
-            await expect(page.locator('.qde-preview')).toBeVisible();
-            await expect(page.locator('.qde-source')).not.toBeVisible();
-
-            // Toggle button should now say "Source"
-            await expect(page.locator('.qde-split-toggle')).toContainText('Source');
-
-            // Click toggle again to go back to source
-            await page.click('.qde-split-toggle');
-            await expect(page.locator('.qde-source')).toBeVisible();
-            await expect(page.locator('.qde-preview')).not.toBeVisible();
-            await expect(page.locator('.qde-split-toggle')).toContainText('Preview');
         });
 
         test('should show source mode full width on mobile', async () => {

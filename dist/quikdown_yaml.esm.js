@@ -1,6 +1,6 @@
 /**
  * quikdown_yaml - YAML Markdown Parser
- * @version 1.2.15
+ * @version 1.2.16
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -13,7 +13,7 @@
  */
 
 // Version will be injected at build time
-const quikdownVersion$1 = '1.2.15';
+const quikdownVersion$1 = '1.2.16';
 
 // Safety limit to prevent infinite loops in list parsing
 const MAX_LOOP_ITERATIONS = 1000;
@@ -324,6 +324,23 @@ function parseList(lines, startIndex, options) {
     };
 }
 
+/** Parse link/image destination with optional title (mirrors quikdown.js). */
+function parseLinkDestinationAst(raw) {
+    if (raw === undefined || raw === null || raw === '') return { url: '', title: null };
+
+    const dblQuote = raw.match(/^(.*)\s+"([^"]*)"\s*$/);
+    if (dblQuote) return { url: dblQuote[1].replace(/\s+$/, ''), title: dblQuote[2] };
+
+    const sglQuote = raw.match(/^(.*)\s+'([^']*)'\s*$/);
+    if (sglQuote) return { url: sglQuote[1].replace(/\s+$/, ''), title: sglQuote[2] };
+
+    if (raw.startsWith('<') && raw.endsWith('>')) {
+        return { url: raw.slice(1, -1), title: null };
+    }
+
+    return { url: raw, title: null };
+}
+
 /**
  * Parse inline elements
  */
@@ -354,26 +371,32 @@ function parseInline(text, options) {
             }
         }
 
-        // Images: ![alt](url)
-        const imgMatch = remaining.match(/^!\[([^\]]*)\]\(\s*([^)\s]+)\s*\)/);
+        // Images: ![alt](url) or ![alt](url "title")
+        const imgMatch = remaining.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
         if (imgMatch) {
-            nodes.push({
+            const { url, title } = parseLinkDestinationAst(imgMatch[2]);
+            const node = {
                 type: 'image',
                 alt: imgMatch[1],
-                url: imgMatch[2].trim()  // Forgiving: trim whitespace in URL
-            });
+                url: url.trim()
+            };
+            if (title) node.title = title;
+            nodes.push(node);
             remaining = remaining.slice(imgMatch[0].length);
             continue;
         }
 
-        // Links: [text](url)
-        const linkMatch = remaining.match(/^\[([^\]]+)\]\(\s*([^)\s]+)\s*\)/);
+        // Links: [text](url) or [text](url "title")
+        const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
         if (linkMatch) {
-            nodes.push({
+            const { url, title } = parseLinkDestinationAst(linkMatch[2]);
+            const node = {
                 type: 'link',
-                url: linkMatch[2].trim(),  // Forgiving: trim whitespace in URL
+                url: url.trim(),
                 children: parseInlineContent(linkMatch[1])
-            });
+            };
+            if (title) node.title = title;
+            nodes.push(node);
             remaining = remaining.slice(linkMatch[0].length);
             continue;
         }
@@ -510,7 +533,7 @@ if (typeof window !== 'undefined') {
 
 
 // Version will be injected at build time
-const quikdownVersion = '1.2.15';
+const quikdownVersion = '1.2.16';
 
 /**
  * Convert markdown to YAML

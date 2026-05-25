@@ -25,12 +25,15 @@ Complete documentation for the quikdown markdown parser, editor, and companion l
 
 - **[Framework Integration](framework-integration.md)** — React, Vue, Svelte, Angular, Next.js, Nuxt
 - **[LLM Integration](llm-integration.md)** — Streaming, tool editor, chat widgets
+- **[MCP Server](quikdown-mcp.md)** — AI agent tool integration (Cursor, Claude Desktop, VS Code)
 - **[Release Process](release-process.md)** — Shipping, standalone bundle, CI gates
 
 ## Examples (repo)
 
 | Path | Description |
 |------|-------------|
+| [examples/ai-canvas/](../examples/ai-canvas/) | AI Canvas — chat + document editor, simulated + live LLM (BYOK) |
+| [examples/mcp-doc-host/](../examples/mcp-doc-host/) | MCP Path B doc copilot — Node bridges MCP to browser editor |
 | [examples/llm-tool-editor/](../examples/llm-tool-editor/) | quikchat + editor + simulated agent tools |
 | [examples/llm-stream-editor/](../examples/llm-stream-editor/) | Stream tokens into QuikdownEditor |
 | [pages/examples/](../pages/examples/) | Site-hosted examples (parser, BD, editor, integrations) |

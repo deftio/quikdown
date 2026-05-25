@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+/**
+ * quikdown-mcp — stdio MCP server for quikdown
+ *
+ * Headless + filesystem tools (editor tools require a host binding).
+ * Root defaults to cwd; override with --root=<path>.
+ *
+ * Usage:
+ *   npx quikdown-mcp
+ *   npx quikdown-mcp --root=/path/to/project
+ */
+
+import { createMcpServer } from '../dist/quikdown_mcp.esm.js';
+import { resolve } from 'path';
+
+const args = process.argv.slice(2);
+let root = process.cwd();
+
+for (const arg of args) {
+  if (arg.startsWith('--root=')) {
+    root = resolve(arg.slice(7));
+  } else if (arg === '--help' || arg === '-h') {
+    process.stdout.write(
+      'quikdown-mcp — MCP server for quikdown (headless + filesystem)\n\n' +
+      'Options:\n' +
+      '  --root=<path>  Filesystem sandbox root (default: cwd)\n' +
+      '  --help, -h     Show this help\n\n' +
+      'Reads JSON-RPC over stdin, writes responses to stdout.\n'
+    );
+    process.exit(0);
+  }
+}
+
+const mcp = createMcpServer({ root });
+mcp.listenStdio();
