@@ -2,7 +2,7 @@
 
 The Quikdown MCP (Model Context Protocol) server exposes quikdown's parsing, bidirectional conversion, file I/O, and editor control as tools that any MCP-compatible AI host can call over JSON-RPC 2.0 on stdio.
 
-**Version:** 1.2.16
+**Version:** 1.2.17
 **Protocol:** MCP 2024-11-05
 **Transport:** JSON-RPC 2.0 over stdin/stdout
 **Dependencies:** None beyond quikdown itself
@@ -124,7 +124,7 @@ echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":
 Response:
 
 ```json
-{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","serverInfo":{"name":"quikdown-mcp","version":"1.2.16"},"capabilities":{"tools":{},"resources":{}}}}
+{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2024-11-05","serverInfo":{"name":"quikdown-mcp","version":"1.2.17"},"capabilities":{"tools":{},"resources":{}}}}
 ```
 
 ---

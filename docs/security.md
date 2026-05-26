@@ -249,14 +249,14 @@ Before deploying quikdown:
 - [ ] **Audit fence plugins** - Review all custom plugin code
 - [ ] **Test with malicious input** - Try XSS payloads in testing
 - [ ] **Use HTTPS** - Prevent MITM attacks on delivered content
-- [ ] **Sanitize URLs** (until built-in support is added)
+- [ ] **Review URL sanitization** settings (built-in `sanitizeUrl()` blocks `javascript:`, `vbscript:`, and non-image `data:` URIs by default)
 
 ## Reporting Security Issues
 
 If you discover a security vulnerability:
 
 1. **DO NOT** open a public issue
-2. Email security details to [security contact]
+2. Email security details to deftio@deftio.com
 3. Include:
    - Description of the vulnerability
    - Steps to reproduce

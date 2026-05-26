@@ -27,7 +27,7 @@ Quikdown is a small secure bidirectional markdown parser and editor for browsers
 - **Compact markdown parser** — single-pass markdown to HTML. Handles headings, lists, tables, code blocks, inline formatting, task lists, autolinks, and lazy linefeeds.
 - **Bidirectional editing** — edit the rendered HTML and get markdown back. Round-trip preserves formatting, fences, and tables.
 - **Drop-in editor** — one `<div>`, one import. Source, split, and preview modes. Undo/redo, toolbar, copy as rich text, light/dark/auto themes.
-- **Fence plugins** — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, ABC music notation, Vega/Vega-Lite charts, raw HTML. All bidirectional.
+- **Fence plugins** — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, ABC music notation, Vega/Vega-Lite charts, raw HTML.
 - **XSS-safe** — HTML entities escaped by default. URL sanitization blocks `javascript:`, `vbscript:`, and non-image `data:` URIs.
 - **Browser and Node.js** — forward parser and bidirectional parser work in both. Quikdown Editor requires DOM.
 - **Zero runtime deps (core)** — parser and bidirectional modules have no dependencies. The editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, ABCJS, Vega, etc.) from CDN on demand, or use the [standalone offline bundle](docs/standalone-editor.md) (~7.7 MB / ~1.0 MB gzipped, no CDN).
