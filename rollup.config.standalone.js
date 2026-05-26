@@ -19,6 +19,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import terser from '@rollup/plugin-terser';
 import polyfillNode from 'rollup-plugin-polyfill-node';
 import postcss from 'rollup-plugin-postcss';
+import json from '@rollup/plugin-json';
 import { readFileSync } from 'fs';
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'));
@@ -29,8 +30,8 @@ const banner = `/**
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  *
- * Bundled libraries: highlight.js, mermaid, DOMPurify, Leaflet, Three.js
- * MathJax is NOT bundled (requires network).
+ * Bundled libraries: highlight.js, mermaid, DOMPurify, Leaflet, Three.js,
+ *   ABCJS, Vega, Vega-Lite, Vega-Embed, MathJax (tex-svg), Natural Earth 110m
  */`;
 
 const replaceVersion = () => ({
@@ -43,9 +44,16 @@ const replaceVersion = () => ({
     }
 });
 
+// Suppress circular dependency warnings (MathJax, Vega have internal cycles)
+const onwarn = (warning, warn) => {
+    if (warning.code === 'CIRCULAR_DEPENDENCY') return;
+    warn(warning);
+};
+
 // Shared plugins for standalone builds
 const standalonePlugins = (minify = false) => [
     replaceVersion(),
+    json(),             // TopoJSON and Vega spec imports
     polyfillNode(),
     nodeResolve({
         browser: true,
@@ -74,7 +82,8 @@ export default [
             banner,
             inlineDynamicImports: true
         },
-        plugins: standalonePlugins(false)
+        plugins: standalonePlugins(false),
+        onwarn
     },
 
     // ESM minified
@@ -87,7 +96,8 @@ export default [
             sourcemap: true,
             inlineDynamicImports: true
         },
-        plugins: standalonePlugins(true)
+        plugins: standalonePlugins(true),
+        onwarn
     },
 
     // UMD build
@@ -100,7 +110,8 @@ export default [
             banner,
             inlineDynamicImports: true
         },
-        plugins: standalonePlugins(false)
+        plugins: standalonePlugins(false),
+        onwarn
     },
 
     // UMD minified
@@ -114,6 +125,7 @@ export default [
             sourcemap: true,
             inlineDynamicImports: true
         },
-        plugins: standalonePlugins(true)
+        plugins: standalonePlugins(true),
+        onwarn
     }
 ];

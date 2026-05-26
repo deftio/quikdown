@@ -10,8 +10,8 @@ Quikdown is a small secure bidirectional markdown parser and editor for browsers
 
 - **quikdown.js** (14.7 KB) — Markdown to HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes.
 - **quikdown_bd.js** (19.5 KB) — Bidirectional: everything in core plus HTML to Markdown round-trip.
-- **quikdown_edit.js** (91.8 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, and STL.
-- **quikdown_edit_standalone.js** (3.9 MB) — Offline/air-gapped editor. Same as above but bundles highlight.js, Mermaid, DOMPurify, Leaflet, and Three.js — no CDN required. See [Standalone Docs](docs/standalone-editor.md).
+- **quikdown_edit.js** (98 KB) — Drop-in split-view editor with live preview, undo/redo, bidirectional editing, and lazy-loaded fence plugins for code highlighting, Mermaid, MathJax, SVG, CSV, GeoJSON, STL, ABC music notation, and Vega/Vega-Lite charts.
+- **quikdown_edit_standalone.js** (7.7 MB) — Offline/air-gapped editor. Same as above but bundles highlight.js, Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax — no CDN required. See [Standalone Docs](docs/standalone-editor.md).
 - **quikdown_mcp.js** (26 KB) — MCP (Model Context Protocol) server. Exposes 24 tools for AI agents over JSON-RPC 2.0 on stdio. Works with Cursor, Claude Desktop, VS Code, and any MCP host.
 
 ### Extras
@@ -27,10 +27,10 @@ Quikdown is a small secure bidirectional markdown parser and editor for browsers
 - **Compact markdown parser** — single-pass markdown to HTML. Handles headings, lists, tables, code blocks, inline formatting, task lists, autolinks, and lazy linefeeds.
 - **Bidirectional editing** — edit the rendered HTML and get markdown back. Round-trip preserves formatting, fences, and tables.
 - **Drop-in editor** — one `<div>`, one import. Source, split, and preview modes. Undo/redo, toolbar, copy as rich text, light/dark/auto themes.
-- **Fence plugins** — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, raw HTML. All bidirectional.
+- **Fence plugins** — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, ABC music notation, Vega/Vega-Lite charts, raw HTML. All bidirectional.
 - **XSS-safe** — HTML entities escaped by default. URL sanitization blocks `javascript:`, `vbscript:`, and non-image `data:` URIs.
 - **Browser and Node.js** — forward parser and bidirectional parser work in both. Quikdown Editor requires DOM.
-- **Zero runtime deps (core)** — parser and bidirectional modules have no dependencies. The editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, etc.) from CDN on demand, or use the [standalone offline bundle](docs/standalone-editor.md) (~3.9 MB, no CDN).
+- **Zero runtime deps (core)** — parser and bidirectional modules have no dependencies. The editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, ABCJS, Vega, etc.) from CDN on demand, or use the [standalone offline bundle](docs/standalone-editor.md) (~7.7 MB / ~1.0 MB gzipped, no CDN).
 - **TypeScript definitions** — maintained `.d.ts` files for all modules.
 - **Inline styles or CSS classes** — built-in light/dark themes, or bring your own CSS.
 - **Copy as rich text** — copies the rendered preview to clipboard with images, tables, and rendered fences. Paste into Gmail, Word, Slack, Notion.
@@ -137,6 +137,8 @@ The AST parsers are "forgiving" - they handle malformed markdown gracefully with
 - **mermaid** - Loaded when mermaid diagrams are found and `mermaid: true`
 - **DOMPurify** - Loaded when HTML fence blocks are rendered
 - **MathJax v3** - Loaded when `math`, `tex`, `latex`, or `katex` fence blocks are encountered (`katex` lang kept for backward compatibility)
+- **ABCJS** - Loaded when `abc` or `music` fence blocks are encountered (sheet music rendering)
+- **Vega + Vega-Lite + Vega-Embed** - Loaded when `vega`, `vega-lite`, or `vegalite` fence blocks are encountered (data visualization)
 
 This keeps the initial bundle small while providing rich functionality on-demand.
 

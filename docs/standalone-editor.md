@@ -9,15 +9,17 @@ The standalone editor bundles all fence-rendering libraries into a single file s
 | highlight.js | Syntax highlighting (12 languages) | ~500 KB |
 | mermaid | Diagram rendering | ~2.0 MB |
 | DOMPurify | HTML fence sanitization | ~30 KB |
-| Leaflet | GeoJSON map rendering | ~140 KB |
+| Leaflet | GeoJSON map rendering + base64 marker icons | ~140 KB |
 | Three.js | STL 3D model rendering | ~500 KB |
-| **quikdown editor** | Core editor + parser | ~86 KB |
+| ABCJS | ABC music notation rendering | ~300 KB |
+| Vega + Vega-Lite + Vega-Embed | Data visualization charts | ~1.5 MB |
+| MathJax (tex-svg) | Math equation rendering | ~1.5 MB |
+| Natural Earth (110m) | Offline vector basemap for GeoJSON maps | ~200 KB |
+| **quikdown editor** | Core editor + parser | ~98 KB |
 
-**Total minified size:** ~3.8 MB
+**Total minified size:** ~7.7 MB (~1.0 MB gzipped)
 
-### Not Bundled
-
-**MathJax** is intentionally excluded. It's architecturally incompatible with bundling — it dynamically loads fonts, configuration modules, and sub-processors at runtime. Math/KaTeX fences will display a loading placeholder when offline. This is the same approach used by squibview and other markdown editors.
+The standalone bundle defaults `allowExternalFetch: false` — all rendering is local with no network requests. Pass `allowExternalFetch: true` to re-enable OSM tiles and CDN loads.
 
 ## Distribution Files
 
@@ -66,7 +68,7 @@ The standalone bundle is built separately from the main build:
 npm run build:standalone
 ```
 
-This runs a dedicated rollup config (`rollup.config.standalone.js`) that bundles all dependencies with `inlineDynamicImports: true`. Fence libraries (`highlight.js`, `mermaid`, `dompurify`, `leaflet`, `three`) must be present in **devDependencies** — CI runs `npm ci` before building.
+This runs a dedicated rollup config (`rollup.config.standalone.js`) that bundles all dependencies with `inlineDynamicImports: true`. Fence libraries (`highlight.js`, `mermaid`, `dompurify`, `leaflet`, `three`, `abcjs`, `vega`, `vega-lite`, `vega-embed`, `mathjax-full`) must be present in **devDependencies** — CI runs `npm ci` before building.
 
 The main build (`npm run build`) does NOT include the standalone bundle. To build everything:
 

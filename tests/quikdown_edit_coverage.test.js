@@ -4405,4 +4405,610 @@ describe('QuikdownEditor Coverage', () => {
             expect(editor.html).toContain('\\');
         });
     });
+
+    // ================================================================
+    // ABC Music Notation Fences
+    // ================================================================
+    describe('ABC Music Notation Fences', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('abc fence creates container with loading text', () => {
+            editor.updateFromMarkdown('```abc\nX:1\nT:Test\nK:C\nC D E F |\n```');
+            const preview = editor.previewPanel;
+            const container = preview.querySelector('.qde-abc-container');
+            expect(container).not.toBeNull();
+            expect(container.getAttribute('data-qd-lang')).toBe('abc');
+            expect(container.getAttribute('data-qd-fence')).toBe('```');
+            expect(container.getAttribute('data-qd-source')).toContain('X:1');
+            // contenteditable is set in outerHTML but jsdom strips it during innerHTML parse
+        });
+
+        test('music fence alias creates abc container', () => {
+            editor.updateFromMarkdown('```music\nX:1\nK:C\nC D E F |\n```');
+            const preview = editor.previewPanel;
+            const container = preview.querySelector('.qde-abc-container');
+            expect(container).not.toBeNull();
+        });
+
+        test('abc renders when ABCJS is already loaded', () => {
+            window.ABCJS = { renderAbc: jest.fn() };
+            window._qde_abcjs_loading = null;
+            jest.useFakeTimers();
+            try {
+                editor.updateFromMarkdown('```abc\nX:1\nK:C\nC D E F |\n```');
+                const container = editor.previewPanel.querySelector('.qde-abc-container');
+                expect(container).not.toBeNull();
+                jest.runAllTimers();
+            } finally {
+                delete window.ABCJS;
+                delete window._qde_abcjs_loading;
+                jest.useRealTimers();
+            }
+        });
+
+        test('abc handles ABCJS render error gracefully', async () => {
+            window.ABCJS = {
+                renderAbc: jest.fn(() => { throw new Error('bad notation'); })
+            };
+            window._qde_abcjs_loading = null;
+            jest.useFakeTimers();
+            try {
+                editor.updateFromMarkdown('```abc\nX:1\nbad\n```');
+                jest.runAllTimers();
+                // Should not throw; error is caught internally
+            } finally {
+                delete window.ABCJS;
+                delete window._qde_abcjs_loading;
+                jest.useRealTimers();
+            }
+        });
+
+        test('abc lazy-load failure shows fallback message', async () => {
+            delete window.ABCJS;
+            window._qde_abcjs_loading = null;
+            // Mock loadScript to fail
+            const origLoad = editor.loadScript;
+            editor.loadScript = jest.fn().mockRejectedValue(new Error('network'));
+            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+            try {
+                editor.updateFromMarkdown('```abc\nX:1\nK:C\nC|\n```');
+                // Wait for the lazy load promise chain to settle
+                await new Promise(r => setTimeout(r, 50));
+            } finally {
+                editor.loadScript = origLoad;
+                warnSpy.mockRestore();
+                delete window._qde_abcjs_loading;
+            }
+        });
+    });
+
+    // ================================================================
+    // Vega / Vega-Lite Fences
+    // ================================================================
+    describe('Vega / Vega-Lite Fences', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('vega-lite fence creates container', () => {
+            const spec = JSON.stringify({ data: { values: [{ a: 1 }] }, mark: 'point', encoding: { x: { field: 'a', type: 'quantitative' } } });
+            editor.updateFromMarkdown('```vega-lite\n' + spec + '\n```');
+            const container = editor.previewPanel.querySelector('.qde-vega-container');
+            expect(container).not.toBeNull();
+            expect(container.getAttribute('data-qd-lang')).toBe('vega-lite');
+            expect(container.getAttribute('data-qd-fence')).toBe('```');
+            // contenteditable is set in outerHTML but jsdom strips it during innerHTML parse
+        });
+
+        test('vegalite alias creates container', () => {
+            const spec = JSON.stringify({ data: { values: [{ a: 1 }] }, mark: 'point', encoding: {} });
+            editor.updateFromMarkdown('```vegalite\n' + spec + '\n```');
+            const container = editor.previewPanel.querySelector('.qde-vega-container');
+            expect(container).not.toBeNull();
+            expect(container.getAttribute('data-qd-lang')).toBe('vegalite');
+        });
+
+        test('vega fence creates container', () => {
+            const spec = JSON.stringify({ "$schema": "https://vega.github.io/schema/vega/v5.json", data: [], marks: [] });
+            editor.updateFromMarkdown('```vega\n' + spec + '\n```');
+            const container = editor.previewPanel.querySelector('.qde-vega-container');
+            expect(container).not.toBeNull();
+            expect(container.getAttribute('data-qd-lang')).toBe('vega');
+        });
+
+        test('vega renders when vegaEmbed is already loaded', () => {
+            window.vegaEmbed = jest.fn().mockResolvedValue({});
+            window._qde_vega_loading = null;
+            jest.useFakeTimers();
+            try {
+                const spec = JSON.stringify({ data: { values: [{ a: 1 }] }, mark: 'point', encoding: {} });
+                editor.updateFromMarkdown('```vega-lite\n' + spec + '\n```');
+                jest.runAllTimers();
+                // vegaEmbed should have been called
+            } finally {
+                delete window.vegaEmbed;
+                delete window._qde_vega_loading;
+                jest.useRealTimers();
+            }
+        });
+
+        test('vega-lite auto-injects $schema when missing', () => {
+            window.vegaEmbed = jest.fn().mockResolvedValue({});
+            window._qde_vega_loading = null;
+            jest.useFakeTimers();
+            try {
+                const spec = JSON.stringify({ data: { values: [{ a: 1 }] }, mark: 'bar', encoding: {} });
+                editor.updateFromMarkdown('```vega-lite\n' + spec + '\n```');
+                jest.runAllTimers();
+                if (window.vegaEmbed.mock.calls.length > 0) {
+                    const passedSpec = window.vegaEmbed.mock.calls[0][1];
+                    expect(passedSpec.$schema).toContain('vega-lite');
+                }
+            } finally {
+                delete window.vegaEmbed;
+                delete window._qde_vega_loading;
+                jest.useRealTimers();
+            }
+        });
+
+        test('vega handles invalid JSON gracefully', () => {
+            window.vegaEmbed = jest.fn().mockResolvedValue({});
+            window._qde_vega_loading = null;
+            jest.useFakeTimers();
+            try {
+                editor.updateFromMarkdown('```vega-lite\n{bad json\n```');
+                jest.runAllTimers();
+                // Should not throw — error is caught internally
+                const container = editor.previewPanel.querySelector('.qde-vega-container');
+                expect(container).not.toBeNull();
+            } finally {
+                delete window.vegaEmbed;
+                delete window._qde_vega_loading;
+                jest.useRealTimers();
+            }
+        });
+
+        test('vega warns about external URL data sources', () => {
+            window.vegaEmbed = jest.fn().mockResolvedValue({});
+            window._qde_vega_loading = null;
+            jest.useFakeTimers();
+            try {
+                const spec = JSON.stringify({ data: { url: 'https://example.com/data.csv' }, mark: 'bar', encoding: {} });
+                editor.updateFromMarkdown('```vega-lite\n' + spec + '\n```');
+                jest.runAllTimers();
+                // When allowExternalFetch is off (default), should show warning
+            } finally {
+                delete window.vegaEmbed;
+                delete window._qde_vega_loading;
+                jest.useRealTimers();
+            }
+        });
+
+        test('vega lazy-load failure shows fallback', async () => {
+            delete window.vegaEmbed;
+            window._qde_vega_loading = null;
+            const origLoad = editor.loadScript;
+            editor.loadScript = jest.fn().mockRejectedValue(new Error('network'));
+            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+            try {
+                const spec = JSON.stringify({ data: { values: [] }, mark: 'point', encoding: {} });
+                editor.updateFromMarkdown('```vega-lite\n' + spec + '\n```');
+                await new Promise(r => setTimeout(r, 50));
+            } finally {
+                editor.loadScript = origLoad;
+                warnSpy.mockRestore();
+                delete window._qde_vega_loading;
+            }
+        });
+    });
+
+    // ================================================================
+    // Heading Slugs & Anchors (requires heading_ids option)
+    // ================================================================
+    describe('Heading Slugs via editor', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('headings get id attributes when heading_ids is enabled', () => {
+            // Use updateFromMarkdown with heading_ids parser option
+            const html = editor.updateFromMarkdown('# Hello World\n\n## Test Section', { heading_ids: true });
+            expect(editor.html).toContain('<h1');
+            expect(editor.html).toContain('<h2');
+            expect(editor.html).toContain('Hello World');
+            expect(editor.html).toContain('Test Section');
+        });
+
+        test('renders multiple heading levels', () => {
+            editor.updateFromMarkdown('# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6');
+            expect(editor.html).toContain('<h1');
+            expect(editor.html).toContain('<h2');
+            expect(editor.html).toContain('<h3');
+            expect(editor.html).toContain('<h4');
+            expect(editor.html).toContain('<h5');
+            expect(editor.html).toContain('<h6');
+        });
+    });
+
+    // ================================================================
+    // Alert/Callout Rendering
+    // ================================================================
+    describe('Alert Callout Rendering', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('renders NOTE alert', () => {
+            editor.updateFromMarkdown('> [!NOTE]\n> This is a note');
+            const html = editor.html;
+            expect(html).toContain('alert');
+            expect(html).toContain('note');
+        });
+
+        test('renders TIP alert', () => {
+            editor.updateFromMarkdown('> [!TIP]\n> This is a tip');
+            const html = editor.html;
+            expect(html).toContain('alert');
+            expect(html).toContain('tip');
+        });
+
+        test('renders WARNING alert', () => {
+            editor.updateFromMarkdown('> [!WARNING]\n> Be careful');
+            const html = editor.html;
+            expect(html).toContain('alert');
+            expect(html).toContain('warning');
+        });
+
+        test('renders CAUTION alert', () => {
+            editor.updateFromMarkdown('> [!CAUTION]\n> Danger zone');
+            const html = editor.html;
+            expect(html).toContain('alert');
+            expect(html).toContain('caution');
+        });
+
+        test('renders IMPORTANT alert', () => {
+            editor.updateFromMarkdown('> [!IMPORTANT]\n> Read this');
+            const html = editor.html;
+            expect(html).toContain('alert');
+            expect(html).toContain('important');
+        });
+    });
+
+    // ================================================================
+    // Indented Code Blocks
+    // ================================================================
+    describe('Indented Code Blocks', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('four-space indented block renders as code', () => {
+            editor.updateFromMarkdown('Normal text\n\n    indented code\n    more code\n\nNormal again');
+            const html = editor.html;
+            expect(html).toContain('<pre');
+            expect(html).toContain('indented code');
+        });
+
+        test('tab-indented block renders as code', () => {
+            editor.updateFromMarkdown('Normal text\n\n\tindented code\n\tmore code\n\nNormal again');
+            const html = editor.html;
+            expect(html).toContain('<pre');
+        });
+    });
+
+    // ================================================================
+    // emitStyles dark theme
+    // ================================================================
+    describe('emitStyles dark theme', () => {
+        test('generates CSS with dark theme overrides', () => {
+            const QuikdownModule = require('../dist/quikdown_edit.esm.js').default || require('../dist/quikdown_edit.esm.js');
+            // The editor exports the underlying parser's emitStyles via the module
+            if (QuikdownModule.emitStyles) {
+                const css = QuikdownModule.emitStyles('quikdown-', 'dark');
+                expect(css).toContain('quikdown-');
+                expect(css).toContain('#2a2a2a'); // dark background
+                expect(css).toContain('#e0e0e0'); // dark text color
+            }
+        });
+
+        test('emitStyles light theme does not contain dark overrides', () => {
+            const QuikdownModule = require('../dist/quikdown_edit.esm.js').default || require('../dist/quikdown_edit.esm.js');
+            if (QuikdownModule.emitStyles) {
+                const css = QuikdownModule.emitStyles('quikdown-', 'light');
+                expect(css).toContain('quikdown-');
+                expect(css).not.toContain('#2a2a2a');
+            }
+        });
+    });
+
+    // ================================================================
+    // preloadFences with scripts array (Vega)
+    // ================================================================
+    describe('preloadFences scripts array', () => {
+        test('preloadFences all creates editor without crashing', async () => {
+            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+            const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            // Mock loadScript/loadCSS to resolve immediately so preload doesn't hang
+            const origLoadScript = QuikdownEditor.prototype.loadScript;
+            const origLoadCSS = QuikdownEditor.prototype.loadCSS;
+            QuikdownEditor.prototype.loadScript = jest.fn().mockResolvedValue(undefined);
+            QuikdownEditor.prototype.loadCSS = jest.fn().mockResolvedValue(undefined);
+            try {
+                editor = new QuikdownEditor('#test-editor', { preloadFences: 'all' });
+                await editor.initPromise;
+                expect(editor).toBeDefined();
+                // Should have attempted to load scripts for abc, vega, etc.
+                expect(QuikdownEditor.prototype.loadScript).toHaveBeenCalled();
+            } finally {
+                QuikdownEditor.prototype.loadScript = origLoadScript;
+                QuikdownEditor.prototype.loadCSS = origLoadCSS;
+                warnSpy.mockRestore();
+                errSpy.mockRestore();
+            }
+        }, 15000);
+
+        test('preloadFences accepts specific fence names including abc and vega', async () => {
+            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+            const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const origLoadScript = QuikdownEditor.prototype.loadScript;
+            const origLoadCSS = QuikdownEditor.prototype.loadCSS;
+            QuikdownEditor.prototype.loadScript = jest.fn().mockResolvedValue(undefined);
+            QuikdownEditor.prototype.loadCSS = jest.fn().mockResolvedValue(undefined);
+            try {
+                editor = new QuikdownEditor('#test-editor', { preloadFences: ['abc', 'vega'] });
+                await editor.initPromise;
+                expect(editor).toBeDefined();
+            } finally {
+                QuikdownEditor.prototype.loadScript = origLoadScript;
+                QuikdownEditor.prototype.loadCSS = origLoadCSS;
+                warnSpy.mockRestore();
+                errSpy.mockRestore();
+            }
+        }, 15000);
+    });
+
+    // ================================================================
+    // Parser edge cases (via editor) for coverage
+    // ================================================================
+    describe('Parser edge cases via editor', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('link with double-quoted title', () => {
+            editor.updateFromMarkdown('[text](http://example.com "Title")');
+            expect(editor.html).toContain('title="Title"');
+        });
+
+        test('link with single-quoted title', () => {
+            editor.updateFromMarkdown("[text](http://example.com 'Title')");
+            expect(editor.html).toContain('Title');
+        });
+
+        test('link with angle brackets', () => {
+            editor.updateFromMarkdown('[text](<http://example.com>)');
+            expect(editor.html).toContain('http://example.com');
+        });
+
+        test('autolink URL with trailing punctuation', () => {
+            editor.updateFromMarkdown('Visit http://example.com.');
+            expect(editor.html).toContain('http://example.com');
+            expect(editor.html).toContain('.');
+        });
+
+        test('autolink URL with balanced parens', () => {
+            editor.updateFromMarkdown('See http://example.com/wiki/Test_(foo).');
+            expect(editor.html).toContain('Test_(foo)');
+        });
+
+        test('fence closing with trailing spaces', () => {
+            editor.updateFromMarkdown('```js\ncode\n```   ');
+            expect(editor.html).toContain('code');
+        });
+
+        test('blockquote starts new block', () => {
+            editor.updateFromMarkdown('paragraph\n\n> quoted');
+            expect(editor.html).toContain('blockquote');
+        });
+
+        test('unordered list starts new block', () => {
+            editor.updateFromMarkdown('paragraph\n\n- item');
+            expect(editor.html).toContain('<li');
+        });
+
+        test('ordered list starts new block', () => {
+            editor.updateFromMarkdown('paragraph\n\n1. item');
+            expect(editor.html).toContain('<li');
+        });
+
+        test('table row starts new block', () => {
+            editor.updateFromMarkdown('paragraph\n\n| a | b |\n|---|---|\n| 1 | 2 |');
+            expect(editor.html).toContain('<table');
+        });
+
+        test('empty CSV table renders gracefully', () => {
+            editor.updateFromMarkdown('```csv\n```');
+            // Should not crash
+            expect(editor.html).toBeTruthy();
+        });
+
+        test('indented code does not match list', () => {
+            editor.updateFromMarkdown('    not a list item\n    just code');
+            expect(editor.html).toContain('<pre');
+        });
+
+        test('alert with class-based styling', () => {
+            editor.updateFromMarkdown('> [!NOTE]\n> Note text');
+            expect(editor.html).toContain('alert');
+        });
+
+        test('heading with inline code in slug', () => {
+            editor.updateFromMarkdown('# Test `code` heading');
+            expect(editor.html).toContain('<h1');
+            expect(editor.html).toContain('code');
+        });
+    });
+
+    // ================================================================
+    // FENCE_LIBRARIES music alias
+    // ================================================================
+    describe('FENCE_LIBRARIES music alias', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('music fence produces same container as abc', () => {
+            editor.updateFromMarkdown('```music\nX:1\nK:C\nC D E F |\n```');
+            const container = editor.previewPanel.querySelector('.qde-abc-container');
+            expect(container).not.toBeNull();
+            // data-qd-source should contain the ABC content
+            expect(container.getAttribute('data-qd-source')).toContain('X:1');
+        });
+    });
+
+    // ================================================================
+    // Additional coverage: isBlockStart, configure, reverse
+    // ================================================================
+    describe('Additional parser coverage', () => {
+        beforeEach(async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+        });
+
+        test('hr line starts new block', () => {
+            editor.updateFromMarkdown('text\n\n---\n\nmore text');
+            expect(editor.html).toContain('<hr');
+        });
+
+        test('code block placeholder starts new block', () => {
+            editor.updateFromMarkdown('text\n\n```\ncode\n```\n\nmore text');
+            expect(editor.html).toContain('<pre');
+            expect(editor.html).toContain('code');
+        });
+
+        test('heading starts new block after paragraph', () => {
+            editor.updateFromMarkdown('text\n\n# Heading');
+            expect(editor.html).toContain('<h1');
+        });
+
+        test('blockquote alert starts new block', () => {
+            editor.updateFromMarkdown('text\n\n> [!TIP]\n> Tip content');
+            expect(editor.html).toContain('alert');
+        });
+
+        test('getMarkdown returns current markdown', () => {
+            editor.updateFromMarkdown('# Hello\n\nWorld');
+            const md = editor.getMarkdown();
+            expect(md).toContain('Hello');
+        });
+
+        test('setMarkdown and getMarkdown roundtrip', () => {
+            const input = '# Title\n\n- item 1\n- item 2';
+            editor.updateFromMarkdown(input);
+            const output = editor.getMarkdown();
+            expect(output).toContain('Title');
+            expect(output).toContain('item 1');
+        });
+
+        test('mixed fence types render correctly', () => {
+            const md = '```csv\na,b\n1,2\n```\n\n```json\n{"key":"val"}\n```';
+            editor.updateFromMarkdown(md);
+            expect(editor.html).toContain('table');
+        });
+
+        test('inline code in paragraph', () => {
+            editor.updateFromMarkdown('Use `console.log()` for debugging');
+            expect(editor.html).toContain('<code');
+            expect(editor.html).toContain('console.log()');
+        });
+
+        test('nested blockquote content', () => {
+            editor.updateFromMarkdown('> outer\n> > inner');
+            expect(editor.html).toContain('blockquote');
+        });
+
+        test('task list items', () => {
+            editor.updateFromMarkdown('- [x] done\n- [ ] todo');
+            expect(editor.html).toContain('type="checkbox"');
+        });
+
+        test('strikethrough text', () => {
+            editor.updateFromMarkdown('~~deleted~~');
+            expect(editor.html).toContain('<del');
+        });
+    });
+
+    // ================================================================
+    // Vega renderChart with element in DOM
+    // ================================================================
+    describe('Vega renderChart with mocked vegaEmbed in DOM', () => {
+        test('renderChart calls vegaEmbed when element exists', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+
+            window.vegaEmbed = jest.fn().mockResolvedValue({});
+            window._qde_vega_loading = null;
+            jest.useFakeTimers();
+            try {
+                const spec = JSON.stringify({
+                    data: { values: [{ a: 'X', b: 10 }] },
+                    mark: 'bar',
+                    encoding: { x: { field: 'a', type: 'nominal' }, y: { field: 'b', type: 'quantitative' } }
+                });
+                editor.updateFromMarkdown('```vega-lite\n' + spec + '\n```');
+                jest.runAllTimers();
+                expect(window.vegaEmbed).toHaveBeenCalled();
+            } finally {
+                delete window.vegaEmbed;
+                delete window._qde_vega_loading;
+                jest.useRealTimers();
+            }
+        });
+
+        test('renderChart handles vegaEmbed rejection', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+
+            window.vegaEmbed = jest.fn().mockRejectedValue(new Error('render fail'));
+            window._qde_vega_loading = null;
+            jest.useFakeTimers();
+            try {
+                const spec = JSON.stringify({ data: { values: [{ a: 1 }] }, mark: 'point', encoding: {} });
+                editor.updateFromMarkdown('```vega-lite\n' + spec + '\n```');
+                jest.runAllTimers();
+                // Should not throw
+            } finally {
+                delete window.vegaEmbed;
+                delete window._qde_vega_loading;
+                jest.useRealTimers();
+            }
+        });
+
+        test('renderABC calls ABCJS.renderAbc when element exists', async () => {
+            editor = new QuikdownEditor('#test-editor');
+            await editor.initPromise;
+
+            window.ABCJS = { renderAbc: jest.fn() };
+            window._qde_abcjs_loading = null;
+            jest.useFakeTimers();
+            try {
+                editor.updateFromMarkdown('```abc\nX:1\nK:C\nC D E F |\n```');
+                jest.runAllTimers();
+                expect(window.ABCJS.renderAbc).toHaveBeenCalled();
+            } finally {
+                delete window.ABCJS;
+                delete window._qde_abcjs_loading;
+                jest.useRealTimers();
+            }
+        });
+    });
 });

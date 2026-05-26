@@ -4,10 +4,10 @@
 
 quikdown is a zero-dependency markdown parser for browser and Node.js. It converts markdown to HTML with security by default, supports bidirectional HTML-to-markdown roundtrip, ships a full-featured editor component (including headless mode), and provides structured output as AST, JSON, or YAML.
 
-- Version: 1.2.16
+- Version: 1.2.17
 - License: BSD-2-Clause
 - Repository: https://github.com/deftio/quikdown
-- Bundle size: ~10 KB minified (core parser), ~86 KB (editor), ~3.8 MB (standalone editor with all fence libraries)
+- Bundle size: ~14.9 KB minified (core parser), ~98 KB (editor), ~7.7 MB / ~1.0 MB gzipped (standalone editor with all fence libraries)
 - Test coverage: 98%
 - Zero runtime dependencies
 - TypeScript definitions included
@@ -18,10 +18,10 @@ quikdown ships nine modules, each available as ESM, UMD, and/or CommonJS:
 
 | Module | Import Path | Purpose | Minified Size |
 |--------|-------------|---------|---------------|
-| quikdown | `quikdown` | Core markdown-to-HTML parser | ~10 KB |
-| quikdown_bd | `quikdown/bd` | Bidirectional HTML-to-markdown roundtrip | ~15 KB |
-| quikdown_edit | `quikdown/edit` | Drop-in editor with toolbar, preview, undo/redo | ~86 KB |
-| quikdown_edit_standalone | (standalone build) | Editor with all fence libraries pre-bundled | ~3.8 MB |
+| quikdown | `quikdown` | Core markdown-to-HTML parser | ~14.9 KB |
+| quikdown_bd | `quikdown/bd` | Bidirectional HTML-to-markdown roundtrip | ~19.7 KB |
+| quikdown_edit | `quikdown/edit` | Drop-in editor with toolbar, preview, undo/redo | ~98 KB |
+| quikdown_edit_standalone | (standalone build) | Editor with all fence libraries pre-bundled | ~7.7 MB |
 | quikdown_ast | `quikdown/ast` | Markdown to Abstract Syntax Tree | small |
 | quikdown_json | `quikdown/json` | Markdown to JSON string | small |
 | quikdown_yaml | `quikdown/yaml` | Markdown to YAML string | small |
@@ -147,13 +147,13 @@ QuikdownEditor is a drop-in markdown editing component with source/split/preview
 
 | Build | Files | Size | When to Use |
 |-------|-------|------|-------------|
-| **Regular** | `quikdown_edit.esm.min.js`, `.umd.min.js`, `.cjs` | ~86 KB | Standard use. Fence libraries lazy-loaded from CDN on first encounter. Best initial load time. |
-| **Standalone** | `quikdown_edit_standalone.esm.min.js`, `.umd.min.js` | ~3.8 MB | Offline / air-gapped / Electron / PWA. All fence libraries pre-bundled. Zero network calls. |
+| **Regular** | `quikdown_edit.esm.min.js`, `.umd.min.js`, `.cjs` | ~98 KB | Standard use. Fence libraries lazy-loaded from CDN on first encounter. Best initial load time. |
+| **Standalone** | `quikdown_edit_standalone.esm.min.js`, `.umd.min.js` | ~7.7 MB | Offline / air-gapped / Electron / PWA. All fence libraries pre-bundled. Zero network calls. |
 | **TypeScript** | `quikdown_edit.d.ts` | 6.4 KB | Full type definitions for all editor APIs. |
 
-**Regular vs. Standalone:** The regular editor is ~86 KB and lazy-loads fence libraries (Highlight.js, Mermaid, Leaflet, Three.js) from CDN when a fence block is first encountered. The standalone editor bundles all libraries for instant offline rendering (~3.8 MB). Both have the exact same API.
+**Regular vs. Standalone:** The regular editor is ~98 KB and lazy-loads fence libraries (Highlight.js, Mermaid, MathJax, Leaflet, Three.js, ABCJS, Vega) from CDN when a fence block is first encountered. The standalone editor bundles all libraries for instant offline rendering (~7.7 MB, ~1.0 MB gzipped). Both have the exact same API.
 
-**Standalone bundles:** Highlight.js (core + 12 languages: JS, TS, Python, Java, C, C++, CSS, HTML/XML, JSON, Bash, Shell, SQL), Mermaid, DOMPurify, Leaflet, Three.js. MathJax is NOT bundled (requires dynamic font loading) and is always fetched from CDN.
+**Standalone bundles:** Highlight.js (core + 12 languages: JS, TS, Python, Java, C, C++, CSS, HTML/XML, JSON, Bash, Shell, SQL), Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax.
 
 ### Basic Editor Setup
 
@@ -409,6 +409,8 @@ The editor has built-in handlers for common fence types. Libraries are lazy-load
 | `math`, `katex`, `tex`, `latex` | LaTeX equations | MathJax v3 | Yes |
 | `geojson` | Interactive maps | Leaflet | Yes |
 | `stl` | 3D model viewer | Three.js | Yes |
+| `abc`, `music` | Sheet music notation | ABCJS | Yes |
+| `vega`, `vega-lite`, `vegalite` | Data visualization charts | Vega + Vega-Lite + Vega-Embed | Yes |
 | `csv` | HTML table from CSV | Built-in | N/A |
 | `psv` | HTML table from pipe-separated values | Built-in | N/A |
 | `tsv` | HTML table from tab-separated values | Built-in | N/A |
@@ -438,7 +440,7 @@ new QuikdownEditor('#editor', {
 new QuikdownEditor('#editor');
 ```
 
-Recognized library names: `'highlightjs'`, `'mermaid'`, `'math'`, `'geojson'`, `'stl'`.
+Recognized library names: `'highlightjs'`, `'mermaid'`, `'math'`, `'geojson'`, `'stl'`, `'abc'` / `'music'`, `'vega'`.
 
 **Trade-off:** Preloading uses more upfront bandwidth but eliminates per-fence load delays. Leave `preloadFences` off for production apps handling arbitrary user content; set it to `'all'` for demos and apps where fence types are known in advance.
 
@@ -605,11 +607,11 @@ dist/
   quikdown.d.ts                          # Core parser - TypeScript defs
   quikdown.light.css / .dark.css         # Theme stylesheets
   quikdown_bd.*                          # Bidirectional (ESM, UMD, CJS, d.ts)
-  quikdown_edit.esm.min.js              # Editor - ES Module (~86 KB)
-  quikdown_edit.umd.min.js              # Editor - UMD (~86 KB)
+  quikdown_edit.esm.min.js              # Editor - ES Module (~98 KB)
+  quikdown_edit.umd.min.js              # Editor - UMD (~98 KB)
   quikdown_edit.cjs                      # Editor - CommonJS
   quikdown_edit.d.ts                     # Editor - TypeScript defs
-  quikdown_edit_standalone.esm.min.js   # Standalone editor (~3.8 MB)
+  quikdown_edit_standalone.esm.min.js   # Standalone editor (~7.7 MB)
   quikdown_edit_standalone.umd.min.js   # Standalone editor - UMD
   quikdown_ast.*                         # AST parser (all formats)
   quikdown_json.*                        # JSON converter (all formats)

@@ -2591,6 +2591,97 @@ async function getRenderedContent(previewPanel, options = {}) {
             }
         }
         
+        // 2b. Process ABC music notation — convert SVG to PNG
+        // ABCJS renders responsive SVGs (width="100%", no height) whose
+        // clientHeight reflects the container, not the content. Use the
+        // viewBox aspect ratio to derive the correct image height.
+        const abcContainers = clone.querySelectorAll('.qde-abc-container');
+        for (const container of abcContainers) {
+            const svg = container.querySelector('svg');
+            if (svg) {
+                try {
+                    const pngBlob = await svgToPng(svg);
+                    const dataUrl = await new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(pngBlob);
+                    });
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+
+                    // Derive dimensions from viewBox (accurate) rather than
+                    // clientWidth/Height (stretched by container)
+                    const vb = svg.viewBox && svg.viewBox.baseVal;
+                    let imgWidth, imgHeight;
+                    if (vb && vb.width && vb.height) {
+                        const aspect = vb.width / vb.height;
+                        imgWidth = svg.clientWidth || vb.width;
+                        imgHeight = Math.round(imgWidth / aspect);
+                    } else {
+                        imgWidth = svg.clientWidth || parseFloat(svg.getAttribute('width')) || 400;
+                        imgHeight = svg.clientHeight || parseFloat(svg.getAttribute('height')) || 200;
+                    }
+
+                    img.width = imgWidth;
+                    img.height = imgHeight;
+                    img.setAttribute('width', imgWidth.toString());
+                    img.setAttribute('height', imgHeight.toString());
+                    img.style.width = imgWidth + 'px';
+                    img.style.height = imgHeight + 'px';
+                    img.style.maxWidth = 'none';
+                    img.style.maxHeight = 'none';
+                    img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
+                    img.alt = 'Music Notation';
+                    container.parentNode.replaceChild(img, container);
+                } catch (err) {
+                    console.warn('Failed to convert ABC notation:', err);
+                }
+            } else {
+                const placeholder = document.createElement('div');
+                placeholder.style.cssText = 'padding: 12px; background-color: #f0f0f0; border: 1px solid #ccc; text-align: center; margin: 0.5em 0; border-radius: 4px;';
+                placeholder.textContent = '[Music Notation - Interactive content not available in copy]';
+                container.parentNode.replaceChild(placeholder, container);
+            }
+        }
+
+        // 2c. Process Vega charts — convert SVG to PNG
+        const vegaContainers = clone.querySelectorAll('.qde-vega-container');
+        for (const container of vegaContainers) {
+            const svg = container.querySelector('svg');
+            if (svg) {
+                try {
+                    const pngBlob = await svgToPng(svg);
+                    const dataUrl = await new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(pngBlob);
+                    });
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+                    const imgWidth = svg.clientWidth || parseFloat(svg.getAttribute('width')) || 400;
+                    const imgHeight = svg.clientHeight || parseFloat(svg.getAttribute('height')) || 300;
+                    img.width = imgWidth;
+                    img.height = imgHeight;
+                    img.setAttribute('width', imgWidth.toString());
+                    img.setAttribute('height', imgHeight.toString());
+                    img.style.width = imgWidth + 'px';
+                    img.style.height = imgHeight + 'px';
+                    img.style.maxWidth = 'none';
+                    img.style.maxHeight = 'none';
+                    img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
+                    img.alt = 'Data Visualization';
+                    container.parentNode.replaceChild(img, container);
+                } catch (err) {
+                    console.warn('Failed to convert Vega chart:', err);
+                }
+            } else {
+                const placeholder = document.createElement('div');
+                placeholder.style.cssText = 'padding: 12px; background-color: #f0f0f0; border: 1px solid #ccc; text-align: center; margin: 0.5em 0; border-radius: 4px;';
+                placeholder.textContent = '[Vega Chart - Interactive content not available in copy]';
+                container.parentNode.replaceChild(placeholder, container);
+            }
+        }
+
         // 3. Process Chart.js charts - convert canvas to image
         const chartContainers = clone.querySelectorAll('.qde-chart-container');
         for (const container of chartContainers) {
@@ -3427,7 +3518,8 @@ const DEFAULT_OPTIONS = {
     showUndoRedo: false,      // Show undo/redo toolbar buttons
     undoStackSize: 100,       // Maximum number of undo states to keep
     allowUnsafeHTML: false,   // false | 'limited' | true — controls HTML passthrough
-    showAllowUnsafeHTML: false // Show toolbar button to cycle HTML mode
+    showAllowUnsafeHTML: false, // Show toolbar button to cycle HTML mode
+    allowExternalFetch: true  // Allow fence renderers to fetch external resources (CDN, tiles, etc.)
 };
 
 // Library catalog used by preloadFences. Each entry knows how to:
@@ -3484,6 +3576,22 @@ const FENCE_LIBRARIES = {
     stl: {
         check: () => typeof window.THREE !== 'undefined',
         script: 'https://unpkg.com/three@0.147.0/build/three.min.js'
+    },
+    abc: {
+        check: () => typeof window.ABCJS !== 'undefined',
+        script: 'https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js'
+    },
+    music: {
+        check: () => typeof window.ABCJS !== 'undefined',
+        script: 'https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js'
+    },
+    vega: {
+        check: () => typeof window.vegaEmbed !== 'undefined',
+        scripts: [
+            'https://cdn.jsdelivr.net/npm/vega@5',
+            'https://cdn.jsdelivr.net/npm/vega-lite@5',
+            'https://cdn.jsdelivr.net/npm/vega-embed@6'
+        ]
     }
 };
 
@@ -4492,6 +4600,15 @@ class QuikdownEditor {
                         
                     case 'stl':
                         return this.renderSTL(code);
+
+                    case 'abc':
+                    case 'music':
+                        return this.renderABC(code);
+
+                    case 'vega':
+                    case 'vega-lite':
+                    case 'vegalite':
+                        return this.renderVega(code, lang);
                 }
             }
             
@@ -4860,16 +4977,26 @@ class QuikdownEditor {
                 
                 // Create the map
                 const map = L.map(mapId);
-                
+
                 // Store back-reference for capture (per Gem's guide)
                 container._map = map; // Avoid window pollution
-                
-                // Add tile layer with CORS support
-                const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '',
-                    crossOrigin: 'anonymous' // Important for canvas capture
-                });
-                tileLayer.addTo(map);
+
+                // Add basemap — vector (offline) or OSM tiles (online)
+                let tileLayer = null;
+                if (!this.options.allowExternalFetch && window._qde_worldGeoJSON) {
+                    // Vector basemap — country boundaries, no tile fetching
+                    L.geoJSON(window._qde_worldGeoJSON, {
+                        style: { weight: 0.5, color: '#999', fillColor: '#f0f0f0', fillOpacity: 1 },
+                        interactive: false
+                    }).addTo(map);
+                } else {
+                    // Standard OSM tiles
+                    tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '',
+                        crossOrigin: 'anonymous' // Important for canvas capture
+                    });
+                    tileLayer.addTo(map);
+                }
                 
                 // Add GeoJSON layer
                 const geoJsonLayer = L.geoJSON(data);
@@ -4887,9 +5014,14 @@ class QuikdownEditor {
                 container._geoJsonLayer = geoJsonLayer;
                 
                 // Optional: Wait for tiles to load for better capture
-                tileLayer.on('load', () => {
+                if (tileLayer) {
+                    tileLayer.on('load', () => {
+                        container.setAttribute('data-tiles-loaded', 'true');
+                    });
+                } else {
+                    // Vector basemap — tiles always "loaded"
                     container.setAttribute('data-tiles-loaded', 'true');
-                });
+                }
                 
             } catch (err) {
                 container.innerHTML = `<pre class="qde-error">GeoJSON error: ${this.escapeHtml(err.message)}</pre>`;
@@ -5085,7 +5217,137 @@ class QuikdownEditor {
         
         return geometry;
     }
-    
+
+    /**
+     * Render ABC music notation
+     */
+    renderABC(code) {
+        const id = `qde-abc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const renderNotation = () => {
+            const element = document.getElementById(id);
+            if (!element || !window.ABCJS) return;
+            try {
+                element.innerHTML = '';
+                window.ABCJS.renderAbc(element, code, { responsive: 'resize' });
+            } catch (err) {
+                element.innerHTML = `<pre class="qde-error">ABC notation error: ${this.escapeHtml(err.message)}</pre>`;
+            }
+        };
+
+        if (window.ABCJS) {
+            setTimeout(renderNotation, 0);
+        } else {
+            if (!window._qde_abcjs_loading) {
+                window._qde_abcjs_loading = this.lazyLoadLibrary(
+                    'ABCJS',
+                    () => window.ABCJS,
+                    'https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js'
+                ).catch(err => {
+                    console.warn('Failed to load ABCJS:', err);
+                    window._qde_abcjs_loading = null;
+                    return false;
+                });
+            }
+            window._qde_abcjs_loading.then(loaded => {
+                if (loaded) {
+                    renderNotation();
+                } else {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load ABC notation library</div>';
+                    }
+                }
+            });
+        }
+
+        const container = document.createElement('div');
+        container.id = id;
+        container.className = 'qde-abc-container';
+        container.contentEditable = 'false';
+        container.setAttribute('data-qd-source', code);
+        container.setAttribute('data-qd-fence', '```');
+        container.setAttribute('data-qd-lang', 'abc');
+        container.style.cssText = 'min-height: 80px; margin: 0.5em 0;';
+        container.textContent = 'Loading music notation...';
+
+        return container.outerHTML;
+    }
+
+    /**
+     * Render Vega or Vega-Lite visualization
+     */
+    renderVega(code, lang) {
+        const id = `qde-vega-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const renderChart = () => {
+            const element = document.getElementById(id);
+            if (!element || !window.vegaEmbed) return;
+            try {
+                const spec = JSON.parse(code);
+                // If using vega-lite alias, ensure $schema is set for vega-lite
+                if ((lang === 'vega-lite' || lang === 'vegalite') && !spec.$schema) {
+                    spec.$schema = 'https://vega.github.io/schema/vega-lite/v5.json';
+                }
+                // Warn about external URL data sources when allowExternalFetch is off
+                if (!this.options.allowExternalFetch) {
+                    const specStr = JSON.stringify(spec);
+                    if (/"url"\s*:/.test(specStr)) {
+                        element.innerHTML = '<div style="padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404; font-size: 0.9em;">⚠ This Vega spec references external data URLs. External fetch is disabled in offline mode. Use inline <code>"values"</code> instead.</div>';
+                        return;
+                    }
+                }
+                window.vegaEmbed(element, spec, { renderer: 'svg', actions: false }).catch(err => {
+                    element.innerHTML = `<pre class="qde-error">Vega error: ${this.escapeHtml(err.message)}</pre>`;
+                });
+            } catch (err) {
+                element.innerHTML = `<pre class="qde-error">Vega JSON error: ${this.escapeHtml(err.message)}</pre>`;
+            }
+        };
+
+        if (window.vegaEmbed) {
+            setTimeout(renderChart, 0);
+        } else {
+            if (!window._qde_vega_loading) {
+                // Vega-Embed requires vega + vega-lite loaded first (peer deps)
+                window._qde_vega_loading = (async () => {
+                    try {
+                        await this.loadScript('https://cdn.jsdelivr.net/npm/vega@5');
+                        await this.loadScript('https://cdn.jsdelivr.net/npm/vega-lite@5');
+                        await this.loadScript('https://cdn.jsdelivr.net/npm/vega-embed@6');
+                        return !!window.vegaEmbed;
+                    } catch (err) {
+                        console.warn('Failed to load Vega:', err);
+                        window._qde_vega_loading = null;
+                        return false;
+                    }
+                })();
+            }
+            window._qde_vega_loading.then(loaded => {
+                if (loaded) {
+                    renderChart();
+                } else {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load Vega visualization library</div>';
+                    }
+                }
+            });
+        }
+
+        const container = document.createElement('div');
+        container.id = id;
+        container.className = 'qde-vega-container';
+        container.contentEditable = 'false';
+        container.setAttribute('data-qd-source', code);
+        container.setAttribute('data-qd-fence', '```');
+        container.setAttribute('data-qd-lang', lang);
+        container.style.cssText = 'min-height: 100px; margin: 0.5em 0;';
+        container.textContent = 'Loading visualization...';
+
+        return container.outerHTML;
+    }
+
     /**
      * Render Mermaid diagram
      */
@@ -5169,7 +5431,12 @@ class QuikdownEditor {
             const p = (async () => {
                 try {
                     const tasks = [];
-                    if (lib.script) tasks.push(this.loadScript(lib.script));
+                    // scripts (array) = sequential deps; script (string) = single load
+                    if (lib.scripts) {
+                        for (const s of lib.scripts) await this.loadScript(s);
+                    } else if (lib.script) {
+                        tasks.push(this.loadScript(lib.script));
+                    }
                     if (lib.css)    tasks.push(this.loadCSS(lib.css, 'qde-hljs-light'));
                     if (lib.cssDark) tasks.push(this.loadCSS(lib.cssDark, 'qde-hljs-dark'));
                     await Promise.all(tasks);

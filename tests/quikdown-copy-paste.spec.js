@@ -75,6 +75,54 @@ test.describe('QuikdownEditor Copy-Paste Tests', () => {
         });
     });
 
+    test.describe('ABC Music Copy-Paste', () => {
+        test('should create ABC container for abc fence block', async () => {
+            const abcContent = '```abc\nX:1\nT:Scale\nM:4/4\nK:C\nC D E F | G A B c |\n```';
+
+            await setMarkdown(page, abcContent);
+            await page.waitForTimeout(500);
+
+            const preview = page.locator('.qde-preview');
+            const count = await preview.locator('.qde-abc-container, pre[data-qd-lang="abc"]').count();
+            expect(count).toBeGreaterThan(0);
+        });
+
+        test('should handle ABC with title and key', async () => {
+            const abcContent = '```abc\nX:1\nT:Ode to Joy\nM:4/4\nL:1/4\nK:C\nE E F G | G F E D |\n```';
+
+            await setMarkdown(page, abcContent);
+            await page.waitForTimeout(500);
+
+            const preview = page.locator('.qde-preview');
+            const count = await preview.locator('.qde-abc-container, pre[data-qd-lang="abc"]').count();
+            expect(count).toBeGreaterThan(0);
+        });
+    });
+
+    test.describe('Vega Copy-Paste', () => {
+        test('should create Vega container for vega-lite fence block', async () => {
+            const vegaContent = '```vega-lite\n{"$schema":"https://vega.github.io/schema/vega-lite/v5.json","data":{"values":[{"a":"A","b":10}]},"mark":"bar","encoding":{"x":{"field":"a","type":"nominal"},"y":{"field":"b","type":"quantitative"}}}\n```';
+
+            await setMarkdown(page, vegaContent);
+            await page.waitForTimeout(500);
+
+            const preview = page.locator('.qde-preview');
+            const count = await preview.locator('.qde-vega-container, pre[data-qd-lang="vega-lite"]').count();
+            expect(count).toBeGreaterThan(0);
+        });
+
+        test('should handle vegalite alias', async () => {
+            const vegaContent = '```vegalite\n{"data":{"values":[{"x":1}]},"mark":"point","encoding":{"x":{"field":"x","type":"quantitative"}}}\n```';
+
+            await setMarkdown(page, vegaContent);
+            await page.waitForTimeout(500);
+
+            const preview = page.locator('.qde-preview');
+            const count = await preview.locator('.qde-vega-container, pre[data-qd-lang="vegalite"]').count();
+            expect(count).toBeGreaterThan(0);
+        });
+    });
+
     test.describe('Code Block Copy-Paste', () => {
         test('should render code blocks', async () => {
             const codeContent = '```javascript\nconst hello = "world";\nconsole.log(hello);\n```';
@@ -127,6 +175,19 @@ console.log("Hello");
 \`\`\`csv
 A,B
 1,2
+\`\`\`
+
+## Music
+\`\`\`abc
+X:1
+T:Test
+K:C
+C D E F |
+\`\`\`
+
+## Chart
+\`\`\`vega-lite
+{"data":{"values":[{"a":"X","b":5}]},"mark":"bar","encoding":{"x":{"field":"a","type":"nominal"},"y":{"field":"b","type":"quantitative"}}}
 \`\`\``;
 
             await setMarkdown(page, mixedContent);
@@ -147,9 +208,17 @@ A,B
             const csvFence = await preview.locator('pre[data-qd-lang="csv"]').count();
             expect(tableCount + csvFence).toBeGreaterThan(0);
 
+            // ABC container (or fence fallback)
+            const abcCount = await preview.locator('.qde-abc-container, pre[data-qd-lang="abc"]').count();
+            expect(abcCount).toBeGreaterThan(0);
+
+            // Vega container (or fence fallback)
+            const vegaCount = await preview.locator('.qde-vega-container, pre[data-qd-lang="vega-lite"]').count();
+            expect(vegaCount).toBeGreaterThan(0);
+
             // Headings present
             const h2Count = await preview.locator('h2').count();
-            expect(h2Count).toBe(3);
+            expect(h2Count).toBe(5);
         });
     });
 });

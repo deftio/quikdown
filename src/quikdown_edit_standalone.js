@@ -9,13 +9,15 @@
  *   - highlight.js  (core + 12 common languages)
  *   - mermaid        (diagram rendering)
  *   - DOMPurify      (HTML sanitization for html fences)
- *   - Leaflet        (GeoJSON map rendering)
+ *   - Leaflet        (GeoJSON map rendering + base64 marker icons)
  *   - Three.js       (STL 3D model rendering)
+ *   - ABCJS          (ABC music notation rendering)
+ *   - Vega + Vega-Lite + Vega-Embed (data visualization)
+ *   - MathJax        (tex-svg math rendering)
+ *   - Natural Earth  (110m vector basemap for offline maps)
  *
- * NOT bundled (by design):
- *   - MathJax — architecturally incompatible with bundling (loads fonts,
- *     configs, and sub-modules dynamically). Math/KaTeX fences will show
- *     a "MathJax requires network" message when offline.
+ * Defaults `allowExternalFetch: false` — all rendering is local.
+ * Pass `allowExternalFetch: true` to re-enable OSM tiles and CDN loads.
  *
  * Usage:
  *   <script src="quikdown_edit_standalone.umd.min.js"></script>
@@ -82,13 +84,14 @@ window.DOMPurify = DOMPurify;
 import * as L from 'leaflet';
 window.L = L;
 
-// Fix Leaflet default marker icons (they reference images that aren't bundled)
+// Fix Leaflet default marker icons — use base64 data URIs for offline support
+import { markerIcon, markerIcon2x, markerShadow } from './leaflet_marker_icons.js';
 if (L.Icon && L.Icon.Default) {
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
-        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
+        iconUrl: markerIcon,
+        iconRetinaUrl: markerIcon2x,
+        shadowUrl: markerShadow
     });
 }
 
@@ -96,7 +99,37 @@ if (L.Icon && L.Icon.Default) {
 import * as THREE from 'three';
 window.THREE = THREE;
 
-// ── Import and re-export the editor ────────────────────────────────
+// ABCJS — Music notation rendering
+import ABCJS from 'abcjs';
+window.ABCJS = ABCJS;
 
-import QuikdownEditor from './quikdown_edit.js';
+// Vega / Vega-Lite / Vega-Embed — Data visualization
+import * as vega from 'vega';
+import * as vegaLite from 'vega-lite';
+import vegaEmbed from 'vega-embed';
+window.vega = vega;
+window.vegaLite = vegaLite;
+window.vegaEmbed = vegaEmbed;
+
+// Natural Earth vector basemap — offline country boundaries for GeoJSON maps
+import { worldGeoJSON } from './basemap_world.js';
+window._qde_worldGeoJSON = worldGeoJSON;
+
+// MathJax — tex-svg math rendering (side-effect import, configures window.MathJax)
+import './mathjax_bundle.js';
+
+// ── Import and re-export the editor with offline defaults ──────────
+
+import _QuikdownEditor from './quikdown_edit.js';
+
+/**
+ * Standalone version of QuikdownEditor that defaults allowExternalFetch to false.
+ * All fence renderers are bundled — no CDN requests needed.
+ */
+class QuikdownEditor extends _QuikdownEditor {
+    constructor(container, options = {}) {
+        super(container, { allowExternalFetch: false, ...options });
+    }
+}
+
 export default QuikdownEditor;

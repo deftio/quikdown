@@ -54,6 +54,8 @@ let config = {
 | MathJax           | Yes       |
 | GeoJSON Maps      | Yes       |
 | STL 3D Models     | Yes       |
+| ABC Music         | Yes       |
+| Vega Charts       | Yes       |
 | Bidirectional     | Yes       |
 
 ## Inline SVG Example
@@ -138,6 +140,42 @@ A summation:
 
 ```math
 \sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
+```
+
+## Music Notation (ABC)
+
+```abc
+X:1
+T:Ode to Joy
+M:4/4
+L:1/4
+K:C
+E E F G | G F E D | C C D E | E D/2D/2 D2 |
+```
+
+## Data Visualization (Vega-Lite)
+
+```vega-lite
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Quikdown feature sizes",
+  "data": {
+    "values": [
+      {"module": "Core", "kb": 9},
+      {"module": "Bidir", "kb": 14},
+      {"module": "Editor", "kb": 72},
+      {"module": "AST", "kb": 6}
+    ]
+  },
+  "mark": "bar",
+  "encoding": {
+    "x": {"field": "module", "type": "nominal", "title": "Module"},
+    "y": {"field": "kb", "type": "quantitative", "title": "Size (KB)"},
+    "color": {"field": "module", "type": "nominal", "legend": null}
+  },
+  "width": 300,
+  "height": 200
+}
 ```
 
 ## GeoJSON Map

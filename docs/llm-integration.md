@@ -128,13 +128,13 @@ const result = mcp.callTool('markdown_to_html', { markdown: '# Hello' });
 
 | Module | Runtime deps | Typical size |
 |--------|----------------|--------------|
-| `quikdown` | Zero | ~10 KB min |
-| `quikdown/bd` | Zero | ~15 KB min |
-| `quikdown/edit` | Lazy CDN for fences | ~84 KB + on-demand libs |
-| `quikdown_edit_standalone` | Bundled fences | ~3.8 MB min |
-| `quikdown/mcp` | quikdown + quikdown_bd | ~20 KB (JSON-RPC server) |
+| `quikdown` | Zero | ~14.9 KB min |
+| `quikdown/bd` | Zero | ~19.7 KB min |
+| `quikdown/edit` | Lazy CDN for fences | ~98 KB + on-demand libs |
+| `quikdown_edit_standalone` | Bundled fences | ~7.7 MB min (~1.0 MB gz) |
+| `quikdown/mcp` | quikdown + quikdown_bd | ~26 KB (JSON-RPC server) |
 
-For **air-gapped** agent UIs, use the [standalone editor](standalone-editor.md) — highlight.js, Mermaid, DOMPurify, Leaflet, Three.js bundled; MathJax still needs network.
+For **air-gapped** agent UIs, use the [standalone editor](standalone-editor.md) — highlight.js, Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax bundled.
 
 ## Framework wrappers
 

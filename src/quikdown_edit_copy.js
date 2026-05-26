@@ -724,6 +724,97 @@ export async function getRenderedContent(previewPanel, options = {}) {
             }
         }
         
+        // 2b. Process ABC music notation — convert SVG to PNG
+        // ABCJS renders responsive SVGs (width="100%", no height) whose
+        // clientHeight reflects the container, not the content. Use the
+        // viewBox aspect ratio to derive the correct image height.
+        const abcContainers = clone.querySelectorAll('.qde-abc-container');
+        for (const container of abcContainers) {
+            const svg = container.querySelector('svg');
+            if (svg) {
+                try {
+                    const pngBlob = await svgToPng(svg);
+                    const dataUrl = await new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(pngBlob);
+                    });
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+
+                    // Derive dimensions from viewBox (accurate) rather than
+                    // clientWidth/Height (stretched by container)
+                    const vb = svg.viewBox && svg.viewBox.baseVal;
+                    let imgWidth, imgHeight;
+                    if (vb && vb.width && vb.height) {
+                        const aspect = vb.width / vb.height;
+                        imgWidth = svg.clientWidth || vb.width;
+                        imgHeight = Math.round(imgWidth / aspect);
+                    } else {
+                        imgWidth = svg.clientWidth || parseFloat(svg.getAttribute('width')) || 400;
+                        imgHeight = svg.clientHeight || parseFloat(svg.getAttribute('height')) || 200;
+                    }
+
+                    img.width = imgWidth;
+                    img.height = imgHeight;
+                    img.setAttribute('width', imgWidth.toString());
+                    img.setAttribute('height', imgHeight.toString());
+                    img.style.width = imgWidth + 'px';
+                    img.style.height = imgHeight + 'px';
+                    img.style.maxWidth = 'none';
+                    img.style.maxHeight = 'none';
+                    img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
+                    img.alt = 'Music Notation';
+                    container.parentNode.replaceChild(img, container);
+                } catch (err) {
+                    console.warn('Failed to convert ABC notation:', err);
+                }
+            } else {
+                const placeholder = document.createElement('div');
+                placeholder.style.cssText = 'padding: 12px; background-color: #f0f0f0; border: 1px solid #ccc; text-align: center; margin: 0.5em 0; border-radius: 4px;';
+                placeholder.textContent = '[Music Notation - Interactive content not available in copy]';
+                container.parentNode.replaceChild(placeholder, container);
+            }
+        }
+
+        // 2c. Process Vega charts — convert SVG to PNG
+        const vegaContainers = clone.querySelectorAll('.qde-vega-container');
+        for (const container of vegaContainers) {
+            const svg = container.querySelector('svg');
+            if (svg) {
+                try {
+                    const pngBlob = await svgToPng(svg);
+                    const dataUrl = await new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(pngBlob);
+                    });
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+                    const imgWidth = svg.clientWidth || parseFloat(svg.getAttribute('width')) || 400;
+                    const imgHeight = svg.clientHeight || parseFloat(svg.getAttribute('height')) || 300;
+                    img.width = imgWidth;
+                    img.height = imgHeight;
+                    img.setAttribute('width', imgWidth.toString());
+                    img.setAttribute('height', imgHeight.toString());
+                    img.style.width = imgWidth + 'px';
+                    img.style.height = imgHeight + 'px';
+                    img.style.maxWidth = 'none';
+                    img.style.maxHeight = 'none';
+                    img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
+                    img.alt = 'Data Visualization';
+                    container.parentNode.replaceChild(img, container);
+                } catch (err) {
+                    console.warn('Failed to convert Vega chart:', err);
+                }
+            } else {
+                const placeholder = document.createElement('div');
+                placeholder.style.cssText = 'padding: 12px; background-color: #f0f0f0; border: 1px solid #ccc; text-align: center; margin: 0.5em 0; border-radius: 4px;';
+                placeholder.textContent = '[Vega Chart - Interactive content not available in copy]';
+                container.parentNode.replaceChild(placeholder, container);
+            }
+        }
+
         // 3. Process Chart.js charts - convert canvas to image
         const chartContainers = clone.querySelectorAll('.qde-chart-container');
         for (const container of chartContainers) {

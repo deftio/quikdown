@@ -15,9 +15,9 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 
-/** Minified bundles should stay in this band (~3.8 MB today). */
-const MIN_MINIFIED_BYTES = 3_000_000;
-const MAX_MINIFIED_BYTES = 5_500_000;
+/** Minified bundles should stay in this band (~8 MB with all fence libs). */
+const MIN_MINIFIED_BYTES = 6_000_000;
+const MAX_MINIFIED_BYTES = 9_500_000;
 
 const ARTIFACTS = [
   'dist/quikdown_edit_standalone.esm.js',
