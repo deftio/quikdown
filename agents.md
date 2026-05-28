@@ -192,6 +192,8 @@ new QuikdownEditor('#e', {
 | `stl` | Three.js | Yes |
 | `abc`, `music` | ABCJS | Yes |
 | `vega`, `vega-lite`, `vegalite` | Vega + Vega-Lite + Vega-Embed | Yes |
+
+**Authoring:** See `docs/fences.md` for verbose per-fence examples (ABC notation, Vega-Lite specs, GeoJSON, etc.).
 | `csv`, `psv`, `tsv` | Built-in | N/A |
 | `svg` | Built-in | N/A |
 | `html` | DOMPurify | Yes |
@@ -364,6 +366,7 @@ Detailed docs in `docs/`:
 | `docs/security.md` | Threat model, XSS prevention, CSP, deployment checklist |
 | `docs/quikdown-bidirectional.md` | HTML ↔ markdown roundtrip |
 | `docs/quikdown-editor.md` | Full editor docs: setup, API, headless, plugins, styling |
+| `docs/fences.md` | **Fence authoring guide** — ABC, Vega-Lite, Mermaid, math, GeoJSON, etc. |
 | `docs/standalone-editor.md` | Standalone/offline editor: bundled libs, build, usage |
 | `docs/llm-integration.md` | LLM/agent patterns: stream, tool editor, quikchat |
 | `docs/quikdown-ast.md` | AST, JSON, YAML structured output |

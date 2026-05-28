@@ -418,6 +418,45 @@ The editor has built-in handlers for common fence types. Libraries are lazy-load
 | `html` | Sanitized HTML rendering | DOMPurify | Yes |
 | `json`, `json5` | Syntax-highlighted JSON | Built-in/Highlight.js | Optional |
 
+**Full authoring guide:** [docs/fences.md](docs/fences.md) — examples and tips for every built-in fence type.
+
+### ABC music (`abc`, `music`)
+
+Renders [ABC notation](https://abcnotation.com/) as sheet music via ABCJS. Use header fields then body lines:
+
+````markdown
+```abc
+X:1
+T:Example
+M:4/4
+L:1/8
+K:G
+|: G2 BG dG BG | A2 FA dA FA :|
+```
+````
+
+### Vega-Lite charts (`vega-lite`, `vegalite`, `vega`)
+
+Fence body must be **JSON**. Prefer inline `"values"` (required offline / standalone):
+
+````markdown
+```vega-lite
+{
+  "data": { "values": [
+    { "x": "A", "y": 28 },
+    { "x": "B", "y": 55 }
+  ]},
+  "mark": "bar",
+  "encoding": {
+    "x": { "field": "x", "type": "nominal" },
+    "y": { "field": "y", "type": "quantitative" }
+  }
+}
+```
+````
+
+Offline standalone rejects specs with external `"url": "…"` data sources — use `"values"` arrays. See [docs/fences.md](docs/fences.md) for full Vega/Vega-Lite examples.
+
 ### Editor: preloadFences Option
 
 Control when fence libraries are loaded:
@@ -564,6 +603,7 @@ Detailed documentation is available in the `docs/` directory:
 - **docs/security.md** - Security model, XSS prevention, CSP recommendations
 - **docs/quikdown-bidirectional.md** - HTML-to-markdown roundtrip conversion
 - **docs/quikdown-editor.md** - Full editor documentation with advanced usage
+- **docs/fences.md** - Fence authoring guide (ABC, Vega-Lite, Mermaid, math, GeoJSON, …)
 - **docs/standalone-editor.md** - Standalone/offline editor guide
 - **docs/llm-integration.md** - LLM/agent UI patterns (stream, tool editor, quikchat)
 - **docs/release-process.md** - Release workflow, standalone gates, air-gap zip

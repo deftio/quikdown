@@ -31,7 +31,8 @@ const banner = `/**
  * @copyright DeftIO 2025
  *
  * Bundled libraries: highlight.js, mermaid, DOMPurify, Leaflet, Three.js,
- *   ABCJS, Vega, Vega-Lite, Vega-Embed, MathJax (tex-svg), Natural Earth 10m
+ *   ABCJS, Vega, Vega-Lite, Vega-Embed, MathJax (tex-svg)
+ * Offline basemap: dist/basemap_world_10m.topojson (loaded at runtime, not inlined)
  */`;
 
 const replaceVersion = () => ({

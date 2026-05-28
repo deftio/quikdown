@@ -128,7 +128,7 @@
     "serve": "npx bwcli serve . -p 6811",
     "buildSite": "node ./tools/buildSite.js",
     "build:basemap": "node tools/buildBasemap.cjs",
-    "build:standalone": "npm run build:basemap && rollup -c rollup.config.standalone.js",
+    "build:standalone": "npm run build:basemap && NODE_OPTIONS='--max-old-space-size=8192' rollup -c rollup.config.standalone.js",
     "build:all": "npm run build && npm run build:standalone",
     "build:css": "node tools/generateThemeCSS.js",
     "minify:css": "node tools/minifyThemeCSS.js",

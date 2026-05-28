@@ -1628,9 +1628,25 @@ class QuikdownEditor {
         };
         
         // Check if Leaflet is already loaded
+        const runRender = () => {
+            const needBasemap = !this.options.allowExternalFetch
+                && !window._qde_worldGeoJSON
+                && typeof window._qde_ensureBasemap === 'function';
+            if (needBasemap) {
+                window._qde_ensureBasemap().then(() => renderMap()).catch(err => {
+                    const el = document.getElementById(mapId + '-container');
+                    if (el) {
+                        el.innerHTML = `<pre class="qde-error">Basemap load failed: ${this.escapeHtml(err.message)}</pre>`;
+                    }
+                });
+            } else {
+                renderMap();
+            }
+        };
+
         if (window.L) {
             // Render after DOM update
-            setTimeout(renderMap, 0);
+            setTimeout(runRender, 0);
         } else {
             // Lazy load Leaflet only if not already loading
             if (!window._qde_leaflet_loading) {
@@ -1649,7 +1665,7 @@ class QuikdownEditor {
             
             window._qde_leaflet_loading.then(loaded => {
                 if (loaded) {
-                    renderMap();
+                    runRender();
                 } else {
                     const element = document.getElementById(mapId + '-container');
                     if (element) {

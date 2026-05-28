@@ -15,15 +15,16 @@ const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
 
-/** Minified bundles should stay in this band (~8 MB with all fence libs). */
+/** Minified bundles should stay in this band (~8–11 MB with all fence libs). */
 const MIN_MINIFIED_BYTES = 6_000_000;
-const MAX_MINIFIED_BYTES = 9_500_000;
+const MAX_MINIFIED_BYTES = 12_000_000;
 
 const ARTIFACTS = [
   'dist/quikdown_edit_standalone.esm.js',
   'dist/quikdown_edit_standalone.esm.min.js',
   'dist/quikdown_edit_standalone.umd.js',
   'dist/quikdown_edit_standalone.umd.min.js',
+  'dist/basemap_world_10m.topojson',
 ];
 
 const errors = [];

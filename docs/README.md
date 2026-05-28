@@ -10,6 +10,7 @@ Complete documentation for the quikdown markdown parser, editor, and companion l
 | **[Examples hub](https://deftio.github.io/quikdown/pages/examples/)** | Interactive demos (parser, editor, LLM, offline) |
 | **[LLM integration](llm-integration.md)** | Streaming, agent tools, quikchat — agent UI patterns |
 | **[Editor](quikdown-editor.md)** | QuikdownEditor API, headless mode, fences, themes |
+| **[Fence authoring](fences.md)** | ABC, Vega-Lite, Mermaid, math, GeoJSON, and all built-in fences |
 | **[Standalone editor](standalone-editor.md)** | Offline / air-gapped bundle (~7.7 MB / ~1.0 MB gzipped) |
 
 ## Core reference
@@ -18,6 +19,7 @@ Complete documentation for the quikdown markdown parser, editor, and companion l
 - **[Architecture](architecture.md)** — Four-phase parser pipeline
 - **[Security Guide](security.md)** — XSS model, CSP, deployment checklist
 - **[Plugin Development](plugin-guide.md)** — Custom fence plugins
+- **[Fence authoring](fences.md)** — Built-in fence types: ABC, Vega-Lite, Mermaid, math, maps, …
 - **[Bidirectional Conversion](quikdown-bidirectional.md)** — HTML ↔ Markdown round-trip
 - **[AST Libraries](quikdown-ast.md)** — AST, JSON, YAML structured output
 

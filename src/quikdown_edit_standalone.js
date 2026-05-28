@@ -14,7 +14,7 @@
  *   - ABCJS          (ABC music notation rendering)
  *   - Vega + Vega-Lite + Vega-Embed (data visualization)
  *   - MathJax        (tex-svg math rendering)
- *   - Natural Earth  (110m vector basemap for offline maps)
+ *   - Natural Earth  (110m vector basemap — separate dist/basemap_world_10m.topojson)
  *
  * Defaults `allowExternalFetch: false` — all rendering is local.
  * Pass `allowExternalFetch: true` to re-enable OSM tiles and CDN loads.
@@ -112,9 +112,14 @@ window.vega = vega;
 window.vegaLite = vegaLite;
 window.vegaEmbed = vegaEmbed;
 
-// Natural Earth vector basemap — offline country boundaries for GeoJSON maps
-import { worldGeoJSON } from './basemap_world.js';
-window._qde_worldGeoJSON = worldGeoJSON;
+// Offline basemap — loaded from dist/basemap_world_10m.topojson (not bundled;
+// keeps Terser from OOM on the standalone minify step).
+import { loadWorldBasemap } from './basemap_loader.js';
+
+/** Default basemap URL: sibling of this bundle file in dist/. */
+const DEFAULT_BASEMAP_URL = new URL('basemap_world_10m.topojson', import.meta.url).href;
+
+window._qde_ensureBasemap = (url) => loadWorldBasemap(url || DEFAULT_BASEMAP_URL);
 
 // MathJax — tex-svg math rendering (side-effect import, configures window.MathJax)
 import './mathjax_bundle.js';
@@ -130,6 +135,10 @@ import _QuikdownEditor from './quikdown_edit.js';
 class QuikdownEditor extends _QuikdownEditor {
     constructor(container, options = {}) {
         super(container, { allowExternalFetch: false, ...options });
+        // Preload basemap sibling asset (non-blocking)
+        if (typeof window !== 'undefined' && window._qde_ensureBasemap) {
+            window._qde_ensureBasemap().catch(() => {});
+        }
     }
 }
 
