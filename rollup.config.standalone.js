@@ -31,7 +31,7 @@ const banner = `/**
  * @copyright DeftIO 2025
  *
  * Bundled libraries: highlight.js, mermaid, DOMPurify, Leaflet, Three.js,
- *   ABCJS, Vega, Vega-Lite, Vega-Embed, MathJax (tex-svg), Natural Earth 110m
+ *   ABCJS, Vega, Vega-Lite, Vega-Embed, MathJax (tex-svg), Natural Earth 10m
  */`;
 
 const replaceVersion = () => ({

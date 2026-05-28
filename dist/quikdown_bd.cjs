@@ -792,6 +792,10 @@ function quikdown(markdown, options = {}) {
     html = html.replace(/%%T(\d+)%%/g, (_, i) => savedTags[i]);
 
     // ── Step 5: Line breaks + paragraph wrapping ──
+
+    // Backslash at end of line → hard line break (CommonMark)
+    html = html.replace(/\\\n/g, `<br${getAttr('br')}>`);
+
     if (lazy_linefeeds) {
         // Lazy linefeeds mode: every single \n becomes <br> EXCEPT:
         //   • Double newlines → paragraph break

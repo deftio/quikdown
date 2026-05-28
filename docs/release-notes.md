@@ -4,7 +4,7 @@
 
 ### Parser robustness
 
-Six fixes that improve real-world document rendering and bring quikdown closer to CommonMark and GFM behavior.
+Seven fixes that improve real-world document rendering and bring quikdown closer to CommonMark and GFM behavior.
 
 ### Inline code scoped to single lines
 
@@ -21,6 +21,13 @@ Six fixes that improve real-world document rendering and bring quikdown closer t
   - Phase 1.25: All other escaped punctuation extracted after inline code extraction (so backslash sequences inside code spans are preserved verbatim)
 - Non-escapable characters (e.g. `\a`, `\n`) pass through unchanged with the backslash intact.
 - Escapes inside fenced code blocks and inline code spans are not processed (content is already protected by `\xA7CB`/`\xA7IC` placeholders).
+
+### Backslash hard line breaks
+
+- **New feature**: A trailing backslash at the end of a line (`\` immediately before `\n`) now produces a `<br>` hard line break, matching CommonMark behavior. Previously the backslash was left as literal text.
+- Works in both standard and `lazy_linefeeds` modes.
+- Complements the existing two-trailing-spaces line break syntax (`  \n` → `<br>`).
+- Escaped backslashes (`\\`) are unaffected — they are extracted in Phase 1.25 before this rule runs, so `\\` at end of line renders a literal backslash, not a line break.
 
 ### Autolink trailing punctuation stripping
 
@@ -62,7 +69,7 @@ Six fixes that improve real-world document rendering and bring quikdown closer t
 
 ### Files modified
 
-- `src/quikdown.js` — inline code regex fix, backslash escape support, `stripTrailingPunctuation`, autolink fix, `isLazyContinuationBreaker`, blockquote lazy continuation, table `colCount` normalization, GFM alert detection + styles + dark overrides
+- `src/quikdown.js` — inline code regex fix, backslash escape support, backslash hard line breaks, `stripTrailingPunctuation`, autolink fix, `isLazyContinuationBreaker`, blockquote lazy continuation, table `colCount` normalization, GFM alert detection + styles + dark overrides
 - `src/quikdown_ast.js` — inline code regex fix, `stripTrailingPunctuationAst`, autolink fix, `isAstLazyContinuationBreaker`, blockquote lazy continuation, table normalization, alert node type
 - `src/quikdown_ast_html.js` — table `renderTable` normalization, `case 'alert'` rendering, alert styles
 - `tests/quikdown_parser_gaps.test.js` — new tests for all fixes
