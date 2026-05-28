@@ -1689,7 +1689,11 @@ describe('lazyLoadLibrary callback coverage', () => {
         };
         const mockLayer = {
             addTo: jest.fn(),
-            getBounds: jest.fn().mockReturnValue({ isValid: () => true }),
+            getBounds: jest.fn().mockReturnValue({
+                isValid: () => true,
+                getSouthWest: () => ({ lat: 0, lng: 0 }),
+                getNorthEast: () => ({ lat: 10, lng: 10 }),
+            }),
         };
 
         const origLazy = editor.lazyLoadLibrary.bind(editor);
@@ -1981,7 +1985,11 @@ describe('GeoJSON tile load event (line 4552)', () => {
         };
         const mockLayer = {
             addTo: jest.fn(),
-            getBounds: jest.fn().mockReturnValue({ isValid: () => true }),
+            getBounds: jest.fn().mockReturnValue({
+                isValid: () => true,
+                getSouthWest: () => ({ lat: 0, lng: 0 }),
+                getNorthEast: () => ({ lat: 10, lng: 10 }),
+            }),
         };
         const mockMap = {
             fitBounds: jest.fn(),

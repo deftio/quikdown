@@ -6,30 +6,15 @@
  *
  * This file is imported for its side effects — it populates window.MathJax
  * with a fully-functional tex-svg renderer.
+ *
+ * NOTE: The config lives in mathjax_config.js (a separate module) because
+ * ES `import` statements are hoisted above module-body code.  By importing
+ * the config module, Rollup inlines its side-effects BEFORE the tex-svg
+ * IIFE, ensuring window.MathJax is set when tex-svg initializes.
  */
 
-// Pre-configure MathJax before the component initializes
-if (typeof window !== 'undefined' && !window.MathJax) {
-    window.MathJax = {
-        loader: { load: ['input/tex', 'output/svg'] },
-        tex: {
-            packages: { '[+]': ['ams'] },
-            inlineMath: [['$', '$'], ['\\(', '\\)']],
-            displayMath: [['$$', '$$'], ['\\[', '\\]']],
-            processEscapes: true,
-            processEnvironments: true
-        },
-        options: {
-            renderActions: { addMenu: [] },
-            ignoreHtmlClass: 'tex2jax_ignore',
-            processHtmlClass: 'tex2jax_process'
-        },
-        svg: {
-            fontCache: 'none'  // self-contained SVGs (required for copy-rendered)
-        },
-        startup: { typeset: false }
-    };
-}
+// 1. Pre-configure — must run before tex-svg.js
+import './mathjax_config.js';
 
-// Import the pre-built tex-svg component (side-effect: configures MathJax on window)
+// 2. Import the pre-built tex-svg component (side-effect: initializes MathJax)
 import 'mathjax-full/es5/tex-svg.js';

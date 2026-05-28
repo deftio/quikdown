@@ -4607,24 +4607,37 @@ describe('QuikdownEditor Coverage', () => {
     });
 
     // ================================================================
-    // Heading Slugs & Anchors (requires heading_ids option)
+    // Heading Slugs & Anchors (bundled parser in dist/quikdown_edit.esm.js)
     // ================================================================
-    describe('Heading Slugs via editor', () => {
-        beforeEach(async () => {
+    describe('Heading Slugs via bundled parser', () => {
+        test('window.quikdown heading_ids generates unique slugs', () => {
+            expect(window.quikdown).toBeDefined();
+            const html = window.quikdown(
+                '# Hello World\n\n## Test Section\n\n# Hello World',
+                { heading_ids: true }
+            );
+            expect(html).toMatch(/id="hello-world"/);
+            expect(html).toMatch(/id="hello-world-1"/);
+            expect(html).toMatch(/id="test-section"/);
+        });
+
+        test('window.quikdown heading_ids dedupes empty slug to section', () => {
+            const html = window.quikdown('# ---\n\n# ---', { heading_ids: true });
+            expect(html).toMatch(/id="section"/);
+            expect(html).toMatch(/id="section-1"/);
+        });
+
+        test('window.quikdown_bd.configure passes heading_ids through inner parser', () => {
+            expect(window.quikdown_bd).toBeDefined();
+            const parse = window.quikdown_bd.configure({ heading_ids: true });
+            const html = parse('## Configured Section');
+            expect(html).toContain('id="configured-section"');
+            expect(html).toContain('data-qd');
+        });
+
+        test('editor renders multiple heading levels without heading_ids', async () => {
             editor = new QuikdownEditor('#test-editor');
             await editor.initPromise;
-        });
-
-        test('headings get id attributes when heading_ids is enabled', () => {
-            // Use updateFromMarkdown with heading_ids parser option
-            const html = editor.updateFromMarkdown('# Hello World\n\n## Test Section', { heading_ids: true });
-            expect(editor.html).toContain('<h1');
-            expect(editor.html).toContain('<h2');
-            expect(editor.html).toContain('Hello World');
-            expect(editor.html).toContain('Test Section');
-        });
-
-        test('renders multiple heading levels', () => {
             editor.updateFromMarkdown('# H1\n\n## H2\n\n### H3\n\n#### H4\n\n##### H5\n\n###### H6');
             expect(editor.html).toContain('<h1');
             expect(editor.html).toContain('<h2');
@@ -4706,25 +4719,20 @@ describe('QuikdownEditor Coverage', () => {
     // ================================================================
     // emitStyles dark theme
     // ================================================================
-    describe('emitStyles dark theme', () => {
+    describe('emitStyles via bundled quikdown', () => {
         test('generates CSS with dark theme overrides', () => {
-            const QuikdownModule = require('../dist/quikdown_edit.esm.js').default || require('../dist/quikdown_edit.esm.js');
-            // The editor exports the underlying parser's emitStyles via the module
-            if (QuikdownModule.emitStyles) {
-                const css = QuikdownModule.emitStyles('quikdown-', 'dark');
-                expect(css).toContain('quikdown-');
-                expect(css).toContain('#2a2a2a'); // dark background
-                expect(css).toContain('#e0e0e0'); // dark text color
-            }
+            expect(window.quikdown?.emitStyles).toBeDefined();
+            const css = window.quikdown.emitStyles('quikdown-', 'dark');
+            expect(css).toContain('quikdown-');
+            expect(css).toContain('#2a2a2a');
+            expect(css).toContain('#e0e0e0');
         });
 
-        test('emitStyles light theme does not contain dark overrides', () => {
-            const QuikdownModule = require('../dist/quikdown_edit.esm.js').default || require('../dist/quikdown_edit.esm.js');
-            if (QuikdownModule.emitStyles) {
-                const css = QuikdownModule.emitStyles('quikdown-', 'light');
-                expect(css).toContain('quikdown-');
-                expect(css).not.toContain('#2a2a2a');
-            }
+        test('emitStyles light theme applies light text color', () => {
+            const css = window.quikdown.emitStyles('quikdown-', 'light');
+            expect(css).toContain('quikdown-');
+            expect(css).toContain('#333');
+            expect(css).not.toContain('#2a2a2a');
         });
     });
 

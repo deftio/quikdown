@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quikdown Standalone Editor — Offline Bundle Test</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; }
+        h1 { margin: 0 0 0.25em; font-size: 1.25rem; }
+        .subtitle { color: #555; font-size: 0.85rem; margin: 0 0 1em; }
+        #editor { height: calc(100vh - 80px); }
+    </style>
+</head>
+<body>
+    <h1>Quikdown Standalone Editor <span id="version" style="font-size: 0.6em; color: #888; font-weight: normal;"></span></h1>
+    <p class="subtitle">Offline bundle — no CDN requests. All fence renderers bundled.</p>
+    <div id="editor"></div>
+
+    <script type="module">
+        import QuikdownEditor from '../dist/quikdown_edit_standalone.esm.min.js';
+
+        const editor = new QuikdownEditor('#editor', {
+            mode: 'split',
+            showRemoveHR: true,
+            showLazyLinefeeds: true,
+            showUndoRedo: true
+        });
+
+        window.editor = editor;
+        document.getElementById('version').textContent = `v${QuikdownEditor.version || editor.version || ''}`;
+
+        const resp = await fetch('demo_content.md');
+        const md = await resp.text();
+        editor.setMarkdown(md);
+    </script>
+</body>
+</html>

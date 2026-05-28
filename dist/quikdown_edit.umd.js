@@ -4420,15 +4420,7 @@
                     this.previewPanel.innerHTML = this._html;
 
                     // Process all math elements with MathJax if loaded (like squibview)
-                    if (window.MathJax && window.MathJax.typesetPromise) {
-                        const mathElements = this.previewPanel.querySelectorAll('.math-display');
-                        if (mathElements.length > 0) {
-                            window.MathJax.typesetPromise(Array.from(mathElements))
-                                .catch(_err => {
-                                    console.warn('MathJax batch processing failed:', _err);
-                                });
-                        }
-                    }
+                    this._typesetMath(this.previewPanel);
                 }
             }
             
@@ -4800,6 +4792,48 @@
         }
         
         /**
+         * Typeset math elements, handling both ready and not-yet-ready MathJax.
+         * In the standalone bundle MathJax may be imported but its async startup
+         * not yet complete, so typesetPromise is not available immediately.
+         */
+        _typesetMath(root) {
+            const mathElements = (root || this.previewPanel || document).querySelectorAll('.math-display');
+            if (mathElements.length === 0) return;
+            const elements = Array.from(mathElements);
+
+            if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise(elements).catch(() => {});
+            } else if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+                // Standalone bundle: MathJax imported but async startup not finished
+                window.MathJax.startup.promise.then(() => {
+                    if (window.MathJax.typesetPromise) {
+                        window.MathJax.typesetPromise(elements).catch(() => {});
+                    }
+                }).catch(() => {});
+            } else if (window.MathJax) {
+                // MathJax config exists but startup not yet initialized — poll
+                const poll = (n) => {
+                    if (n <= 0) return;
+                    setTimeout(() => {
+                        if (!window.MathJax) return;
+                        if (window.MathJax.typesetPromise) {
+                            window.MathJax.typesetPromise(elements).catch(() => {});
+                        } else if (window.MathJax.startup && window.MathJax.startup.promise) {
+                            window.MathJax.startup.promise.then(() => {
+                                if (window.MathJax && window.MathJax.typesetPromise) {
+                                    window.MathJax.typesetPromise(elements).catch(() => {});
+                                }
+                            }).catch(() => {});
+                        } else {
+                            poll(n - 1);
+                        }
+                    }, 100);
+                };
+                poll(50);
+            }
+        }
+
+        /**
          * Ensures MathJax is loaded (but doesn't process elements)
          */
         ensureMathJaxLoaded() {
@@ -4834,16 +4868,9 @@
                 script.async = true;
                 script.onload = () => {
                     window.mathJaxLoading = false;
-                    
+
                     // Process any existing math elements (like squibview)
-                    if (window.MathJax && window.MathJax.typesetPromise) {
-                        const mathElements = (this.previewPanel || document).querySelectorAll('.math-display');
-                        if (mathElements.length > 0) {
-                            window.MathJax.typesetPromise(Array.from(mathElements)).catch(err => {
-                                console.warn('Initial MathJax processing failed:', err);
-                            });
-                        }
-                    }
+                    this._typesetMath(this.previewPanel || document);
                 };
                 script.onerror = () => {
                     window.mathJaxLoading = false;
@@ -5007,8 +5034,16 @@
                     geoJsonLayer.addTo(map);
                     
                     // Fit bounds if valid
-                    if (geoJsonLayer.getBounds().isValid()) {
-                        map.fitBounds(geoJsonLayer.getBounds());
+                    const bounds = geoJsonLayer.getBounds();
+                    if (bounds.isValid()) {
+                        const sw = bounds.getSouthWest();
+                        const ne = bounds.getNorthEast();
+                        if (sw.lat === ne.lat && sw.lng === ne.lng) {
+                            // Single point — setView instead of fitBounds to avoid NaN
+                            map.setView([sw.lat, sw.lng], 13);
+                        } else {
+                            map.fitBounds(bounds);
+                        }
                     } else {
                         map.setView([0, 0], 2);
                     }
@@ -5648,13 +5683,7 @@
             // destroy MathJax-typeset SVG output with raw pre-typeset HTML.
             if (mode !== 'source' && previousMode === 'source' && this._html) {
                 this.previewPanel.innerHTML = this._html;
-                if (typeof window !== 'undefined' && window.MathJax && window.MathJax.typesetPromise) {
-                    const mathElements = this.previewPanel.querySelectorAll('.math-display');
-                    if (mathElements.length > 0) {
-                        window.MathJax.typesetPromise(Array.from(mathElements))
-                            .catch(() => {});
-                    }
-                }
+                this._typesetMath(this.previewPanel);
             }
 
             // Trigger mode change event
