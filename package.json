@@ -271,6 +271,7 @@
     "sane-topojson": "^4.0.0",
     "three": "^0.184.0",
     "topojson-client": "^3.1.0",
+    "topojson-server": "^3.0.1",
     "typescript": "^6.0.3",
     "vega": "^5.30.0",
     "vega-embed": "^6.26.0",

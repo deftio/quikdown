@@ -174,12 +174,12 @@ d &= e + f
 ```geojson
 {
   "type": "Point",
-  "coordinates": [-122.4194, 37.7749]
+  "coordinates": [16.3738, 48.2082]
 }
 ```
 ````
 
-### Example — FeatureCollection
+### Example — FeatureCollection (Central European capitals)
 
 ````markdown
 ```geojson
@@ -188,11 +188,33 @@ d &= e + f
   "features": [
     {
       "type": "Feature",
-      "properties": { "name": "San Francisco" },
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-122.4194, 37.7749]
-      }
+      "properties": { "name": "Vienna" },
+      "geometry": { "type": "Point", "coordinates": [16.3738, 48.2082] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Prague" },
+      "geometry": { "type": "Point", "coordinates": [14.4378, 50.0755] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Budapest" },
+      "geometry": { "type": "Point", "coordinates": [19.0402, 47.4979] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Bratislava" },
+      "geometry": { "type": "Point", "coordinates": [17.1077, 48.1486] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Ljubljana" },
+      "geometry": { "type": "Point", "coordinates": [14.5058, 46.0569] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Zagreb" },
+      "geometry": { "type": "Point", "coordinates": [15.9819, 45.8150] }
     }
   ]
 }
@@ -203,8 +225,8 @@ d &= e + f
 
 - Must be **valid JSON**. Use `"coordinates": [longitude, latitude]` (GeoJSON order).
 - **Regular editor:** basemap uses OpenStreetMap tiles (requires network).
-- **Standalone / offline:** uses bundled country vector basemap (`basemap_world_10m.topojson` next to the standalone JS). No tile downloads.
-- Single-point features zoom to level 13; lines/polygons use `fitBounds`.
+- **Standalone / offline:** loads `basemap_countries_110m.topojson` (country fills) and `basemap_admin1_lines.topojson` (global state/province borders) from the same directory as the standalone JS bundle. No tile downloads. Combined with the minified JS, the offline core stays ≤ 9 MB.
+- Single-point features zoom to level 8; multi-point collections use `fitBounds` with padding (max zoom 6).
 - Copy-rendered tries to capture the map canvas for paste into rich-text apps.
 
 ---

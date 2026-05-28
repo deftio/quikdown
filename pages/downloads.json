@@ -152,63 +152,63 @@
   },
   {
     "file": "quikdown_edit.esm.js",
-    "size": 267021,
+    "size": 269622,
     "format": "ESM",
     "minified": false
   },
   {
     "file": "quikdown_edit.esm.min.js",
-    "size": 100529,
+    "size": 101669,
     "format": "ESM",
     "minified": true,
-    "sri": "sha384-QciLt7gwfHi8SMYpEjFVEXK2jBTrrbh5BITyoeU0gVVGhYUtfTmrY4EWuwO9blXy",
+    "sri": "sha384-69fd8w5Vjk2KdeaGv1pO1Rv9tE+4Xirm5OV22jQ33jLin50XmcJL0KLNzaq3ZqQ6",
     "gzFile": "quikdown_edit.esm.min.js.gz",
-    "gzSize": 26351
+    "gzSize": 26673
   },
   {
     "file": "quikdown_edit.umd.js",
-    "size": 289127,
+    "size": 291920,
     "format": "UMD",
     "minified": false
   },
   {
     "file": "quikdown_edit.umd.min.js",
-    "size": 100769,
+    "size": 101909,
     "format": "UMD",
     "minified": true,
-    "sri": "sha384-Bnn44ktkcRlt0YpgO8fkAYcp+F8IFbG3dOo2ayNKoIj+HW2MOPeHQOgP04j9dqyg",
+    "sri": "sha384-YWh0K8N72bGHk7UbwjJ5mIkNEkfHcA7f0/Y/lo5YrNXcxxOrqNva4jlHLjuSrsBY",
     "gzFile": "quikdown_edit.umd.min.js.gz",
-    "gzSize": 26425
+    "gzSize": 26748
   },
   {
     "file": "quikdown_edit_standalone.esm.js",
-    "size": 15157483,
+    "size": 14816395,
     "format": "ESM",
     "minified": false
   },
   {
     "file": "quikdown_edit_standalone.esm.min.js",
-    "size": 8079029,
+    "size": 7947592,
     "format": "ESM",
     "minified": true,
-    "sri": "sha384-NL5OkADZi64Of89+KTZle+D/5AbkhBTYtrGt+x4Lr5N8lLHRNI2XEs5qKHsUJGje",
+    "sri": "sha384-gug/EwLNlJPLLLFMHCdy6ui/V9F2oPdJDFsNupOqLxHAAsz0CoiEcdQgb5n/a2FK",
     "gzFile": "quikdown_edit_standalone.esm.min.js.gz",
-    "gzSize": 2265775
+    "gzSize": 2225131
   },
   {
     "file": "quikdown_edit_standalone.umd.js",
-    "size": 15547105,
+    "size": 15151486,
     "format": "UMD",
     "minified": false
   },
   {
     "file": "quikdown_edit_standalone.umd.min.js",
-    "size": 8079852,
+    "size": 7948805,
     "format": "UMD",
     "minified": true,
-    "sri": "sha384-otwnR62pvd7m1blfSBOF0o5YG7HR0A2sugUxRM1Gj2L3UDdmmA27yx+CUKD6GeYL",
+    "sri": "sha384-Rf2mvAchBqZAV00+01zUrnKly6X02N/zPTDEn3TYSaovfj9v9IKZr+E+ZnI5u40S",
     "gzFile": "quikdown_edit_standalone.umd.min.js.gz",
-    "gzSize": 2266030
+    "gzSize": 2225450
   },
   {
     "file": "quikdown_json.d.ts",

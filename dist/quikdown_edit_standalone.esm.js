@@ -6,7 +6,7 @@
  *
  * Bundled libraries: highlight.js, mermaid, DOMPurify, Leaflet, Three.js,
  *   ABCJS, Vega, Vega-Lite, Vega-Embed, MathJax (tex-svg)
- * Offline basemap: dist/basemap_world_10m.topojson (loaded at runtime, not inlined)
+ * Offline basemap: dist/basemap_countries_110m.topojson + basemap_admin1_lines.topojson (loaded at runtime, not inlined)
  */
 function _mergeNamespaces(n, m) {
 	m.forEach(function (e) {
@@ -226256,35 +226256,62 @@ async function _embed(el, spec, opts = {}, loader) {
 }
 
 /**
- * Lazy loader for the offline Natural Earth vector basemap.
- * Used by the standalone editor — keeps ~3.5 MB TopoJSON out of the
- * minified JS bundle so Rollup/Terser do not OOM.
+ * Lazy loader for offline Natural Earth basemap layers.
+ * Keeps TopoJSON out of the minified JS bundle (Terser OOM avoidance).
+ *
+ * Loads two sibling assets from the standalone bundle directory:
+ *   basemap_countries_110m.topojson  — country fills + borders
+ *   basemap_admin1_lines.topojson   — state/province internal boundaries
  */
 
 let loadPromise = null;
 
+function resolveBasemapUrls(base) {
+    // base may be a file URL (import.meta.url of bundle) or explicit directory URL
+    const root = base.endsWith('/') ? base : base.replace(/[^/]+$/, '');
+    return {
+        countries: new URL('basemap_countries_110m.topojson', root).href,
+        admin1: new URL('basemap_admin1_lines.topojson', root).href
+    };
+}
+
 /**
- * Fetch TopoJSON and convert to GeoJSON for Leaflet.
- * @param {string} url  Path to basemap_world_10m.topojson (same dir as standalone bundle)
- * @returns {Promise<object>} GeoJSON FeatureCollection
+ * Fetch both basemap layers and expose as GeoJSON on window.
+ * @param {string} baseUrl  Directory or bundle URL (import.meta.url works)
+ * @returns {Promise<{ countries: object, admin1: object }>}
  */
-function loadWorldBasemap(url) {
-    if (typeof window !== 'undefined' && window._qde_worldGeoJSON) {
-        return Promise.resolve(window._qde_worldGeoJSON);
+function loadOfflineBasemap(baseUrl) {
+    if (typeof window !== 'undefined' && window._qde_worldGeoJSON && window._qde_admin1GeoJSON) {
+        return Promise.resolve({
+            countries: window._qde_worldGeoJSON,
+            admin1: window._qde_admin1GeoJSON
+        });
     }
     if (loadPromise) return loadPromise;
 
-    loadPromise = fetch(url)
-        .then(res => {
-            if (!res.ok) throw new Error(`Basemap fetch failed (${res.status})`);
-            return res.json();
+    const urls = resolveBasemapUrls(baseUrl);
+
+    loadPromise = Promise.all([
+        fetch(urls.countries).then(r => {
+            if (!r.ok) throw new Error(`Countries basemap fetch failed (${r.status})`);
+            return r.json();
+        }),
+        fetch(urls.admin1).then(r => {
+            if (!r.ok) throw new Error(`Admin-1 basemap fetch failed (${r.status})`);
+            return r.json();
         })
-        .then(topo => {
-            const geo = feature(topo, topo.objects.countries);
+    ])
+        .then(([countriesTopo, admin1Topo]) => {
+            const countries = feature(countriesTopo, countriesTopo.objects.countries);
+            const admin1Key = admin1Topo.objects.admin1_lines
+                ? 'admin1_lines'
+                : Object.keys(admin1Topo.objects)[0];
+            const admin1 = feature(admin1Topo, admin1Topo.objects[admin1Key]);
             if (typeof window !== 'undefined') {
-                window._qde_worldGeoJSON = geo;
+                window._qde_worldGeoJSON = countries;
+                window._qde_admin1GeoJSON = admin1;
             }
-            return geo;
+            return { countries, admin1 };
         })
         .catch(err => {
             loadPromise = null;
@@ -231336,11 +231363,28 @@ let QuikdownEditor$1 = class QuikdownEditor {
                 // Add basemap — vector (offline) or OSM tiles (online)
                 let tileLayer = null;
                 if (!this.options.allowExternalFetch && window._qde_worldGeoJSON) {
-                    // Vector basemap — country boundaries, no tile fetching
+                    // Country fills + outer borders (subtle)
                     L.geoJSON(window._qde_worldGeoJSON, {
-                        style: { weight: 0.5, color: '#999', fillColor: '#f0f0f0', fillOpacity: 1 },
+                        style: {
+                            weight: 0.55,
+                            color: '#888',
+                            fillColor: '#f4f4f4',
+                            fillOpacity: 0.85
+                        },
                         interactive: false
                     }).addTo(map);
+                    // State / province internal boundaries (lines only)
+                    if (window._qde_admin1GeoJSON) {
+                        L.geoJSON(window._qde_admin1GeoJSON, {
+                            style: {
+                                weight: 0.35,
+                                color: '#bbb',
+                                fillOpacity: 0,
+                                fill: false
+                            },
+                            interactive: false
+                        }).addTo(map);
+                    }
                 } else {
                     // Standard OSM tiles
                     tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -232620,7 +232664,7 @@ if (typeof window !== 'undefined') {
  *   - ABCJS          (ABC music notation rendering)
  *   - Vega + Vega-Lite + Vega-Embed (data visualization)
  *   - MathJax        (tex-svg math rendering)
- *   - Natural Earth  (110m vector basemap — separate dist/basemap_world_10m.topojson)
+ *   - Natural Earth  (50m countries + 10m admin-1 lines — separate dist/*.topojson)
  *
  * Defaults `allowExternalFetch: false` — all rendering is local.
  * Pass `allowExternalFetch: true` to re-enable OSM tiles and CDN loads.
@@ -232678,10 +232722,10 @@ window.vega = vega$1;
 window.vegaLite = vegaLite$1;
 window.vegaEmbed = embed;
 
-/** Default basemap URL: sibling of this bundle file in dist/. */
-const DEFAULT_BASEMAP_URL = new URL('basemap_world_10m.topojson', import.meta.url).href;
+/** Bundle directory URL — basemap *.topojson live alongside standalone JS. */
+const BASEMAP_BASE = new URL('./', import.meta.url).href;
 
-window._qde_ensureBasemap = (url) => loadWorldBasemap(url || DEFAULT_BASEMAP_URL);
+window._qde_ensureBasemap = () => loadOfflineBasemap(BASEMAP_BASE);
 
 /**
  * Standalone version of QuikdownEditor that defaults allowExternalFetch to false.

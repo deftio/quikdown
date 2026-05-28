@@ -3988,6 +3988,12 @@
                 display: inline;
             }
             .qde-preview .leaflet-container { box-sizing: border-box; }
+            .qde-preview .leaflet-container.qde-offline-map {
+                background: #e6e2d8;
+            }
+            .qde-dark .qde-preview .leaflet-container.qde-offline-map {
+                background: #2c2c30;
+            }
 
             /* Standard markdown tables (the .quikdown-table class) need to
                scroll horizontally inside their own wrapper rather than
@@ -5011,19 +5017,52 @@
                     container.appendChild(mapDiv);
                     
                     // Create the map
-                    const map = L.map(mapId);
+                    const offlineVector = !this.options.allowExternalFetch;
+                    const map = L.map(mapId, {
+                        preferCanvas: offlineVector,
+                        zoomAnimation: !offlineVector,
+                        fadeAnimation: !offlineVector
+                    });
+                    if (offlineVector) {
+                        map.getContainer().classList.add('qde-offline-map');
+                        const tilePane = map.getPane('tilePane');
+                        if (tilePane) tilePane.style.display = 'none';
+                    }
 
                     // Store back-reference for capture (per Gem's guide)
                     container._map = map; // Avoid window pollution
 
                     // Add basemap — vector (offline) or OSM tiles (online)
                     let tileLayer = null;
+                    const isDark = this.container.classList.contains('qde-dark');
                     if (!this.options.allowExternalFetch && window._qde_worldGeoJSON) {
-                        // Vector basemap — country boundaries, no tile fetching
+                        const canvasRenderer = offlineVector && L.canvas ? L.canvas({ padding: 0.5 }) : undefined;
+                        // Country fills + outer borders (offline vector basemap)
                         L.geoJSON(window._qde_worldGeoJSON, {
-                            style: { weight: 0.5, color: '#999', fillColor: '#f0f0f0', fillOpacity: 1 },
+                            renderer: canvasRenderer,
+                            smoothFactor: 1.5,
+                            style: {
+                                weight: isDark ? 0.9 : 1,
+                                color: isDark ? '#9a9a9a' : '#333',
+                                fillColor: isDark ? '#2c2c30' : '#e6e2d8',
+                                fillOpacity: 1
+                            },
                             interactive: false
                         }).addTo(map);
+                        // State / province internal boundaries (lines only)
+                        if (window._qde_admin1GeoJSON) {
+                            L.geoJSON(window._qde_admin1GeoJSON, {
+                                renderer: canvasRenderer,
+                                smoothFactor: 1,
+                                style: {
+                                    weight: isDark ? 0.55 : 0.65,
+                                    color: isDark ? '#777' : '#444',
+                                    fillOpacity: 0,
+                                    fill: false
+                                },
+                                interactive: false
+                            }).addTo(map);
+                        }
                     } else {
                         // Standard OSM tiles
                         tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -5044,9 +5083,9 @@
                         const ne = bounds.getNorthEast();
                         if (sw.lat === ne.lat && sw.lng === ne.lng) {
                             // Single point — setView instead of fitBounds to avoid NaN
-                            map.setView([sw.lat, sw.lng], 13);
+                            map.setView([sw.lat, sw.lng], 8);
                         } else {
-                            map.fitBounds(bounds);
+                            map.fitBounds(bounds, { padding: [28, 28], maxZoom: 6 });
                         }
                     } else {
                         map.setView([0, 0], 2);
@@ -5072,9 +5111,25 @@
             };
             
             // Check if Leaflet is already loaded
+            const runRender = () => {
+                const needBasemap = !this.options.allowExternalFetch
+                    && !window._qde_worldGeoJSON
+                    && typeof window._qde_ensureBasemap === 'function';
+                if (needBasemap) {
+                    window._qde_ensureBasemap().then(() => renderMap()).catch(err => {
+                        const el = document.getElementById(mapId + '-container');
+                        if (el) {
+                            el.innerHTML = `<pre class="qde-error">Basemap load failed: ${this.escapeHtml(err.message)}</pre>`;
+                        }
+                    });
+                } else {
+                    renderMap();
+                }
+            };
+
             if (window.L) {
                 // Render after DOM update
-                setTimeout(renderMap, 0);
+                setTimeout(runRender, 0);
             } else {
                 // Lazy load Leaflet only if not already loading
                 if (!window._qde_leaflet_loading) {
@@ -5093,7 +5148,7 @@
                 
                 window._qde_leaflet_loading.then(loaded => {
                     if (loaded) {
-                        renderMap();
+                        runRender();
                     } else {
                         const element = document.getElementById(mapId + '-container');
                         if (element) {

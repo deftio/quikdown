@@ -14,7 +14,7 @@
  *   - ABCJS          (ABC music notation rendering)
  *   - Vega + Vega-Lite + Vega-Embed (data visualization)
  *   - MathJax        (tex-svg math rendering)
- *   - Natural Earth  (110m vector basemap — separate dist/basemap_world_10m.topojson)
+ *   - Natural Earth  (50m countries + 10m admin-1 lines — separate dist/*.topojson)
  *
  * Defaults `allowExternalFetch: false` — all rendering is local.
  * Pass `allowExternalFetch: true` to re-enable OSM tiles and CDN loads.
@@ -112,14 +112,13 @@ window.vega = vega;
 window.vegaLite = vegaLite;
 window.vegaEmbed = vegaEmbed;
 
-// Offline basemap — loaded from dist/basemap_world_10m.topojson (not bundled;
-// keeps Terser from OOM on the standalone minify step).
-import { loadWorldBasemap } from './basemap_loader.js';
+// Offline basemap — countries + admin-1 lines (sibling TopoJSON in dist/)
+import { loadOfflineBasemap } from './basemap_loader.js';
 
-/** Default basemap URL: sibling of this bundle file in dist/. */
-const DEFAULT_BASEMAP_URL = new URL('basemap_world_10m.topojson', import.meta.url).href;
+/** Bundle directory URL — basemap *.topojson live alongside standalone JS. */
+const BASEMAP_BASE = new URL('./', import.meta.url).href;
 
-window._qde_ensureBasemap = (url) => loadWorldBasemap(url || DEFAULT_BASEMAP_URL);
+window._qde_ensureBasemap = () => loadOfflineBasemap(BASEMAP_BASE);
 
 // MathJax — tex-svg math rendering (side-effect import, configures window.MathJax)
 import './mathjax_bundle.js';

@@ -142,16 +142,43 @@ A summation:
 
 ## GeoJSON Map
 
+Central European capitals — good for showing country fills and internal borders on the offline basemap:
+
 ```geojson
 {
-  "type": "Feature",
-  "geometry": {
-    "type": "Point",
-    "coordinates": [-74.0445, 40.6892]
-  },
-  "properties": {
-    "name": "Statue of Liberty"
-  }
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Vienna" },
+      "geometry": { "type": "Point", "coordinates": [16.3738, 48.2082] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Prague" },
+      "geometry": { "type": "Point", "coordinates": [14.4378, 50.0755] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Budapest" },
+      "geometry": { "type": "Point", "coordinates": [19.0402, 47.4979] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Bratislava" },
+      "geometry": { "type": "Point", "coordinates": [17.1077, 48.1486] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Ljubljana" },
+      "geometry": { "type": "Point", "coordinates": [14.5058, 46.0569] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Zagreb" },
+      "geometry": { "type": "Point", "coordinates": [15.9819, 45.8150] }
+    }
+  ]
 }
 ```
 

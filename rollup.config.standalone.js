@@ -32,7 +32,7 @@ const banner = `/**
  *
  * Bundled libraries: highlight.js, mermaid, DOMPurify, Leaflet, Three.js,
  *   ABCJS, Vega, Vega-Lite, Vega-Embed, MathJax (tex-svg)
- * Offline basemap: dist/basemap_world_10m.topojson (loaded at runtime, not inlined)
+ * Offline basemap: dist/basemap_countries_110m.topojson + basemap_admin1_lines.topojson (loaded at runtime, not inlined)
  */`;
 
 const replaceVersion = () => ({

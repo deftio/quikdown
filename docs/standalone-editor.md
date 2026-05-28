@@ -14,10 +14,10 @@ The standalone editor bundles all fence-rendering libraries into a single file s
 | ABCJS | ABC music notation rendering | ~300 KB |
 | Vega + Vega-Lite + Vega-Embed | Data visualization charts | ~1.5 MB |
 | MathJax (tex-svg) | Math equation rendering | ~1.5 MB |
-| Natural Earth (110m) | Offline vector basemap for GeoJSON maps | ~200 KB |
+| Natural Earth (110m + admin-1) | Offline vector basemap for GeoJSON maps (2 sibling `.topojson` files) | ~1 MB |
 | **quikdown editor** | Core editor + parser | ~98 KB |
 
-**Total minified size:** ~7.7 MB (~1.0 MB gzipped)
+**Total offline core (JS + basemap):** ≤ 9 MB uncompressed (~1.5 MB gzipped for JS alone)
 
 The standalone bundle defaults `allowExternalFetch: false` — all rendering is local with no network requests. Pass `allowExternalFetch: true` to re-enable OSM tiles and CDN loads.
 
@@ -27,6 +27,8 @@ The standalone bundle defaults `allowExternalFetch: false` — all rendering is 
 |------|--------|----------|
 | `quikdown_edit_standalone.esm.min.js` | ES Module (minified) | Modern apps with `import` |
 | `quikdown_edit_standalone.umd.min.js` | UMD (minified) | Script tag, any environment |
+| `basemap_countries_110m.topojson` | TopoJSON | Country fills (keep next to JS) |
+| `basemap_admin1_lines.topojson` | TopoJSON | State/province borders (keep next to JS) |
 | `quikdown_edit_standalone.esm.js` | ES Module | Development / debugging |
 | `quikdown_edit_standalone.umd.js` | UMD | Development / debugging |
 
