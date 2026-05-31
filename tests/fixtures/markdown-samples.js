@@ -851,8 +851,10 @@ Final paragraph.`,
         },
         {
             name: 'backslash escapes',
-            markdown: '\\*not italic\\* \\**not bold\\**',
-            notes: 'Backslash escapes for literal characters'
+            markdown: '\\*not italic\\* \\**not bold\\** \\<tag\\>',
+            shouldContain: ['*not italic*', '&lt;tag&gt;'],
+            shouldNotContain: ['\\<', '\\>'],
+            notes: 'Backslash escapes for literal characters including angle brackets'
         },
         {
             name: 'HTML entities in text',

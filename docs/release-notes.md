@@ -15,7 +15,7 @@ Seven fixes that improve real-world document rendering and bring quikdown closer
 
 ### Backslash escape support
 
-- **New feature**: Backslash-escaped ASCII punctuation (`\*`, `` \` ``, `\_`, `\#`, `\\`, `\[`, `\~`, `\|`, `\>`, `\!`, `\.`, `\-`, `\+`, `\(`, `\)`, `\{`, `\}`, `\]`) is now recognized. The escaped character renders literally without triggering formatting.
+- **New feature**: Backslash-escaped ASCII punctuation (`\*`, `` \` ``, `\_`, `\#`, `\\`, `\[`, `\~`, `\|`, `\<`, `\>`, `\!`, `\.`, `\-`, `\+`, `\(`, `\)`, `\{`, `\}`, `\]`) is now recognized. The escaped character renders literally without triggering formatting.
 - Implemented as a two-phase extraction using `\xA7BE` placeholders:
   - Phase 1b: Escaped backticks (`` \` ``) extracted before inline code pairing
   - Phase 1.25: All other escaped punctuation extracted after inline code extraction (so backslash sequences inside code spans are preserved verbatim)

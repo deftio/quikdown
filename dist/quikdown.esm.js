@@ -635,7 +635,7 @@ function quikdown(markdown, options = {}) {
     // after code extraction (so \* inside code blocks and inline code
     // is already protected) and before HTML escaping.
 
-    html = html.replace(/\\([\\*_{}[\]()#+\-.!~|>])/g, (match, char) => {
+    html = html.replace(/\\([\\*_{}[\]()#+\-.!~|<>])/g, (match, char) => {
         const placeholder = `${PLACEHOLDER_BE}${backslashEscapes.length}§`;
         backslashEscapes.push(escapeHtml(char));
         return placeholder;

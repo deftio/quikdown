@@ -317,6 +317,22 @@ describe('backslash escapes', () => {
     expect(result).toContain('\\a');
   });
 
+  test('\\> and \\< render angle brackets literally', () => {
+    const result = quikdown('\\<Paragraph 1 — what exists in the relevant field.\\>');
+    expect(result).toContain('&lt;Paragraph 1');
+    expect(result).toContain('field.&gt;');
+    expect(result).not.toContain('\\<');
+    expect(result).not.toContain('\\>');
+  });
+
+  test('\\< alone — regression for missing less-than in escape set', () => {
+    expect(quikdown('\\<')).toBe('<p>&lt;</p>');
+  });
+
+  test('\\> alone — greater-than escape unchanged', () => {
+    expect(quikdown('\\>')).toBe('<p>&gt;</p>');
+  });
+
   test('mixed escaped and unescaped', () => {
     const result = quikdown('\\*literal\\* and *italic*');
     expect(result).not.toMatch(/<em[^>]*>\s*literal/);

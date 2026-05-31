@@ -114,24 +114,41 @@ function admin1Bytes(geojson, params) {
   return Buffer.byteLength(JSON.stringify(buildAdmin1Topojson(geojson, params)));
 }
 
-/** Pick admin-1 params: finest quantization (least grid artifact) that fits budget. */
+/** Pick admin-1 params: high quantization (no grid), then coverage, then coordinate decimals. */
 function pickAdmin1Params(geojson, budgetBytes) {
-  const quantSteps = [10000, 8000, 6000, 5000, 4000, 3500, 3000, 2800, 2600, 2400, 2200, 2000, 1800, 1600, 1400, 1200, 1000, 800, 600, 500, 400, 350, 300, 250, 200, 150, 100];
+  const quantSteps = [10000, 9000, 8500, 8000, 7500, 7000, 6500, 6000, 5500, 5000, 4500, 4000, 3500, 3000, 2500, 2000, 1500, 1000, 800, 600, 500, 400, 300, 250, 200, 150, 100];
+  const MIN_QUANT = 6500;
   let best = null;
 
+  function score(params) {
+    return params.decimals * 1e7 + params.scalerankMax * 1e5 + params.quantization;
+  }
+
   for (let scalerankMax = 6; scalerankMax >= 0; scalerankMax--) {
-    for (const decimals of [3, 2, 1]) {
+    for (const decimals of [5, 4, 3, 2, 1]) {
       for (const quantization of quantSteps) {
+        if (quantization < MIN_QUANT) continue;
         const params = { scalerankMax, decimals, quantization };
         const size = admin1Bytes(geojson, params);
         if (size > budgetBytes) continue;
-        if (
-          !best
-          || params.quantization > best.params.quantization
-          || (params.quantization === best.params.quantization && params.scalerankMax > best.params.scalerankMax)
-          || (params.quantization === best.params.quantization && params.scalerankMax === best.params.scalerankMax && params.decimals > best.params.decimals)
-        ) {
+        if (!best || score(params) > score(best.params)) {
           best = { params, size };
+        }
+      }
+    }
+  }
+
+  // Fallback if nothing meets MIN_QUANT within budget
+  if (!best) {
+    for (let scalerankMax = 6; scalerankMax >= 0; scalerankMax--) {
+      for (const decimals of [5, 4, 3, 2, 1]) {
+        for (const quantization of quantSteps) {
+          const params = { scalerankMax, decimals, quantization };
+          const size = admin1Bytes(geojson, params);
+          if (size > budgetBytes) continue;
+          if (!best || score(params) > score(best.params)) {
+            best = { params, size };
+          }
         }
       }
     }
@@ -170,7 +187,7 @@ async function main() {
   fs.mkdirSync(DIST, { recursive: true });
 
   // 1. Countries 110m (already TopoJSON — compact fills for offline budget)
-  const countries = truncateArcs(JSON.parse(fs.readFileSync(COUNTRIES_IN, 'utf8')), 3);
+  const countries = truncateArcs(JSON.parse(fs.readFileSync(COUNTRIES_IN, 'utf8')), 5);
   fs.writeFileSync(OUT_COUNTRIES, JSON.stringify(countries));
   writeGz(OUT_COUNTRIES);
   const countriesBytes = fs.statSync(OUT_COUNTRIES).size;

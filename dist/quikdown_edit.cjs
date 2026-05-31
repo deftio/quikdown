@@ -711,7 +711,7 @@ function quikdown(markdown, options = {}) {
     // after code extraction (so \* inside code blocks and inline code
     // is already protected) and before HTML escaping.
 
-    html = html.replace(/\\([\\*_{}[\]()#+\-.!~|>])/g, (match, char) => {
+    html = html.replace(/\\([\\*_{}[\]()#+\-.!~|<>])/g, (match, char) => {
         const placeholder = `${PLACEHOLDER_BE}${backslashEscapes.length}§`;
         backslashEscapes.push(escapeHtml(char));
         return placeholder;
@@ -3985,10 +3985,13 @@ class QuikdownEditor {
             }
             .qde-preview .leaflet-container { box-sizing: border-box; }
             .qde-preview .leaflet-container.qde-offline-map {
-                background: #e6e2d8;
+                background: #b8d4f0;
+            }
+            .qde-preview .leaflet-container.qde-offline-map path {
+                shape-rendering: geometricPrecision;
             }
             .qde-dark .qde-preview .leaflet-container.qde-offline-map {
-                background: #2c2c30;
+                background: #1a3048;
             }
 
             /* Standard markdown tables (the .quikdown-table class) need to
@@ -5012,13 +5015,18 @@ class QuikdownEditor {
                 container.innerHTML = '';
                 container.appendChild(mapDiv);
                 
-                // Create the map
+                // Create the map — SVG basemap (not canvas) to avoid tile-clipping bands at world zoom
                 const offlineVector = !this.options.allowExternalFetch;
-                const map = L.map(mapId, {
-                    preferCanvas: offlineVector,
+                const mapOptions = {
                     zoomAnimation: !offlineVector,
                     fadeAnimation: !offlineVector
-                });
+                };
+                if (offlineVector) {
+                    mapOptions.minZoom = 2;
+                    mapOptions.maxBounds = [[-84, -180], [84, 180]];
+                    mapOptions.maxBoundsViscosity = 0.85;
+                }
+                const map = L.map(mapId, mapOptions);
                 if (offlineVector) {
                     map.getContainer().classList.add('qde-offline-map');
                     const tilePane = map.getPane('tilePane');
@@ -5032,33 +5040,50 @@ class QuikdownEditor {
                 let tileLayer = null;
                 const isDark = this.container.classList.contains('qde-dark');
                 if (!this.options.allowExternalFetch && window._qde_worldGeoJSON) {
-                    const canvasRenderer = offlineVector && L.canvas ? L.canvas({ padding: 0.5 }) : undefined;
-                    // Country fills + outer borders (offline vector basemap)
-                    L.geoJSON(window._qde_worldGeoJSON, {
-                        renderer: canvasRenderer,
+                    const basemapStyle = (zoom) => ({
+                        weight: zoom < 4 ? 0.45 : zoom < 6 ? 0.75 : (isDark ? 1 : 1.1),
+                        color: isDark ? '#b8b8b8' : '#1a1a1a',
+                        fillColor: isDark ? '#3a3a3e' : '#ebe6d9',
+                        fillOpacity: 1
+                    });
+                    const admin1Style = (zoom) => ({
+                        weight: zoom < 6 ? 0.45 : (isDark ? 0.5 : 0.6),
+                        color: isDark ? '#666' : '#555',
+                        fillOpacity: 0,
+                        fill: false
+                    });
+
+                    // Country fills — SVG renderer (canvas tiles clip large polygons at low zoom)
+                    const countriesLayer = L.geoJSON(window._qde_worldGeoJSON, {
                         smoothFactor: 1.5,
-                        style: {
-                            weight: isDark ? 0.9 : 1,
-                            color: isDark ? '#9a9a9a' : '#333',
-                            fillColor: isDark ? '#2c2c30' : '#e6e2d8',
-                            fillOpacity: 1
-                        },
+                        style: () => basemapStyle(map.getZoom()),
                         interactive: false
                     }).addTo(map);
-                    // State / province internal boundaries (lines only)
+
+                    // Admin-1 hidden when zoomed out (dense lines read as horizontal banding)
+                    let admin1Layer = null;
                     if (window._qde_admin1GeoJSON) {
-                        L.geoJSON(window._qde_admin1GeoJSON, {
-                            renderer: canvasRenderer,
+                        admin1Layer = L.geoJSON(window._qde_admin1GeoJSON, {
                             smoothFactor: 1,
-                            style: {
-                                weight: isDark ? 0.55 : 0.65,
-                                color: isDark ? '#777' : '#444',
-                                fillOpacity: 0,
-                                fill: false
-                            },
+                            style: () => admin1Style(map.getZoom()),
                             interactive: false
-                        }).addTo(map);
+                        });
                     }
+
+                    const syncBasemapForZoom = () => {
+                        const z = map.getZoom();
+                        countriesLayer.setStyle(basemapStyle(z));
+                        if (admin1Layer) {
+                            if (z >= 5) {
+                                admin1Layer.setStyle(admin1Style(z));
+                                if (!map.hasLayer(admin1Layer)) admin1Layer.addTo(map);
+                            } else if (map.hasLayer(admin1Layer)) {
+                                map.removeLayer(admin1Layer);
+                            }
+                        }
+                    };
+                    map.on('zoomend', syncBasemapForZoom);
+                    syncBasemapForZoom();
                 } else {
                     // Standard OSM tiles
                     tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

@@ -685,6 +685,54 @@ describe('quikdown markdown parser', () => {
                 .toBe('<p><code class="quikdown-code">&lt;script&gt;</code></p>');
         });
     });
+
+    describe('Backslash escapes', () => {
+        test('\\< renders literal less-than (backslash consumed)', () => {
+            const result = quikdown('\\<not a tag');
+            expect(result).toBe('<p>&lt;not a tag</p>');
+            expect(result).not.toContain('\\<');
+        });
+
+        test('\\> renders literal greater-than (backslash consumed)', () => {
+            const result = quikdown('not a tag\\>');
+            expect(result).toBe('<p>not a tag&gt;</p>');
+            expect(result).not.toContain('\\>');
+        });
+
+        test('\\<...\\> angle-bracket wrapper (user field placeholder pattern)', () => {
+            const input = '\\<Paragraph 1 — what exists in the relevant field.\\>';
+            const result = quikdown(input);
+            expect(result).toBe(
+                '<p>&lt;Paragraph 1 — what exists in the relevant field.&gt;</p>'
+            );
+            expect(result).not.toMatch(/\\[<>]/);
+        });
+
+        test('\\* \\# \\[ \\] and \\\\ escapes still work alongside \\< \\>', () => {
+            const result = quikdown('\\* \\# \\[ \\] \\\\ \\< \\>');
+            expect(result).toContain('*');
+            expect(result).toContain('#');
+            expect(result).toContain('[');
+            expect(result).toContain(']');
+            expect(result).toContain('\\');
+            expect(result).toContain('&lt;');
+            expect(result).toContain('&gt;');
+            expect(result).not.toMatch(/\\[*#[\]<>]/);
+        });
+
+        test('literal backslashes before brackets preserved inside fenced code', () => {
+            const result = quikdown('```\n\\<raw\\>\n```');
+            // Code extracted before Phase 1.25 — backslashes stay; brackets entity-encoded
+            expect(result).toContain('\\&lt;raw\\&gt;');
+            expect(result).not.toMatch(/<pre[^>]*>[\s\S]*<raw>/);
+        });
+
+        test('literal backslashes before brackets preserved inside inline code', () => {
+            const result = quikdown('`\\<raw\\>`');
+            expect(result).toContain('\\&lt;raw\\&gt;');
+            expect(result).toMatch(/<code[^>]*>\\&lt;raw\\&gt;<\/code>/);
+        });
+    });
     
     describe('Edge Cases', () => {
         test('should handle empty input', () => {
