@@ -120,6 +120,7 @@
     "updateBadges": "node ./tools/updateBadges.js",
     "feature": "bash ./tools/feature.sh",
     "release": "bash ./tools/release.sh",
+    "release:no-playwright": "SKIP_PLAYWRIGHT=1 bash ./tools/release.sh",
     "release:legacy": "node ./tools/createRelease.js",
     "tag": "./tools/createTag.sh",
     "docs:api": "npx jsdoc src/quikdown.js -d docs/api",
