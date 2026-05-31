@@ -9,15 +9,17 @@ The standalone editor bundles all fence-rendering libraries into a single file s
 | highlight.js | Syntax highlighting (12 languages) | ~500 KB |
 | mermaid | Diagram rendering | ~2.0 MB |
 | DOMPurify | HTML fence sanitization | ~30 KB |
-| Leaflet | GeoJSON map rendering | ~140 KB |
+| Leaflet | GeoJSON map rendering + base64 marker icons | ~140 KB |
 | Three.js | STL 3D model rendering | ~500 KB |
-| **quikdown editor** | Core editor + parser | ~86 KB |
+| ABCJS | ABC music notation rendering | ~300 KB |
+| Vega + Vega-Lite + Vega-Embed | Data visualization charts | ~1.5 MB |
+| MathJax (tex-svg) | Math equation rendering | ~1.5 MB |
+| Natural Earth (110m + admin-1) | Offline vector basemap for GeoJSON maps (2 sibling `.topojson` files) | ~1 MB |
+| **quikdown editor** | Core editor + parser | ~98 KB |
 
-**Total minified size:** ~3.8 MB
+**Total offline core (JS + basemap):** ≤ 9 MB uncompressed (~1.5 MB gzipped for JS alone)
 
-### Not Bundled
-
-**MathJax** is intentionally excluded. It's architecturally incompatible with bundling — it dynamically loads fonts, configuration modules, and sub-processors at runtime. Math/KaTeX fences will display a loading placeholder when offline. This is the same approach used by squibview and other markdown editors.
+The standalone bundle defaults `allowExternalFetch: false` — all rendering is local with no network requests. Pass `allowExternalFetch: true` to re-enable OSM tiles and CDN loads.
 
 ## Distribution Files
 
@@ -25,6 +27,8 @@ The standalone editor bundles all fence-rendering libraries into a single file s
 |------|--------|----------|
 | `quikdown_edit_standalone.esm.min.js` | ES Module (minified) | Modern apps with `import` |
 | `quikdown_edit_standalone.umd.min.js` | UMD (minified) | Script tag, any environment |
+| `basemap_countries_110m.topojson` | TopoJSON | Country fills (keep next to JS) |
+| `basemap_admin1_lines.topojson` | TopoJSON | State/province borders (keep next to JS) |
 | `quikdown_edit_standalone.esm.js` | ES Module | Development / debugging |
 | `quikdown_edit_standalone.umd.js` | UMD | Development / debugging |
 
@@ -66,7 +70,7 @@ The standalone bundle is built separately from the main build:
 npm run build:standalone
 ```
 
-This runs a dedicated rollup config (`rollup.config.standalone.js`) that bundles all dependencies with `inlineDynamicImports: true`. Fence libraries (`highlight.js`, `mermaid`, `dompurify`, `leaflet`, `three`) must be present in **devDependencies** — CI runs `npm ci` before building.
+This runs a dedicated rollup config (`rollup.config.standalone.js`) that bundles all dependencies with `inlineDynamicImports: true`. Fence libraries (`highlight.js`, `mermaid`, `dompurify`, `leaflet`, `three`, `abcjs`, `vega`, `vega-lite`, `vega-embed`, `mathjax-full`) must be present in **devDependencies** — CI runs `npm ci` before building.
 
 The main build (`npm run build`) does NOT include the standalone bundle. To build everything:
 

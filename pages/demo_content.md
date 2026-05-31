@@ -54,6 +54,8 @@ let config = {
 | MathJax           | Yes       |
 | GeoJSON Maps      | Yes       |
 | STL 3D Models     | Yes       |
+| ABC Music         | Yes       |
+| Vega Charts       | Yes       |
 | Bidirectional     | Yes       |
 
 ## Inline SVG Example
@@ -140,18 +142,81 @@ A summation:
 \sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
 ```
 
+## Music Notation (ABC)
+
+```abc
+X:1
+T:Ode to Joy
+M:4/4
+L:1/4
+K:C
+E E F G | G F E D | C C D E | E D/2D/2 D2 |
+```
+
+## Data Visualization (Vega-Lite)
+
+```vega-lite
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "description": "Quikdown feature sizes",
+  "data": {
+    "values": [
+      {"module": "Core", "kb": 9},
+      {"module": "Bidir", "kb": 14},
+      {"module": "Editor", "kb": 72},
+      {"module": "AST", "kb": 6}
+    ]
+  },
+  "mark": "bar",
+  "encoding": {
+    "x": {"field": "module", "type": "nominal", "title": "Module"},
+    "y": {"field": "kb", "type": "quantitative", "title": "Size (KB)"},
+    "color": {"field": "module", "type": "nominal", "legend": null}
+  },
+  "width": 300,
+  "height": 200
+}
+```
+
 ## GeoJSON Map
+
+Here is a map with a few markers
 
 ```geojson
 {
-  "type": "Feature",
-  "geometry": {
-    "type": "Point",
-    "coordinates": [-74.0445, 40.6892]
-  },
-  "properties": {
-    "name": "Statue of Liberty"
-  }
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Vienna" },
+      "geometry": { "type": "Point", "coordinates": [16.3738, 48.2082] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Prague" },
+      "geometry": { "type": "Point", "coordinates": [14.4378, 50.0755] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Budapest" },
+      "geometry": { "type": "Point", "coordinates": [19.0402, 47.4979] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Bratislava" },
+      "geometry": { "type": "Point", "coordinates": [17.1077, 48.1486] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Ljubljana" },
+      "geometry": { "type": "Point", "coordinates": [14.5058, 46.0569] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Zagreb" },
+      "geometry": { "type": "Point", "coordinates": [15.9819, 45.8150] }
+    }
+  ]
 }
 ```
 

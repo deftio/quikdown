@@ -82,7 +82,8 @@ const DEFAULT_OPTIONS = {
     showUndoRedo: false,      // Show undo/redo toolbar buttons
     undoStackSize: 100,       // Maximum number of undo states to keep
     allowUnsafeHTML: false,   // false | 'limited' | true — controls HTML passthrough
-    showAllowUnsafeHTML: false // Show toolbar button to cycle HTML mode
+    showAllowUnsafeHTML: false, // Show toolbar button to cycle HTML mode
+    allowExternalFetch: true  // Allow fence renderers to fetch external resources (CDN, tiles, etc.)
 };
 
 // Library catalog used by preloadFences. Each entry knows how to:
@@ -139,6 +140,22 @@ const FENCE_LIBRARIES = {
     stl: {
         check: () => typeof window.THREE !== 'undefined',
         script: 'https://unpkg.com/three@0.147.0/build/three.min.js'
+    },
+    abc: {
+        check: () => typeof window.ABCJS !== 'undefined',
+        script: 'https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js'
+    },
+    music: {
+        check: () => typeof window.ABCJS !== 'undefined',
+        script: 'https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js'
+    },
+    vega: {
+        check: () => typeof window.vegaEmbed !== 'undefined',
+        scripts: [
+            'https://cdn.jsdelivr.net/npm/vega@5',
+            'https://cdn.jsdelivr.net/npm/vega-lite@5',
+            'https://cdn.jsdelivr.net/npm/vega-embed@6'
+        ]
     }
 };
 
@@ -527,6 +544,15 @@ class QuikdownEditor {
                 display: inline;
             }
             .qde-preview .leaflet-container { box-sizing: border-box; }
+            .qde-preview .leaflet-container.qde-offline-map {
+                background: #b8d4f0;
+            }
+            .qde-preview .leaflet-container.qde-offline-map path {
+                shape-rendering: geometricPrecision;
+            }
+            .qde-dark .qde-preview .leaflet-container.qde-offline-map {
+                background: #1a3048;
+            }
 
             /* Standard markdown tables (the .quikdown-table class) need to
                scroll horizontally inside their own wrapper rather than
@@ -963,15 +989,7 @@ class QuikdownEditor {
                 this.previewPanel.innerHTML = this._html;
 
                 // Process all math elements with MathJax if loaded (like squibview)
-                if (window.MathJax && window.MathJax.typesetPromise) {
-                    const mathElements = this.previewPanel.querySelectorAll('.math-display');
-                    if (mathElements.length > 0) {
-                        window.MathJax.typesetPromise(Array.from(mathElements))
-                            .catch(_err => {
-                                console.warn('MathJax batch processing failed:', _err);
-                            });
-                    }
-                }
+                this._typesetMath(this.previewPanel);
             }
         }
         
@@ -1147,6 +1165,15 @@ class QuikdownEditor {
                         
                     case 'stl':
                         return this.renderSTL(code);
+
+                    case 'abc':
+                    case 'music':
+                        return this.renderABC(code);
+
+                    case 'vega':
+                    case 'vega-lite':
+                    case 'vegalite':
+                        return this.renderVega(code, lang);
                 }
             }
             
@@ -1334,6 +1361,48 @@ class QuikdownEditor {
     }
     
     /**
+     * Typeset math elements, handling both ready and not-yet-ready MathJax.
+     * In the standalone bundle MathJax may be imported but its async startup
+     * not yet complete, so typesetPromise is not available immediately.
+     */
+    _typesetMath(root) {
+        const mathElements = (root || this.previewPanel || document).querySelectorAll('.math-display');
+        if (mathElements.length === 0) return;
+        const elements = Array.from(mathElements);
+
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise(elements).catch(() => {});
+        } else if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+            // Standalone bundle: MathJax imported but async startup not finished
+            window.MathJax.startup.promise.then(() => {
+                if (window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise(elements).catch(() => {});
+                }
+            }).catch(() => {});
+        } else if (window.MathJax) {
+            // MathJax config exists but startup not yet initialized — poll
+            const poll = (n) => {
+                if (n <= 0) return;
+                setTimeout(() => {
+                    if (!window.MathJax) return;
+                    if (window.MathJax.typesetPromise) {
+                        window.MathJax.typesetPromise(elements).catch(() => {});
+                    } else if (window.MathJax.startup && window.MathJax.startup.promise) {
+                        window.MathJax.startup.promise.then(() => {
+                            if (window.MathJax && window.MathJax.typesetPromise) {
+                                window.MathJax.typesetPromise(elements).catch(() => {});
+                            }
+                        }).catch(() => {});
+                    } else {
+                        poll(n - 1);
+                    }
+                }, 100);
+            };
+            poll(50);
+        }
+    }
+
+    /**
      * Ensures MathJax is loaded (but doesn't process elements)
      */
     ensureMathJaxLoaded() {
@@ -1368,16 +1437,9 @@ class QuikdownEditor {
             script.async = true;
             script.onload = () => {
                 window.mathJaxLoading = false;
-                
+
                 // Process any existing math elements (like squibview)
-                if (window.MathJax && window.MathJax.typesetPromise) {
-                    const mathElements = (this.previewPanel || document).querySelectorAll('.math-display');
-                    if (mathElements.length > 0) {
-                        window.MathJax.typesetPromise(Array.from(mathElements)).catch(err => {
-                            console.warn('Initial MathJax processing failed:', err);
-                        });
-                    }
-                }
+                this._typesetMath(this.previewPanel || document);
             };
             script.onerror = () => {
                 window.mathJaxLoading = false;
@@ -1513,26 +1575,99 @@ class QuikdownEditor {
                 container.innerHTML = '';
                 container.appendChild(mapDiv);
                 
-                // Create the map
-                const map = L.map(mapId);
-                
+                // Create the map — SVG basemap (not canvas) to avoid tile-clipping bands at world zoom
+                const offlineVector = !this.options.allowExternalFetch;
+                const mapOptions = {
+                    zoomAnimation: !offlineVector,
+                    fadeAnimation: !offlineVector
+                };
+                if (offlineVector) {
+                    mapOptions.minZoom = 2;
+                    mapOptions.maxBounds = [[-84, -180], [84, 180]];
+                    mapOptions.maxBoundsViscosity = 0.85;
+                }
+                const map = L.map(mapId, mapOptions);
+                if (offlineVector) {
+                    map.getContainer().classList.add('qde-offline-map');
+                    const tilePane = map.getPane('tilePane');
+                    if (tilePane) tilePane.style.display = 'none';
+                }
+
                 // Store back-reference for capture (per Gem's guide)
                 container._map = map; // Avoid window pollution
-                
-                // Add tile layer with CORS support
-                const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '',
-                    crossOrigin: 'anonymous' // Important for canvas capture
-                });
-                tileLayer.addTo(map);
+
+                // Add basemap — vector (offline) or OSM tiles (online)
+                let tileLayer = null;
+                const isDark = this.container.classList.contains('qde-dark');
+                if (!this.options.allowExternalFetch && window._qde_worldGeoJSON) {
+                    const basemapStyle = (zoom) => ({
+                        weight: zoom < 4 ? 0.45 : zoom < 6 ? 0.75 : (isDark ? 1 : 1.1),
+                        color: isDark ? '#b8b8b8' : '#1a1a1a',
+                        fillColor: isDark ? '#3a3a3e' : '#ebe6d9',
+                        fillOpacity: 1
+                    });
+                    const admin1Style = (zoom) => ({
+                        weight: zoom < 6 ? 0.45 : (isDark ? 0.5 : 0.6),
+                        color: isDark ? '#666' : '#555',
+                        fillOpacity: 0,
+                        fill: false
+                    });
+
+                    // Country fills — SVG renderer (canvas tiles clip large polygons at low zoom)
+                    const countriesLayer = L.geoJSON(window._qde_worldGeoJSON, {
+                        smoothFactor: 1.5,
+                        style: () => basemapStyle(map.getZoom()),
+                        interactive: false
+                    }).addTo(map);
+
+                    // Admin-1 hidden when zoomed out (dense lines read as horizontal banding)
+                    let admin1Layer = null;
+                    if (window._qde_admin1GeoJSON) {
+                        admin1Layer = L.geoJSON(window._qde_admin1GeoJSON, {
+                            smoothFactor: 1,
+                            style: () => admin1Style(map.getZoom()),
+                            interactive: false
+                        });
+                    }
+
+                    const syncBasemapForZoom = () => {
+                        const z = map.getZoom();
+                        countriesLayer.setStyle(basemapStyle(z));
+                        if (admin1Layer) {
+                            if (z >= 5) {
+                                admin1Layer.setStyle(admin1Style(z));
+                                if (!map.hasLayer(admin1Layer)) admin1Layer.addTo(map);
+                            } else if (map.hasLayer(admin1Layer)) {
+                                map.removeLayer(admin1Layer);
+                            }
+                        }
+                    };
+                    map.on('zoomend', syncBasemapForZoom);
+                    syncBasemapForZoom();
+                } else {
+                    // Standard OSM tiles
+                    tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '',
+                        crossOrigin: 'anonymous' // Important for canvas capture
+                    });
+                    tileLayer.addTo(map);
+                }
                 
                 // Add GeoJSON layer
                 const geoJsonLayer = L.geoJSON(data);
                 geoJsonLayer.addTo(map);
                 
                 // Fit bounds if valid
-                if (geoJsonLayer.getBounds().isValid()) {
-                    map.fitBounds(geoJsonLayer.getBounds());
+                const bounds = geoJsonLayer.getBounds();
+                if (bounds.isValid()) {
+                    const sw = bounds.getSouthWest();
+                    const ne = bounds.getNorthEast();
+                    if (sw.lat === ne.lat && sw.lng === ne.lng) {
+                        // Single point — setView instead of fitBounds to avoid NaN
+                        map.setView([sw.lat, sw.lng], 8);
+                    } else {
+                        map.fitBounds(bounds, { padding: [28, 28], maxZoom: 6 });
+                    }
                 } else {
                     map.setView([0, 0], 2);
                 }
@@ -1542,9 +1677,14 @@ class QuikdownEditor {
                 container._geoJsonLayer = geoJsonLayer;
                 
                 // Optional: Wait for tiles to load for better capture
-                tileLayer.on('load', () => {
+                if (tileLayer) {
+                    tileLayer.on('load', () => {
+                        container.setAttribute('data-tiles-loaded', 'true');
+                    });
+                } else {
+                    // Vector basemap — tiles always "loaded"
                     container.setAttribute('data-tiles-loaded', 'true');
-                });
+                }
                 
             } catch (err) {
                 container.innerHTML = `<pre class="qde-error">GeoJSON error: ${this.escapeHtml(err.message)}</pre>`;
@@ -1552,9 +1692,25 @@ class QuikdownEditor {
         };
         
         // Check if Leaflet is already loaded
+        const runRender = () => {
+            const needBasemap = !this.options.allowExternalFetch
+                && !window._qde_worldGeoJSON
+                && typeof window._qde_ensureBasemap === 'function';
+            if (needBasemap) {
+                window._qde_ensureBasemap().then(() => renderMap()).catch(err => {
+                    const el = document.getElementById(mapId + '-container');
+                    if (el) {
+                        el.innerHTML = `<pre class="qde-error">Basemap load failed: ${this.escapeHtml(err.message)}</pre>`;
+                    }
+                });
+            } else {
+                renderMap();
+            }
+        };
+
         if (window.L) {
             // Render after DOM update
-            setTimeout(renderMap, 0);
+            setTimeout(runRender, 0);
         } else {
             // Lazy load Leaflet only if not already loading
             if (!window._qde_leaflet_loading) {
@@ -1573,7 +1729,7 @@ class QuikdownEditor {
             
             window._qde_leaflet_loading.then(loaded => {
                 if (loaded) {
-                    renderMap();
+                    runRender();
                 } else {
                     const element = document.getElementById(mapId + '-container');
                     if (element) {
@@ -1740,7 +1896,137 @@ class QuikdownEditor {
         
         return geometry;
     }
-    
+
+    /**
+     * Render ABC music notation
+     */
+    renderABC(code) {
+        const id = `qde-abc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const renderNotation = () => {
+            const element = document.getElementById(id);
+            if (!element || !window.ABCJS) return;
+            try {
+                element.innerHTML = '';
+                window.ABCJS.renderAbc(element, code, { responsive: 'resize' });
+            } catch (err) {
+                element.innerHTML = `<pre class="qde-error">ABC notation error: ${this.escapeHtml(err.message)}</pre>`;
+            }
+        };
+
+        if (window.ABCJS) {
+            setTimeout(renderNotation, 0);
+        } else {
+            if (!window._qde_abcjs_loading) {
+                window._qde_abcjs_loading = this.lazyLoadLibrary(
+                    'ABCJS',
+                    () => window.ABCJS,
+                    'https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js'
+                ).catch(err => {
+                    console.warn('Failed to load ABCJS:', err);
+                    window._qde_abcjs_loading = null;
+                    return false;
+                });
+            }
+            window._qde_abcjs_loading.then(loaded => {
+                if (loaded) {
+                    renderNotation();
+                } else {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load ABC notation library</div>';
+                    }
+                }
+            });
+        }
+
+        const container = document.createElement('div');
+        container.id = id;
+        container.className = 'qde-abc-container';
+        container.contentEditable = 'false';
+        container.setAttribute('data-qd-source', code);
+        container.setAttribute('data-qd-fence', '```');
+        container.setAttribute('data-qd-lang', 'abc');
+        container.style.cssText = 'min-height: 80px; margin: 0.5em 0;';
+        container.textContent = 'Loading music notation...';
+
+        return container.outerHTML;
+    }
+
+    /**
+     * Render Vega or Vega-Lite visualization
+     */
+    renderVega(code, lang) {
+        const id = `qde-vega-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const renderChart = () => {
+            const element = document.getElementById(id);
+            if (!element || !window.vegaEmbed) return;
+            try {
+                const spec = JSON.parse(code);
+                // If using vega-lite alias, ensure $schema is set for vega-lite
+                if ((lang === 'vega-lite' || lang === 'vegalite') && !spec.$schema) {
+                    spec.$schema = 'https://vega.github.io/schema/vega-lite/v5.json';
+                }
+                // Warn about external URL data sources when allowExternalFetch is off
+                if (!this.options.allowExternalFetch) {
+                    const specStr = JSON.stringify(spec);
+                    if (/"url"\s*:/.test(specStr)) {
+                        element.innerHTML = '<div style="padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404; font-size: 0.9em;">⚠ This Vega spec references external data URLs. External fetch is disabled in offline mode. Use inline <code>"values"</code> instead.</div>';
+                        return;
+                    }
+                }
+                window.vegaEmbed(element, spec, { renderer: 'svg', actions: false }).catch(err => {
+                    element.innerHTML = `<pre class="qde-error">Vega error: ${this.escapeHtml(err.message)}</pre>`;
+                });
+            } catch (err) {
+                element.innerHTML = `<pre class="qde-error">Vega JSON error: ${this.escapeHtml(err.message)}</pre>`;
+            }
+        };
+
+        if (window.vegaEmbed) {
+            setTimeout(renderChart, 0);
+        } else {
+            if (!window._qde_vega_loading) {
+                // Vega-Embed requires vega + vega-lite loaded first (peer deps)
+                window._qde_vega_loading = (async () => {
+                    try {
+                        await this.loadScript('https://cdn.jsdelivr.net/npm/vega@5');
+                        await this.loadScript('https://cdn.jsdelivr.net/npm/vega-lite@5');
+                        await this.loadScript('https://cdn.jsdelivr.net/npm/vega-embed@6');
+                        return !!window.vegaEmbed;
+                    } catch (err) {
+                        console.warn('Failed to load Vega:', err);
+                        window._qde_vega_loading = null;
+                        return false;
+                    }
+                })();
+            }
+            window._qde_vega_loading.then(loaded => {
+                if (loaded) {
+                    renderChart();
+                } else {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load Vega visualization library</div>';
+                    }
+                }
+            });
+        }
+
+        const container = document.createElement('div');
+        container.id = id;
+        container.className = 'qde-vega-container';
+        container.contentEditable = 'false';
+        container.setAttribute('data-qd-source', code);
+        container.setAttribute('data-qd-fence', '```');
+        container.setAttribute('data-qd-lang', lang);
+        container.style.cssText = 'min-height: 100px; margin: 0.5em 0;';
+        container.textContent = 'Loading visualization...';
+
+        return container.outerHTML;
+    }
+
     /**
      * Render Mermaid diagram
      */
@@ -1824,7 +2110,12 @@ class QuikdownEditor {
             const p = (async () => {
                 try {
                     const tasks = [];
-                    if (lib.script) tasks.push(this.loadScript(lib.script));
+                    // scripts (array) = sequential deps; script (string) = single load
+                    if (lib.scripts) {
+                        for (const s of lib.scripts) await this.loadScript(s);
+                    } else if (lib.script) {
+                        tasks.push(this.loadScript(lib.script));
+                    }
                     if (lib.css)    tasks.push(this.loadCSS(lib.css, 'qde-hljs-light'));
                     if (lib.cssDark) tasks.push(this.loadCSS(lib.cssDark, 'qde-hljs-dark'));
                     await Promise.all(tasks);
@@ -2032,13 +2323,7 @@ class QuikdownEditor {
         // destroy MathJax-typeset SVG output with raw pre-typeset HTML.
         if (mode !== 'source' && previousMode === 'source' && this._html) {
             this.previewPanel.innerHTML = this._html;
-            if (typeof window !== 'undefined' && window.MathJax && window.MathJax.typesetPromise) {
-                const mathElements = this.previewPanel.querySelectorAll('.math-display');
-                if (mathElements.length > 0) {
-                    window.MathJax.typesetPromise(Array.from(mathElements))
-                        .catch(() => {});
-                }
-            }
+            this._typesetMath(this.previewPanel);
         }
 
         // Trigger mode change event

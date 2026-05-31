@@ -1016,4 +1016,181 @@ children:
             expect(result).toContain('first item');
         });
     });
+
+    describe('GFM alert rendering (AST HTML)', () => {
+        test('NOTE alert renders with class', () => {
+            const result = quikdown_ast_html('> [!NOTE]\n> text');
+            expect(result).toContain('quikdown-alert');
+            expect(result).toContain('quikdown-alert-note');
+            expect(result).toContain('Note');
+        });
+
+        test('TIP alert renders', () => {
+            const result = quikdown_ast_html('> [!TIP]\n> text');
+            expect(result).toContain('Tip');
+        });
+
+        test('WARNING alert renders', () => {
+            const result = quikdown_ast_html('> [!WARNING]\n> text');
+            expect(result).toContain('Warning');
+        });
+
+        test('IMPORTANT alert renders', () => {
+            const result = quikdown_ast_html('> [!IMPORTANT]\n> text');
+            expect(result).toContain('Important');
+        });
+
+        test('CAUTION alert renders', () => {
+            const result = quikdown_ast_html('> [!CAUTION]\n> text');
+            expect(result).toContain('Caution');
+        });
+
+        test('alert renders with inline_styles', () => {
+            const result = quikdown_ast_html('> [!NOTE]\n> styled', { inline_styles: true });
+            expect(result).toContain('style=');
+            expect(result).toContain('border-left');
+            expect(result).toContain('Note');
+        });
+
+        test('TIP inline_styles has green border', () => {
+            const result = quikdown_ast_html('> [!TIP]\n> styled', { inline_styles: true });
+            expect(result).toContain('#1a7f37');
+        });
+
+        test('WARNING inline_styles has yellow border', () => {
+            const result = quikdown_ast_html('> [!WARNING]\n> styled', { inline_styles: true });
+            expect(result).toContain('#9a6700');
+        });
+
+        test('IMPORTANT inline_styles has purple border', () => {
+            const result = quikdown_ast_html('> [!IMPORTANT]\n> styled', { inline_styles: true });
+            expect(result).toContain('#8250df');
+        });
+
+        test('CAUTION inline_styles has red border', () => {
+            const result = quikdown_ast_html('> [!CAUTION]\n> styled', { inline_styles: true });
+            expect(result).toContain('#cf222e');
+        });
+
+        test('alert node rendered directly', () => {
+            const ast = {
+                type: 'document',
+                children: [{
+                    type: 'alert',
+                    alertType: 'note',
+                    children: [{ type: 'paragraph', children: [{ type: 'text', value: 'hi' }] }]
+                }]
+            };
+            const html = quikdown_ast_html(ast);
+            expect(html).toContain('Note');
+            expect(html).toContain('hi');
+        });
+    });
+
+    describe('table column normalization (AST HTML)', () => {
+        test('short body row padded', () => {
+            const result = quikdown_ast_html('| A | B | C |\n|---|---|---|\n| 1 |');
+            const tdCount = (result.match(/<td[\s>]/g) || []).length;
+            expect(tdCount).toBe(3);
+        });
+
+        test('short header padded via alignments', () => {
+            const ast = {
+                type: 'document',
+                children: [{
+                    type: 'table',
+                    headers: [[{ type: 'text', value: 'A' }]],
+                    rows: [],
+                    alignments: ['left', 'center']
+                }]
+            };
+            const html = quikdown_ast_html(ast);
+            const thCount = (html.match(/<th[\s>]/g) || []).length;
+            expect(thCount).toBe(2);
+        });
+    });
+
+    describe('blockquote lazy continuation (AST HTML)', () => {
+        test('continuation line rendered in blockquote', () => {
+            const result = quikdown_ast_html('> start\ncontinuation');
+            expect(result).toContain('continuation');
+            expect(result).toContain('<blockquote');
+        });
+    });
+
+    describe('autolink trailing punctuation (AST HTML)', () => {
+        test('trailing period stripped', () => {
+            const result = quikdown_ast_html('Visit https://example.com.');
+            expect(result).toContain('href="https://example.com"');
+        });
+
+        test('balanced parens preserved', () => {
+            const result = quikdown_ast_html('https://en.wikipedia.org/wiki/Foo_(bar)');
+            expect(result).toContain('Foo_(bar)');
+        });
+
+        test('unbalanced paren stripped', () => {
+            const result = quikdown_ast_html('(see https://example.com)');
+            expect(result).toContain('href="https://example.com"');
+        });
+    });
+
+    describe('blockquote lazy continuation breakers (AST HTML)', () => {
+        test('heading breaks continuation', () => {
+            const result = quikdown_ast_html('> quote\n# Heading');
+            expect(result).toContain('<h1');
+        });
+
+        test('HR breaks continuation', () => {
+            const result = quikdown_ast_html('> quote\n---');
+            expect(result).toContain('<hr');
+        });
+
+        test('list breaks continuation', () => {
+            const result = quikdown_ast_html('> quote\n- item');
+            expect(result).toContain('<li');
+        });
+
+        test('ordered list breaks continuation', () => {
+            const result = quikdown_ast_html('> quote\n1. item');
+            expect(result).toContain('<li');
+        });
+
+        test('code fence breaks continuation', () => {
+            const result = quikdown_ast_html('> quote\n```\ncode\n```');
+            expect(result).toContain('<code');
+        });
+
+        test('table breaks continuation', () => {
+            const result = quikdown_ast_html('> quote\n| A | B |\n|---|---|\n| 1 | 2 |');
+            expect(result).toContain('<table');
+        });
+
+        test('*** HR breaks continuation', () => {
+            const result = quikdown_ast_html('> quote\n***');
+            expect(result).toContain('<hr');
+        });
+
+        test('___ HR breaks continuation', () => {
+            const result = quikdown_ast_html('> quote\n___');
+            expect(result).toContain('<hr');
+        });
+
+        test('blank line breaks continuation', () => {
+            const result = quikdown_ast_html('> quote\n\nparagraph');
+            expect(result).toContain('<p>paragraph</p>');
+        });
+    });
+
+    describe('empty/null input (AST HTML)', () => {
+        test('null input produces empty string', () => {
+            const result = quikdown_ast_html(null);
+            expect(result).toBe('');
+        });
+
+        test('empty string produces empty string', () => {
+            const result = quikdown_ast_html('');
+            expect(result).toBe('');
+        });
+    });
 });

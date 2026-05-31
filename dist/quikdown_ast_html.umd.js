@@ -1,6 +1,6 @@
 /**
  * quikdown_ast_html - AST to HTML Markdown Parser
- * @version 1.2.16
+ * @version 1.2.17
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -19,7 +19,7 @@
      */
 
     // Version will be injected at build time
-    const quikdownVersion$1 = '1.2.16';
+    const quikdownVersion$1 = '1.2.17';
 
     // Safety limit to prevent infinite loops in list parsing
     const MAX_LOOP_ITERATIONS = 1000;
@@ -44,6 +44,43 @@
             type: 'document',
             children
         };
+    }
+
+    /**
+     * Check if a line breaks lazy blockquote continuation (AST version).
+     * Uses raw markdown (not HTML-escaped).
+     */
+    function isAstLazyContinuationBreaker(line) {
+        const trimmed = line.trim();
+        if (trimmed === '') return true;
+        if (/^#{1,6}\s/.test(trimmed)) return true;
+        if (/^---+\s*$/.test(trimmed) || /^\*\*\*+\s*$/.test(trimmed) || /^___+\s*$/.test(trimmed)) return true;
+        if (/^>\s*/.test(trimmed)) return true;
+        if (/^[-*+]\s/.test(trimmed)) return true;
+        if (/^\d+\.\s/.test(trimmed)) return true;
+        if (trimmed.startsWith('|')) return true;
+        if (/^(```|~~~)/.test(trimmed)) return true;
+        return false;
+    }
+
+    /**
+     * Strip trailing punctuation from an autolinked URL (AST version).
+     * Handles balanced parentheses (e.g. Wikipedia URLs).
+     */
+    function stripTrailingPunctuationAst(url) {
+        let trailing = '';
+        const punct = /[.,;:!?)]/;
+        while (url.length > 0 && punct.test(url[url.length - 1])) {
+            const ch = url[url.length - 1];
+            if (ch === ')') {
+                const opens = (url.match(/\(/g) || []).length;
+                const closes = (url.match(/\)/g) || []).length;
+                if (opens >= closes) break;
+            }
+            trailing = ch + trailing;
+            url = url.slice(0, -1);
+        }
+        return { url, trailing };
     }
 
     /**
@@ -121,17 +158,41 @@
                 }
             }
 
-            // Blockquote
+            // Blockquote (with lazy continuation + GFM alert detection)
             if (line.match(/^>\s*/)) {
                 const quoteLines = [];
-                while (i < lines.length && lines[i].match(/^>\s*/)) {
-                    quoteLines.push(lines[i].replace(/^>\s*/, ''));
-                    i++;
+                let inQuote = true;
+                while (i < lines.length) {
+                    if (lines[i].match(/^>\s*/)) {
+                        quoteLines.push(lines[i].replace(/^>\s*/, ''));
+                        inQuote = true;
+                        i++;
+                    } else if (inQuote && !isAstLazyContinuationBreaker(lines[i])) {
+                        quoteLines.push(lines[i]);
+                        i++;
+                    } else {
+                        break;
+                    }
                 }
-                blocks.push({
-                    type: 'blockquote',
-                    children: parseBlocks(quoteLines.join('\n'))
-                });
+
+                // Check for GFM alert syntax on first line
+                const alertMatch = quoteLines.length > 0
+                    ? quoteLines[0].trim().match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i)
+                    : null;
+
+                if (alertMatch) {
+                    const alertType = alertMatch[1].toLowerCase();
+                    blocks.push({
+                        type: 'alert',
+                        alertType,
+                        children: parseBlocks(quoteLines.slice(1).join('\n'))
+                    });
+                } else {
+                    blocks.push({
+                        type: 'blockquote',
+                        children: parseBlocks(quoteLines.join('\n'))
+                    });
+                }
                 continue;
             }
 
@@ -203,10 +264,16 @@
             return 'left';
         });
 
-        // Parse headers with inline formatting
-        const headers = headerCells.map(cell => parseInline(cell.trim()));
+        const colCount = alignments.length;
 
-        // Parse body rows
+        // Parse headers with inline formatting, normalized to colCount
+        const headers = [];
+        for (let c = 0; c < colCount; c++) {
+            const cell = c < headerCells.length ? headerCells[c] : '';
+            headers.push(parseInline(cell.trim()));
+        }
+
+        // Parse body rows, normalized to colCount
         const rows = [];
         let i = startIndex + 2;
         while (i < lines.length) {
@@ -214,7 +281,12 @@
             if (!rowLine.includes('|') || rowLine.trim() === '') break;
 
             const cells = parseTableRow(rowLine);
-            rows.push(cells.map(cell => parseInline(cell.trim())));
+            const row = [];
+            for (let c = 0; c < colCount; c++) {
+                const cell = c < cells.length ? cells[c] : '';
+                row.push(parseInline(cell.trim()));
+            }
+            rows.push(row);
             i++;
         }
 
@@ -408,7 +480,7 @@
             }
 
             // Inline code: `code`
-            const codeMatch = remaining.match(/^`([^`]+)`/);
+            const codeMatch = remaining.match(/^`([^`\n]+)`/);
             if (codeMatch) {
                 nodes.push({
                     type: 'code',
@@ -458,11 +530,15 @@
             // Autolinks: URLs starting with http:// or https://
             const urlMatch = remaining.match(/^(https?:\/\/[^\s<>[\]]+)/);
             if (urlMatch) {
+                const { url: cleanUrl, trailing } = stripTrailingPunctuationAst(urlMatch[1]);
                 nodes.push({
                     type: 'link',
-                    url: urlMatch[1],
-                    children: [{ type: 'text', value: urlMatch[1] }]
+                    url: cleanUrl,
+                    children: [{ type: 'text', value: cleanUrl }]
                 });
+                if (trailing) {
+                    nodes.push({ type: 'text', value: trailing });
+                }
                 remaining = remaining.slice(urlMatch[0].length);
                 continue;
             }
@@ -539,7 +615,7 @@
 
 
     // Version will be injected at build time
-    const quikdownVersion = '1.2.16';
+    const quikdownVersion = '1.2.17';
 
     // Constants
     const CLASS_PREFIX = 'quikdown-';
@@ -571,7 +647,14 @@
         ol: 'margin:.5em 0;padding-left:2em',
         li: 'margin:.25em 0',
         'task-item': 'list-style:none',
-        'task-checkbox': 'margin-right:.5em'
+        'task-checkbox': 'margin-right:.5em',
+        'alert': 'padding:1em;margin:1em 0;border-left:4px solid #0969da;border-radius:4px;background:#ddf4ff',
+        'alert-title': 'font-weight:600;margin:0 0 .4em',
+        'alert-note': 'border-left-color:#0969da;background:#ddf4ff',
+        'alert-tip': 'border-left-color:#1a7f37;background:#dafbe1',
+        'alert-important': 'border-left-color:#8250df;background:#fbefff',
+        'alert-warning': 'border-left-color:#9a6700;background:#fff8c5',
+        'alert-caution': 'border-left-color:#cf222e;background:#ffebe9'
     };
 
     /**
@@ -961,6 +1044,18 @@
             case 'blockquote':
                 return `<blockquote${getAttr('blockquote')}>${renderChildren(node.children, getAttr, options)}</blockquote>`;
 
+            case 'alert': {
+                const alertType = (node.alertType || 'note').toLowerCase();
+                const label = { note: 'Note', tip: 'Tip', important: 'Important', warning: 'Warning', caution: 'Caution' }[alertType] || 'Note';
+                if (options.inline_styles) {
+                    const baseStyle = QUIKDOWN_STYLES['alert'];
+                    const typeStyle = QUIKDOWN_STYLES['alert-' + alertType];
+                    const merged = typeStyle ? `${baseStyle};${typeStyle}` : baseStyle;
+                    return `<div style="${merged}"><p style="${QUIKDOWN_STYLES['alert-title']}">${label}</p>${renderChildren(node.children, getAttr, options)}</div>`;
+                }
+                return `<div class="${CLASS_PREFIX}alert ${CLASS_PREFIX}alert-${alertType}"><p class="${CLASS_PREFIX}alert-title">${label}</p>${renderChildren(node.children, getAttr, options)}</div>`;
+            }
+
             case 'list':
                 const listTag = node.ordered ? 'ol' : 'ul';
                 const items = (node.items || []).map(item => renderNode(item, getAttr, options)).join('');
@@ -1046,16 +1141,18 @@
      */
     function renderTable(node, getAttr, options) {
         const alignments = node.alignments || [];
+        const colCount = alignments.length || (node.headers ? node.headers.length : 0);
 
         let html = `<table${getAttr('table')}>\n`;
 
         // Headers
         if (node.headers && node.headers.length > 0) {
             html += '<thead>\n<tr>\n';
-            node.headers.forEach((header, i) => {
+            for (let i = 0; i < colCount; i++) {
+                const header = i < node.headers.length ? node.headers[i] : [];
                 const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
                 html += `<th${getAttr('th', alignStyle)}>${renderChildren(header, getAttr, options)}</th>\n`;
-            });
+            }
             html += '</tr>\n</thead>\n';
         }
 
@@ -1064,10 +1161,11 @@
             html += '<tbody>\n';
             node.rows.forEach(row => {
                 html += '<tr>\n';
-                row.forEach((cell, i) => {
+                for (let i = 0; i < colCount; i++) {
+                    const cell = i < row.length ? row[i] : [];
                     const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
                     html += `<td${getAttr('td', alignStyle)}>${renderChildren(cell, getAttr, options)}</td>\n`;
-                });
+                }
                 html += '</tr>\n';
             });
             html += '</tbody>\n';

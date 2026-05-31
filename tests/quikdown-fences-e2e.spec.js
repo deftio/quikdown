@@ -245,6 +245,93 @@ test.describe('Fence Rendering E2E', () => {
     });
 
     // ──────────────────────────────────────────────────────────────
+    //  ABC Music Notation (ABCJS)
+    // ──────────────────────────────────────────────────────────────
+
+    test.describe('ABC Fences', () => {
+        test('renders ABC notation container', async ({ page }) => {
+            await setMarkdown(page, '```abc\nX:1\nT:Scale\nM:4/4\nK:C\nC D E F | G A B c |\n```');
+            await page.waitForTimeout(3000); // ABCJS loading
+            const html = await getHTML(page);
+            expect(html).toContain('abc');
+        });
+
+        test('renders ABC container element with correct class', async ({ page }) => {
+            await setMarkdown(page, '```abc\nX:1\nT:Test\nK:C\nC D E F |\n```');
+            await page.waitForTimeout(1000);
+            const preview = page.locator('.qde-preview');
+            const count = await preview.locator('.qde-abc-container').count();
+            expect(count).toBeGreaterThan(0);
+        });
+
+        test('handles invalid ABC gracefully', async ({ page }) => {
+            await setMarkdown(page, '```abc\nnot valid abc\n```');
+            await page.waitForTimeout(1000);
+            const html = await getHTML(page);
+            expect(html).toBeTruthy();
+        });
+    });
+
+    // ──────────────────────────────────────────────────────────────
+    //  Vega / Vega-Lite (Vega-Embed)
+    // ──────────────────────────────────────────────────────────────
+
+    test.describe('Vega Fences', () => {
+        test('renders vega-lite container', async ({ page }) => {
+            const spec = JSON.stringify({
+                "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                data: { values: [{ a: "A", b: 10 }, { a: "B", b: 20 }] },
+                mark: "bar",
+                encoding: {
+                    x: { field: "a", type: "nominal" },
+                    y: { field: "b", type: "quantitative" }
+                }
+            });
+            await setMarkdown(page, '```vega-lite\n' + spec + '\n```');
+            await page.waitForTimeout(3000); // Vega loading
+            const html = await getHTML(page);
+            expect(html).toContain('vega');
+        });
+
+        test('renders vega-lite container element with correct class', async ({ page }) => {
+            const spec = JSON.stringify({
+                "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                data: { values: [{ x: 1, y: 2 }] },
+                mark: "point",
+                encoding: {
+                    x: { field: "x", type: "quantitative" },
+                    y: { field: "y", type: "quantitative" }
+                }
+            });
+            await setMarkdown(page, '```vega-lite\n' + spec + '\n```');
+            await page.waitForTimeout(1000);
+            const preview = page.locator('.qde-preview');
+            const count = await preview.locator('.qde-vega-container').count();
+            expect(count).toBeGreaterThan(0);
+        });
+
+        test('vegalite alias works', async ({ page }) => {
+            const spec = JSON.stringify({
+                data: { values: [{ a: 1 }] },
+                mark: "point",
+                encoding: { x: { field: "a", type: "quantitative" } }
+            });
+            await setMarkdown(page, '```vegalite\n' + spec + '\n```');
+            await page.waitForTimeout(1000);
+            const preview = page.locator('.qde-preview');
+            const count = await preview.locator('.qde-vega-container').count();
+            expect(count).toBeGreaterThan(0);
+        });
+
+        test('handles invalid Vega JSON gracefully', async ({ page }) => {
+            await setMarkdown(page, '```vega-lite\n{not valid json\n```');
+            await page.waitForTimeout(1000);
+            const html = await getHTML(page);
+            expect(html).toBeTruthy();
+        });
+    });
+
+    // ──────────────────────────────────────────────────────────────
     //  STL 3D Rendering (Three.js)
     // ──────────────────────────────────────────────────────────────
 
@@ -700,6 +787,61 @@ test.describe('Rich Copy Canvas E2E', () => {
         // Stripped mode should still contain the text
         if (result) {
             expect(result).toContain('Bold');
+        }
+    });
+
+    test('copyRendered converts ABC notation SVG to PNG image', async ({ page }) => {
+        await setMarkdown(page, '```abc\nX:1\nT:Scale\nK:C\nC D E F |\n```');
+        await page.waitForTimeout(3000); // Wait for ABCJS to render
+
+        const result = await page.evaluate(async () => {
+            try {
+                await window.editor.copyRendered();
+                const items = await navigator.clipboard.read();
+                const htmlBlob = await items[0].getType('text/html');
+                return { success: true, html: await htmlBlob.text() };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        });
+
+        if (result.success) {
+            // ABC renders SVG which should be converted to PNG, or fallback placeholder
+            const hasImage = result.html.includes('data:image/png') || result.html.includes('<img');
+            const hasPlaceholder = result.html.includes('Music Notation');
+            expect(hasImage || hasPlaceholder).toBe(true);
+        }
+    });
+
+    test('copyRendered converts Vega chart SVG to PNG image', async ({ page }) => {
+        const spec = JSON.stringify({
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            data: { values: [{ a: "X", b: 10 }, { a: "Y", b: 20 }] },
+            mark: "bar",
+            encoding: {
+                x: { field: "a", type: "nominal" },
+                y: { field: "b", type: "quantitative" }
+            }
+        });
+        await setMarkdown(page, '```vega-lite\n' + spec + '\n```');
+        await page.waitForTimeout(3000); // Wait for Vega to render
+
+        const result = await page.evaluate(async () => {
+            try {
+                await window.editor.copyRendered();
+                const items = await navigator.clipboard.read();
+                const htmlBlob = await items[0].getType('text/html');
+                return { success: true, html: await htmlBlob.text() };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        });
+
+        if (result.success) {
+            // Vega renders SVG which should be converted to PNG, or fallback placeholder
+            const hasImage = result.html.includes('data:image/png') || result.html.includes('<img');
+            const hasPlaceholder = result.html.includes('Vega Chart');
+            expect(hasImage || hasPlaceholder).toBe(true);
         }
     });
 

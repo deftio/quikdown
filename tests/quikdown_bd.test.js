@@ -675,16 +675,16 @@ End of document.`;
         expect(html).toContain('<blockquote');
       });
 
-      test('blockquote immediately followed by non-blockquote content', () => {
+      test('blockquote immediately followed by non-blockquote content (lazy continuation)', () => {
         const input = '> Quote here\nNot a quote';
         const html = quikdown_bd(input);
         expect(html).toContain('<blockquote');
         expect(html).toContain('Quote here');
         expect(html).toContain('Not a quote');
-        // "Not a quote" should NOT be inside the blockquote
+        // CommonMark lazy continuation: "Not a quote" IS inside the blockquote
         const bqMatch = html.match(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/);
         expect(bqMatch).toBeTruthy();
-        expect(bqMatch[1]).not.toContain('Not a quote');
+        expect(bqMatch[1]).toContain('Not a quote');
       });
 
       test('blockquote with inline_styles option', () => {

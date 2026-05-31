@@ -908,6 +908,37 @@ describe('quikdown_bd edge cases and full coverage', () => {
     });
   });
   
+  describe('Backslash Escapes in BD', () => {
+    test('escaped asterisk prevents italic in BD output', () => {
+      const html = quikdown_bd('\\*not italic\\*');
+      expect(html).not.toContain('<em');
+      expect(html).toContain('*not italic*');
+    });
+
+    test('escaped backtick prevents code in BD output', () => {
+      const html = quikdown_bd('\\`not code\\`');
+      expect(html).not.toContain('<code');
+      expect(html).toContain('`');
+    });
+
+    test('escaped hash prevents heading in BD output', () => {
+      const html = quikdown_bd('\\# not heading');
+      expect(html).not.toContain('<h1');
+    });
+
+    test('double backslash produces single backslash in BD output', () => {
+      const html = quikdown_bd('\\\\');
+      expect(html).toContain('\\');
+    });
+
+    test('mixed escaped and unescaped formatting in BD', () => {
+      const html = quikdown_bd('\\*literal\\* and *italic*');
+      expect(html).toContain('<em');
+      expect(html).toContain('italic');
+      expect(html).not.toMatch(/<em[^>]*>\s*literal/);
+    });
+  });
+
   describe('Complex Round-trip Scenarios', () => {
     let dom;
     
@@ -973,6 +1004,124 @@ End of document.`;
       expect(recovered).toContain('![Image](test.png)');
       expect(recovered).toContain('> Blockquote');
       expect(recovered).toContain('---');
+    });
+  });
+
+  describe('autolink trailing punctuation (BD)', () => {
+    test('strips trailing period', () => {
+      const html = quikdown_bd('Visit https://example.com.');
+      expect(html).toContain('href="https://example.com"');
+      expect(html).toContain('>https://example.com</a>.');
+    });
+
+    test('balanced parens preserved', () => {
+      const html = quikdown_bd('https://en.wikipedia.org/wiki/Foo_(bar)');
+      expect(html).toContain('Foo_(bar)');
+    });
+
+    test('unbalanced paren stripped', () => {
+      const html = quikdown_bd('(see https://example.com)');
+      expect(html).toContain('href="https://example.com"');
+    });
+  });
+
+  describe('blockquote lazy continuation (BD)', () => {
+    test('lazy continuation included in blockquote', () => {
+      const html = quikdown_bd('> quote\ncontinuation');
+      expect(html.match(/<blockquote/g).length).toBe(1);
+      expect(html).toContain('continuation');
+    });
+
+    test('heading breaks continuation', () => {
+      const html = quikdown_bd('> quote\n# Heading');
+      expect(html).toContain('<h1');
+    });
+
+    test('HR breaks continuation', () => {
+      const html = quikdown_bd('> quote\n---');
+      expect(html).toContain('<hr');
+    });
+
+    test('list breaks continuation', () => {
+      const html = quikdown_bd('> quote\n- item');
+      expect(html).toContain('<li');
+    });
+
+    test('ordered list breaks continuation', () => {
+      const html = quikdown_bd('> quote\n1. item');
+      expect(html).toContain('<li');
+    });
+
+    test('table breaks continuation', () => {
+      const html = quikdown_bd('> quote\n| A | B |');
+      expect(html).toContain('<blockquote');
+    });
+
+    test('code block breaks continuation', () => {
+      const html = quikdown_bd('> quote\n```\ncode\n```');
+      expect(html).toContain('<pre');
+    });
+
+    test('blank line breaks continuation', () => {
+      const html = quikdown_bd('> quote\n\nparagraph');
+      expect(html).toContain('<p>paragraph</p>');
+    });
+  });
+
+  describe('GFM alert blocks (BD)', () => {
+    test('NOTE alert renders', () => {
+      const html = quikdown_bd('> [!NOTE]\n> text');
+      expect(html).toContain('Note');
+      expect(html).not.toContain('[!NOTE]');
+    });
+
+    test('TIP alert with inline_styles', () => {
+      const html = quikdown_bd('> [!TIP]\n> text', { inline_styles: true });
+      expect(html).toContain('Tip');
+      expect(html).toContain('#1a7f37');
+    });
+
+    test('WARNING alert', () => {
+      const html = quikdown_bd('> [!WARNING]\n> text', { inline_styles: true });
+      expect(html).toContain('Warning');
+      expect(html).toContain('#9a6700');
+    });
+
+    test('IMPORTANT alert', () => {
+      const html = quikdown_bd('> [!IMPORTANT]\n> text', { inline_styles: true });
+      expect(html).toContain('Important');
+      expect(html).toContain('#8250df');
+    });
+
+    test('CAUTION alert', () => {
+      const html = quikdown_bd('> [!CAUTION]\n> text', { inline_styles: true });
+      expect(html).toContain('Caution');
+      expect(html).toContain('#cf222e');
+    });
+
+    test('class mode', () => {
+      const html = quikdown_bd('> [!NOTE]\n> text');
+      expect(html).toContain('quikdown-alert');
+      expect(html).toContain('quikdown-alert-note');
+    });
+
+    test('invalid type stays blockquote', () => {
+      const html = quikdown_bd('> [!INVALID]\n> text');
+      expect(html).toContain('<blockquote');
+    });
+  });
+
+  describe('table column normalization (BD)', () => {
+    test('short body row padded', () => {
+      const html = quikdown_bd('| A | B | C |\n|---|---|---|\n| 1 |');
+      const tdCount = (html.match(/<td[\s>]/g) || []).length;
+      expect(tdCount).toBe(3);
+    });
+
+    test('long body row trimmed', () => {
+      const html = quikdown_bd('| A | B |\n|---|---|\n| 1 | 2 | 3 |');
+      const tdCount = (html.match(/<td[\s>]/g) || []).length;
+      expect(tdCount).toBe(2);
     });
   });
 });

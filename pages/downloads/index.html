@@ -85,7 +85,7 @@
     <a class="qd-nav-brand" href="../../pages/" aria-label="quikdown home">
       <img class="qd-nav-brand-icon" src="../../pages/assets/logo-nav.svg" alt="" aria-hidden="true">
       <span class="qd-nav-brand-text">quikdown</span>
-      <span class="qd-nav-brand-version">v1.2.16</span>
+      <span class="qd-nav-brand-version">v1.2.17</span>
     </a>
     <button class="qd-nav-toggle" id="qd-nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false">
       <span class="qd-nav-toggle-bar"></span>
@@ -183,7 +183,7 @@
       </div>
     </div>
     <div class="qd-footer-bottom">
-      <div>quikdown v1.2.16 — © deftio · BSD-2 licensed</div>
+      <div>quikdown v1.2.17 — © deftio · BSD-2 licensed</div>
       <div>Built with HTML, CSS, and JavaScript. Zero runtime dependencies.</div>
     </div>
   </div>
@@ -202,7 +202,7 @@
         desc: 'Drop-in editor with live preview, bidirectional editing, fence plugins, undo/redo, themes.',
         match: f => f.file.startsWith('quikdown_edit.') && !f.type },
       { prefix: 'quikdown_edit_standalone.', title: 'quikdown_edit_standalone', note: 'offline / air-gapped editor',
-        desc: 'Same editor API with highlight.js, Mermaid, DOMPurify, Leaflet, and Three.js bundled — no CDN required. See docs/standalone-editor.md.',
+        desc: 'Same editor API with highlight.js, Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax bundled — no CDN required. See docs/standalone-editor.md.',
         match: f => f.file.startsWith('quikdown_edit_standalone.') && !f.type },
       { title: 'quikdown_ast', note: 'AST output', desc: 'Parse markdown into an abstract syntax tree.',
         match: f => f.file.startsWith('quikdown_ast.') && !f.type },

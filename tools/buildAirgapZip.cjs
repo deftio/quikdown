@@ -20,6 +20,8 @@ const zipPath = path.join(distDir, zipName);
 const REQUIRED = [
   'dist/quikdown_edit_standalone.umd.min.js',
   'dist/quikdown_edit_standalone.esm.min.js',
+  'dist/basemap_countries_110m.topojson',
+  'dist/basemap_admin1_lines.topojson',
   'dist/quikdown.light.min.css',
   'dist/quikdown.dark.min.css',
 ];
@@ -27,6 +29,8 @@ const REQUIRED = [
 const STAGED_NAMES = {
   'dist/quikdown_edit_standalone.umd.min.js': 'quikdown_edit_standalone.umd.min.js',
   'dist/quikdown_edit_standalone.esm.min.js': 'quikdown_edit_standalone.esm.min.js',
+  'dist/basemap_countries_110m.topojson': 'basemap_countries_110m.topojson',
+  'dist/basemap_admin1_lines.topojson': 'basemap_admin1_lines.topojson',
   'dist/quikdown.light.min.css': 'quikdown.light.min.css',
   'dist/quikdown.dark.min.css': 'quikdown.dark.min.css',
 };

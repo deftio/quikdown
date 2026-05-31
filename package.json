@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.2.16",
+  "version": "1.2.17",
   "description": "quikdown is a simple markdown to HTML parser that supports fences",
   "author": "deftio (https://github.com/deftio)",
   "license": "BSD-2-Clause",
@@ -9,7 +9,7 @@
     "url": "git://github.com/deftio/quikdown.git"
   },
   "bugs": {
-    "url": "git://github.com/deftio/quikdown/issues"
+    "url": "https://github.com/deftio/quikdown/issues"
   },
   "homepage": "https://github.com/deftio/quikdown",
   "keywords": [
@@ -127,7 +127,8 @@
     "dev": "npx bwcli serve . -p 6811",
     "serve": "npx bwcli serve . -p 6811",
     "buildSite": "node ./tools/buildSite.js",
-    "build:standalone": "rollup -c rollup.config.standalone.js",
+    "build:basemap": "node tools/buildBasemap.cjs",
+    "build:standalone": "npm run build:basemap && NODE_OPTIONS='--max-old-space-size=8192' rollup -c rollup.config.standalone.js",
     "build:all": "npm run build && npm run build:standalone",
     "build:css": "node tools/generateThemeCSS.js",
     "minify:css": "node tools/minifyThemeCSS.js",
@@ -196,10 +197,10 @@
         "statements": 94
       },
       "./dist/quikdown_edit.esm.js": {
-        "lines": 80,
-        "functions": 85,
+        "lines": 79,
+        "functions": 84,
         "branches": 72,
-        "statements": 80
+        "statements": 79
       },
       "./dist/quikdown_ast.esm.js": {
         "lines": 98,
@@ -241,8 +242,10 @@
     "@playwright/test": "^1.59.1",
     "@rollup/plugin-babel": "^7.0.0",
     "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-terser": "^1.0.0",
+    "abcjs": "^6.4.0",
     "babel-jest": "^30.3.0",
     "bitwrench": "^2.0.31",
     "clean-css": "^5.3.3",
@@ -258,14 +261,22 @@
     "jest-environment-jsdom": "^30.3.0",
     "jsdom": "^26.1.0",
     "leaflet": "^1.9.4",
+    "mathjax-full": "^3.2.2",
     "mermaid": "^11.14.0",
     "playwright": "^1.59.1",
     "rollup": "^4.60.2",
     "rollup-plugin-css-only": "^4.5.5",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "rollup-plugin-postcss": "^4.0.2",
+    "sane-topojson": "^4.0.0",
     "three": "^0.184.0",
+    "topojson-client": "^3.1.0",
+    "topojson-server": "^3.0.1",
     "typescript": "^6.0.3",
+    "vega": "^5.30.0",
+    "vega-embed": "^6.26.0",
+    "vega-lite": "^5.21.0",
+    "world-atlas": "^2.0.2",
     "ws": "^8.20.1"
   }
 }

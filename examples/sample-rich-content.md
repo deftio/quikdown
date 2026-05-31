@@ -163,22 +163,7 @@ And a summation example:
 
 ## GeoJSON Map Example
 
-This demonstrates a fenced GeoJSON block that renders an interactive map:
-
-```geojson
-{
-  "type": "Feature",
-  "geometry": {
-    "type": "Point",
-    "coordinates": [-74.0445, 40.6892]
-  },
-  "properties": {
-    "name": "Statue of Liberty"
-  }
-}
-```
-
-A more complex GeoJSON example with multiple features:
+Central European capitals on the interactive basemap:
 
 ```geojson
 {
@@ -186,27 +171,50 @@ A more complex GeoJSON example with multiple features:
   "features": [
     {
       "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-122.4194, 37.7749]
-      },
-      "properties": {
-        "name": "San Francisco",
-        "population": 884363
-      }
+      "geometry": { "type": "Point", "coordinates": [16.3738, 48.2082] },
+      "properties": { "name": "Vienna" }
     },
     {
       "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [-74.0060, 40.7128]
-      },
-      "properties": {
-        "name": "New York City",
-        "population": 8336817
-      }
+      "geometry": { "type": "Point", "coordinates": [14.4378, 50.0755] },
+      "properties": { "name": "Prague" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [19.0402, 47.4979] },
+      "properties": { "name": "Budapest" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [17.1077, 48.1486] },
+      "properties": { "name": "Bratislava" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [14.5058, 46.0569] },
+      "properties": { "name": "Ljubljana" }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [15.9819, 45.8150] },
+      "properties": { "name": "Zagreb" }
     }
   ]
+}
+```
+
+A single-point example:
+
+```geojson
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [16.3738, 48.2082]
+  },
+  "properties": {
+    "name": "Vienna"
+  }
 }
 ```
 

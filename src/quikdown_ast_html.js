@@ -41,7 +41,14 @@ const QUIKDOWN_STYLES = {
     ol: 'margin:.5em 0;padding-left:2em',
     li: 'margin:.25em 0',
     'task-item': 'list-style:none',
-    'task-checkbox': 'margin-right:.5em'
+    'task-checkbox': 'margin-right:.5em',
+    'alert': 'padding:1em;margin:1em 0;border-left:4px solid #0969da;border-radius:4px;background:#ddf4ff',
+    'alert-title': 'font-weight:600;margin:0 0 .4em',
+    'alert-note': 'border-left-color:#0969da;background:#ddf4ff',
+    'alert-tip': 'border-left-color:#1a7f37;background:#dafbe1',
+    'alert-important': 'border-left-color:#8250df;background:#fbefff',
+    'alert-warning': 'border-left-color:#9a6700;background:#fff8c5',
+    'alert-caution': 'border-left-color:#cf222e;background:#ffebe9'
 };
 
 /**
@@ -431,6 +438,18 @@ function renderNode(node, getAttr, options) {
         case 'blockquote':
             return `<blockquote${getAttr('blockquote')}>${renderChildren(node.children, getAttr, options)}</blockquote>`;
 
+        case 'alert': {
+            const alertType = (node.alertType || 'note').toLowerCase();
+            const label = { note: 'Note', tip: 'Tip', important: 'Important', warning: 'Warning', caution: 'Caution' }[alertType] || 'Note';
+            if (options.inline_styles) {
+                const baseStyle = QUIKDOWN_STYLES['alert'];
+                const typeStyle = QUIKDOWN_STYLES['alert-' + alertType];
+                const merged = typeStyle ? `${baseStyle};${typeStyle}` : baseStyle;
+                return `<div style="${merged}"><p style="${QUIKDOWN_STYLES['alert-title']}">${label}</p>${renderChildren(node.children, getAttr, options)}</div>`;
+            }
+            return `<div class="${CLASS_PREFIX}alert ${CLASS_PREFIX}alert-${alertType}"><p class="${CLASS_PREFIX}alert-title">${label}</p>${renderChildren(node.children, getAttr, options)}</div>`;
+        }
+
         case 'list':
             const listTag = node.ordered ? 'ol' : 'ul';
             const items = (node.items || []).map(item => renderNode(item, getAttr, options)).join('');
@@ -516,16 +535,18 @@ function renderChildren(children, getAttr, options) {
  */
 function renderTable(node, getAttr, options) {
     const alignments = node.alignments || [];
+    const colCount = alignments.length || (node.headers ? node.headers.length : 0);
 
     let html = `<table${getAttr('table')}>\n`;
 
     // Headers
     if (node.headers && node.headers.length > 0) {
         html += '<thead>\n<tr>\n';
-        node.headers.forEach((header, i) => {
+        for (let i = 0; i < colCount; i++) {
+            const header = i < node.headers.length ? node.headers[i] : [];
             const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
             html += `<th${getAttr('th', alignStyle)}>${renderChildren(header, getAttr, options)}</th>\n`;
-        });
+        }
         html += '</tr>\n</thead>\n';
     }
 
@@ -534,10 +555,11 @@ function renderTable(node, getAttr, options) {
         html += '<tbody>\n';
         node.rows.forEach(row => {
             html += '<tr>\n';
-            row.forEach((cell, i) => {
+            for (let i = 0; i < colCount; i++) {
+                const cell = i < row.length ? row[i] : [];
                 const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
                 html += `<td${getAttr('td', alignStyle)}>${renderChildren(cell, getAttr, options)}</td>\n`;
-            });
+            }
             html += '</tr>\n';
         });
         html += '</tbody>\n';

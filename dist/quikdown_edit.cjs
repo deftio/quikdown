@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.2.16
+ * @version 1.2.17
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -147,11 +147,13 @@ function looksLikeTableRow(line) {
  * block detection and a **per-block inline pass** for formatting:
  *
  *   ┌─────────────────────────────────────────────────────────┐
- *   │  Phase 1 — Code Extraction                             │
- *   │  Scan for fenced code blocks (``` / ~~~) and inline    │
- *   │  code spans (`…`). Replace with §CB§ / §IC§ place-    │
- *   │  holders so code content is never touched by later      │
- *   │  phases.                                                │
+ *   │  Phase 1 — Code + Escape Extraction                     │
+ *   │  1a. Fenced code blocks (``` / ~~~) → §CB§ placeholders│
+ *   │  1b. Escaped backticks (\`) → §BE§ placeholders        │
+ *   │  1c. Inline code spans (`…`) → §IC§ placeholders       │
+ *   │      Cannot cross newlines (scoped to single line).     │
+ *   │  1d. Remaining backslash escapes (\* \_ etc.) → §BE§   │
+ *   │      Only ASCII punctuation is escapable; \a stays.     │
  *   ├─────────────────────────────────────────────────────────┤
  *   │  Phase 2 — HTML Escaping                                │
  *   │  Escape &, <, >, ", ' in the remaining text to prevent │
@@ -199,7 +201,7 @@ function looksLikeTableRow(line) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.16';
+const quikdownVersion = '1.2.17';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -208,6 +210,7 @@ const CLASS_PREFIX = 'quikdown-';
 const PLACEHOLDER_CB = '§CB';   // fenced code blocks
 const PLACEHOLDER_IC = '§IC';   // inline code spans
 const PLACEHOLDER_HT = '§HT';  // safe HTML tags (limited mode)
+const PLACEHOLDER_BE = '§BE';  // backslash escapes
 
 /** Attributes whose values need URL sanitization */
 const URL_ATTRIBUTES = { href:1, src:1, action:1, formaction:1 };
@@ -248,7 +251,14 @@ const QUIKDOWN_STYLES = {
     ol: 'margin:.5em 0;padding-left:2em',
     li: 'margin:.25em 0',
     'task-item': 'list-style:none',
-    'task-checkbox': 'margin-right:.5em'
+    'task-checkbox': 'margin-right:.5em',
+    'alert': 'padding:1em;margin:1em 0;border-left:4px solid #0969da;border-radius:4px;background:#ddf4ff',
+    'alert-title': 'font-weight:600;margin:0 0 .4em',
+    'alert-note': 'border-left-color:#0969da;background:#ddf4ff',
+    'alert-tip': 'border-left-color:#1a7f37;background:#dafbe1',
+    'alert-important': 'border-left-color:#8250df;background:#fbefff',
+    'alert-warning': 'border-left-color:#9a6700;background:#fff8c5',
+    'alert-caution': 'border-left-color:#cf222e;background:#ffebe9'
 };
 
 // ────────────────────────────────────────────────────────────────────
@@ -337,6 +347,28 @@ function uniqueSlug(base, counts) {
 }
 
 /**
+ * Strip trailing punctuation from an autolinked URL.
+ * Handles balanced parentheses (e.g. Wikipedia URLs).
+ * @param {string} url  The matched URL text
+ * @returns {{ url: string, trailing: string }}
+ */
+function stripTrailingPunctuation(url) {
+    let trailing = '';
+    const punct = /[.,;:!?)]/;
+    while (url.length > 0 && punct.test(url[url.length - 1])) {
+        const ch = url[url.length - 1];
+        if (ch === ')') {
+            const opens = (url.match(/\(/g) || []).length;
+            const closes = (url.match(/\)/g) || []).length;
+            if (opens >= closes) break; // balanced — ) is part of URL
+        }
+        trailing = ch + trailing;
+        url = url.slice(0, -1);
+    }
+    return { url, trailing };
+}
+
+/**
  * Count leading blockquote depth on an HTML-escaped line (&gt; markers).
  * @returns {{ depth: number, content: string }}
  */
@@ -351,31 +383,94 @@ function parseBlockquoteLine(line) {
     return { depth, content: line.slice(pos) };
 }
 
+/**
+ * Check if a line breaks lazy blockquote continuation.
+ * @param {string} line  HTML-escaped line text
+ * @returns {boolean}
+ */
+function isLazyContinuationBreaker(line) {
+    const trimmed = line.trim();
+    if (trimmed === '') return true;                          // blank line
+    if (/^#{1,6}\s/.test(trimmed)) return true;              // heading
+    if (isHRLine(trimmed)) return true;                       // HR
+    /* istanbul ignore next -- defensive: &gt; lines are caught by parseBlockquoteLine first */
+    if (/^&gt;/.test(trimmed)) return true;                   // new blockquote
+    if (/^[-*+]\s/.test(trimmed)) return true;               // unordered list
+    if (/^\d+\.\s/.test(trimmed)) return true;               // ordered list
+    if (trimmed.startsWith('|')) return true;                  // table row
+    if (trimmed.startsWith(PLACEHOLDER_CB)) return true;      // code block placeholder
+    return false;
+}
+
+/** GFM alert type labels */
+const ALERT_LABELS = {
+    NOTE: 'Note', TIP: 'Tip', IMPORTANT: 'Important',
+    WARNING: 'Warning', CAUTION: 'Caution'
+};
+
 /** Render nested blockquotes from a run of parsed lines. */
 function renderNestedBlockquotes(items, getAttr, dataQd) {
+    // ── GFM alert detection ──
+    // Check if the first item's content matches [!TYPE]
+    /* istanbul ignore next -- depth is always 1 for outermost blockquote */
+    const alertMatch = items.length > 0 && items[0].depth === 1
+        ? items[0].content.trim().match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i)
+        : null;
+
     let html = '';
     const stack = [];
+    const useInlineStyles = getAttr('blockquote').includes('style=');
 
     for (let idx = 0; idx < items.length; idx++) {
         const { depth, content } = items[idx];
         /* istanbul ignore next -- depth is always >= 1 from parseBlockquoteLine gate */
         if (depth <= 0) continue;
 
+        // Skip the [!TYPE] marker line — we'll render it as a title
+        if (alertMatch && idx === 0) {
+            const alertType = alertMatch[1].toUpperCase();
+            const typeLower = alertType.toLowerCase();
+            if (useInlineStyles) {
+                const baseStyle = QUIKDOWN_STYLES['alert'];
+                const typeStyle = QUIKDOWN_STYLES['alert-' + typeLower];
+                /* istanbul ignore next -- typeStyle is always defined for valid alert types */
+                const merged = typeStyle ? `${baseStyle};${typeStyle}` : baseStyle;
+                html += `<div style="${merged}"${dataQd('>')}>`;
+            } else {
+                html += `<div class="${CLASS_PREFIX}alert ${CLASS_PREFIX}alert-${typeLower}"${dataQd('>')}>`;
+            }
+            // Title
+            const label = ALERT_LABELS[alertType];
+            if (useInlineStyles) {
+                html += `<p style="${QUIKDOWN_STYLES['alert-title']}">${label}</p>`;
+            } else {
+                html += `<p class="${CLASS_PREFIX}alert-title">${label}</p>`;
+            }
+            stack.push('alert');
+            continue;
+        }
+
         while (stack.length > depth) {
-            html += '</blockquote>';
-            stack.pop();
+            const tag = stack.pop();
+            /* istanbul ignore next -- alert closing uses </div>, blockquote uses </blockquote> */
+            html += tag === 'alert' ? '</div>' : '</blockquote>';
         }
         while (stack.length < depth) {
-            html += `<blockquote${getAttr('blockquote')}${dataQd('>')}>`;
-            stack.push(true);
+            /* istanbul ignore next -- defensive: alert div already opened at depth 0 */
+            if (stack.length === 0 && alertMatch) {
+                stack.push('alert');
+            } else {
+                html += `<blockquote${getAttr('blockquote')}${dataQd('>')}>`;
+                stack.push('blockquote');
+            }
         }
         html += content;
         if (idx < items.length - 1) html += '\n';
     }
 
     while (stack.length > 0) {
-        html += '</blockquote>';
-        stack.pop();
+        const tag = stack.pop();
+        html += tag === 'alert' ? '</div>' : '</blockquote>';
     }
 
     return html.trimEnd();
@@ -589,12 +684,36 @@ function quikdown(markdown, options = {}) {
         return placeholder;
     });
 
+    // ── Escaped backticks ──
+    // Extract \` before inline code extraction so an escaped backtick
+    // does not participate in code span pairing.
+    const backslashEscapes = [];
+    html = html.replace(/\\`/g, () => {
+        const placeholder = `${PLACEHOLDER_BE}${backslashEscapes.length}§`;
+        backslashEscapes.push('`');
+        return placeholder;
+    });
+
     // ── Inline code spans ──
     // Matches a single backtick pair: `content`.
     // Content is captured and HTML-escaped immediately.
-    html = html.replace(/`([^`]+)`/g, (match, code) => {
+    html = html.replace(/`([^`\n]+)`/g, (match, code) => {
         const placeholder = `${PLACEHOLDER_IC}${inlineCodes.length}§`;
         inlineCodes.push(escapeHtml(code));
+        return placeholder;
+    });
+
+    // ────────────────────────────────────────────────────────────────
+    //  Phase 1.25 — Backslash Escape Extraction
+    // ────────────────────────────────────────────────────────────────
+    // Extract remaining backslash-escaped ASCII punctuation so those
+    // characters are not interpreted as markdown formatting.  Runs
+    // after code extraction (so \* inside code blocks and inline code
+    // is already protected) and before HTML escaping.
+
+    html = html.replace(/\\([\\*_{}[\]()#+\-.!~|<>])/g, (match, char) => {
+        const placeholder = `${PLACEHOLDER_BE}${backslashEscapes.length}§`;
+        backslashEscapes.push(escapeHtml(char));
         return placeholder;
     });
 
@@ -720,9 +839,10 @@ function quikdown(markdown, options = {}) {
     });
 
     // Autolinks — bare https?:// URLs become clickable <a> tags
-    html = html.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (match, prefix, url) => {
+    html = html.replace(/(^|\s)(https?:\/\/[^\s<]+)/g, (match, prefix, rawUrl) => {
+        const { url, trailing } = stripTrailingPunctuation(rawUrl);
         const sanitizedUrl = sanitizeUrl(url, options.allow_unsafe_urls);
-        return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>`;
+        return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>${trailing}`;
     });
 
     // Protect rendered tags so emphasis regexes don't see attribute
@@ -746,6 +866,10 @@ function quikdown(markdown, options = {}) {
     html = html.replace(/%%T(\d+)%%/g, (_, i) => savedTags[i]);
 
     // ── Step 5: Line breaks + paragraph wrapping ──
+
+    // Backslash at end of line → hard line break (CommonMark)
+    html = html.replace(/\\\n/g, `<br${getAttr('br')}>`);
+
     if (lazy_linefeeds) {
         // Lazy linefeeds mode: every single \n becomes <br> EXCEPT:
         //   • Double newlines → paragraph break
@@ -811,6 +935,8 @@ function quikdown(markdown, options = {}) {
         [/(<\/table>)<\/p>/g, '$1'],
         [/<p>(<pre[^>]*>)/g, '$1'],
         [/(<\/pre>)<\/p>/g, '$1'],
+        [/<p>(<div[^>]*>)/g, '$1'],
+        [/(<\/div>)<\/p>/g, '$1'],
         [new RegExp(`<p>(${PLACEHOLDER_CB}\\d+§)</p>`, 'g'), '$1']
     ];
     cleanupPatterns.forEach(([pattern, replacement]) => {
@@ -818,7 +944,7 @@ function quikdown(markdown, options = {}) {
     });
 
     // When a block element is followed by a newline and then text, open a <p>.
-    html = html.replace(/(<\/(?:h[1-6]|blockquote|ul|ol|table|pre|hr)>)\n([^<])/g, '$1\n<p>$2');
+    html = html.replace(/(<\/(?:h[1-6]|blockquote|div|ul|ol|table|pre|hr)>)\n([^<])/g, '$1\n<p>$2');
 
     // ────────────────────────────────────────────────────────────────
     //  Phase 4 — Code Restoration
@@ -867,6 +993,11 @@ function quikdown(markdown, options = {}) {
     inlineCodes.forEach((code, i) => {
         const placeholder = `${PLACEHOLDER_IC}${i}§`;
         html = html.replace(placeholder, `<code${getAttr('code')}${dataQd('`')}>${code}</code>`);
+    });
+
+    // Restore backslash escapes
+    backslashEscapes.forEach((char, i) => {
+        html = html.replace(`${PLACEHOLDER_BE}${i}§`, char);
     });
 
     return html.trim();
@@ -945,11 +1076,23 @@ function scanLineBlocks(text, getAttr, dataQd, headingIds, slugCounts, escapeHtm
         // ── Blockquote ──
         // After Phase 2, the '>' character has been escaped to '&gt;'.
         // Supports nested levels: >> inner, > > inner
+        // Supports lazy continuation: lines without > prefix continue
+        // the blockquote at the previous depth.
         if (parseBlockquoteLine(line).depth > 0) {
             const bqLines = [];
-            while (i < lines.length && parseBlockquoteLine(lines[i]).depth > 0) {
-                bqLines.push(parseBlockquoteLine(lines[i]));
-                i++;
+            let lastDepth = 0;
+            while (i < lines.length) {
+                const parsed = parseBlockquoteLine(lines[i]);
+                if (parsed.depth > 0) {
+                    bqLines.push(parsed);
+                    lastDepth = parsed.depth;
+                    i++;
+                } else if (lastDepth > 0 && !isLazyContinuationBreaker(lines[i])) {
+                    bqLines.push({ depth: lastDepth, content: lines[i] });
+                    i++;
+                } else {
+                    break;
+                }
             }
             result.push(renderNestedBlockquotes(bqLines, getAttr, dataQd));
             continue;
@@ -980,7 +1123,7 @@ function processInlineMarkdown(text, getAttr) {
         [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
         [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em'],
         [/~~(.+?)~~/g, 'del'],
-        [/`([^`]+)`/g, 'code']
+        [/`([^`\n]+)`/g, 'code']
     ];
     patterns.forEach(([pattern, tag]) => {
         text = text.replace(pattern, `<${tag}${getAttr(tag)}>$1</${tag}>`);
@@ -1084,6 +1227,8 @@ function buildTable(lines, getAttr, bidirectional) {
         });
     }
 
+    const colCount = alignments.length;
+
     /* istanbul ignore next - bd-only branch */
     const alignAttr = bidirectional ? ` data-qd-align="${alignments.join(',')}"` : '';
     let html = `<table${getAttr('table')}${alignAttr}>\n`;
@@ -1093,11 +1238,12 @@ function buildTable(lines, getAttr, bidirectional) {
     headerLines.forEach(line => {
         html += `<tr${getAttr('tr')}>\n`;
         const cells = parseTableCells(line);
-        cells.forEach((cell, i) => {
+        for (let i = 0; i < colCount; i++) {
+            const cell = i < cells.length ? cells[i] : '';
             const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
             const processedCell = processInlineMarkdown(cell.trim(), getAttr);
             html += `<th${getAttr('th', alignStyle)}>${processedCell}</th>\n`;
-        });
+        }
         html += '</tr>\n';
     });
     html += '</thead>\n';
@@ -1108,11 +1254,12 @@ function buildTable(lines, getAttr, bidirectional) {
         bodyLines.forEach(line => {
             html += `<tr${getAttr('tr')}>\n`;
             const cells = parseTableCells(line);
-            cells.forEach((cell, i) => {
+            for (let i = 0; i < colCount; i++) {
+                const cell = i < cells.length ? cells[i] : '';
                 const alignStyle = alignments[i] && alignments[i] !== 'left' ? `text-align:${alignments[i]}` : '';
                 const processedCell = processInlineMarkdown(cell.trim(), getAttr);
                 html += `<td${getAttr('td', alignStyle)}>${processedCell}</td>\n`;
-            });
+            }
             html += '</tr>\n';
         });
         html += '</tbody>\n';
@@ -1243,6 +1390,11 @@ quikdown.emitStyles = function(prefix = 'quikdown-', theme = 'light') {
             '#f2f2f2': '#2a2a2a',   // th background
             '#ddd': '#3a3a3a',      // borders
             '#06c': '#6db3f2',      // links
+            '#ddf4ff': '#162d50',   // alert-note bg
+            '#dafbe1': '#16351d',   // alert-tip bg
+            '#fbefff': '#2d1a42',   // alert-important bg
+            '#fff8c5': '#342a10',   // alert-warning bg
+            '#ffebe9': '#3d1418',   // alert-caution bg
             _textColor: '#e0e0e0'
         },
         light: {
@@ -1260,12 +1412,12 @@ quikdown.emitStyles = function(prefix = 'quikdown-', theme = 'light') {
                     themedStyle = themedStyle.replaceAll(oldColor, newColor);
                 }
             }
-            const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];
+            const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote', 'alert', 'alert-title'];
             if (needsTextColor.includes(tag)) {
                 themedStyle += `;color:${themeOverrides.dark._textColor}`;
             }
         } else /* istanbul ignore next */ if (theme === 'light' && themeOverrides.light) {
-            const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote'];
+            const needsTextColor = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'td', 'li', 'blockquote', 'alert', 'alert-title'];
             if (needsTextColor.includes(tag)) {
                 themedStyle += `;color:${themeOverrides.light._textColor}`;
             }
@@ -2443,6 +2595,97 @@ async function getRenderedContent(previewPanel, options = {}) {
             }
         }
         
+        // 2b. Process ABC music notation — convert SVG to PNG
+        // ABCJS renders responsive SVGs (width="100%", no height) whose
+        // clientHeight reflects the container, not the content. Use the
+        // viewBox aspect ratio to derive the correct image height.
+        const abcContainers = clone.querySelectorAll('.qde-abc-container');
+        for (const container of abcContainers) {
+            const svg = container.querySelector('svg');
+            if (svg) {
+                try {
+                    const pngBlob = await svgToPng(svg);
+                    const dataUrl = await new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(pngBlob);
+                    });
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+
+                    // Derive dimensions from viewBox (accurate) rather than
+                    // clientWidth/Height (stretched by container)
+                    const vb = svg.viewBox && svg.viewBox.baseVal;
+                    let imgWidth, imgHeight;
+                    if (vb && vb.width && vb.height) {
+                        const aspect = vb.width / vb.height;
+                        imgWidth = svg.clientWidth || vb.width;
+                        imgHeight = Math.round(imgWidth / aspect);
+                    } else {
+                        imgWidth = svg.clientWidth || parseFloat(svg.getAttribute('width')) || 400;
+                        imgHeight = svg.clientHeight || parseFloat(svg.getAttribute('height')) || 200;
+                    }
+
+                    img.width = imgWidth;
+                    img.height = imgHeight;
+                    img.setAttribute('width', imgWidth.toString());
+                    img.setAttribute('height', imgHeight.toString());
+                    img.style.width = imgWidth + 'px';
+                    img.style.height = imgHeight + 'px';
+                    img.style.maxWidth = 'none';
+                    img.style.maxHeight = 'none';
+                    img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
+                    img.alt = 'Music Notation';
+                    container.parentNode.replaceChild(img, container);
+                } catch (err) {
+                    console.warn('Failed to convert ABC notation:', err);
+                }
+            } else {
+                const placeholder = document.createElement('div');
+                placeholder.style.cssText = 'padding: 12px; background-color: #f0f0f0; border: 1px solid #ccc; text-align: center; margin: 0.5em 0; border-radius: 4px;';
+                placeholder.textContent = '[Music Notation - Interactive content not available in copy]';
+                container.parentNode.replaceChild(placeholder, container);
+            }
+        }
+
+        // 2c. Process Vega charts — convert SVG to PNG
+        const vegaContainers = clone.querySelectorAll('.qde-vega-container');
+        for (const container of vegaContainers) {
+            const svg = container.querySelector('svg');
+            if (svg) {
+                try {
+                    const pngBlob = await svgToPng(svg);
+                    const dataUrl = await new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(pngBlob);
+                    });
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+                    const imgWidth = svg.clientWidth || parseFloat(svg.getAttribute('width')) || 400;
+                    const imgHeight = svg.clientHeight || parseFloat(svg.getAttribute('height')) || 300;
+                    img.width = imgWidth;
+                    img.height = imgHeight;
+                    img.setAttribute('width', imgWidth.toString());
+                    img.setAttribute('height', imgHeight.toString());
+                    img.style.width = imgWidth + 'px';
+                    img.style.height = imgHeight + 'px';
+                    img.style.maxWidth = 'none';
+                    img.style.maxHeight = 'none';
+                    img.setAttribute('v:shapes', 'image' + Math.random().toString(36).substr(2, 9));
+                    img.alt = 'Data Visualization';
+                    container.parentNode.replaceChild(img, container);
+                } catch (err) {
+                    console.warn('Failed to convert Vega chart:', err);
+                }
+            } else {
+                const placeholder = document.createElement('div');
+                placeholder.style.cssText = 'padding: 12px; background-color: #f0f0f0; border: 1px solid #ccc; text-align: center; margin: 0.5em 0; border-radius: 4px;';
+                placeholder.textContent = '[Vega Chart - Interactive content not available in copy]';
+                container.parentNode.replaceChild(placeholder, container);
+            }
+        }
+
         // 3. Process Chart.js charts - convert canvas to image
         const chartContainers = clone.querySelectorAll('.qde-chart-container');
         for (const container of chartContainers) {
@@ -3205,7 +3448,7 @@ async function getRenderedContent(previewPanel, options = {}) {
 
 
 /** Build-time version stamp (injected by rollup replaceVersion plugin) */
-const quikdownEditorVersion = '1.2.16';
+const quikdownEditorVersion = '1.2.17';
 
 /**
  * Curated safe HTML tag whitelist.
@@ -3279,7 +3522,8 @@ const DEFAULT_OPTIONS = {
     showUndoRedo: false,      // Show undo/redo toolbar buttons
     undoStackSize: 100,       // Maximum number of undo states to keep
     allowUnsafeHTML: false,   // false | 'limited' | true — controls HTML passthrough
-    showAllowUnsafeHTML: false // Show toolbar button to cycle HTML mode
+    showAllowUnsafeHTML: false, // Show toolbar button to cycle HTML mode
+    allowExternalFetch: true  // Allow fence renderers to fetch external resources (CDN, tiles, etc.)
 };
 
 // Library catalog used by preloadFences. Each entry knows how to:
@@ -3336,6 +3580,22 @@ const FENCE_LIBRARIES = {
     stl: {
         check: () => typeof window.THREE !== 'undefined',
         script: 'https://unpkg.com/three@0.147.0/build/three.min.js'
+    },
+    abc: {
+        check: () => typeof window.ABCJS !== 'undefined',
+        script: 'https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js'
+    },
+    music: {
+        check: () => typeof window.ABCJS !== 'undefined',
+        script: 'https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js'
+    },
+    vega: {
+        check: () => typeof window.vegaEmbed !== 'undefined',
+        scripts: [
+            'https://cdn.jsdelivr.net/npm/vega@5',
+            'https://cdn.jsdelivr.net/npm/vega-lite@5',
+            'https://cdn.jsdelivr.net/npm/vega-embed@6'
+        ]
     }
 };
 
@@ -3724,6 +3984,15 @@ class QuikdownEditor {
                 display: inline;
             }
             .qde-preview .leaflet-container { box-sizing: border-box; }
+            .qde-preview .leaflet-container.qde-offline-map {
+                background: #b8d4f0;
+            }
+            .qde-preview .leaflet-container.qde-offline-map path {
+                shape-rendering: geometricPrecision;
+            }
+            .qde-dark .qde-preview .leaflet-container.qde-offline-map {
+                background: #1a3048;
+            }
 
             /* Standard markdown tables (the .quikdown-table class) need to
                scroll horizontally inside their own wrapper rather than
@@ -4160,15 +4429,7 @@ class QuikdownEditor {
                 this.previewPanel.innerHTML = this._html;
 
                 // Process all math elements with MathJax if loaded (like squibview)
-                if (window.MathJax && window.MathJax.typesetPromise) {
-                    const mathElements = this.previewPanel.querySelectorAll('.math-display');
-                    if (mathElements.length > 0) {
-                        window.MathJax.typesetPromise(Array.from(mathElements))
-                            .catch(_err => {
-                                console.warn('MathJax batch processing failed:', _err);
-                            });
-                    }
-                }
+                this._typesetMath(this.previewPanel);
             }
         }
         
@@ -4344,6 +4605,15 @@ class QuikdownEditor {
                         
                     case 'stl':
                         return this.renderSTL(code);
+
+                    case 'abc':
+                    case 'music':
+                        return this.renderABC(code);
+
+                    case 'vega':
+                    case 'vega-lite':
+                    case 'vegalite':
+                        return this.renderVega(code, lang);
                 }
             }
             
@@ -4531,6 +4801,48 @@ class QuikdownEditor {
     }
     
     /**
+     * Typeset math elements, handling both ready and not-yet-ready MathJax.
+     * In the standalone bundle MathJax may be imported but its async startup
+     * not yet complete, so typesetPromise is not available immediately.
+     */
+    _typesetMath(root) {
+        const mathElements = (root || this.previewPanel || document).querySelectorAll('.math-display');
+        if (mathElements.length === 0) return;
+        const elements = Array.from(mathElements);
+
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise(elements).catch(() => {});
+        } else if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+            // Standalone bundle: MathJax imported but async startup not finished
+            window.MathJax.startup.promise.then(() => {
+                if (window.MathJax.typesetPromise) {
+                    window.MathJax.typesetPromise(elements).catch(() => {});
+                }
+            }).catch(() => {});
+        } else if (window.MathJax) {
+            // MathJax config exists but startup not yet initialized — poll
+            const poll = (n) => {
+                if (n <= 0) return;
+                setTimeout(() => {
+                    if (!window.MathJax) return;
+                    if (window.MathJax.typesetPromise) {
+                        window.MathJax.typesetPromise(elements).catch(() => {});
+                    } else if (window.MathJax.startup && window.MathJax.startup.promise) {
+                        window.MathJax.startup.promise.then(() => {
+                            if (window.MathJax && window.MathJax.typesetPromise) {
+                                window.MathJax.typesetPromise(elements).catch(() => {});
+                            }
+                        }).catch(() => {});
+                    } else {
+                        poll(n - 1);
+                    }
+                }, 100);
+            };
+            poll(50);
+        }
+    }
+
+    /**
      * Ensures MathJax is loaded (but doesn't process elements)
      */
     ensureMathJaxLoaded() {
@@ -4565,16 +4877,9 @@ class QuikdownEditor {
             script.async = true;
             script.onload = () => {
                 window.mathJaxLoading = false;
-                
+
                 // Process any existing math elements (like squibview)
-                if (window.MathJax && window.MathJax.typesetPromise) {
-                    const mathElements = (this.previewPanel || document).querySelectorAll('.math-display');
-                    if (mathElements.length > 0) {
-                        window.MathJax.typesetPromise(Array.from(mathElements)).catch(err => {
-                            console.warn('Initial MathJax processing failed:', err);
-                        });
-                    }
-                }
+                this._typesetMath(this.previewPanel || document);
             };
             script.onerror = () => {
                 window.mathJaxLoading = false;
@@ -4710,26 +5015,99 @@ class QuikdownEditor {
                 container.innerHTML = '';
                 container.appendChild(mapDiv);
                 
-                // Create the map
-                const map = L.map(mapId);
-                
+                // Create the map — SVG basemap (not canvas) to avoid tile-clipping bands at world zoom
+                const offlineVector = !this.options.allowExternalFetch;
+                const mapOptions = {
+                    zoomAnimation: !offlineVector,
+                    fadeAnimation: !offlineVector
+                };
+                if (offlineVector) {
+                    mapOptions.minZoom = 2;
+                    mapOptions.maxBounds = [[-84, -180], [84, 180]];
+                    mapOptions.maxBoundsViscosity = 0.85;
+                }
+                const map = L.map(mapId, mapOptions);
+                if (offlineVector) {
+                    map.getContainer().classList.add('qde-offline-map');
+                    const tilePane = map.getPane('tilePane');
+                    if (tilePane) tilePane.style.display = 'none';
+                }
+
                 // Store back-reference for capture (per Gem's guide)
                 container._map = map; // Avoid window pollution
-                
-                // Add tile layer with CORS support
-                const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '',
-                    crossOrigin: 'anonymous' // Important for canvas capture
-                });
-                tileLayer.addTo(map);
+
+                // Add basemap — vector (offline) or OSM tiles (online)
+                let tileLayer = null;
+                const isDark = this.container.classList.contains('qde-dark');
+                if (!this.options.allowExternalFetch && window._qde_worldGeoJSON) {
+                    const basemapStyle = (zoom) => ({
+                        weight: zoom < 4 ? 0.45 : zoom < 6 ? 0.75 : (isDark ? 1 : 1.1),
+                        color: isDark ? '#b8b8b8' : '#1a1a1a',
+                        fillColor: isDark ? '#3a3a3e' : '#ebe6d9',
+                        fillOpacity: 1
+                    });
+                    const admin1Style = (zoom) => ({
+                        weight: zoom < 6 ? 0.45 : (isDark ? 0.5 : 0.6),
+                        color: isDark ? '#666' : '#555',
+                        fillOpacity: 0,
+                        fill: false
+                    });
+
+                    // Country fills — SVG renderer (canvas tiles clip large polygons at low zoom)
+                    const countriesLayer = L.geoJSON(window._qde_worldGeoJSON, {
+                        smoothFactor: 1.5,
+                        style: () => basemapStyle(map.getZoom()),
+                        interactive: false
+                    }).addTo(map);
+
+                    // Admin-1 hidden when zoomed out (dense lines read as horizontal banding)
+                    let admin1Layer = null;
+                    if (window._qde_admin1GeoJSON) {
+                        admin1Layer = L.geoJSON(window._qde_admin1GeoJSON, {
+                            smoothFactor: 1,
+                            style: () => admin1Style(map.getZoom()),
+                            interactive: false
+                        });
+                    }
+
+                    const syncBasemapForZoom = () => {
+                        const z = map.getZoom();
+                        countriesLayer.setStyle(basemapStyle(z));
+                        if (admin1Layer) {
+                            if (z >= 5) {
+                                admin1Layer.setStyle(admin1Style(z));
+                                if (!map.hasLayer(admin1Layer)) admin1Layer.addTo(map);
+                            } else if (map.hasLayer(admin1Layer)) {
+                                map.removeLayer(admin1Layer);
+                            }
+                        }
+                    };
+                    map.on('zoomend', syncBasemapForZoom);
+                    syncBasemapForZoom();
+                } else {
+                    // Standard OSM tiles
+                    tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '',
+                        crossOrigin: 'anonymous' // Important for canvas capture
+                    });
+                    tileLayer.addTo(map);
+                }
                 
                 // Add GeoJSON layer
                 const geoJsonLayer = L.geoJSON(data);
                 geoJsonLayer.addTo(map);
                 
                 // Fit bounds if valid
-                if (geoJsonLayer.getBounds().isValid()) {
-                    map.fitBounds(geoJsonLayer.getBounds());
+                const bounds = geoJsonLayer.getBounds();
+                if (bounds.isValid()) {
+                    const sw = bounds.getSouthWest();
+                    const ne = bounds.getNorthEast();
+                    if (sw.lat === ne.lat && sw.lng === ne.lng) {
+                        // Single point — setView instead of fitBounds to avoid NaN
+                        map.setView([sw.lat, sw.lng], 8);
+                    } else {
+                        map.fitBounds(bounds, { padding: [28, 28], maxZoom: 6 });
+                    }
                 } else {
                     map.setView([0, 0], 2);
                 }
@@ -4739,9 +5117,14 @@ class QuikdownEditor {
                 container._geoJsonLayer = geoJsonLayer;
                 
                 // Optional: Wait for tiles to load for better capture
-                tileLayer.on('load', () => {
+                if (tileLayer) {
+                    tileLayer.on('load', () => {
+                        container.setAttribute('data-tiles-loaded', 'true');
+                    });
+                } else {
+                    // Vector basemap — tiles always "loaded"
                     container.setAttribute('data-tiles-loaded', 'true');
-                });
+                }
                 
             } catch (err) {
                 container.innerHTML = `<pre class="qde-error">GeoJSON error: ${this.escapeHtml(err.message)}</pre>`;
@@ -4749,9 +5132,25 @@ class QuikdownEditor {
         };
         
         // Check if Leaflet is already loaded
+        const runRender = () => {
+            const needBasemap = !this.options.allowExternalFetch
+                && !window._qde_worldGeoJSON
+                && typeof window._qde_ensureBasemap === 'function';
+            if (needBasemap) {
+                window._qde_ensureBasemap().then(() => renderMap()).catch(err => {
+                    const el = document.getElementById(mapId + '-container');
+                    if (el) {
+                        el.innerHTML = `<pre class="qde-error">Basemap load failed: ${this.escapeHtml(err.message)}</pre>`;
+                    }
+                });
+            } else {
+                renderMap();
+            }
+        };
+
         if (window.L) {
             // Render after DOM update
-            setTimeout(renderMap, 0);
+            setTimeout(runRender, 0);
         } else {
             // Lazy load Leaflet only if not already loading
             if (!window._qde_leaflet_loading) {
@@ -4770,7 +5169,7 @@ class QuikdownEditor {
             
             window._qde_leaflet_loading.then(loaded => {
                 if (loaded) {
-                    renderMap();
+                    runRender();
                 } else {
                     const element = document.getElementById(mapId + '-container');
                     if (element) {
@@ -4937,7 +5336,137 @@ class QuikdownEditor {
         
         return geometry;
     }
-    
+
+    /**
+     * Render ABC music notation
+     */
+    renderABC(code) {
+        const id = `qde-abc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const renderNotation = () => {
+            const element = document.getElementById(id);
+            if (!element || !window.ABCJS) return;
+            try {
+                element.innerHTML = '';
+                window.ABCJS.renderAbc(element, code, { responsive: 'resize' });
+            } catch (err) {
+                element.innerHTML = `<pre class="qde-error">ABC notation error: ${this.escapeHtml(err.message)}</pre>`;
+            }
+        };
+
+        if (window.ABCJS) {
+            setTimeout(renderNotation, 0);
+        } else {
+            if (!window._qde_abcjs_loading) {
+                window._qde_abcjs_loading = this.lazyLoadLibrary(
+                    'ABCJS',
+                    () => window.ABCJS,
+                    'https://cdn.jsdelivr.net/npm/abcjs@6/dist/abcjs-basic-min.js'
+                ).catch(err => {
+                    console.warn('Failed to load ABCJS:', err);
+                    window._qde_abcjs_loading = null;
+                    return false;
+                });
+            }
+            window._qde_abcjs_loading.then(loaded => {
+                if (loaded) {
+                    renderNotation();
+                } else {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load ABC notation library</div>';
+                    }
+                }
+            });
+        }
+
+        const container = document.createElement('div');
+        container.id = id;
+        container.className = 'qde-abc-container';
+        container.contentEditable = 'false';
+        container.setAttribute('data-qd-source', code);
+        container.setAttribute('data-qd-fence', '```');
+        container.setAttribute('data-qd-lang', 'abc');
+        container.style.cssText = 'min-height: 80px; margin: 0.5em 0;';
+        container.textContent = 'Loading music notation...';
+
+        return container.outerHTML;
+    }
+
+    /**
+     * Render Vega or Vega-Lite visualization
+     */
+    renderVega(code, lang) {
+        const id = `qde-vega-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        const renderChart = () => {
+            const element = document.getElementById(id);
+            if (!element || !window.vegaEmbed) return;
+            try {
+                const spec = JSON.parse(code);
+                // If using vega-lite alias, ensure $schema is set for vega-lite
+                if ((lang === 'vega-lite' || lang === 'vegalite') && !spec.$schema) {
+                    spec.$schema = 'https://vega.github.io/schema/vega-lite/v5.json';
+                }
+                // Warn about external URL data sources when allowExternalFetch is off
+                if (!this.options.allowExternalFetch) {
+                    const specStr = JSON.stringify(spec);
+                    if (/"url"\s*:/.test(specStr)) {
+                        element.innerHTML = '<div style="padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; color: #856404; font-size: 0.9em;">⚠ This Vega spec references external data URLs. External fetch is disabled in offline mode. Use inline <code>"values"</code> instead.</div>';
+                        return;
+                    }
+                }
+                window.vegaEmbed(element, spec, { renderer: 'svg', actions: false }).catch(err => {
+                    element.innerHTML = `<pre class="qde-error">Vega error: ${this.escapeHtml(err.message)}</pre>`;
+                });
+            } catch (err) {
+                element.innerHTML = `<pre class="qde-error">Vega JSON error: ${this.escapeHtml(err.message)}</pre>`;
+            }
+        };
+
+        if (window.vegaEmbed) {
+            setTimeout(renderChart, 0);
+        } else {
+            if (!window._qde_vega_loading) {
+                // Vega-Embed requires vega + vega-lite loaded first (peer deps)
+                window._qde_vega_loading = (async () => {
+                    try {
+                        await this.loadScript('https://cdn.jsdelivr.net/npm/vega@5');
+                        await this.loadScript('https://cdn.jsdelivr.net/npm/vega-lite@5');
+                        await this.loadScript('https://cdn.jsdelivr.net/npm/vega-embed@6');
+                        return !!window.vegaEmbed;
+                    } catch (err) {
+                        console.warn('Failed to load Vega:', err);
+                        window._qde_vega_loading = null;
+                        return false;
+                    }
+                })();
+            }
+            window._qde_vega_loading.then(loaded => {
+                if (loaded) {
+                    renderChart();
+                } else {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Failed to load Vega visualization library</div>';
+                    }
+                }
+            });
+        }
+
+        const container = document.createElement('div');
+        container.id = id;
+        container.className = 'qde-vega-container';
+        container.contentEditable = 'false';
+        container.setAttribute('data-qd-source', code);
+        container.setAttribute('data-qd-fence', '```');
+        container.setAttribute('data-qd-lang', lang);
+        container.style.cssText = 'min-height: 100px; margin: 0.5em 0;';
+        container.textContent = 'Loading visualization...';
+
+        return container.outerHTML;
+    }
+
     /**
      * Render Mermaid diagram
      */
@@ -5021,7 +5550,12 @@ class QuikdownEditor {
             const p = (async () => {
                 try {
                     const tasks = [];
-                    if (lib.script) tasks.push(this.loadScript(lib.script));
+                    // scripts (array) = sequential deps; script (string) = single load
+                    if (lib.scripts) {
+                        for (const s of lib.scripts) await this.loadScript(s);
+                    } else if (lib.script) {
+                        tasks.push(this.loadScript(lib.script));
+                    }
                     if (lib.css)    tasks.push(this.loadCSS(lib.css, 'qde-hljs-light'));
                     if (lib.cssDark) tasks.push(this.loadCSS(lib.cssDark, 'qde-hljs-dark'));
                     await Promise.all(tasks);
@@ -5229,13 +5763,7 @@ class QuikdownEditor {
         // destroy MathJax-typeset SVG output with raw pre-typeset HTML.
         if (mode !== 'source' && previousMode === 'source' && this._html) {
             this.previewPanel.innerHTML = this._html;
-            if (typeof window !== 'undefined' && window.MathJax && window.MathJax.typesetPromise) {
-                const mathElements = this.previewPanel.querySelectorAll('.math-display');
-                if (mathElements.length > 0) {
-                    window.MathJax.typesetPromise(Array.from(mathElements))
-                        .catch(() => {});
-                }
-            }
+            this._typesetMath(this.previewPanel);
         }
 
         // Trigger mode change event

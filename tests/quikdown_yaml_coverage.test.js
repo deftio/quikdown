@@ -470,4 +470,71 @@ code
             expect(result).toContain('child');
         });
     });
+
+    describe('new parser features in YAML output', () => {
+        test('blockquote lazy continuation', () => {
+            const result = quikdown_yaml('> start\ncontinuation');
+            expect(result).toContain('blockquote');
+            expect(result).toContain('continuation');
+        });
+
+        test('GFM alert', () => {
+            const result = quikdown_yaml('> [!NOTE]\n> text');
+            expect(result).toContain('alert');
+            expect(result).toContain('note');
+        });
+
+        test('all 5 alert types', () => {
+            for (const t of ['NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION']) {
+                const result = quikdown_yaml(`> [!${t}]\n> text`);
+                expect(result).toContain('alert');
+            }
+        });
+
+        test('autolink trailing punctuation', () => {
+            const result = quikdown_yaml('Visit https://example.com.');
+            expect(result).toContain('https://example.com');
+        });
+
+        test('autolink balanced parens', () => {
+            const result = quikdown_yaml('https://en.wikipedia.org/wiki/Foo_(bar)');
+            expect(result).toContain('Foo_(bar)');
+        });
+
+        test('autolink unbalanced paren', () => {
+            const result = quikdown_yaml('(see https://example.com)');
+            expect(result).toContain('https://example.com');
+        });
+
+        test('table column normalization', () => {
+            const result = quikdown_yaml('| A | B | C |\n|---|---|---|\n| 1 |');
+            expect(result).toContain('table');
+        });
+
+        test('lazy continuation breakers', () => {
+            const r1 = quikdown_yaml('> quote\n# Heading');
+            expect(r1).toContain('heading');
+
+            const r2 = quikdown_yaml('> quote\n---');
+            expect(r2).toContain('hr');
+
+            const r3 = quikdown_yaml('> quote\n- item');
+            expect(r3).toContain('list');
+
+            const r4 = quikdown_yaml('> quote\n1. item');
+            expect(r4).toContain('list');
+
+            const r5 = quikdown_yaml('> quote\n| A | B |\n|---|---|\n| 1 | 2 |');
+            expect(r5).toContain('table');
+
+            const r6 = quikdown_yaml('> quote\n```\ncode\n```');
+            expect(r6).toContain('code_block');
+
+            const r7 = quikdown_yaml('> quote\n***');
+            expect(r7).toContain('hr');
+
+            const r8 = quikdown_yaml('> quote\n___');
+            expect(r8).toContain('hr');
+        });
+    });
 });

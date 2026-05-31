@@ -47,3 +47,6 @@ coverage/
 
 # Istanbul-instrumented bundle (built by npm run build:coverage)
 dist/quikdown_edit.esm.cov.js
+
+# Cached Natural Earth download for buildBasemap.cjs (first run)
+tools/data/

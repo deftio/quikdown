@@ -8,7 +8,7 @@ quikdown is a lightweight, zero-dependency markdown-to-HTML parser with built-in
 
 - **Repository:** https://github.com/deftio/quikdown
 - **License:** BSD-2-Clause
-- **Version:** 1.2.16
+- **Version:** 1.2.17
 - **Language:** JavaScript (ES modules, UMD, CommonJS)
 - **TypeScript:** Definitions included in `dist/*.d.ts`
 - **Test framework:** Jest (unit) + Playwright (e2e)
@@ -167,7 +167,7 @@ new QuikdownEditor('#e', { preloadFences: ['mermaid', 'highlightjs'] }); // Spec
 new QuikdownEditor('#e', { preloadFences: null });                     // Lazy (default)
 ```
 
-Recognized names: `'highlightjs'`, `'mermaid'`, `'math'`, `'geojson'`, `'stl'`.
+Recognized names: `'highlightjs'`, `'mermaid'`, `'math'`, `'geojson'`, `'stl'`, `'abc'` / `'music'`, `'vega'`.
 
 **2. customFences** - User-defined renderers (checked before built-ins):
 ```javascript
@@ -190,6 +190,10 @@ new QuikdownEditor('#e', {
 | `math`, `katex`, `tex`, `latex` | MathJax v3 | Yes |
 | `geojson` | Leaflet | Yes |
 | `stl` | Three.js | Yes |
+| `abc`, `music` | ABCJS | Yes |
+| `vega`, `vega-lite`, `vegalite` | Vega + Vega-Lite + Vega-Embed | Yes |
+
+**Authoring:** See `docs/fences.md` for verbose per-fence examples (ABC notation, Vega-Lite specs, GeoJSON, etc.).
 | `csv`, `psv`, `tsv` | Built-in | N/A |
 | `svg` | Built-in | N/A |
 | `html` | DOMPurify | Yes |
@@ -201,10 +205,10 @@ new QuikdownEditor('#e', {
 
 | Variant | Size | Use Case |
 |---------|------|----------|
-| Regular (`quikdown_edit.*`) | ~86 KB | Standard use. Fence libs lazy-loaded from CDN. |
-| Standalone (`quikdown_edit_standalone.*`) | ~3.8 MB | Offline / Electron / PWA. All fence libs pre-bundled. |
+| Regular (`quikdown_edit.*`) | ~98 KB | Standard use. Fence libs lazy-loaded from CDN. |
+| Standalone (`quikdown_edit_standalone.*`) | ~7.7 MB (~1.0 MB gzipped) | Offline / Electron / PWA. All fence libs pre-bundled. |
 
-The standalone bundles Highlight.js (12 languages), Mermaid, DOMPurify, Leaflet, and Three.js. MathJax is NOT bundled (requires dynamic font loading). Both variants have the identical API.
+The standalone bundles Highlight.js (12 languages), Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax. Both variants have the identical API.
 
 ### Editor Setup
 
@@ -362,6 +366,7 @@ Detailed docs in `docs/`:
 | `docs/security.md` | Threat model, XSS prevention, CSP, deployment checklist |
 | `docs/quikdown-bidirectional.md` | HTML ↔ markdown roundtrip |
 | `docs/quikdown-editor.md` | Full editor docs: setup, API, headless, plugins, styling |
+| `docs/fences.md` | **Fence authoring guide** — ABC, Vega-Lite, Mermaid, math, GeoJSON, etc. |
 | `docs/standalone-editor.md` | Standalone/offline editor: bundled libs, build, usage |
 | `docs/llm-integration.md` | LLM/agent patterns: stream, tool editor, quikchat |
 | `docs/quikdown-ast.md` | AST, JSON, YAML structured output |

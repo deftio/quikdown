@@ -125,7 +125,7 @@ for GeoJSON, Three.js for STL, highlight.js for syntax highlighting) is
 fence, it fetches `mermaid.min.js` from the CDN; the first STL fence triggers
 the Three.js download; and so on.
 
-Lazy loading keeps the editor lightweight (~86 KB minified) but introduces a
+Lazy loading keeps the editor lightweight (~98 KB minified) but introduces a
 small "loading…" delay the first time each fence type is rendered. For demo
 pages, documentation sites, or apps where you know in advance which fence
 types you'll need, you can preload those libraries at construction time:
@@ -162,6 +162,8 @@ new QuikdownEditor('#editor', {});
 | `'math'` | MathJax (tex-svg) | `math`, `tex`, `latex`, `katex` fences |
 | `'geojson'` | Leaflet + Leaflet CSS | `geojson` fence |
 | `'stl'` | Three.js | `stl` fence |
+| `'abc'` / `'music'` | ABCJS | `abc`, `music` fences (music notation) |
+| `'vega'` | Vega + Vega-Lite + Vega-Embed | `vega`, `vega-lite`, `vegalite` fences (data visualization) |
 
 **Trade-off**: preloading uses more upfront network (a few hundred KB) but
 eliminates per-fence load delays. Developer's choice — the editor itself
@@ -536,6 +538,8 @@ The editor includes built-in handlers for common fence types that automatically 
 | `geojson` | Interactive maps from GeoJSON | Leaflet | Yes |
 | `stl` | 3D model viewer | Three.js | Yes |
 | `mermaid` | Diagrams | Mermaid | Yes |
+| `abc`, `music` | Music notation (ABC format) | ABCJS | Yes |
+| `vega`, `vega-lite`, `vegalite` | Data visualization charts | Vega + Vega-Lite + Vega-Embed | Yes |
 
 ### Highlight.js
 
@@ -632,11 +636,56 @@ Bob|25|London
 ```json
 {
   "name": "QuikDown",
-  "version": "1.2.16",
+  "version": "1.2.17",
   "features": ["markdown", "preview", "plugins"]
 }
 ```
 ````
+
+#### Music Notation (ABC)
+
+Renders sheet music from [ABC notation](https://abcnotation.com/). Uses the ABCJS library (lazy-loaded from CDN). Both `abc` and `music` fence names are accepted.
+
+````markdown
+```abc
+X:1
+T:Ode to Joy
+M:4/4
+L:1/4
+K:C
+E E F G | G F E D | C C D E | E D/2D/2 D2 |
+```
+````
+
+ABC notation headers: `X:` reference number, `T:` title, `M:` meter, `L:` default note length, `K:` key. Notes use letter names (`C D E F G A B c d e`), with `|` for bar lines and `/2` for half duration.
+
+#### Data Visualization (Vega / Vega-Lite)
+
+Renders interactive charts from [Vega](https://vega.github.io/vega/) or [Vega-Lite](https://vega.github.io/vega-lite/) JSON specs. Accepts `vega`, `vega-lite`, or `vegalite` as the fence language. Vega, Vega-Lite, and Vega-Embed are all lazy-loaded from CDN.
+
+````markdown
+```vega-lite
+{
+  "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+  "data": {
+    "values": [
+      {"category": "A", "value": 28},
+      {"category": "B", "value": 55},
+      {"category": "C", "value": 43}
+    ]
+  },
+  "mark": "bar",
+  "encoding": {
+    "x": {"field": "category", "type": "nominal"},
+    "y": {"field": "value", "type": "quantitative"}
+  }
+}
+```
+````
+
+Data must be provided inline via `"values"`. When `allowExternalFetch` is `false` (standalone/offline mode), specs that reference external `"url"` data sources will show a warning instead of fetching.
+
+If the `$schema` field is omitted on a `vega-lite` or `vegalite` fence, the editor auto-injects the Vega-Lite v5 schema.
 
 ### Custom Fence Plugins
 

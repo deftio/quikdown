@@ -121,6 +121,8 @@ function checkStandaloneBundle() {
     'dist/quikdown_edit_standalone.esm.min.js',
     'dist/quikdown_edit_standalone.umd.js',
     'dist/quikdown_edit_standalone.umd.min.js',
+    'dist/basemap_countries_110m.topojson',
+    'dist/basemap_admin1_lines.topojson',
   ];
   for (const f of required) {
     fileMustExist(f, 'standalone');
