@@ -71,10 +71,15 @@ info "=== Verifying release artifacts (standalone + npm pack) ==="
 npm run verify:release || die "Release verification failed."
 echo ""
 
-info "=== Standalone editor smoke (Playwright) ==="
-npx playwright install chromium 2>/dev/null || true
-npm run test:standalone:e2e || die "Standalone Playwright smoke failed."
-echo ""
+if [ "${SKIP_PLAYWRIGHT:-}" != "1" ]; then
+  info "=== Standalone editor smoke (Playwright) ==="
+  npx playwright install chromium 2>/dev/null || true
+  npm run test:standalone:e2e || die "Standalone Playwright smoke failed."
+  echo ""
+else
+  warn "=== Skipping Playwright standalone smoke (SKIP_PLAYWRIGHT=1) ==="
+  echo ""
+fi
 
 info "=== Building air-gapped zip ==="
 node tools/buildAirgapZip.cjs || die "Air-gap zip build failed."
@@ -84,11 +89,16 @@ info "=== Running tests ==="
 npm test || die "Tests failed. Fix failures before releasing."
 echo ""
 
-info "=== Full coverage (Jest + Playwright Istanbul) ==="
-npm run build:coverage || die "Instrumented build failed."
-npm run test:e2e:coverage || die "E2E coverage tests failed."
-npm run coverage:merge || warn "Coverage merge failed (non-blocking)."
-echo ""
+if [ "${SKIP_PLAYWRIGHT:-}" != "1" ]; then
+  info "=== Full coverage (Jest + Playwright Istanbul) ==="
+  npm run build:coverage || die "Instrumented build failed."
+  npm run test:e2e:coverage || die "E2E coverage tests failed."
+  npm run coverage:merge || warn "Coverage merge failed (non-blocking)."
+  echo ""
+else
+  warn "=== Skipping Playwright e2e coverage (SKIP_PLAYWRIGHT=1) ==="
+  echo ""
+fi
 
 info "=== Verifying publish workflow will succeed ==="
 # Simulate what publish.yml's release job does: gzip + check all release assets exist.

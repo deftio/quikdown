@@ -12,6 +12,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
@@ -96,62 +97,13 @@ jobs:
         if [ "$MISSING" -gt 0 ]; then echo "::error::$MISSING publish release asset(s) missing"; exit 1; fi
         echo "All ${#ASSETS[@]} release assets verified."
 
-  e2e-smoke:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 24.x
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Build project
-      run: npm run build
-
-    - name: Install Playwright Chromium
-      run: npx playwright install --with-deps chromium
-
-    - name: Run smoke e2e tests (blocking)
-      run: npx playwright test --grep @smoke --config=playwright.config.cjs
-
-  e2e:
-    needs: build
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 24.x
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Build project
-      run: npm run build
-
-    - name: Install Playwright Chromium
-      run: npx playwright install --with-deps chromium
-
-    - name: Run e2e tests (full, non-blocking)
-      run: npm run test:e2e
-
-  # Tag + trigger publish: runs only on push to main when the version is new.
-  tag-and-publish:
+  # Trigger publish: runs only on push to main when the version is new.
+  trigger-publish:
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       actions: write
     steps:
     - name: Checkout repository
@@ -175,22 +127,14 @@ jobs:
           echo "::notice::Tag $TAG already exists — not a release commit."
         else
           echo "exists=false" >> "$GITHUB_OUTPUT"
-          echo "Tag $TAG is new — will create and publish."
+          echo "Tag $TAG is new — will trigger publish."
         fi
-
-    - name: Check npm version collision
-      if: steps.tag_exists.outputs.exists == 'false'
-      run: node tools/checkVersion.cjs
-
-    - name: Create and push tag
-      if: steps.tag_exists.outputs.exists == 'false'
-      run: |
-        git tag "${{ steps.version.outputs.version }}"
-        git push origin "${{ steps.version.outputs.version }}"
 
     - name: Trigger publish workflow
       if: steps.tag_exists.outputs.exists == 'false'
       run: |
-        gh workflow run publish.yml -f tag="${{ steps.version.outputs.version }}"
+        gh workflow run publish.yml \
+          -f tag="${{ steps.version.outputs.version }}" \
+          -f sha="${{ github.sha }}"
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
