@@ -367,7 +367,7 @@ Optional **heading slugs**: pass `heading_ids: true` to add `id` attributes on h
 
 Note that raw html, svg, etc can be rendered using appropriate fences
 ```html
-<h1>My HTML Content</h1>
+<h2>My HTML Content</h2>
 <p>Some HTML</p>
 ```
 as long as an appropriate fence plugin is provided.  See API docs for example or try out in quikdown_edit.js which has built-in support for HTML with XSS prevention.
