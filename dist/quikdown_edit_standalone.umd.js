@@ -1,6 +1,6 @@
 /**
  * quikdown_edit_standalone — Offline editor with all fence renderers
- * @version 1.2.17
+ * @version 1.2.19
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  *
@@ -226556,7 +226556,7 @@ void main() {
 	// ────────────────────────────────────────────────────────────────────
 
 	/** Build-time version stamp (injected by tools/updateVersion) */
-	const quikdownVersion = '1.2.17';
+	const quikdownVersion = '1.2.19';
 
 	/** CSS class prefix used for all generated elements */
 	const CLASS_PREFIX = 'quikdown-';
@@ -229803,7 +229803,7 @@ void main() {
 
 
 	/** Build-time version stamp (injected by rollup replaceVersion plugin) */
-	const quikdownEditorVersion = '1.2.17';
+	const quikdownEditorVersion = '1.2.19';
 
 	/**
 	 * Curated safe HTML tag whitelist.
