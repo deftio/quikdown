@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GIF Recording Page</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        #editor { height: 560px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div id="editor"></div>
+    <script type="module">
+        import QuikdownEditor from '../dist/quikdown_edit.esm.min.js';
+        window.editor = new QuikdownEditor('#editor', {
+            mode: 'split',
+            theme: 'light',
+            showUndoRedo: true,
+            plugins: {
+                highlightjs: true,
+                mermaid: true,
+                mathjax: true
+            }
+        });
+        window.editor.setMarkdown('');
+        window.__editorReady = true;
+    </script>
+</body>
+</html>
