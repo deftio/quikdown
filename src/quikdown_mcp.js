@@ -70,7 +70,9 @@ function headlessTools() {
             properties: {
               inline_styles: { type: 'boolean', description: 'Embed styles directly in elements (default: false)' },
               lazy_linefeeds: { type: 'boolean', description: 'Convert single newlines to <br> (default: false)' },
-              allow_unsafe_html: { type: 'boolean', description: 'Skip HTML escaping for trusted input (default: false)' }
+              allow_unsafe_html: { type: 'boolean', description: 'Skip HTML escaping for trusted input (default: false)' },
+              reference_links: { type: 'boolean', description: 'Enable reference-style links [text][id] (default: false)' },
+              footnotes: { type: 'boolean', description: 'Enable footnotes [^id] (default: false)' }
             }
           }
         },

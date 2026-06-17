@@ -24,6 +24,8 @@ Converts markdown text to HTML.
 | `allow_unsafe_urls` | `boolean` | `false` | Allow javascript: and other potentially unsafe URLs |
 | `heading_ids` | `boolean` | `false` | Add `id` slug attributes to headings for anchor links |
 | `allow_unsafe_html` | `boolean \| string[] \| object` | `false` | HTML passthrough control (v1.2.13+). `false` = escape all HTML (safe default). `true` = no escaping (trusted pipelines only). Array of tag names or object with tag keys = whitelist mode — listed tags pass through with sanitized attributes, all others are escaped. Event handler attributes (`on*`) are always stripped in whitelist mode. See [Security Guide](security.md) for details. |
+| `reference_links` | `boolean` | `false` | Enable reference-style links: `[text][id]`, `[text][]`, `[id]` with definitions `[id]: url "title"` (v1.2.20+) |
+| `footnotes` | `boolean` | `false` | Enable footnotes: `[^id]` markers with `[^id]: text` definitions. Renders a footnotes section with back-links (v1.2.20+) |
 
 #### Returns
 
@@ -323,6 +325,77 @@ quikdown('Line 1\nLine 2', { lazy_linefeeds: true });
 - Code blocks preserve newlines (no `<br>` conversion)
 - Lists maintain proper structure
 
+### `reference_links` Option
+
+Enables reference-style links where link definitions are separated from link usage.
+
+#### `reference_links: false` (Default)
+
+Reference syntax passes through as plain text:
+
+```javascript
+quikdown('[click here][example]\n\n[example]: https://example.com');
+// Output: <p>[click here][example]</p><p>[example]: https://example.com</p>
+```
+
+#### `reference_links: true`
+
+Resolves reference patterns to `<a>` tags:
+
+```javascript
+quikdown('[click here][example]\n\n[example]: https://example.com "Example Site"', {
+  reference_links: true
+});
+// Output: <p><a href="https://example.com" title="Example Site">click here</a></p>
+```
+
+**Supported syntax:**
+- Full reference: `[text][id]`
+- Collapsed reference: `[text][]` (uses text as id)
+- Shortcut reference: `[id]` (uses id as both text and lookup)
+- Titles: `"title"`, `'title'`, or `(title)` after URL
+- Angle-bracket URLs: `[id]: <url>`
+- Case-insensitive IDs
+- First definition wins (duplicates ignored)
+
+**Definition syntax:**
+```markdown
+[id]: url
+[id]: url "title"
+[id]: <url> 'title'
+```
+
+### `footnotes` Option
+
+Enables footnote markers and definitions with an auto-generated footnotes section.
+
+#### `footnotes: false` (Default)
+
+Footnote syntax passes through as plain text:
+
+```javascript
+quikdown('Text[^1]\n\n[^1]: A footnote');
+// Output: <p>Text[^1]</p><p>[^1]: A footnote</p>
+```
+
+#### `footnotes: true`
+
+Renders footnote markers as superscript links and appends a footnotes section:
+
+```javascript
+quikdown('Text[^1]\n\n[^1]: A footnote', { footnotes: true });
+// Output: <p>Text<sup><a href="#fn-1" id="fnref-1">1</a></sup></p>
+//         <section><hr><ol><li id="fn-1">A footnote <a href="#fnref-1">↩</a></li></ol></section>
+```
+
+**Behavior:**
+- Markers are numbered sequentially by first appearance
+- Same footnote referenced twice shows the same number
+- Unreferenced definitions are not rendered
+- Unresolved markers stay as plain text
+- Definitions support inline formatting (**bold**, *italic*, `code`, ~~strikethrough~~)
+- Multi-line definitions use indented continuation lines
+
 ### `inline_styles` Option
 
 Controls how styling is applied to generated HTML.
@@ -383,6 +456,8 @@ quikdown('**bold**', { inline_styles: true });
 | Link | `[text](url)` | `[Google](https://google.com)` |
 | Image | `![alt](url)` | `![Logo](logo.png)` |
 | Line Break | Two spaces + newline | `Line  \nBreak` |
+| Reference Link | `[text][id]` | `[Google][goog]` (requires `reference_links: true`) |
+| Footnote | `[^id]` | `See[^1]` (requires `footnotes: true`) |
 
 ## Error Handling
 
@@ -495,6 +570,8 @@ Converts markdown to HTML with source tracking for bidirectional conversion. Onl
 | `fence_plugin` | `object` | `undefined` | Custom handler for fenced code blocks (object with `.render` method) |
 | `bidirectional` | `boolean` | `true` | Add data-qd attributes for source tracking |
 | `lazy_linefeeds` | `boolean` | `false` | Single newlines become `<br>` tags (v1.0.5+) |
+| `reference_links` | `boolean` | `false` | Enable reference-style links (v1.2.20+) |
+| `footnotes` | `boolean` | `false` | Enable footnotes (v1.2.20+) |
 
 #### Returns
 
@@ -674,8 +751,9 @@ declare module 'quikdown' {
     bidirectional?: boolean;
     lazy_linefeeds?: boolean;
     allow_unsafe_urls?: boolean;
-    /** Add id slug attributes to headings for anchor links. Default: false. */
     heading_ids?: boolean;
+    reference_links?: boolean;
+    footnotes?: boolean;
   }
   
   interface QuikdownFunction {

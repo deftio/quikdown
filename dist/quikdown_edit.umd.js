@@ -409,6 +409,20 @@
         return false;
     }
 
+    /**
+     * Base inline formatting patterns shared between the main pass and
+     * footnotes rendering.  Defined once at module level to avoid
+     * recreating regex objects on every call.
+     */
+    const BASE_INLINE_PATTERNS = [
+        [/\*\*(.+?)\*\*/g, 'strong'],
+        [/__(.+?)__/g, 'strong'],
+        [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
+        [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em'],
+        [/~~(.+?)~~/g, 'del'],
+        [/`([^`\n]+)`/g, 'code']
+    ];
+
     /** GFM alert type labels */
     const ALERT_LABELS = {
         NOTE: 'Note', TIP: 'Tip', IMPORTANT: 'Important',
@@ -936,32 +950,27 @@
         // collected definitions.  Footnote markers [^id] become <sup> links.
 
         if (reference_links && refDefs.size > 0) {
-            // Full reference: [text][id]  and collapsed: [text][]
-            html = html.replace(/\[([^\]]+)\]\[([^\]]*)\]/g, (match, text, id) => {
-                const lookupId = (id === '' ? text : id).toLowerCase();
-                const def = refDefs.get(lookupId);
-                if (!def) return match; // unresolved — leave as text
+            /** Build an <a> tag from a resolved reference definition. */
+            function buildRefAnchor(def, id, displayText) {
                 const sanitizedHref = sanitizeUrl(def.url, options.allow_unsafe_urls);
                 const isExternal = /^https?:\/\//i.test(sanitizedHref);
                 const rel = isExternal ? ' rel="noopener noreferrer"' : '';
                 const titleAttr = def.title ? ` title="${escapeHtml(def.title)}"` : '';
                 /* istanbul ignore next - bd-only branch */
                 const refAttr = bidirectional ? ` data-qd-ref="${escapeHtml(id)}"` : '';
-                return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${titleAttr}${refAttr}${dataQd('[ref')}>${text}</a>`;
+                return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${titleAttr}${refAttr}${dataQd('[ref')}>${displayText}</a>`;
+            }
+
+            // Full reference: [text][id]  and collapsed: [text][]
+            html = html.replace(/\[([^\]]+)\]\[([^\]]*)\]/g, (match, text, id) => {
+                const def = refDefs.get((id === '' ? text : id).toLowerCase());
+                return def ? buildRefAnchor(def, id, text) : match;
             });
 
             // Shortcut reference: [id] (not followed by ( or [, not containing ^)
             html = html.replace(/(?<!\])\[([^\]^[\n]+)\](?!\(|\[)/g, (match, id) => {
-                const lookupId = id.toLowerCase();
-                const def = refDefs.get(lookupId);
-                if (!def) return match; // unresolved — leave as text
-                const sanitizedHref = sanitizeUrl(def.url, options.allow_unsafe_urls);
-                const isExternal = /^https?:\/\//i.test(sanitizedHref);
-                const rel = isExternal ? ' rel="noopener noreferrer"' : '';
-                const titleAttr = def.title ? ` title="${escapeHtml(def.title)}"` : '';
-                /* istanbul ignore next - bd-only branch */
-                const refAttr = bidirectional ? ` data-qd-ref="${escapeHtml(id)}"` : '';
-                return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${titleAttr}${refAttr}${dataQd('[ref')}>${id}</a>`;
+                const def = refDefs.get(id.toLowerCase());
+                return def ? buildRefAnchor(def, id, id) : match;
             });
         }
 
@@ -988,17 +997,13 @@
         const savedTags = [];
         html = html.replace(/<[^>]+>/g, m => { savedTags.push(m); return `%%T${savedTags.length - 1}%%`; });
 
-        // Bold, italic, strikethrough
-        const inlinePatterns = [
-            [/\*\*(.+?)\*\*/g, 'strong', '**'],
-            [/__(.+?)__/g, 'strong', '__'],
-            [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em', '*'],
-            [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em', '_'],
-            [/~~(.+?)~~/g, 'del', '~~']
-        ];
-        inlinePatterns.forEach(([pattern, tag, marker]) => {
-            html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(marker)}>$1</${tag}>`);
-        });
+        // Bold, italic, strikethrough (reuses BASE_INLINE_PATTERNS; code spans
+        // are already extracted in Phase 1 so only the first 5 patterns apply here)
+        const emphasisMarkers = ['**', '__', '*', '_', '~~'];
+        for (let pi = 0; pi < 5; pi++) {
+            const [pattern, tag] = BASE_INLINE_PATTERNS[pi];
+            html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(emphasisMarkers[pi])}>$1</${tag}>`);
+        }
 
         // Restore protected tags
         html = html.replace(/%%T(\d+)%%/g, (_, i) => savedTags[i]);
@@ -1098,18 +1103,9 @@
                 const rawText = fnDefs.get(id) || '';
                 // Escape HTML in footnote text, then apply inline formatting
                 let fnHtml = allow_unsafe_html === true ? rawText : escapeHtml(rawText);
-                // Apply bold, italic, strikethrough, inline code
-                const fnInlinePatterns = [
-                    [/\*\*(.+?)\*\*/g, 'strong'],
-                    [/__(.+?)__/g, 'strong'],
-                    [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
-                    [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em'],
-                    [/~~(.+?)~~/g, 'del'],
-                    [/`([^`\n]+)`/g, 'code']
-                ];
-                fnInlinePatterns.forEach(([pattern, tag]) => {
+                for (const [pattern, tag] of BASE_INLINE_PATTERNS) {
                     fnHtml = fnHtml.replace(pattern, `<${tag}${getAttr(tag)}>$1</${tag}>`);
-                });
+                }
                 /* istanbul ignore next - bd-only branch */
                 const liAttr = bidirectional ? ` data-qd-fn-id="${escapeHtml(id)}"` : '';
                 fnSection += `<li${getAttr('li')} id="fn-${escapeHtml(id)}"${liAttr}>${fnHtml} <a href="#fnref-${escapeHtml(id)}"${getAttr('footnote-backref')}>↩</a></li>`;
@@ -3755,7 +3751,9 @@
         undoStackSize: 100,       // Maximum number of undo states to keep
         allowUnsafeHTML: false,   // false | 'limited' | true — controls HTML passthrough
         showAllowUnsafeHTML: false, // Show toolbar button to cycle HTML mode
-        allowExternalFetch: true  // Allow fence renderers to fetch external resources (CDN, tiles, etc.)
+        allowExternalFetch: true, // Allow fence renderers to fetch external resources (CDN, tiles, etc.)
+        reference_links: false,   // Enable reference-style links [text][id]
+        footnotes: false          // Enable footnotes [^id]
     };
 
     // Library catalog used by preloadFences. Each entry knows how to:
@@ -4653,7 +4651,9 @@
                     fence_plugin: this.createFencePlugin(),
                     lazy_linefeeds: this.options.lazy_linefeeds,
                     inline_styles: this.options.inline_styles,
-                    allow_unsafe_html: allowHtml
+                    allow_unsafe_html: allowHtml,
+                    reference_links: this.options.reference_links,
+                    footnotes: this.options.footnotes
                 });
                 
                 // Update preview if visible
