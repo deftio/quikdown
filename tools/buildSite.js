@@ -40,6 +40,7 @@ const PAGES = [
     { template: 'downloads.html',   output: 'pages/downloads/index.html' },
     { template: 'frameworks.html',  output: 'pages/frameworks/index.html' },
     { template: 'mcp.html',         output: 'pages/mcp/index.html' },
+    { template: 'blog.html',        output: 'pages/blog/index.html' },
 ];
 
 // ----- Read shared partials -----

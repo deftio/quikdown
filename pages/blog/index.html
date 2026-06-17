@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — quikdown</title>
+  <meta name="description" content="Building a markdown parser that does more than parse — fences, bidirectional editing, undo/redo, and a drop-in editor.">
+  <meta name="keywords" content="quikdown blog, markdown parser, markdown editor, fence plugins, bidirectional markdown, mermaid markdown, mathjax markdown">
+  <meta name="author" content="deftio@deftio.com">
+  <meta name="theme-color" content="#9550bb">
+  <link rel="canonical" href="https://deftio.github.io/quikdown/pages/blog/">
+  <link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="quikdown">
+  <meta property="og:title" content="Building a Markdown Parser That Does More Than Parse">
+  <meta property="og:description" content="Fences that render diagrams, bidirectional editing, programmatic undo/redo, and a 15 KB parser with zero dependencies.">
+  <meta property="og:url" content="https://deftio.github.io/quikdown/pages/blog/">
+  <meta property="og:image" content="https://deftio.github.io/quikdown/pages/assets/og-landing.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Building a Markdown Parser That Does More Than Parse">
+  <meta name="twitter:description" content="Fences that render diagrams, bidirectional editing, programmatic undo/redo, and a 15 KB parser with zero dependencies.">
+  <meta name="twitter:image" content="https://deftio.github.io/quikdown/pages/assets/og-landing.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": "Building a Markdown Parser That Does More Than Parse",
+    "author": { "@type": "Person", "name": "deftio" },
+    "publisher": { "@type": "Organization", "name": "deftio" },
+    "url": "https://deftio.github.io/quikdown/pages/blog/",
+    "about": {
+      "@type": "SoftwareSourceCode",
+      "name": "quikdown",
+      "codeRepository": "https://github.com/deftio/quikdown"
+    }
+  }
+  </script>
+
+  <link rel="stylesheet" href="../../pages/styles/quikdown-site.css">
+  <style>
+    /* ---- Reuse changelog card layout ---- */
+    .blog-wrap { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+    .blog-frame {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-radius: 18px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      padding: 1.5rem;
+    }
+
+    /* ---- Blog prose styles ---- */
+    .blog-rendered { line-height: 1.75; }
+    .blog-rendered h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin: 2.5rem 0 0.75rem;
+      border-bottom: 1px solid rgba(149, 80, 187, 0.1);
+      padding-bottom: 0.3rem;
+    }
+    .blog-rendered p { margin: 0.5rem 0 1rem; font-size: 0.95rem; color: #374151; }
+    .blog-rendered ul, .blog-rendered ol { padding-left: 1.5em; margin: 0.5rem 0 1rem; }
+    .blog-rendered li { margin: 0.25rem 0; font-size: 0.95rem; color: #374151; }
+    .blog-rendered li strong { color: #4a2d8f; }
+    .blog-rendered strong { color: #1f2937; }
+    .blog-rendered a { color: #9550bb; }
+    .blog-rendered code {
+      font-size: 0.85em;
+      background: #f3e6ff;
+      color: #6c47b8;
+      padding: 0.15em 0.4em;
+      border-radius: 3px;
+    }
+    .blog-rendered pre {
+      background: #1e1e2e;
+      color: #e6e6f0;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    .blog-rendered pre code { background: none; color: inherit; padding: 0; }
+    .blog-rendered hr { border: none; border-top: 1px solid rgba(149, 80, 187, 0.15); margin: 2rem 0; }
+
+    /* ---- Feature cards inline ---- */
+    .blog-feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.8rem;
+      margin: 1rem 0 1.5rem;
+    }
+    .blog-feature-card {
+      background: rgba(245, 245, 248, 0.8);
+      border: 1px solid rgba(149, 80, 187, 0.15);
+      border-left: 3px solid #9550bb;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+    }
+    .blog-feature-card strong { display: block; font-size: 0.92rem; color: #1f2937; margin-bottom: 0.2rem; }
+    .blog-feature-card span { font-size: 0.82rem; color: #4b5563; }
+
+    /* ---- CTA strip ---- */
+    .blog-cta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin: 1.5rem 0;
+      padding: 1.2rem;
+      background: linear-gradient(135deg, rgba(149, 80, 187, 0.08), rgba(102, 126, 234, 0.08));
+      border-radius: 12px;
+      border: 1px solid rgba(149, 80, 187, 0.15);
+    }
+    .blog-cta a {
+      display: inline-block;
+      padding: 0.5rem 1.2rem;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .blog-cta-primary { background: #9550bb; color: #fff !important; }
+    .blog-cta-primary:hover { background: #7a3da0; color: #fff !important; transform: translateY(-1px); }
+    .blog-cta-secondary { background: rgba(149, 80, 187, 0.12); color: #6c47b8 !important; }
+    .blog-cta-secondary:hover { background: rgba(149, 80, 187, 0.2); color: #4a2d8f !important; }
+
+    /* ---- Meta line ---- */
+    .blog-meta { font-size: 0.88rem; color: #6b7280; margin-bottom: 1.5rem; }
+
+    /* ---- Dark theme ---- */
+    body.qd-theme-dark .blog-frame {
+      background: rgba(24, 24, 40, 0.96);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+      border-color: rgba(179, 136, 221, 0.18);
+    }
+    body.qd-theme-dark .blog-rendered p,
+    body.qd-theme-dark .blog-rendered li { color: #b8b8c8; }
+    body.qd-theme-dark .blog-rendered strong { color: #e6e6f0; }
+    body.qd-theme-dark .blog-rendered li strong { color: #c9aeff; }
+    body.qd-theme-dark .blog-rendered code { background: rgba(179, 136, 221, 0.18); color: #d9b3ff; }
+    body.qd-theme-dark .blog-rendered pre { background: #11111b; }
+    body.qd-theme-dark .blog-rendered h2 { border-bottom-color: rgba(179, 136, 221, 0.2); color: #e6e6f0; }
+    body.qd-theme-dark .blog-rendered hr { border-top-color: rgba(179, 136, 221, 0.2); }
+    body.qd-theme-dark .blog-feature-card {
+      background: rgba(31, 31, 48, 0.8);
+      border-color: rgba(179, 136, 221, 0.18);
+      border-left-color: #9550bb;
+    }
+    body.qd-theme-dark .blog-feature-card strong { color: #e6e6f0; }
+    body.qd-theme-dark .blog-feature-card span { color: #b8b8c8; }
+    body.qd-theme-dark .blog-cta {
+      background: linear-gradient(135deg, rgba(149, 80, 187, 0.12), rgba(102, 126, 234, 0.12));
+      border-color: rgba(179, 136, 221, 0.2);
+    }
+    body.qd-theme-dark .blog-cta-secondary { background: rgba(179, 136, 221, 0.15); color: #c9aeff !important; }
+    body.qd-theme-dark .blog-meta { color: #888898; }
+
+    /* Auto theme */
+    @media (prefers-color-scheme: dark) {
+      body.qd-theme-auto .blog-frame { background: rgba(24, 24, 40, 0.96); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45); border-color: rgba(179, 136, 221, 0.18); }
+      body.qd-theme-auto .blog-rendered p,
+      body.qd-theme-auto .blog-rendered li { color: #b8b8c8; }
+      body.qd-theme-auto .blog-rendered strong { color: #e6e6f0; }
+      body.qd-theme-auto .blog-rendered li strong { color: #c9aeff; }
+      body.qd-theme-auto .blog-rendered code { background: rgba(179, 136, 221, 0.18); color: #d9b3ff; }
+      body.qd-theme-auto .blog-rendered pre { background: #11111b; }
+      body.qd-theme-auto .blog-rendered h2 { border-bottom-color: rgba(179, 136, 221, 0.2); color: #e6e6f0; }
+      body.qd-theme-auto .blog-rendered hr { border-top-color: rgba(179, 136, 221, 0.2); }
+      body.qd-theme-auto .blog-feature-card { background: rgba(31, 31, 48, 0.8); border-color: rgba(179, 136, 221, 0.18); border-left-color: #9550bb; }
+      body.qd-theme-auto .blog-feature-card strong { color: #e6e6f0; }
+      body.qd-theme-auto .blog-feature-card span { color: #b8b8c8; }
+      body.qd-theme-auto .blog-cta { background: linear-gradient(135deg, rgba(149, 80, 187, 0.12), rgba(102, 126, 234, 0.12)); border-color: rgba(179, 136, 221, 0.2); }
+      body.qd-theme-auto .blog-cta-secondary { background: rgba(179, 136, 221, 0.15); color: #c9aeff !important; }
+      body.qd-theme-auto .blog-meta { color: #888898; }
+    }
+  </style>
+</head>
+<body class="qd-theme-light">
+  <nav class="qd-nav" aria-label="Main navigation">
+  <div class="qd-nav-inner">
+    <a class="qd-nav-brand" href="../../pages/" aria-label="quikdown home">
+      <img class="qd-nav-brand-icon" src="../../pages/assets/logo-nav.svg" alt="" aria-hidden="true">
+      <span class="qd-nav-brand-text">quikdown</span>
+      <span class="qd-nav-brand-version">v1.2.20</span>
+    </a>
+    <button class="qd-nav-toggle" id="qd-nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false">
+      <span class="qd-nav-toggle-bar"></span>
+      <span class="qd-nav-toggle-bar"></span>
+      <span class="qd-nav-toggle-bar"></span>
+    </button>
+    <div class="qd-nav-links">
+      <a class="qd-nav-link" data-nav="home" href="../../pages/">Home</a>
+      <a class="qd-nav-link" data-nav="examples" href="../../pages/examples/">Examples</a>
+      <a class="qd-nav-link" data-nav="frameworks" href="../../pages/frameworks/">Frameworks</a>
+      <a class="qd-nav-link" data-nav="docs" href="../../pages/docs/">Docs</a>
+      <a class="qd-nav-link" data-nav="downloads" href="../../pages/downloads/">Downloads</a>
+      <a class="qd-nav-link" data-nav="changelog" href="../../pages/changelog/">Changelog</a>
+      <a class="qd-nav-link" data-nav="blog" href="../../pages/blog/">Blog</a>
+      <a class="qd-nav-link" href="https://github.com/deftio/quikdown" rel="noopener" target="_blank">GitHub</a>
+      <a class="qd-nav-link qd-nav-cta" data-nav="edit" href="../../pages/edit/">Try Editor</a>
+      <button class="qd-nav-theme-btn" id="qd-theme-toggle" type="button" aria-label="Toggle theme" title="Cycle theme: dark → light → auto">
+        <span id="qd-theme-icon">🌙</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+  <main>
+    <section class="qd-hero" style="padding: 2.5rem 0;">
+      <div class="qd-hero-inner">
+        <span class="qd-hero-eyebrow">Blog</span>
+        <h1 style="font-size: clamp(1.8rem, 4vw, 2.6rem); max-width: 30ch;">Building a Markdown Parser That Does More Than Parse</h1>
+        <p class="qd-hero-sub" style="max-width: 56ch;">
+          A compact markdown parser and editor built for humans and LLMs to work on the same document.
+        </p>
+      </div>
+    </section>
+
+    <section class="qd-section">
+      <div class="blog-wrap">
+        <div class="blog-frame">
+          <div class="blog-rendered">
+
+      <p class="blog-meta">by deftio &middot; quikdown v1.2.20</p>
+
+      <h2 style="margin-top: 0;">How quikdown started</h2>
+
+      <p>I had a previous project, <a href="https://github.com/deftio/squibview" target="_blank" rel="noopener">squibview</a>, that was a split-view markdown editor built on top of <a href="https://github.com/markedjs/marked" target="_blank" rel="noopener">marked</a>. It worked, but it was heavy, and I couldn't control the fences the way I wanted. When I started building <a href="https://github.com/deftio/quikchat" target="_blank" rel="noopener">quikchat</a> &mdash; a simple, flexible chat library &mdash; I found that integrating per-turn markdown rendering and a shared canvas for document editing was too difficult with existing parsers. The markdown layer was always either too big, too opinionated about rendering, or too hard to wire into a chat-style UI.</p>
+
+      <p>Around the same time, through 2024 and 2025, I was using a lot of different LLMs across different frameworks &mdash; Python, JavaScript, others &mdash; and the models kept putting out markdown with Mermaid diagrams, code blocks, and sometimes math or SVG. I just wanted to be able to interact with a model and have us both edit the same document.</p>
+
+      <p>It was important to have the document rendered so I could actually see things like diagrams, syntax-highlighted code, math equations, and inline SVG &mdash; not just raw fence blocks. <a href="https://github.com/deftio/quikdown">quikdown</a> was built to be compact and allow bidirectional editing. It lets the LLM see the document (using the quikdown <a href="../../pages/mcp/">API and tools</a>) and operate on markdown, while the user can also operate on the markdown or the rendered content.</p>
+
+      <p>Of course markdown is much more valuable if it can be copy-pasted, so quikdown's <a href="../../pages/edit/">editor</a> allows copying and pasting rich content &mdash; including rendered fences &mdash; into Google Docs, Slack, Notion, and other rich-text apps. As an editor, quikdown is headless, so it can be embedded in web apps. Component builds are provided for ESM, UMD, and <a href="../../pages/frameworks/">framework integrations</a> including React.</p>
+
+      <p>quikdown also works offline. The <a href="https://github.com/deftio/quikdown/blob/main/docs/standalone-editor.md">standalone builds</a> bundle everything into a single file for air-gapped use of most features without any network access. The core parser and bidirectional modules have zero dependencies of any kind, but the individual fences (e.g. Mermaid, MathJax, Leaflet maps) do use outside libraries. See the <a href="../../pages/docs/">docs</a> on how to manage those.</p>
+
+      <div class="blog-cta">
+        <a class="blog-cta-primary" href="../../pages/edit/">Try the Editor</a>
+        <a class="blog-cta-secondary" href="../../pages/examples/">Examples</a>
+        <a class="blog-cta-secondary" href="https://github.com/deftio/quikdown">GitHub</a>
+        <a class="blog-cta-secondary" href="https://www.npmjs.com/package/quikdown">npm</a>
+      </div>
+
+      <h2>What fences actually solve</h2>
+
+      <p>The core parser handles the usual markdown &mdash; headings, lists, tables, bold, italic, code, links &mdash; in ~14.9 KB with zero deps. Built-in fence support is what makes it more than just a bidirectional markdown parser.</p>
+
+      <p>A fenced code block in markdown is just triple backticks with a language tag. Most parsers hand you back <code>&lt;pre&gt;&lt;code&gt;</code> and call it done. quikdown has a callback hook &mdash; your function gets the raw content and the language tag, you return HTML. The built-in <a href="../../pages/edit/">editor</a> ships renderers for:</p>
+
+      <ul>
+        <li><strong>Code</strong> with syntax highlighting (highlight.js)</li>
+        <li><strong>Mermaid</strong> flowcharts, sequence diagrams, Gantt charts, git graphs</li>
+        <li><strong>MathJax</strong> equations (LaTeX/TeX)</li>
+        <li><strong>SVG</strong> rendered inline</li>
+        <li><strong>CSV, TSV, PSV</strong> converted to HTML tables</li>
+        <li><strong>GeoJSON</strong> on a Leaflet map</li>
+        <li><strong>STL</strong> 3D models in Three.js</li>
+        <li><strong>ABC notation</strong> as sheet music (ABCJS)</li>
+        <li><strong>Vega and Vega-Lite</strong> data visualizations</li>
+      </ul>
+
+      <p>The editor lazy-loads these libraries from CDN on first use &mdash; the initial bundle is ~99.9 KB. When someone hands you an 80-page doc with Mermaid diagrams, syntax-highlighted code, and a few LaTeX equations, the editor handles all of it without you writing integration code.</p>
+
+      <p>Writing a custom fence handler is a few lines:</p>
+
+<pre><code>const plugin = {
+  render: (content, lang) =&gt; {
+    if (lang === 'my-chart') return myChartLibrary.render(content);
+    // return undefined for default code block rendering
+  }
+};
+
+quikdown(markdown, { fence_plugin: plugin });</code></pre>
+
+      <p>There's also a <a href="https://github.com/deftio/quikdown/blob/main/docs/standalone-editor.md">standalone build</a> (~7.7 MB / ~1 MB gzipped) that bundles every fence library into a single file for offline or air-gapped environments. Same API, no CDN, no network.</p>
+
+      <h2>Bidirectional: editing in the rendered view</h2>
+
+      <p><code>quikdown_bd</code> (~19.8 KB) tracks the original markdown syntax through the HTML using <code>data-qd</code> attributes. Edit the rendered preview &mdash; fix a heading, rewrite a table cell, change bold to italic &mdash; and call <code>toMarkdown()</code> to get markdown back. Fences, tables, and formatting survive the round-trip.</p>
+
+      <p>This is what makes the <a href="../../pages/edit/">split-view editor</a> more than a preview pane. Both sides are editable. The markdown stays the source of truth, but the human doesn't have to think in markdown if they don't want to.</p>
+
+<pre><code>// Convert with source tracking
+const html = quikdown_bd(markdown, options);
+
+// Edit the HTML, then convert back
+const md = quikdown_bd.toMarkdown(html);</code></pre>
+
+      <h2>Undo/redo as a collaboration primitive</h2>
+
+      <p>The editor maintains a configurable undo stack (default 100 states). Keyboard shortcuts work (<kbd>Ctrl+Z</kbd>, <kbd>Ctrl+Shift+Z</kbd>), and the API exposes <code>undo()</code>, <code>redo()</code>, <code>canUndo()</code>, <code>canRedo()</code>.</p>
+
+      <p>This sounds like a table-stakes feature, but it matters specifically for the LLM workflow. When an agent writes into a shared document &mdash; via tool calling, MCP, or streaming &mdash; it will sometimes make mistakes. <code>editor.undo()</code> rolls back the last change without losing the rest of the editing context. It's also available as an <a href="../../pages/mcp/">MCP tool</a>, so an agent can undo its own work.</p>
+
+<pre><code>const editor = new QuikdownEditor('#container', {
+  undoStackSize: 200,   // max undo states (default 100)
+  showUndoRedo: true    // show toolbar buttons
+});
+
+editor.undo();          // undo last change
+editor.redo();          // redo
+editor.canUndo();       // true / false
+editor.clearHistory();  // wipe all history</code></pre>
+
+      <h2>Headless mode and the editor API</h2>
+
+      <p>Set <code>showToolbar: false</code> and the editor becomes a pure API surface. Developers embedding quikdown can also choose to show only the markdown source, only the rendered output, or the split view &mdash; so the host application can look however it needs to. Split is just one of the view modes.</p>
+
+<pre><code>const editor = new QuikdownEditor('#container', {
+  mode: 'split',
+  showToolbar: false
+});
+
+editor.setMarkdown('# Hello');
+editor.getMarkdown();          // '# Hello'
+editor.undo();
+editor.setTheme('dark');
+editor.setMode('preview');</code></pre>
+
+      <p>Wire the API to your own toolbar, your own keyboard shortcuts, or an agent's tool calls. The editor doesn't impose a UI &mdash; it provides the rendering, the undo stack, the fence plugins, and the bidirectional conversion. See the <a href="https://github.com/deftio/quikdown/blob/main/docs/quikdown-editor.md">editor guide</a> for the full API surface.</p>
+
+      <h2>Streaming: re-parse the whole thing</h2>
+
+      <p>quikdown's parser is fast enough that you can call it on the entire buffer for every incoming token chunk. No incremental parsing state. No "partial tree" to maintain. Incomplete fences render as plain text until the closing backticks arrive &mdash; no crashes, no garbled output.</p>
+
+<pre><code>let buffer = '';
+for await (const chunk of llmStream) {
+  buffer += chunk;
+  editor.setMarkdown(buffer);
+}</code></pre>
+
+      <p>That's the whole integration. The editor handles fence rendering, scroll position, and undo grouping. See the <a href="../../pages/examples/">streaming examples</a> and <a href="https://github.com/deftio/quikdown/blob/main/docs/llm-integration.md">LLM integration docs</a> for production patterns with debouncing.</p>
+
+      <h2>MCP server: 24 tools for AI agents</h2>
+
+      <p>quikdown includes an <a href="../../pages/mcp/">MCP server</a> that lets AI agents parse markdown, convert between formats, read/write files, and control the editor &mdash; all over JSON-RPC 2.0.</p>
+
+      <div class="blog-feature-grid">
+        <div class="blog-feature-card">
+          <strong>Headless tools</strong>
+          <span>markdown_to_html, html_to_markdown, markdown_stats, markdown_to_ast, markdown_to_json</span>
+        </div>
+        <div class="blog-feature-card">
+          <strong>Filesystem tools</strong>
+          <span>read_file_info, read_file_lines, write_markdown_to_file, write_html_to_file</span>
+        </div>
+        <div class="blog-feature-card">
+          <strong>Editor tools</strong>
+          <span>read_editor, write_editor, find_regex, replace_regex, undo, redo, get_rendered</span>
+        </div>
+      </div>
+
+<pre><code># IDE path — no browser needed
+npx quikdown-mcp --root=.
+
+# Doc copilot — browser editor + MCP bridge
+node examples/mcp-doc-host/start-mcp.js</code></pre>
+
+      <h2>The small things</h2>
+
+      <p><strong>Copy as rich text</strong> &mdash; copies the rendered preview to the clipboard with diagrams rasterized, tables intact, equations rendered. Paste into Gmail, Word, Slack, Notion. This is a small feature until you're doing it forty times a day.</p>
+
+      <p><strong>Lazy linefeeds</strong> &mdash; single newlines become <code>&lt;br&gt;</code>. Models do this constantly. Toggle it on or off with <code>lazy_linefeeds: true</code>.</p>
+
+      <p><strong>HR stripping</strong> &mdash; models love sprinkling <code>---</code> between paragraphs. The editor has a tool that removes standalone horizontal rules without touching ones inside code fences.</p>
+
+      <p><strong>Themes</strong> &mdash; <code>setTheme('light')</code>, <code>setTheme('dark')</code>, <code>setTheme('auto')</code> at runtime. Inline styles or CSS classes, your choice.</p>
+
+      <p><strong>Structured output</strong> &mdash; parse markdown into <a href="https://github.com/deftio/quikdown/blob/main/docs/quikdown-ast.md">AST, JSON, or YAML</a> when your downstream isn't HTML.</p>
+
+      <h2>Security model</h2>
+
+      <p>All HTML is escaped by default. No <code>eval</code>, no dynamic <code>RegExp</code>, no innerHTML on untrusted content. URL sanitization blocks <code>javascript:</code>, <code>vbscript:</code>, and non-image <code>data:</code> URIs. The parser passes ESLint with <code>eslint-plugin-security</code> at error level with zero findings, enforced in CI on every build.</p>
+
+      <p>Trust is explicit: fence plugins receive pre-extracted content and decide what to render. The built-in <code>html</code> fence uses DOMPurify. Nothing reaches the DOM without an opt-in. See the full <a href="https://github.com/deftio/quikdown/blob/main/docs/security.md">security model</a>.</p>
+
+      <h2>Architecture: four phases, no AST</h2>
+
+      <p>The parser uses a <a href="https://github.com/deftio/quikdown/blob/main/docs/architecture.md">four-phase pipeline</a>: extract code blocks into placeholders, escape all HTML, line-scan for block elements + apply inline formatting, then restore protected content. No AST, no multi-pass regex &mdash; each line is classified once. This keeps the parser at ~14.9 KB and makes it straightforward to extend.</p>
+
+      <h2>What it's not</h2>
+
+      <p>Not a full CommonMark parser &mdash; reference links, footnotes, and definition lists are intentionally omitted for size and security. Not a WYSIWYG block editor like ProseMirror or Notion. Not a framework with a plugin registry and a build system.</p>
+
+      <p>It's one <code>npm install</code>, one <code>&lt;div&gt;</code>, one import. The parser is a function. The editor is a constructor. The fences render diagrams, equations, maps, and 3D models out of the box.</p>
+
+      <div class="blog-cta">
+        <a class="blog-cta-primary" href="../../pages/edit/">Try the Editor</a>
+        <a class="blog-cta-secondary" href="../../pages/examples/">Examples</a>
+        <a class="blog-cta-secondary" href="../../pages/docs/">Docs</a>
+        <a class="blog-cta-secondary" href="https://github.com/deftio/quikdown">GitHub</a>
+        <a class="blog-cta-secondary" href="https://www.npmjs.com/package/quikdown">npm</a>
+      </div>
+
+      <p style="font-size: 0.88rem; color: #6b7280; margin-top: 1.5rem;">quikdown is open source under the BSD-2-Clause license. Zero runtime dependencies on the core modules.</p>
+
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="qd-footer">
+  <div class="qd-footer-inner">
+    <div class="qd-footer-cols">
+      <div class="qd-footer-col">
+        <a class="qd-footer-brand" href="../../pages/">
+          <img class="qd-nav-brand-icon" src="../../pages/assets/logo-nav.svg" alt="" aria-hidden="true">
+          <span>quikdown</span>
+        </a>
+        <p style="margin-top: 0.6rem; max-width: 36ch; color: #4b5563;">
+          Tiny, secure markdown for browsers and Node — with a drop-in editor that handles everything from Mermaid to MathJax to GeoJSON.
+        </p>
+      </div>
+      <div class="qd-footer-col">
+        <h5>Project</h5>
+        <ul>
+          <li><a href="../../pages/">Home</a></li>
+          <li><a href="../../pages/examples/">Examples</a></li>
+          <li><a href="../../pages/docs/">Documentation</a></li>
+          <li><a href="../../pages/changelog/">Changelog</a></li>
+          <li><a href="../../pages/edit/">Editor App</a></li>
+        </ul>
+      </div>
+      <div class="qd-footer-col">
+        <h5>Code</h5>
+        <ul>
+          <li><a href="https://github.com/deftio/quikdown" rel="noopener" target="_blank">GitHub</a></li>
+          <li><a href="https://www.npmjs.com/package/quikdown" rel="noopener" target="_blank">npm</a></li>
+          <li><a href="https://github.com/deftio/quikdown/issues" rel="noopener" target="_blank">Issues</a></li>
+          <li><a href="https://github.com/deftio/quikdown/blob/main/LICENSE.txt" rel="noopener" target="_blank">License (BSD-2)</a></li>
+        </ul>
+      </div>
+      <div class="qd-footer-col">
+        <h5>Related</h5>
+        <ul>
+          <li><a href="https://deftio.github.io/quikchat/" rel="noopener" target="_blank">quikchat</a></li>
+          <li><a href="https://deftio.github.io/triepack/" rel="noopener" target="_blank">triepack</a></li>
+          <li><a href="https://deftio.github.io/bitwrench/" rel="noopener" target="_blank">bitwrench</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="qd-footer-bottom">
+      <div>quikdown v1.2.20 — © deftio · BSD-2 licensed</div>
+      <div>Built with HTML, CSS, and JavaScript. Zero runtime dependencies.</div>
+    </div>
+  </div>
+</footer>
+
+  <script src="../../pages/scripts/site.js" defer></script>
+</body>
+</html>

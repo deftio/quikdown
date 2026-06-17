@@ -1,6 +1,6 @@
 /**
  * quikdown_mcp - MCP Server Markdown Parser
- * @version 1.2.19
+ * @version 1.2.20
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -15,7 +15,7 @@ import nodeReadline from 'readline';
 // Auto-generated version file - DO NOT EDIT MANUALLY
 // This file is automatically updated by tools/updateVersion.js
 
-const quikdownVersion = "1.2.19";
+const quikdownVersion = "1.2.20";
 
 /**
  * quikdown_mcp — MCP (Model Context Protocol) server for quikdown
