@@ -30,6 +30,10 @@ export interface QuikdownOptions {
     allow_unsafe_urls?: boolean;
     /** Add id attributes to headings for in-page anchor links. Default: false. */
     heading_ids?: boolean;
+    /** Enable reference-style links ([text][id], [id]). Default: false. */
+    reference_links?: boolean;
+    /** Enable footnotes ([^id] markers and [^id]: definitions). Default: false. */
+    footnotes?: boolean;
 }
 
 /**

@@ -251,7 +251,7 @@
 
       <h2>What fences actually solve</h2>
 
-      <p>The core parser handles the usual markdown &mdash; headings, lists, tables, bold, italic, code, links &mdash; in ~14.9 KB with zero deps. Built-in fence support is what makes it more than just a bidirectional markdown parser.</p>
+      <p>The core parser handles the usual markdown &mdash; headings, lists, tables, bold, italic, code, links &mdash; in ~17.4 KB with zero deps. Built-in fence support is what makes it more than just a bidirectional markdown parser.</p>
 
       <p>A fenced code block in markdown is just triple backticks with a language tag. Most parsers hand you back <code>&lt;pre&gt;&lt;code&gt;</code> and call it done. quikdown has a callback hook &mdash; your function gets the raw content and the language tag, you return HTML. The built-in <a href="../../pages/edit/">editor</a> ships renderers for:</p>
 
@@ -267,7 +267,7 @@
         <li><strong>Vega and Vega-Lite</strong> data visualizations</li>
       </ul>
 
-      <p>The editor lazy-loads these libraries from CDN on first use &mdash; the initial bundle is ~99.9 KB. When someone hands you an 80-page doc with Mermaid diagrams, syntax-highlighted code, and a few LaTeX equations, the editor handles all of it without you writing integration code.</p>
+      <p>The editor lazy-loads these libraries from CDN on first use &mdash; the initial bundle is ~103.1 KB. When someone hands you an 80-page doc with Mermaid diagrams, syntax-highlighted code, and a few LaTeX equations, the editor handles all of it without you writing integration code.</p>
 
       <p>Writing a custom fence handler is a few lines:</p>
 
@@ -284,7 +284,7 @@ quikdown(markdown, { fence_plugin: plugin });</code></pre>
 
       <h2>Bidirectional: editing in the rendered view</h2>
 
-      <p><code>quikdown_bd</code> (~19.8 KB) tracks the original markdown syntax through the HTML using <code>data-qd</code> attributes. Edit the rendered preview &mdash; fix a heading, rewrite a table cell, change bold to italic &mdash; and call <code>toMarkdown()</code> to get markdown back. Fences, tables, and formatting survive the round-trip.</p>
+      <p><code>quikdown_bd</code> (~23.0 KB) tracks the original markdown syntax through the HTML using <code>data-qd</code> attributes. Edit the rendered preview &mdash; fix a heading, rewrite a table cell, change bold to italic &mdash; and call <code>toMarkdown()</code> to get markdown back. Fences, tables, and formatting survive the round-trip.</p>
 
       <p>This is what makes the <a href="../../pages/edit/">split-view editor</a> more than a preview pane. Both sides are editable. The markdown stays the source of truth, but the human doesn't have to think in markdown if they don't want to.</p>
 
@@ -384,7 +384,7 @@ node examples/mcp-doc-host/start-mcp.js</code></pre>
 
       <h2>Architecture: four phases, no AST</h2>
 
-      <p>The parser uses a <a href="https://github.com/deftio/quikdown/blob/main/docs/architecture.md">four-phase pipeline</a>: extract code blocks into placeholders, escape all HTML, line-scan for block elements + apply inline formatting, then restore protected content. No AST, no multi-pass regex &mdash; each line is classified once. This keeps the parser at ~14.9 KB and makes it straightforward to extend.</p>
+      <p>The parser uses a <a href="https://github.com/deftio/quikdown/blob/main/docs/architecture.md">four-phase pipeline</a>: extract code blocks into placeholders, escape all HTML, line-scan for block elements + apply inline formatting, then restore protected content. No AST, no multi-pass regex &mdash; each line is classified once. This keeps the parser at ~17.4 KB and makes it straightforward to extend.</p>
 
       <h2>What it's not</h2>
 

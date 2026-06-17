@@ -209,10 +209,10 @@
         "statements": 94
       },
       "./dist/quikdown_edit.esm.js": {
-        "lines": 79,
-        "functions": 84,
-        "branches": 72,
-        "statements": 79
+        "lines": 76,
+        "functions": 82,
+        "branches": 70,
+        "statements": 76
       },
       "./dist/quikdown_ast.esm.js": {
         "lines": 98,

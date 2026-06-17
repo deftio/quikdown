@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage](https://img.shields.io/badge/coverage-98.3%25-brightgreen)](https://github.com/deftio/quikdown)
+[![Coverage](https://img.shields.io/badge/coverage-99.3%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-14.9KB-green.svg)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-17.4KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 Quikdown is a small, safe, bidirectional Markdown parser and editor for browser and Node.js apps — with rich fences, streaming, undo/redo, MCP tools, and a standalone airgapped build.
 

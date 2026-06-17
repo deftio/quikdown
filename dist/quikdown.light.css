@@ -191,6 +191,22 @@
     background: #ffebe9;
 }
 
+.quikdown-light .quikdown-sup {
+    font-size: .75em;
+    vertical-align: super;
+    line-height: 0;
+}
+
+.quikdown-light .quikdown-footnotes {
+    margin-top: 2em;
+    font-size: .9em;
+}
+
+.quikdown-light .quikdown-footnote-backref {
+    text-decoration: none;
+    margin-left: .25em;
+}
+
 /* ============================================
    Container Styling
    ============================================ */
