@@ -5,7 +5,7 @@
  * Theme with container-based scoping.
  * Usage: <div class="quikdown-light">...content...</div>
  * 
- * @version 1.2.19
+ * @version 1.2.20
  * @source tools/generateThemeCSS.js
  */
 
@@ -189,6 +189,22 @@
 .quikdown-light .quikdown-alert-caution {
     border-left-color: #cf222e;
     background: #ffebe9;
+}
+
+.quikdown-light .quikdown-sup {
+    font-size: .75em;
+    vertical-align: super;
+    line-height: 0;
+}
+
+.quikdown-light .quikdown-footnotes {
+    margin-top: 2em;
+    font-size: .9em;
+}
+
+.quikdown-light .quikdown-footnote-backref {
+    text-decoration: none;
+    margin-left: .25em;
 }
 
 /* ============================================

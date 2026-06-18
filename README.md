@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage](https://img.shields.io/badge/coverage-98.3%25-brightgreen)](https://github.com/deftio/quikdown)
+[![Coverage](https://img.shields.io/badge/coverage-99.3%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-14.9KB-green.svg)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-17.1KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 Quikdown is a small, safe, bidirectional Markdown parser and editor for browser and Node.js apps — with rich fences, streaming, undo/redo, MCP tools, and a standalone airgapped build.
 
@@ -466,7 +466,7 @@ Quikdown intentionally trades full CommonMark coverage for a smaller, safer, mor
 
 ## What Quikdown Is Not
 
-- **Not a full CommonMark parser** — reference-style links, footnotes, and definition lists are intentionally omitted for size and security.
+- **Not a full CommonMark parser** — definition lists and some edge-case syntax are intentionally omitted. Reference-style links and footnotes are available as opt-in features (`reference_links: true`, `footnotes: true`).
 - **Not a WYSIWYG framework** — the editor is a split-view Markdown-first surface, not a block-based rich text editor like Notion or ProseMirror.
 - **Not a giant editor stack** — no virtual DOM, no plugin registries, no complex state management. One import, one `<div>`.
 

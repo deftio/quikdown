@@ -1,6 +1,6 @@
 /**
  * quikdown - Lightweight Markdown Parser
- * @version 1.2.19
+ * @version 1.2.20
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -127,7 +127,7 @@ function isHRLine(trimmed) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.19';
+const quikdownVersion = '1.2.20';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -184,7 +184,10 @@ const QUIKDOWN_STYLES = {
     'alert-tip': 'border-left-color:#1a7f37;background:#dafbe1',
     'alert-important': 'border-left-color:#8250df;background:#fbefff',
     'alert-warning': 'border-left-color:#9a6700;background:#fff8c5',
-    'alert-caution': 'border-left-color:#cf222e;background:#ffebe9'
+    'alert-caution': 'border-left-color:#cf222e;background:#ffebe9',
+    sup: 'font-size:.75em;vertical-align:super;line-height:0',
+    'footnotes': 'margin-top:2em;font-size:.9em',
+    'footnote-backref': 'text-decoration:none;margin-left:.25em'
 };
 
 // ────────────────────────────────────────────────────────────────────
@@ -327,6 +330,20 @@ function isLazyContinuationBreaker(line) {
     if (trimmed.startsWith(PLACEHOLDER_CB)) return true;      // code block placeholder
     return false;
 }
+
+/**
+ * Base inline formatting patterns shared between the main pass and
+ * footnotes rendering.  Defined once at module level to avoid
+ * recreating regex objects on every call.
+ */
+const BASE_INLINE_PATTERNS = [
+    [/\*\*(.+?)\*\*/g, 'strong'],
+    [/__(.+?)__/g, 'strong'],
+    [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em'],
+    [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em'],
+    [/~~(.+?)~~/g, 'del'],
+    [/`([^`\n]+)`/g, 'code']
+];
 
 /** GFM alert type labels */
 const ALERT_LABELS = {
@@ -483,7 +500,7 @@ function quikdown(markdown, options = {}) {
     }
 
     // ── Unpack options ──
-    const { fence_plugin, inline_styles = false, bidirectional = false, lazy_linefeeds = false, allow_unsafe_html = false, heading_ids = false } = options;
+    const { fence_plugin, inline_styles = false, bidirectional = false, lazy_linefeeds = false, allow_unsafe_html = false, heading_ids = false, reference_links = false, footnotes = false } = options;
     const styles = QUIKDOWN_STYLES;
     const getAttr = createGetAttr(inline_styles, styles);
     const headingSlugCounts = new Map();
@@ -644,6 +661,85 @@ function quikdown(markdown, options = {}) {
     });
 
     // ────────────────────────────────────────────────────────────────
+    //  Phase 1.75 — Reference Link & Footnote Definition Collection
+    // ────────────────────────────────────────────────────────────────
+    // Scan lines BEFORE HTML escaping to collect definitions.
+    // [id]: url "title"   — reference link definition
+    // [^id]: text         — footnote definition (with indented continuation)
+    // Characters [, ], :, ^ are NOT in the HTML escape map so they
+    // survive all phases unchanged.  Definition lines are stripped.
+
+    const refDefs = new Map();     // id (lowercase) → { url, title }
+    const fnDefs = new Map();      // id → text
+    const fnOrder = [];            // ordered list of footnote ids as referenced
+
+    if (reference_links || footnotes) {
+        const lines = html.split('\n');
+        const kept = [];
+        let i = 0;
+        while (i < lines.length) {
+            const line = lines[i];
+
+            // Skip lines inside code block placeholders
+            if (line.includes(PLACEHOLDER_CB)) {
+                kept.push(line);
+                i++;
+                continue;
+            }
+
+            // Footnote definition: [^id]: text
+            if (footnotes) {
+                const fnMatch = line.match(/^\[\^([^\]]+)\]:\s+([\s\S]*)$/);
+                if (fnMatch) {
+                    const fnId = fnMatch[1];
+                    let fnText = fnMatch[2];
+                    // Collect indented continuation lines
+                    while (i + 1 < lines.length) {
+                        const next = lines[i + 1];
+                        if (/^[ \t]+\S/.test(next) && !next.includes(PLACEHOLDER_CB)) {
+                            fnText += ' ' + next.trim();
+                            i++;
+                        } else {
+                            break;
+                        }
+                    }
+                    // First definition wins
+                    const key = fnId;
+                    if (!fnDefs.has(key)) {
+                        fnDefs.set(key, fnText);
+                    }
+                    i++;
+                    continue;
+                }
+            }
+
+            // Reference link definition: [id]: url "title"
+            if (reference_links) {
+                // eslint-disable-next-line security/detect-unsafe-regex -- linear: no nested quantifiers on same path
+                const refMatch = line.match(/^\[([^\]]+)\]:\s+<?([^\s>]+)>?(?:\s+(?:"([^"]*)"|'([^']*)'|\(([^)]*)\)))?\s*$/);
+                if (refMatch) {
+                    const refId = refMatch[1].toLowerCase();
+                    const url = refMatch[2];
+                    const title = refMatch[3] !== undefined ? refMatch[3]
+                        : refMatch[4] !== undefined ? refMatch[4]
+                        : refMatch[5] !== undefined ? refMatch[5]
+                        : null;
+                    // First definition wins
+                    if (!refDefs.has(refId)) {
+                        refDefs.set(refId, { url, title });
+                    }
+                    i++;
+                    continue;
+                }
+            }
+
+            kept.push(line);
+            i++;
+        }
+        html = kept.join('\n');
+    }
+
+    // ────────────────────────────────────────────────────────────────
     //  Phase 1.5 — Safe HTML Extraction (whitelist mode)
     // ────────────────────────────────────────────────────────────────
     // When allow_unsafe_html is an object or array, extract whitelisted
@@ -771,22 +867,65 @@ function quikdown(markdown, options = {}) {
         return `${prefix}<a${getAttr('a')} href="${sanitizedUrl}" rel="noopener noreferrer">${url}</a>${trailing}`;
     });
 
+    // ── Phase 3.5: Reference Link & Footnote Resolution ──
+    // Resolve [text][id], [text][], [id] patterns to <a> tags using
+    // collected definitions.  Footnote markers [^id] become <sup> links.
+
+    if (reference_links && refDefs.size > 0) {
+        /** Build an <a> tag from a resolved reference definition. */
+        function buildRefAnchor(def, id, displayText) {
+            const sanitizedHref = sanitizeUrl(def.url, options.allow_unsafe_urls);
+            const isExternal = /^https?:\/\//i.test(sanitizedHref);
+            const rel = isExternal ? ' rel="noopener noreferrer"' : '';
+            const titleAttr = def.title ? ` title="${escapeHtml(def.title)}"` : '';
+            /* istanbul ignore next - bd-only branch */
+            const refAttr = bidirectional ? ` data-qd-ref="${escapeHtml(id)}"` : '';
+            return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${titleAttr}${refAttr}${dataQd('[ref')}>${displayText}</a>`;
+        }
+
+        // Full reference: [text][id]  and collapsed: [text][]
+        html = html.replace(/\[([^\]]+)\]\[([^\]]*)\]/g, (match, text, id) => {
+            const def = refDefs.get((id === '' ? text : id).toLowerCase());
+            return def ? buildRefAnchor(def, id, text) : match;
+        });
+
+        // Shortcut reference: [id] (not followed by ( or [, not containing ^)
+        html = html.replace(/(?<!\])\[([^\]^[\n]+)\](?!\(|\[)/g, (match, id) => {
+            const def = refDefs.get(id.toLowerCase());
+            return def ? buildRefAnchor(def, id, id) : match;
+        });
+    }
+
+    if (footnotes && fnDefs.size > 0) {
+        // Footnote markers: [^id]
+        html = html.replace(/\[\^([^\]]+)\]/g, (match, id) => {
+            if (!fnDefs.has(id)) return match; // unresolved — leave as text
+            // Track ordering — each unique id gets a sequential number
+            let fnNum = fnOrder.indexOf(id);
+            if (fnNum === -1) {
+                fnOrder.push(id);
+                fnNum = fnOrder.length;
+            } else {
+                fnNum = fnNum + 1;
+            }
+            /* istanbul ignore next - bd-only branch */
+            const fnAttr = bidirectional ? ` data-qd-fn="${escapeHtml(id)}"` : '';
+            return `<sup${getAttr('sup')}${fnAttr}${dataQd('[^')}><a href="#fn-${escapeHtml(id)}" id="fnref-${escapeHtml(id)}">${fnNum}</a></sup>`;
+        });
+    }
+
     // Protect rendered tags so emphasis regexes don't see attribute
     // values — fixes #3 (underscores in URLs interpreted as emphasis).
     const savedTags = [];
     html = html.replace(/<[^>]+>/g, m => { savedTags.push(m); return `%%T${savedTags.length - 1}%%`; });
 
-    // Bold, italic, strikethrough
-    const inlinePatterns = [
-        [/\*\*(.+?)\*\*/g, 'strong', '**'],
-        [/__(.+?)__/g, 'strong', '__'],
-        [/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, 'em', '*'],
-        [/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, 'em', '_'],
-        [/~~(.+?)~~/g, 'del', '~~']
-    ];
-    inlinePatterns.forEach(([pattern, tag, marker]) => {
-        html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(marker)}>$1</${tag}>`);
-    });
+    // Bold, italic, strikethrough (reuses BASE_INLINE_PATTERNS; code spans
+    // are already extracted in Phase 1 so only the first 5 patterns apply here)
+    const emphasisMarkers = ['**', '__', '*', '_', '~~'];
+    for (let pi = 0; pi < 5; pi++) {
+        const [pattern, tag] = BASE_INLINE_PATTERNS[pi];
+        html = html.replace(pattern, `<${tag}${getAttr(tag)}${dataQd(emphasisMarkers[pi])}>$1</${tag}>`);
+    }
 
     // Restore protected tags
     html = html.replace(/%%T(\d+)%%/g, (_, i) => savedTags[i]);
@@ -863,6 +1002,8 @@ function quikdown(markdown, options = {}) {
         [/(<\/pre>)<\/p>/g, '$1'],
         [/<p>(<div[^>]*>)/g, '$1'],
         [/(<\/div>)<\/p>/g, '$1'],
+        [/<p>(<section[^>]*>)/g, '$1'],
+        [/(<\/section>)<\/p>/g, '$1'],
         [new RegExp(`<p>(${PLACEHOLDER_CB}\\d+§)</p>`, 'g'), '$1']
     ];
     cleanupPatterns.forEach(([pattern, replacement]) => {
@@ -870,7 +1011,30 @@ function quikdown(markdown, options = {}) {
     });
 
     // When a block element is followed by a newline and then text, open a <p>.
-    html = html.replace(/(<\/(?:h[1-6]|blockquote|div|ul|ol|table|pre|hr)>)\n([^<])/g, '$1\n<p>$2');
+    html = html.replace(/(<\/(?:h[1-6]|blockquote|div|section|ul|ol|table|pre|hr)>)\n([^<])/g, '$1\n<p>$2');
+
+    // ── Footnotes section ──
+    // Only rendered if footnotes were actually referenced in the document.
+    if (footnotes && fnOrder.length > 0) {
+        /* istanbul ignore next - bd-only branch */
+        const sectionAttr = bidirectional ? ` data-qd="[^section"` : '';
+        let fnSection = `<section${getAttr('footnotes')}${sectionAttr}>`;
+        fnSection += `<hr${getAttr('hr')}>`;
+        fnSection += `<ol${getAttr('ol')}>`;
+        for (const id of fnOrder) {
+            const rawText = fnDefs.get(id) || '';
+            // Escape HTML in footnote text, then apply inline formatting
+            let fnHtml = allow_unsafe_html === true ? rawText : escapeHtml(rawText);
+            for (const [pattern, tag] of BASE_INLINE_PATTERNS) {
+                fnHtml = fnHtml.replace(pattern, `<${tag}${getAttr(tag)}>$1</${tag}>`);
+            }
+            /* istanbul ignore next - bd-only branch */
+            const liAttr = bidirectional ? ` data-qd-fn-id="${escapeHtml(id)}"` : '';
+            fnSection += `<li${getAttr('li')} id="fn-${escapeHtml(id)}"${liAttr}>${fnHtml} <a href="#fnref-${escapeHtml(id)}"${getAttr('footnote-backref')}>↩</a></li>`;
+        }
+        fnSection += '</ol></section>';
+        html += fnSection;
+    }
 
     // ────────────────────────────────────────────────────────────────
     //  Phase 4 — Code Restoration

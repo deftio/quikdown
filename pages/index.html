@@ -37,7 +37,7 @@
     "codeRepository": "https://github.com/deftio/quikdown",
     "programmingLanguage": "JavaScript",
     "license": "https://opensource.org/licenses/BSD-2-Clause",
-    "softwareVersion": "1.2.19",
+    "softwareVersion": "1.2.20",
     "author": { "@type": "Person", "name": "deftio" }
   }
   </script>
@@ -50,7 +50,7 @@
     <a class="qd-nav-brand" href="../pages/" aria-label="quikdown home">
       <img class="qd-nav-brand-icon" src="../pages/assets/logo-nav.svg" alt="" aria-hidden="true">
       <span class="qd-nav-brand-text">quikdown</span>
-      <span class="qd-nav-brand-version">v1.2.19</span>
+      <span class="qd-nav-brand-version">v1.2.20</span>
     </a>
     <button class="qd-nav-toggle" id="qd-nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false">
       <span class="qd-nav-toggle-bar"></span>
@@ -64,6 +64,7 @@
       <a class="qd-nav-link" data-nav="docs" href="../pages/docs/">Docs</a>
       <a class="qd-nav-link" data-nav="downloads" href="../pages/downloads/">Downloads</a>
       <a class="qd-nav-link" data-nav="changelog" href="../pages/changelog/">Changelog</a>
+      <a class="qd-nav-link" data-nav="blog" href="../pages/blog/">Blog</a>
       <a class="qd-nav-link" href="https://github.com/deftio/quikdown" rel="noopener" target="_blank">GitHub</a>
       <a class="qd-nav-link qd-nav-cta" data-nav="edit" href="../pages/edit/">Try Editor</a>
       <button class="qd-nav-theme-btn" id="qd-theme-toggle" type="button" aria-label="Toggle theme" title="Cycle theme: dark → light → auto">
@@ -86,11 +87,11 @@
           Zero-dependency markdown-to-HTML and HTML-to-markdown with live editing support. quikdown_edit is a full split-view editor with fence plugins for code highlighting, Mermaid diagrams, MathJax, SVG, CSV, GeoJSON maps, STL 3D models, ABC music notation, and Vega/Vega-Lite charts.
         </p>
         <div class="qd-hero-meta">
-          <span><strong>14.9 KB</strong> parser</span>
+          <span><strong>17.1 KB</strong> parser</span>
           <span class="qd-hero-meta-dot">•</span>
-          <span><strong>19.8 KB</strong> bidirectional</span>
+          <span><strong>22.7 KB</strong> bidirectional</span>
           <span class="qd-hero-meta-dot">•</span>
-          <span><strong>99.9 KB</strong> editor</span>
+          <span><strong>102.9 KB</strong> editor</span>
           <span class="qd-hero-meta-dot">•</span>
           <span><strong>BSD-2</strong> · parser &amp; bd have <strong>zero deps</strong></span>
         </div>
@@ -153,7 +154,7 @@
         <p style="color: #4b5563; margin: 0 0 1.5rem 0;">Three core tiers, each a superset of the previous — plus AST, MCP, and standalone modules. Install just what your app needs.</p>
         <div class="qd-grid qd-grid-3">
           <div class="qd-card">
-            <h3>quikdown <span class="qd-card-size">14.9 KB</span></h3>
+            <h3>quikdown <span class="qd-card-size">17.1 KB</span></h3>
             <p class="qd-card-desc">
               Markdown → HTML parser. XSS-safe by default. Fence callbacks for
               custom rendering. Themed CSS or inline styles. Use it when you
@@ -169,7 +170,7 @@ document.body.innerHTML = html;</code></pre>
           </div>
 
           <div class="qd-card">
-            <h3>quikdown_bd <span class="qd-card-size">19.8 KB</span></h3>
+            <h3>quikdown_bd <span class="qd-card-size">22.7 KB</span></h3>
             <p class="qd-card-desc">
               Everything in <code>quikdown</code>, plus HTML → Markdown
               round-trip. Use this when users edit a rendered preview and you
@@ -186,7 +187,7 @@ const md = quikdown_bd.toMarkdown(
           </div>
 
           <div class="qd-card">
-            <h3>quikdown_edit <span class="qd-card-size">99.9 KB</span></h3>
+            <h3>quikdown_edit <span class="qd-card-size">102.9 KB</span></h3>
             <p class="qd-card-desc">
               A complete markdown editor in one <code>&lt;div&gt;</code>. Live
               preview, bidirectional editing, fence plugins, toolbar, themes,
@@ -416,7 +417,7 @@ console.log('with syntax highlighting via fence_plugin');
       </div>
     </div>
     <div class="qd-footer-bottom">
-      <div>quikdown v1.2.19 — © deftio · BSD-2 licensed</div>
+      <div>quikdown v1.2.20 — © deftio · BSD-2 licensed</div>
       <div>Built with HTML, CSS, and JavaScript. Zero runtime dependencies.</div>
     </div>
   </div>

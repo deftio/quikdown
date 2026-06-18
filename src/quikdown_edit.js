@@ -83,7 +83,9 @@ const DEFAULT_OPTIONS = {
     undoStackSize: 100,       // Maximum number of undo states to keep
     allowUnsafeHTML: false,   // false | 'limited' | true — controls HTML passthrough
     showAllowUnsafeHTML: false, // Show toolbar button to cycle HTML mode
-    allowExternalFetch: true  // Allow fence renderers to fetch external resources (CDN, tiles, etc.)
+    allowExternalFetch: true, // Allow fence renderers to fetch external resources (CDN, tiles, etc.)
+    reference_links: false,   // Enable reference-style links [text][id]
+    footnotes: false          // Enable footnotes [^id]
 };
 
 // Library catalog used by preloadFences. Each entry knows how to:
@@ -981,7 +983,9 @@ class QuikdownEditor {
                 fence_plugin: this.createFencePlugin(),
                 lazy_linefeeds: this.options.lazy_linefeeds,
                 inline_styles: this.options.inline_styles,
-                allow_unsafe_html: allowHtml
+                allow_unsafe_html: allowHtml,
+                reference_links: this.options.reference_links,
+                footnotes: this.options.footnotes
             });
             
             // Update preview if visible

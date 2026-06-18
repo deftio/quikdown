@@ -139,15 +139,75 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                 const brMarker = dataQd || '  ';
                 return `${brMarker}\n`;
                 
-            case 'a':
-                const linkText = node.getAttribute('data-qd-text') || childContent.trim();
+            case 'a': {
                 const href = node.getAttribute('href') || '';
+                // Skip footnote back-links (↩)
+                if (href.startsWith('#fnref-')) {
+                    return '';
+                }
+                // Reference link
+                const refId = node.getAttribute('data-qd-ref');
+                if (refId !== null) {
+                    const linkText = node.getAttribute('data-qd-text') || childContent.trim();
+                    if (refId === '') {
+                        // Collapsed reference: [text][]
+                        return `[${linkText}][]`;
+                    }
+                    if (refId.toLowerCase() === linkText.toLowerCase()) {
+                        // Shortcut reference: [id]
+                        return `[${refId}]`;
+                    }
+                    // Full reference: [text][id]
+                    return `[${linkText}][${refId}]`;
+                }
+                const linkText = node.getAttribute('data-qd-text') || childContent.trim();
                 // Check for autolinks
                 if (linkText === href && !dataQd) {
                     return `<${href}>`;
                 }
                 return `[${linkText}](${href})`;
-                
+            }
+
+            case 'sup': {
+                // Footnote marker
+                const fnId = node.getAttribute('data-qd-fn');
+                if (fnId) {
+                    return `[^${fnId}]`;
+                }
+                return childContent;
+            }
+
+            case 'section': {
+                // Footnotes section
+                if (dataQd === '[^section') {
+                    // Walk <ol> children to extract footnote definitions
+                    let fnDefs = '';
+                    const ol = node.querySelector('ol');
+                    if (ol) {
+                        for (const li of ol.children) {
+                            if (li.tagName !== 'LI') continue;
+                            const fnId = li.getAttribute('data-qd-fn-id');
+                            if (!fnId) continue;
+                            // Extract text content, skipping the back-reference <a>
+                            let text = '';
+                            for (const child of li.childNodes) {
+                                if (child.nodeType === Node.TEXT_NODE) {
+                                    text += child.textContent;
+                                } else if (child.nodeType === Node.ELEMENT_NODE) {
+                                    if (child.tagName === 'A' && (child.getAttribute('href') || '').startsWith('#fnref-')) {
+                                        continue; // skip backref
+                                    }
+                                    text += child.textContent;
+                                }
+                            }
+                            fnDefs += `[^${fnId}]: ${text.trim()}\n`;
+                        }
+                    }
+                    return fnDefs ? '\n' + fnDefs : '';
+                }
+                return childContent;
+            }
+
             case 'img':
                 const alt = node.getAttribute('data-qd-alt') || node.getAttribute('alt') || '';
                 const src = node.getAttribute('data-qd-src') || node.getAttribute('src') || '';

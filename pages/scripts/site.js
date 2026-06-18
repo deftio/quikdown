@@ -132,6 +132,7 @@
         else if (path.includes('/changelog/')) current = 'changelog';
         else if (path.includes('/downloads/')) current = 'downloads';
         else if (path.includes('/frameworks/')) current = 'frameworks';
+        else if (path.includes('/blog/'))       current = 'blog';
 
         document.querySelectorAll('.qd-nav-link[data-nav]').forEach((link) => {
             link.classList.toggle('active', link.dataset.nav === current);
