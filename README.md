@@ -1,149 +1,220 @@
-# quikdown
+# quikdown  
+[<img class="quikdown-img" src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" alt="CI" data-qd-alt="CI" data-qd-src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" data-qd="!">](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
+[<img class="quikdown-img" src="https://img.shields.io/npm/v/quikdown.svg" alt="npm version" data-qd-alt="npm version" data-qd-src="https://img.shields.io/npm/v/quikdown.svg" data-qd="!">](https://www.npmjs.com/package/quikdown)
+[<img class="quikdown-img" src="https://img.shields.io/badge/coverage-99.3%25-brightgreen" alt="Coverage" data-qd-alt="Coverage" data-qd-src="https://img.shields.io/badge/coverage-99.3%25-brightgreen" data-qd="!">](https://github.com/deftio/quikdown)
+[<img class="quikdown-img" src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" alt="License: BSD-2-Clause" data-qd-alt="License: BSD-2-Clause" data-qd-src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" data-qd="!">](https://opensource.org/licenses/BSD-2-Clause)
+[<img class="quikdown-img" src="https://img.shields.io/badge/minified-17.1KB-green.svg" alt="Bundle Size" data-qd-alt="Bundle Size" data-qd-src="https://img.shields.io/badge/minified-17.1KB-green.svg" data-qd="!">](https://bundlephobia.com/package/quikdown)    
+Quikdown is a small, safe, bidirectional Markdown parser with a drop-in editor for browser and Node.js apps — with rich fenced-block rendering, Markdown ↔ HTML round-tripping, undo/redo, headless APIs, MCP tools, and a standalone offline build.
 
-[![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
-[![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage](https://img.shields.io/badge/coverage-99.3%25-brightgreen)](https://github.com/deftio/quikdown)
-[![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-17.1KB-green.svg)](https://bundlephobia.com/package/quikdown)
-
-Quikdown is a small, safe, bidirectional Markdown parser and editor for browser and Node.js apps — with rich fences, streaming, undo/redo, MCP tools, and a standalone airgapped build.
+It is useful anywhere Markdown needs to remain the source of truth while users edit either the source or rendered view: docs, dashboards, CMS fields, internal tools, local/offline apps, chat UIs, and human/LLM co-editing workflows.
 
 **[Try the Editor](https://deftio.github.io/quikdown/pages/edit/)** | **[Live Site](https://deftio.github.io/quikdown/pages/)** | **[Examples](https://deftio.github.io/quikdown/pages/examples/)** | **[Downloads](https://deftio.github.io/quikdown/pages/downloads/)** | **[Docs](docs/)**
 
 ![quikdown editor demo — markdown, Mermaid diagram, MathJax equation, and syntax-highlighted code](pages/assets/editor-demo.gif)
-*Split-mode editor: Markdown source on the left, live preview on the right — with rendered Mermaid diagrams, MathJax equations, and syntax-highlighted code.*
 
-### Why Quikdown?
+*Split-mode view: Markdown source on the left, rendered preview on the right — with rendered Mermaid diagrams, MathJax equations, syntax-highlighted code, and other rich fences.*
 
-- **Small** — ~15 KB parser, ~98 KB editor. Zero runtime dependencies.
-- **Safe by default** — all HTML escaped, URL sanitization blocks `javascript:` / `vbscript:` / non-image `data:` URIs. No `eval`, no dynamic regex.
-- **Bidirectional** — edit rendered HTML and get Markdown back. Round-trip preserves fences, tables, and formatting.
-- **Rich fences** — Mermaid diagrams, Vega/Vega-Lite charts, MathJax equations, ABC music notation, GeoJSON maps, CSV/TSV/PSV tables, SVG, STL 3D models, syntax-highlighted code, and custom fences via the plugin API.
-- **Undo/redo** — programmatic undo/redo lets LLMs and humans co-edit a shared document with full change reversibility.
-- **Offline standalone** — a self-contained airgapped build (~7.7 MB / ~1 MB gzipped) bundles everything for air-gapped, regulated, or field environments. See companion app [Quikleaf](https://github.com/deftio/quikleaf) for an offline desktop app (with optional LLM support).
-- **LLM-friendly** — stream Markdown tokens in, render incrementally, reverse agent mistakes with undo/redo. 24-tool MCP server for AI agents.
+## Why Quikdown?
 
-### Why another Markdown parser?
+Most Markdown libraries are either parsers, previewers, textarea editors, or large editor frameworks. Quikdown is meant to be a compact Markdown document surface: parse Markdown, render rich fences, edit source or rendered output, round-trip back to Markdown, and embed the whole thing with one import.
 
-Quikdown is a compact, embeddable parser/editor where Markdown remains the source of truth — for both humans and agents. It doesn't try to replace full CommonMark parsers or heavyweight editor stacks. It fills the gap for apps that need a fast, safe, self-contained Markdown render+edit surface with minimal footprint.
+The original use case was LLM-assisted editing, where a model and a human both work on the same Markdown document. But the same requirements show up in many ordinary applications: CMS fields, documentation tools, internal dashboards, report builders, offline field tools, chat interfaces, and apps that need diagrams, math, tables, charts, maps, or other rich content inside Markdown without adopting a heavyweight editor stack.
 
-### Modules
+Quikdown intentionally does not try to be a full CommonMark implementation or a ProseMirror replacement. It covers a practical Markdown subset and focuses on small size, safe defaults, bidirectional editing, rich fenced content, offline deployment, and simple application integration.
 
-Nine modules — use only what you need:
+## Highlights
 
-| Module | Size | What it does |
-|--------|------|--------------|
-| **quikdown.js** | ~15 KB | Markdown → HTML parser. XSS-safe, fence plugin callbacks, inline styles or CSS classes. |
-| **quikdown_bd.js** | ~20 KB | Bidirectional: core parser + HTML → Markdown round-trip. |
-| **quikdown_edit.js** | ~98 KB | Drop-in split-view editor. Undo/redo, toolbar, lazy-loaded fence plugins. |
-| **quikdown_edit_standalone.js** | ~7.7 MB | Offline editor. All fence libraries bundled — no CDN required. [Docs](docs/standalone-editor.md) |
-| **quikdown_mcp.js** | ~26 KB | MCP server. 24 tools for AI agents over JSON-RPC 2.0. |
-| **quikdown_ast/json/yaml/ast_html** | ~5–8 KB each | AST companion libraries for structured output. |
+* **Drop-in editor** — one `<div>`, one import. Source, split, and preview modes with toolbar, themes, undo/redo, copy-as-rich-text, and rich fence rendering.
+* **Bidirectional Markdown Parser Lib** — convert Markdown → HTML and supported Quikdown HTML → Markdown. Edit the rendered side and get Markdown back.
+* **Rich fences** — built-in editor renderers for syntax-highlighted code, Mermaid, MathJax, SVG, CSV/TSV/PSV tables, GeoJSON maps, STL models, ABC music notation, Vega/Vega-Lite charts, and sanitized raw HTML.
+* **Small core** — approximately 15–17 KB minified for the parser, with zero runtime dependencies.
+* **Safe by default** — HTML is escaped, unsafe URL schemes are blocked, and the core parser uses no `eval` or dynamic regular expressions.
+* **Offline standalone build** — a self-contained editor bundle for air-gapped, regulated, local, field, or desktop-app use with rich fence support.
+* **LLM/agent friendly** — stream Markdown into the editor, let an agent modify the document, and roll back mistakes with programmatic undo/redo.
+* **Headless API** — run the editor without a toolbar and wire it into your own UI or automation layer.
+* **MCP server** — 24 tools for parsing, file operations, and editor control over JSON-RPC 2.0.
+* **Structured output** — companion AST, JSON, YAML, and AST-to-HTML modules.
 
-## Features
+## Modules
 
-- **Compact markdown parser** — single-pass markdown to HTML. Handles headings, lists, tables, code blocks, inline formatting, task lists, autolinks, and lazy linefeeds.
-- **Bidirectional editing** — edit the rendered HTML and get markdown back. Round-trip preserves formatting, fences, and tables.
-- **Drop-in editor** — one `<div>`, one import. Source, split, and preview modes. Undo/redo, toolbar, copy as rich text, light/dark/auto themes.
-- **Fence plugins** — code (highlight.js), Mermaid diagrams, MathJax equations, inline SVG, CSV/TSV/PSV tables, GeoJSON maps, STL 3D models, ABC music notation, Vega/Vega-Lite charts, raw HTML.
-- **XSS-safe** — HTML entities escaped by default. URL sanitization blocks `javascript:`, `vbscript:`, and non-image `data:` URIs.
-- **Browser and Node.js** — forward parser and bidirectional parser work in both. Quikdown Editor requires DOM.
-- **Zero runtime deps (core)** — parser and bidirectional modules have no dependencies. The editor lazy-loads fence libraries (highlight.js, Mermaid, MathJax, ABCJS, Vega, etc.) from CDN on demand, or use the [standalone offline bundle](docs/standalone-editor.md) (~7.7 MB / ~1.0 MB gzipped, no CDN).
-- **TypeScript definitions** — maintained `.d.ts` files for all modules.
-- **Inline styles or CSS classes** — built-in light/dark themes, or bring your own CSS.
-- **Copy as rich text** — copies the rendered preview to clipboard with images, tables, and rendered fences. Paste into Gmail, Word, Slack, Notion.
-- **Headless mode** — run the editor without a toolbar. Wire `undo()`, `setTheme()`, `setMode()` to your own UI.  Rich API for controlling / selecting / manipulating markdown and rendered text with undo/redo support.
-- **Structured output** — parse markdown into AST, JSON, or YAML via companion libraries.
+Use only the pieces you need.
 
-## Security
+| Module | Size | Purpose |
+| --- | --- | --- |
+| quikdown.js | ~15–17 KB | Markdown → HTML parser. Safe defaults, fence plugin callbacks, inline styles or CSS classes. |
+| quikdown_bd.js | ~20 KB | Bidirectional Markdown ↔ HTML conversion. |
+| quikdown_edit.js | ~98 KB | Drop-in split-view headless editor control with undo/redo, toolbar, themes, copy-as-rich-text, and lazy-loaded fence plugins. |
+| quikdown_edit_standalone.js | ~7.7 MB / ~1 MB gzipped | Offline editor with all fence libraries bundled. No CDN required. |
+| quikdown_mcp.js | ~26 KB | MCP server with 24 tools for AI agents. |
+| quikdown_ast / json / yaml / ast_html | ~5–8 KB each | Companion modules for structured output and AST-based rendering. |
 
-All HTML is escaped by default. Only safe Markdown constructs become HTML:
+## Install
 
-```javascript
-const unsafe = '<script>alert("XSS")</script> **bold**';
-const safe = quikdown(unsafe);
-// &lt;script&gt;alert("XSS")&lt;/script&gt; <strong>bold</strong>
-```
+Quikdown is available on [npm](https://www.npmjs.com/package/quikdown) and can also be loaded directly from [UNPKG](https://unpkg.com/quikdown) or [jsDelivr](https://cdn.jsdelivr.net/npm/quikdown).
 
-- **HTML escaped by default** — no raw HTML passes through unless a fence plugin explicitly renders it.
-- **URL sanitization** — blocks `javascript:`, `vbscript:`, and non-image `data:` URIs in links and images.
-- **Trusted fence path** — fence plugin callbacks receive pre-extracted content and the declared language tag. The plugin decides what to render; untrusted content never reaches `innerHTML` without an explicit opt-in. The built-in editor uses DOMPurify for the `html` fence.
-- **No `eval`, no dynamic `RegExp`** — all regex patterns are static literals, verified free of catastrophic backtracking (ReDoS).
-- **Static analysis** — passes ESLint with [eslint-plugin-security](https://www.npmjs.com/package/eslint-plugin-security) at error level with zero findings. Enforced in CI on every build.
-
-For the full security model, see [docs/security.md](docs/security.md).
-
-## Installation
-
-Quikdown is available via [NPM](https://www.npmjs.com/package/quikdown) and related [unpkg](https://unpkg.com/quikdown) and [jsdelivr](https://cdn.jsdelivr.net/npm/quikdown)
-
-### NPM package
 ```bash
 npm install quikdown
 ```
 
-### CDN using UNPKG  
+### Browser via ES module
 
-**CDN (ES Modules):**
-```html
+```js
 <script type="module">
   import quikdown from 'https://unpkg.com/quikdown/dist/quikdown.esm.min.js';
+
   document.body.innerHTML = quikdown('# Hello World');
 </script>
 ```
 
-**CDN (UMD):**
-```html
+### Browser via UMD
+
+```js
 <script src="https://unpkg.com/quikdown/dist/quikdown.umd.min.js"></script>
 <script>
   document.body.innerHTML = quikdown('# Hello World');
 </script>
 ```
 
-## Quick Start
+## Quick start
 
-Quikdown is built in 3 versions. The smallest (quikdown) provides markdown to html conversion only.  The next (quikdown_bd) provides markdown to html and html to markdown support.  The lightweight editor quikdown_edit allows a bidirectional editor with lazy loading for common fences such as codeblocks, svg, and mermaid diagrams is also provided.
+Quikdown has three common entry points: the core parser, the bidirectional parser, and the editor.
 
-### Markdown → HTML (quikdown.js)
+### Markdown → HTML
+
+Use `quikdown` when you only need Markdown rendering.
 
 ```javascript
-// Basic conversion
-const html = quikdown('# Hello World',
-    {inline_styles: true}  // Use inline styles,  more options in API docs
-);
+import quikdown from 'quikdown';
+
+const markdown = '# Hello World\n\nThis is **Markdown**.';
+const html = quikdown(markdown);
 
 document.body.innerHTML = html;
-
 ```
 
-### Bidirectional Markdown ↔  HTML (quikdown_bd.js)
+You can choose inline styles or CSS classes.
 
 ```javascript
-// Convert with source tracking
-const htmlString = quikdown_bd(markdown, options);
-
-// Convert HTML back to Markdown
-const markdown = quikdown_bd.toMarkdown(htmlString);
+const html = quikdown(markdown, {
+  inline_styles: true
+});
 ```
 
-Note: quikdown does not provide a *generic* html to markdown conversion but uses special tags and limited DOM parsing for HTML to markdown conversion.  Standard markdown components such as headings, text styles, tables, quotes, etc are supported.  For custom fences quikdown relies on its tag system or 3rd party handlers to provide reverse (html to md) conversion.
+### Markdown ↔ HTML
 
-### Editor (quikdown_edit.js)
+Use `quikdown_bd` when you need rendered HTML that can be converted back to Markdown.
+
+```javascript
+import quikdown_bd from 'quikdown/bd';
+
+const html = quikdown_bd(markdown);
+const markdownAgain = quikdown_bd.toMarkdown(html);
+```
+
+Quikdown’s HTML → Markdown conversion is designed for Quikdown-generated HTML and supported Markdown structures. It is not intended to be a generic arbitrary-HTML-to-Markdown converter.
+
+Standard Markdown structures such as headings, text styles, links, lists, blockquotes, tables, and code fences are supported. For custom fences, Quikdown relies on its tag system or third-party handlers to provide reverse conversion.
+
+### Drop-in editor
+
+Use `QuikdownEditor` when you want source, split, or preview editing in the browser.
 
 ```javascript
 const editor = new QuikdownEditor('#container', {
-  mode: 'split',           // 'source', 'split', 'preview'
-  theme: 'auto',           // 'light', 'dark', 'auto'
-  plugins: { highlightjs: true, mermaid: true } // built-in fence handlers, see API docs for custom plugins
+  mode: 'split',           // 'source', 'split', or 'preview'
+  theme: 'auto',           // 'light', 'dark', or 'auto'
+  plugins: {
+    highlightjs: true,
+    mermaid: true,
+    mathjax: true
+  }
 });
 
-editor.setMarkdown('# Content  \nTo be quik or not to be.');  // provide default content
-const content = editor.getMarkdown(); // get source content, see APIs for getting / setting HTML
+editor.setMarkdown('# Content\n\nTo be quik or not to be.');
+const markdown = editor.getMarkdown();
 ```
 
-### AST Libraries (quikdown_ast, quikdown_json, quikdown_yaml)
+The editor can also run headless, without the built-in toolbar.
 
-Convert markdown to structured data formats for programmatic manipulation:
+```javascript
+const editor = new QuikdownEditor('#container', {
+  mode: 'split',
+  showToolbar: false
+});
+
+editor.setMarkdown(markdown);
+editor.undo(); 
+editor.redo();
+editor.setTheme('dark');
+editor.setMode('preview');
+```
+
+## Rendering support (fences)
+
+Quikdown’s editor can render common fenced block formats while preserving the original fence source for round-trip editing. Note that quikdown itself can't support reverse editing for specialty fences such as mermaid or MathJax but callbacks are provided so those can be handled on a case-by-case basis.
+
+Built-in editor fence handlers include:
+
+* `js`, `javascript`, `python`, `c`, `cpp`, and other code fences via highlight.js
+* `mermaid` diagrams
+* `math`, `tex`, `latex`, and `katex` equations via MathJax
+* `svg` inline graphics
+* `csv`, `tsv`, and `psv` tables
+* `geojson` maps via Leaflet
+* `stl` 3D models via Three.js
+* `abc` and `music` sheet music via ABCJS
+* `vega`, `vega-lite`, and `vegalite` charts
+* `html` fences sanitized with DOMPurify
+
+Fence libraries are lazy-loaded by the editor when needed. Use the standalone build when you need everything bundled with no network access.
+
+Custom fence handlers use a small callback API.
+
+```javascript
+const fencePlugin = {
+  render: (content, language) => {
+    if (language === 'mermaid') {
+      return renderMermaid(content);
+    }
+
+    return undefined; // fall back to default handling
+  }
+};
+
+const html = quikdown(markdown, {
+  fence_plugin: fencePlugin
+});
+```
+
+## Security model
+
+Quikdown’s core parser escapes HTML by default. Only safe Markdown constructs become HTML unless a fence plugin explicitly renders additional content.
+
+```javascript
+const unsafe = '<script>alert("XSS")</script> **bold**';
+const safe = quikdown(unsafe);
+
+// &lt;script&gt;alert("XSS")&lt;/script&gt; <strong>bold</strong>
+```
+
+Security-related defaults and checks include:
+
+* HTML escaped by default
+* URL sanitization for links and images
+* Blocking of `javascript:`, `vbscript:`, and non-image `data:` URIs
+* No `eval`
+* No dynamic `RegExp`
+* Static regex patterns checked for ReDoS risk
+* DOMPurify used by the built-in editor for raw HTML fences
+* ESLint security checks enforced in CI
+
+Fence plugins are trusted extension points. If a custom plugin returns HTML, that plugin is responsible for sanitizing what it renders.
+
+For the full model, see [docs/security.md](docs/security.md).
+
+## AST, JSON, and YAML output
+
+Quikdown includes companion libraries for converting Markdown into structured data formats.
 
 ```javascript
 import quikdown_ast from 'quikdown/ast';
@@ -153,186 +224,272 @@ import quikdown_ast_html from 'quikdown/ast-html';
 
 const markdown = '# Hello\n\nWorld **bold**';
 
-// Markdown → AST object
 const ast = quikdown_ast(markdown);
-
-// Markdown → JSON string
 const json = quikdown_json(markdown);
-
-// Markdown → YAML string
 const yaml = quikdown_yaml(markdown);
 
-// AST/JSON/YAML → HTML
-const html = quikdown_ast_html(ast);  // or pass json/yaml string
+const html = quikdown_ast_html(ast);
 ```
 
-The AST parsers are "forgiving" - they handle malformed markdown gracefully without throwing errors. See [AST Documentation](docs/quikdown-ast.md) for the complete node type reference.
+The AST parsers are forgiving and handle malformed Markdown gracefully without throwing errors. See [AST Documentation](docs/quikdown-ast.md) for the complete node type reference.
 
-**Note:** The editor automatically lazy-loads plugin libraries from CDNs when needed:
-- **highlight.js** - Loaded when code blocks are encountered and `highlightjs: true`
-- **mermaid** - Loaded when mermaid diagrams are found and `mermaid: true`
-- **DOMPurify** - Loaded when HTML fence blocks are rendered
-- **MathJax v3** - Loaded when `math`, `tex`, `latex`, or `katex` fence blocks are encountered (`katex` lang kept for backward compatibility)
-- **ABCJS** - Loaded when `abc` or `music` fence blocks are encountered (sheet music rendering)
-- **Vega + Vega-Lite + Vega-Embed** - Loaded when `vega`, `vega-lite`, or `vegalite` fence blocks are encountered (data visualization)
+## Common integration patterns
 
-This keeps the initial bundle small while providing rich functionality on-demand.
+Quikdown supports three common integration styles.
 
-## Integration
+| Pattern | Use when | Entry point |
+| --- | --- | --- |
+| Parse-only | You need safe Markdown rendering or structured output in an app | import quikdown from 'quikdown' |
+| File agent | An AI agent reads and writes Markdown/HTML files in a repo sandbox | npx quikdown-mcp --root=. |
+| Doc copilot | A human edits in the browser while an agent controls the same document | node examples/mcp-doc-host/start-mcp.js |
 
-quikdown meets three common integration patterns. Pick the entry point that matches who drives the document:
+The parse-only path is the default: zero config, browser or Node.js, and no runtime dependencies in the core parser.
 
-| Audience | What you need | Entry point |
-|----------|---------------|-------------|
-| **Parse-only** | Render markdown, AST/JSON/YAML, streaming HTML in your app | `import quikdown from 'quikdown'` — or `quikdown/ast`, `quikdown/json`, `quikdown/yaml` |
-| **File agents** | An AI agent reads and writes `.md` / HTML files in a repo sandbox | **Path A:** `npx quikdown-mcp --root=.` — IDE editing, no browser |
-| **Doc copilot** | Human edits in a live preview; agent drives the same buffer | **Path B:** `node examples/mcp-doc-host/start-mcp.js` — browser QuikdownEditor + Node MCP bridge |
+The file-agent path adds MCP filesystem tools under a sandbox root. This is useful when the human stays in Cursor, VS Code, or another file editor.
 
-**Parse-only** is the default: zero config, embed anywhere. **File agents** add MCP filesystem tools under a `--root` sandbox — best when the human stays in Cursor or VS Code. **Doc copilot** binds the full editor surface (regex, undo, rich render export) when the human works in a browser tab.
+The doc-copilot path opens a browser editor and lets an MCP client control the same live document through a Node bridge.
 
-Browser demos and streaming patterns: [docs/llm-integration.md](docs/llm-integration.md). MCP setup and tool reference: [docs/quikdown-mcp.md](docs/quikdown-mcp.md).
+For details, see [docs/llm-integration.md](docs/llm-integration.md), [docs/quikdown-mcp.md](docs/quikdown-mcp.md), and [examples/mcp-doc-host](examples/mcp-doc-host/).
 
-## LLM and agent UIs
+## LLM and agent workflows
 
-quikdown fits the **model writes markdown, human sees rendered output** loop:
+Quikdown fits the loop where a model writes Markdown, a human sees rendered output, and both continue editing the same document.
 
-| Pattern | Doc / demo |
-|---------|------------|
-| **AI Canvas** — chat + document editor | [examples/ai-canvas](examples/ai-canvas/) — simulated or live LLM (BYOK) |
-| Agent **tool calling** on editor | [examples/llm-tool-editor](examples/llm-tool-editor/) |
-| **MCP doc copilot** (Node + browser) | [examples/mcp-doc-host](examples/mcp-doc-host/) — 24 MCP tools via WebSocket |
-| Stream into **QuikdownEditor** | [examples/llm-stream-editor](examples/llm-stream-editor/) |
-| Stream tokens into HTML | [integration-llm-stream](https://deftio.github.io/quikdown/pages/examples/integration-llm-stream.html) |
-| Chat bubbles + markdown | [quikchat](https://github.com/deftio/quikchat) + [integration example](https://deftio.github.io/quikdown/pages/examples/integration-quikchat.html) |
+| Pattern | Demo / docs |
+| --- | --- |
+| AI canvas: chat + document editor | examples/ai-canvas |
+| Agent tool-calling on editor content | examples/llm-tool-editor |
+| MCP doc copilot | examples/mcp-doc-host |
+| Stream into QuikdownEditor | examples/llm-stream-editor |
+| Stream tokens into rendered HTML | integration-llm-stream |
+| Chat bubbles with Markdown | quikchat and integration example |
 
 Overview: [docs/llm-integration.md](docs/llm-integration.md)
 
-## MCP Server (AI Agent Integration)
+## MCP server
 
-quikdown includes an MCP server that lets AI agents parse markdown, convert between formats, read/write files, and (with a doc host) control the editor — all over JSON-RPC 2.0.
+Quikdown includes an MCP server that lets AI agents parse Markdown, convert between formats, read/write files, and, with a doc host, control the editor — all over JSON-RPC 2.0.
 
-**Two paths:**
+### Two paths
 
 | Path | Human UI | Command |
-|------|----------|---------|
-| **A — IDE** (shipped) | Cursor / VS Code file editor; no browser | `npx quikdown-mcp --root=.` |
-| **B — Doc copilot** (shipped) | **Browser tab** with QuikdownEditor; Node host bridges MCP | `node examples/mcp-doc-host/start-mcp.js` |
+| --- | --- | --- |
+| A — IDE | Cursor / VS Code file editor; no browser | npx quikdown-mcp --root=. |
+| B — Doc copilot | Browser tab with QuikdownEditor; Node host bridges MCP | node examples/mcp-doc-host/start-mcp.js |
 
-Path B is a **Node launcher + browser window** — you work in the browser; the agent drives the same doc via MCP through Node. Setup: [examples/mcp-doc-host/README.md](examples/mcp-doc-host/README.md). Overview: [Path A vs Path B](docs/quikdown-mcp.md#path-a-vs-path-b).
+Path A is for repo/file workflows. Path B is for live document workflows where the human edits in the browser while the agent uses MCP against the same editor state.
 
 ```bash
 npm install quikdown
 npx quikdown-mcp --root=.
 ```
 
-**24 tools** in three groups:
+### MCP tools
+
+Quikdown currently exposes 24 MCP tools in three groups.
 
 | Group | Tools | Activated by |
-|-------|-------|-------------|
-| Headless | `markdown_to_html`, `html_to_markdown`, `markdown_stats`, `quikdown_info`, `markdown_to_ast`, `markdown_to_json` | Always |
-| Filesystem | `read_file_info`, `read_file_lines`, `read_file_markdown`, `write_markdown_to_file`, `write_html_to_file` | `--root` flag |
-| Editor | `read_editor`, `write_editor`, `find_regex`, `replace_regex`, `replace_text`, `extract_text`, `get_stats`, `get_html`, `undo`, `redo`, `load_file_to_editor`, `get_rendered`, `write_rendered_to_file` | Editor binding |
+| --- | --- | --- |
+| Headless | markdown_to_html, html_to_markdown, markdown_stats, quikdown_info, markdown_to_ast, markdown_to_json | Always |
+| Filesystem | read_file_info, read_file_lines, read_file_markdown, write_markdown_to_file, write_html_to_file | --root flag |
+| Editor | read_editor, write_editor, find_regex, replace_regex, replace_text, extract_text, get_stats, get_html, undo, redo, load_file_to_editor, get_rendered, write_rendered_to_file | Editor binding |
 
-**Cursor (Path A — IDE + repo files):**
+### Cursor configuration: Path A
+
 ```json
 {
   "mcpServers": {
-    "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] }
+    "quikdown": {
+      "command": "npx",
+      "args": [
+        "quikdown-mcp",
+        "--root=."
+      ]
+    }
   }
 }
 ```
 
-**Cursor (Path B — doc copilot, from quikdown repo):** run `npm run build` first, then:
+### Cursor configuration: Path B
+
+From the Quikdown repo, run `npm run build` first, then configure:
+
 ```json
 {
   "mcpServers": {
     "quikdown-doc": {
       "command": "node",
-      "args": ["examples/mcp-doc-host/start-mcp.js"]
+      "args": [
+        "examples/mcp-doc-host/start-mcp.js"
+      ]
     }
   }
 }
 ```
-Opens a browser tab with QuikdownEditor; you edit in the browser while the agent uses MCP. See [examples/mcp-doc-host/README.md](examples/mcp-doc-host/README.md).
 
-**Claude Desktop (Path A):**
+This opens a browser tab with QuikdownEditor. You edit in the browser while the agent uses MCP.
+
+See [examples/mcp-doc-host/README.md](examples/mcp-doc-host/README.md).
+
+### Claude Desktop: Path A
+
 ```json
 {
   "mcpServers": {
-    "quikdown": { "command": "npx", "args": ["quikdown-mcp", "--root=."] }
+    "quikdown": {
+      "command": "npx",
+      "args": [
+        "quikdown-mcp",
+        "--root=."
+      ]
+    }
   }
 }
 ```
 
-**Programmatic:**
+### Programmatic MCP use
+
 ```javascript
 import { createMcpServer } from 'quikdown/mcp';
+
 const mcp = createMcpServer({ root: '.' });
-const result = mcp.callTool('markdown_to_html', { markdown: '# Hello' });
+const result = mcp.callTool('markdown_to_html', {
+  markdown: '# Hello'
+});
 ```
 
 Full documentation: [docs/quikdown-mcp.md](docs/quikdown-mcp.md) | [MCP setup page](https://deftio.github.io/quikdown/pages/mcp/)
 
-## Other Configuration Options
-quikdown supports built-in styles for a "batteries included" experience or you can bring your own CSS themes.  Example css files are provided for basic light and dark themes to get started.
+## Streaming
+
+Quikdown’s parser is fast enough to re-parse the full buffer on every incoming chunk, so you do not need to manage incremental parser state.
+
+### Stream tokens into rendered HTML
+
+```javascript
+let buffer = '';
+
+for await (const chunk of llmStream) {
+  buffer += chunk;
+  previewEl.innerHTML = quikdown(buffer, {
+    lazy_linefeeds: true
+  });
+}
+```
+
+### Stream tokens into QuikdownEditor
+
+```javascript
+let buffer = '';
+
+for await (const chunk of llmStream) {
+  buffer += chunk;
+  await editor.setMarkdown(buffer);
+}
+```
+
+Incomplete fences are handled gracefully. They render as plain text until the closing fence arrives.
+
+See [docs/llm-integration.md](docs/llm-integration.md) for production patterns such as debouncing and undo grouping.
+
+## Undo and redo
+
+The editor maintains a configurable undo stack. The default is 100 states.
+
+Keyboard shortcuts work out of the box.
+
+| Action | Shortcut |
+| --- | --- |
+| Undo | Ctrl+Z / Cmd+Z |
+| Redo | Ctrl+Shift+Z / Ctrl+Y |
+
+```javascript
+const editor = new QuikdownEditor('#container', {
+  undoStackSize: 200,
+  showUndoRedo: true
+});
+
+editor.undo();
+editor.redo();
+
+editor.canUndo();
+editor.canRedo();
+
+editor.clearHistory();
+```
+
+This is useful for ordinary editing and especially useful for human + agent workflows. Agents make mistakes, and users need reversible edits.
+
+Undo and redo are also available as MCP tools in Path B.
+
+Full API: [docs/quikdown-editor.md](docs/quikdown-editor.md)
+
+## Copy as rich text
+
+The editor can copy the rendered preview to the clipboard, including images, tables, and rendered fences.
+
+This is useful when pasting Markdown-derived content into tools such as Gmail, Word, Slack, Notion, or internal CMS systems.
+
+## Styling
+
+Quikdown supports built-in styling for a batteries-included experience, or you can bring your own CSS.
+
+### Inline styles
+
+```javascript
+quikdown('**bold**', {
+  inline_styles: true
+});
+
+// <strong style="font-weight: bold;">bold</strong>
+```
+
+### CSS classes
+
+Class-based styling is the default.
+
+```javascript
+quikdown('**bold**');
+
+// <strong>bold</strong>
+```
+
+Use the included CSS files as starting points:
+
+* `dist/quikdown.light.css`
+* `dist/quikdown.dark.css`
+
+## Configuration
 
 ```javascript
 const html = quikdown(markdown, {
-  lazy_linefeeds: true,    // Single newlines become <br>
-  inline_styles: false,    // Use class based CSS instead of inline styles
-  fence_plugin: {          // Custom code block processor (v1.1.0+ API)
-    render: myHandler      // Function to render fence blocks
+  lazy_linefeeds: true,    // single newlines become <br>
+  inline_styles: false,    // use CSS classes instead of inline styles
+  fence_plugin: {
+    render: myHandler
   }
 });
 ```
 
-### Styling Options
-
-**Inline styles:** All formatting uses inline CSS
-```javascript
-quikdown('**bold**', { inline_styles: true });
-// <strong style="font-weight: bold;">bold</strong>
-```
-
-**Class-based styling:** Uses CSS classes (default)
-```javascript
-quikdown('**bold**');
-// <strong>bold</strong>
-// Requires CSS: .quikdown strong { font-weight: bold; }
-// see included dist/quikdown.light.css or quikdown.dark.css
-```
-
-### Fence Plugins
-
-Quikdown provides a callback for all fenced text such as code blocks, math, svg etc.
-
-Handle code blocks with custom languages:
+Optional features include heading IDs, reference-style links, and footnotes.
 
 ```javascript
-const fencePlugin = {
-  render: (code, language) => {
-    if (language === 'mermaid') {
-      // Process with mermaid library and return rendered diagram
-      const id = 'mermaid-' + Math.random().toString(36).substr(2, 9);
-      setTimeout(() => mermaid.render(id + '-svg', code).then(result => {
-        document.getElementById(id).innerHTML = result.svg;
-      }), 0);
-      return `<div id="${id}" class="mermaid">Loading diagram...</div>`;
-    }
-    // Return undefined for default handling
-  }
-};
-
-const html = quikdown(markdown, { fence_plugin: fencePlugin });
+const html = quikdown(markdown, {
+  heading_ids: true,
+  reference_links: true,
+  footnotes: true
+});
 ```
 
+## TypeScript
 
-## TypeScript Support
-
-quikdown includes TypeScript definitions for better IDE support and type safety:
+Quikdown includes TypeScript definitions for all modules.
 
 ```typescript
-import quikdown, { QuikdownOptions, FencePlugin } from 'quikdown';
+import quikdown, {
+  QuikdownOptions,
+  FencePlugin
+} from 'quikdown';
 
 const fencePlugin: FencePlugin = {
   render: (content: string, language: string) => {
@@ -350,85 +507,49 @@ const html: string = quikdown(markdown, options);
 
 ## Supported Markdown
 
-**Text formatting:** `**bold**`, `*italic*`, `~~strikethrough~~`, `` `code` ``
+Quikdown supports the Markdown structures most commonly used in application content.
 
-**Headings:** `# H1` through `###### H6`
+### Text formatting
 
-**Lists:**
+* `**bold**`
+* `*italic*`
+* `~~strikethrough~~`
+* `` `code` ``
 
-- Unordered lists  
-1. Ordered lists  
-- [x] Task lists  
+### Blocks
 
-**Links:** `[text](url)` and automatic URL detection
+* Headings: `# H1` through `###### H6`
+* Paragraphs
+* Blockquotes
+* Horizontal rules
+* Fenced code blocks
+* Tables
+* Ordered lists
+* Unordered lists
+* Task lists
 
-**Code blocks:**  
+### Links and media
 
-```javascript
-console.log('syntax highlighting support via plugins');
-```
+* Inline links: `[text](url)`
+* Automatic URL detection
+* Images
+* Optional heading slugs with `heading_ids: true`
 
-**Tables, blockquotes, horizontal rules** - See [documentation](docs/) for complete syntax reference
+Reference-style links and footnotes are available as opt-in features.
 
-## API Reference
+For the complete syntax reference, see [docs/](docs/).
 
-For complete API documentation, see [docs/api-reference.md](docs/api-reference.md)
+## Framework integration
 
-## Framework Integration
+Quikdown works with React, Vue, Svelte, Angular, and plain browser apps.
 
-Works with React, Vue, Svelte, Angular. See [Framework Integration Guide](docs/framework-integration.md). For LLM/agent patterns (streaming, tool editor), see [LLM Integration](docs/llm-integration.md).
+See [Framework Integration Guide](docs/framework-integration.md).
 
-## Streaming
+For LLM and agent patterns, see [LLM Integration](docs/llm-integration.md).
 
-Quikdown's parser is fast enough to re-parse the full buffer on every incoming chunk — no incremental parsing state to manage:
+## Standalone / air-gapped build
 
-```javascript
-// Render-only: stream tokens into a div
-let buffer = '';
-for await (const chunk of llmStream) {
-  buffer += chunk;
-  previewEl.innerHTML = quikdown(buffer, { lazy_linefeeds: true });
-}
-```
-
-```javascript
-// Editor: stream into QuikdownEditor
-let buffer = '';
-for await (const chunk of llmStream) {
-  buffer += chunk;
-  await editor.setMarkdown(buffer);
-}
-```
-
-Incomplete fences are handled gracefully — they render as plain text until the closing fence arrives. See [docs/llm-integration.md](docs/llm-integration.md) for production patterns (debouncing, undo grouping).
-
-## Undo / Redo
-
-The editor maintains a configurable undo stack (default 100 states). Keyboard shortcuts work out of the box:
-
-| Action | Shortcut |
-|--------|----------|
-| Undo | Ctrl+Z (Cmd+Z on Mac) |
-| Redo | Ctrl+Shift+Z / Ctrl+Y |
-
-```javascript
-const editor = new QuikdownEditor('#container', {
-  undoStackSize: 200,     // max undo states (default 100)
-  showUndoRedo: true      // show toolbar buttons
-});
-
-editor.undo();            // undo last change
-editor.redo();            // redo
-editor.canUndo();         // → boolean
-editor.canRedo();         // → boolean
-editor.clearHistory();    // wipe all history
-```
-
-This is especially useful for human + LLM collaborative editing: agents make mistakes, and users need reversible edits. Undo/redo is also available as an MCP tool in [Path B](docs/quikdown-mcp.md#path-a-vs-path-b). Full API: [docs/quikdown-editor.md](docs/quikdown-editor.md).
-
-## Standalone / Airgapped Build
-
-The standalone editor bundles all fence libraries — no CDN, no network required:
+The standalone editor bundles all fence libraries. No CDN or network access is required.
 
 ```bash
 # Download from GitHub Releases
@@ -437,55 +558,91 @@ npm run build:standalone
 ```
 
 ```html
-<!-- Single file, works offline -->
 <div id="editor"></div>
 <script src="quikdown_edit_standalone.umd.min.js"></script>
 <script>
-  const editor = new QuikdownEditor('#editor', { mode: 'split' });
+  const editor = new QuikdownEditor('#editor', {
+    mode: 'split'
+  });
+
   editor.setMarkdown('# Works offline');
 </script>
 ```
 
-Use cases: air-gapped networks, regulated environments, field deployments, offline demos, Electron apps, embedded systems. See [docs/standalone-editor.md](docs/standalone-editor.md) for the full list of bundled libraries and build details. Pre-built zip available on [GitHub Releases](https://github.com/deftio/quikdown/releases).
+Use cases include:
+
+* Air-gapped networks
+* Regulated environments
+* Offline demos
+* Field deployments
+* Local-first tools
+* Electron and Tauri apps
+* Desktop apps such as [QuikLeaf](https://github.com/deftio/quikleaf)
+
+See [docs/standalone-editor.md](docs/standalone-editor.md) for the full list of bundled libraries and build details.
+
+Pre-built zip files are available on [GitHub Releases](https://github.com/deftio/quikdown/releases).
 
 ## Comparison
 
-| | Quikdown | marked | markdown-it | ProseMirror + markdown |
-|---|---|---|---|---|
-| **Parser size** | ~15 KB | ~40 KB | ~100 KB | ~200 KB+ |
-| **Editor included** | Yes (~98 KB) | No | No | Yes (large stack) |
-| **XSS-safe by default** | Yes | No (opt-in) | No (opt-in) | Depends on schema |
-| **Bidirectional** | Yes | No | No | Yes |
-| **Streaming-friendly** | Yes | Yes | Yes | Complex |
-| **Offline standalone** | Yes (~7.7 MB all-in) | N/A | N/A | N/A |
-| **Runtime deps** | 0 | 0 | 0 | Many |
-| **MCP server** | 24 tools | No | No | No |
-| **CommonMark coverage** | Subset | Full | Full | Full |
+Quikdown overlaps with Markdown parsers, textarea-based Markdown editors, and larger editor frameworks, but it makes a different set of tradeoffs.
 
-Quikdown intentionally trades full CommonMark coverage for a smaller, safer, more integrated package. If you need full spec compliance or a heavyweight collaborative editing framework, marked/markdown-it/ProseMirror are better choices.
+|  | Quikdown | marked | markdown-it | ProseMirror + Markdown |
+| --- | --- | --- | --- | --- |
+| Parser size | ~15–17 KB | ~40 KB | ~100 KB | ~200 KB+ |
+| Editor included | Yes, ~98 KB | No | No | Yes, large stack |
+| Bidirectional Markdown ↔ HTML | Yes | No | No | Yes, with framework integration |
+| Rich fence rendering | Built into editor | Plugin/custom | Plugin/custom | Plugin/schema work |
+| Fence round-trip preservation | Yes | No | No | Custom implementation |
+| XSS-safe by default | Yes | No, opt-in | No, opt-in | Depends on schema |
+| Streaming-friendly | Yes | Yes | Yes | More complex |
+| Offline standalone build | Yes | N/A | N/A | Custom bundling |
+| Runtime deps, core parser | 0 | 0 | 0 | Many |
+| MCP server | Included | No | No | No |
+| CommonMark coverage | Practical subset | Broad/full | Broad/full | Depends on stack |
 
-## What Quikdown Is Not
+Quikdown intentionally trades full CommonMark coverage for a smaller, more integrated package.
 
-- **Not a full CommonMark parser** — definition lists and some edge-case syntax are intentionally omitted. Reference-style links and footnotes are available as opt-in features (`reference_links: true`, `footnotes: true`).
-- **Not a WYSIWYG framework** — the editor is a split-view Markdown-first surface, not a block-based rich text editor like Notion or ProseMirror.
-- **Not a giant editor stack** — no virtual DOM, no plugin registries, no complex state management. One import, one `<div>`.
+If you need full spec compliance, use a spec-complete parser. If you need a full collaborative block editor, use a larger editor framework. Quikdown is for compact Markdown rendering/editing where small size, safety, fences, round-tripping, and application integration matter.
 
-Optional **heading slugs**: pass `heading_ids: true` to add `id` attributes for in-page anchor links. Raw HTML/SVG can be rendered via fence plugins with XSS protection — see the API docs or try the built-in `html` fence in `quikdown_edit.js`.
+## What Quikdown is not
+
+Quikdown makes deliberate tradeoffs.
+
+* **Not a full CommonMark parser** — definition lists and some edge-case syntax are intentionally omitted. Reference-style links and footnotes are available as opt-in features.
+* **Not a generic HTML-to-Markdown converter** — bidirectional conversion is designed for Quikdown-generated HTML and supported Markdown structures.
+* **Not a block editor framework** — the editor is Markdown-first, not a Notion-style or ProseMirror-style block editor.
+* **Not a giant editor stack** — no virtual DOM requirement, no complex state store, and no large plugin framework.
+
+Raw HTML and SVG can be rendered through fence plugins with appropriate sanitization. The built-in editor uses DOMPurify for the `html` fence.
+
+## Related projects
+
+* [QuikChat](https://github.com/deftio/quikchat) — simple chat UI library that can use Quikdown for Markdown rendering.
+* [QuikLeaf](https://github.com/deftio/quikleaf) — offline desktop app built around the standalone Quikdown editor.
+
+## API reference
+
+For complete API documentation, see [docs/api-reference.md](docs/api-reference.md).
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, build steps, and contribution guidelines.
 
 ## License
 
-BSD 2-Clause - see [LICENSE.txt](LICENSE.txt)
+BSD 2-Clause — see [LICENSE.txt](LICENSE.txt).
 
 ## Acknowledgments
 
-- Inspired by the simplicity of early markdown parsers
-- Built for the [QuikChat](https://github.com/deftio/quikchat) project
-- CommonMark spec for markdown standardization
-
+* Inspired by the simplicity of other Markdown parsers and projects
+* Built for the [QuikChat](https://github.com/deftio/quikchat) project
+* Informed by the CommonMark spec and practical Markdown usage in modern apps
 
 ## Support
 
-- 📖 [Documentation](docs/)
-- 🐛 [Issues](https://github.com/deftio/quikdown/issues)
-- 📦 [Examples hub](https://deftio.github.io/quikdown/pages/examples/) · [examples/](examples/) (source)
+* [Documentation](docs/)
+* [Issues](https://github.com/deftio/quikdown/issues)
+* [Examples hub](https://deftio.github.io/quikdown/pages/examples/)
+* [examples/](examples/)  
 
