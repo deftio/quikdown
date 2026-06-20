@@ -191,7 +191,7 @@
     "size": 7951754,
     "format": "ESM",
     "minified": true,
-    "sri": "sha384-+Pcn8Dd/QiUbCr1yhWPKXGTv2JEhQ/S+Z9am/TDHiSlcLNglNhQIcGhC3083S6T8",
+    "sri": "sha384-OQwClVbZZYMMJgqQBHs4XTYiFMA6U1weowhUgHiVUa0xc/9WrORJljNNJzygdsR3",
     "gzFile": "quikdown_edit_standalone.esm.min.js.gz",
     "gzSize": 2226346
   },
@@ -206,7 +206,7 @@
     "size": 7952967,
     "format": "UMD",
     "minified": true,
-    "sri": "sha384-eVldVnNxJF9uoFJTdKvVrJzEgNGC2Ys6kb4Bfu/kMJL/FSuRCxU6BhTvA5JpjxTG",
+    "sri": "sha384-RzA+K+zq6h8uVhCZuiGyKbg29ZGKJGrRlZcks0ZgFn6iOnxSNPr/D7/0WT+76erl",
     "gzFile": "quikdown_edit_standalone.umd.min.js.gz",
     "gzSize": 2226652
   },
