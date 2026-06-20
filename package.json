@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.2.20",
+  "version": "1.2.21",
   "description": "Small, safe, bidirectional Markdown parser and editor with streaming, undo/redo, rich fences, MCP tools, and a standalone airgapped build. Zero runtime deps. Browser and Node.js.",
   "author": "deftio (https://github.com/deftio)",
   "license": "BSD-2-Clause",

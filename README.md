@@ -1,9 +1,10 @@
-# quikdown  
-[<img class="quikdown-img" src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" alt="CI" data-qd-alt="CI" data-qd-src="https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg" data-qd="!">](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
-[<img class="quikdown-img" src="https://img.shields.io/npm/v/quikdown.svg" alt="npm version" data-qd-alt="npm version" data-qd-src="https://img.shields.io/npm/v/quikdown.svg" data-qd="!">](https://www.npmjs.com/package/quikdown)
-[<img class="quikdown-img" src="https://img.shields.io/badge/coverage-99.3%25-brightgreen" alt="Coverage" data-qd-alt="Coverage" data-qd-src="https://img.shields.io/badge/coverage-99.3%25-brightgreen" data-qd="!">](https://github.com/deftio/quikdown)
-[<img class="quikdown-img" src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" alt="License: BSD-2-Clause" data-qd-alt="License: BSD-2-Clause" data-qd-src="https://img.shields.io/badge/License-BSD%202--Clause-blue.svg" data-qd="!">](https://opensource.org/licenses/BSD-2-Clause)
-[<img class="quikdown-img" src="https://img.shields.io/badge/minified-17.1KB-green.svg" alt="Bundle Size" data-qd-alt="Bundle Size" data-qd-src="https://img.shields.io/badge/minified-17.1KB-green.svg" data-qd="!">](https://bundlephobia.com/package/quikdown)    
+# quikdown
+
+[![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
+[![Coverage](https://img.shields.io/badge/coverage-99.3%25-brightgreen)](https://github.com/deftio/quikdown)
+[![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
+[![Bundle Size](https://img.shields.io/badge/minified-17.1KB-green.svg)](https://bundlephobia.com/package/quikdown)
 Quikdown is a small, safe, bidirectional Markdown parser with a drop-in editor for browser and Node.js apps — with rich fenced-block rendering, Markdown ↔ HTML round-tripping, undo/redo, headless APIs, MCP tools, and a standalone offline build.
 
 It is useful anywhere Markdown needs to remain the source of truth while users edit either the source or rendered view: docs, dashboards, CMS fields, internal tools, local/offline apps, chat UIs, and human/LLM co-editing workflows.
