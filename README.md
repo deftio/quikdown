@@ -430,7 +430,7 @@ Full API: [docs/quikdown-editor.md](docs/quikdown-editor.md)
 
 The editor can copy the rendered preview to the clipboard, including images, tables, and rendered fences.
 
-This is useful when pasting Markdown-derived content into tools such as Gmail, Word, Slack, Notion, or internal CMS systems.
+This is useful when pasting Markdown-derived content into tools such as Gmail, Word, etc.
 
 ## Styling
 

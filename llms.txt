@@ -4,11 +4,11 @@
 
 quikdown is a zero-dependency markdown parser for browser and Node.js. It converts markdown to HTML with security by default, supports bidirectional HTML-to-markdown roundtrip, ships a full-featured editor component (including headless mode), and provides structured output as AST, JSON, or YAML.
 
-- Version: 1.2.17
+- Version: 1.2.21
 - License: BSD-2-Clause
 - Repository: https://github.com/deftio/quikdown
-- Bundle size: ~14.9 KB minified (core parser), ~98 KB (editor), ~7.7 MB / ~1.0 MB gzipped (standalone editor with all fence libraries)
-- Test coverage: 98%
+- Bundle size: ~17.1 KB minified (core parser), ~102.9 KB (editor), ~7.7 MB / ~1.0 MB gzipped (standalone editor with all fence libraries)
+- Test coverage: 99.3%
 - Zero runtime dependencies
 - TypeScript definitions included
 
@@ -18,9 +18,9 @@ quikdown ships nine modules, each available as ESM, UMD, and/or CommonJS:
 
 | Module | Import Path | Purpose | Minified Size |
 |--------|-------------|---------|---------------|
-| quikdown | `quikdown` | Core markdown-to-HTML parser | ~14.9 KB |
-| quikdown_bd | `quikdown/bd` | Bidirectional HTML-to-markdown roundtrip | ~19.7 KB |
-| quikdown_edit | `quikdown/edit` | Drop-in editor with toolbar, preview, undo/redo | ~98 KB |
+| quikdown | `quikdown` | Core markdown-to-HTML parser | ~17.1 KB |
+| quikdown_bd | `quikdown/bd` | Bidirectional HTML-to-markdown roundtrip | ~22.7 KB |
+| quikdown_edit | `quikdown/edit` | Drop-in editor with toolbar, preview, undo/redo | ~102.9 KB |
 | quikdown_edit_standalone | (standalone build) | Editor with all fence libraries pre-bundled | ~7.7 MB |
 | quikdown_ast | `quikdown/ast` | Markdown to Abstract Syntax Tree | small |
 | quikdown_json | `quikdown/json` | Markdown to JSON string | small |
@@ -89,6 +89,9 @@ Converts a markdown string to HTML.
   - `bidirectional` (boolean, default: false) - Add `data-qd` attributes to enable HTML-to-markdown roundtrip
   - `allow_unsafe_html` (boolean | Record<string, any> | string[], default: false) - Control HTML passthrough. `false` escapes all HTML; `true` passes all through; provide an object or array to whitelist specific tags
   - `allow_unsafe_urls` (boolean, default: false) - Allow javascript:, vbscript:, and data: URIs (blocked by default)
+  - `heading_ids` (boolean, default: false) - Add `id` attributes to headings based on their text content
+  - `reference_links` (boolean, default: false) - Enable reference-style links `[text][id]` with definitions `[id]: url`
+  - `footnotes` (boolean, default: false) - Enable footnotes `[^id]` with definitions `[^id]: text`
 
 **Returns:** HTML string
 
@@ -147,11 +150,11 @@ QuikdownEditor is a drop-in markdown editing component with source/split/preview
 
 | Build | Files | Size | When to Use |
 |-------|-------|------|-------------|
-| **Regular** | `quikdown_edit.esm.min.js`, `.umd.min.js`, `.cjs` | ~98 KB | Standard use. Fence libraries lazy-loaded from CDN on first encounter. Best initial load time. |
+| **Regular** | `quikdown_edit.esm.min.js`, `.umd.min.js`, `.cjs` | ~102.9 KB | Standard use. Fence libraries lazy-loaded from CDN on first encounter. Best initial load time. |
 | **Standalone** | `quikdown_edit_standalone.esm.min.js`, `.umd.min.js` | ~7.7 MB | Offline / air-gapped / Electron / PWA. All fence libraries pre-bundled. Zero network calls. |
 | **TypeScript** | `quikdown_edit.d.ts` | 6.4 KB | Full type definitions for all editor APIs. |
 
-**Regular vs. Standalone:** The regular editor is ~98 KB and lazy-loads fence libraries (Highlight.js, Mermaid, MathJax, Leaflet, Three.js, ABCJS, Vega) from CDN when a fence block is first encountered. The standalone editor bundles all libraries for instant offline rendering (~7.7 MB, ~1.0 MB gzipped). Both have the exact same API.
+**Regular vs. Standalone:** The regular editor is ~102.9 KB and lazy-loads fence libraries (Highlight.js, Mermaid, MathJax, Leaflet, Three.js, ABCJS, Vega) from CDN when a fence block is first encountered. The standalone editor bundles all libraries for instant offline rendering (~7.7 MB, ~1.0 MB gzipped). Both have the exact same API.
 
 **Standalone bundles:** Highlight.js (core + 12 languages: JS, TS, Python, Java, C, C++, CSS, HTML/XML, JSON, Bash, Shell, SQL), Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax.
 
@@ -230,6 +233,8 @@ const fixed = QuikdownEditor.convertLazyLinefeeds(rawMarkdown);
 | `lazy_linefeeds` | boolean | `false` | Single `\n` becomes `<br>` |
 | `inline_styles` | boolean | `false` | Inline CSS vs class names |
 | `allowUnsafeHTML` | boolean\|'limited' | `false` | HTML passthrough mode |
+| `reference_links` | boolean | `false` | Enable reference-style links `[text][id]` |
+| `footnotes` | boolean | `false` | Enable footnotes `[^id]` |
 | `debounceDelay` | number | `20` | Milliseconds before updating preview |
 | `undoStackSize` | number | `100` | Maximum undo states |
 | `enableComplexFences` | boolean | `true` | Enable built-in fence rendering (mermaid, math, csv, etc.) |
@@ -575,7 +580,9 @@ quikdown(md, { allow_unsafe_html: true }); // Only for fully trusted content
 
 Text formatting (bold, italic, strikethrough, inline code), headings (h1-h6), unordered/ordered/task lists, links, auto-linked URLs, images, fenced code blocks with language tags, tables with column alignment, blockquotes, horizontal rules, line breaks.
 
-**Intentionally omitted for security and simplicity:** reference-style links, footnotes, definition lists, raw HTML blocks (available via fence plugins instead).
+**Opt-in features (off by default):** reference-style links (`reference_links: true`), footnotes (`footnotes: true`).
+
+**Intentionally omitted for security and simplicity:** definition lists, raw HTML blocks (available via fence plugins instead).
 
 ---
 
@@ -608,6 +615,8 @@ Detailed documentation is available in the `docs/` directory:
 - **docs/llm-integration.md** - LLM/agent UI patterns (stream, tool editor, quikchat)
 - **docs/release-process.md** - Release workflow, standalone gates, air-gap zip
 - **docs/quikdown-ast.md** - AST, JSON, YAML structured output
+- **docs/lexer-implementation.md** - Lexer internals and implementation details
+- **docs/release-notes.md** - Version history
 - **docs/quikdown-mcp.md** - MCP server setup, tool reference, AI host configuration
 - **docs/release-notes.md** - Version history
 
@@ -647,8 +656,8 @@ dist/
   quikdown.d.ts                          # Core parser - TypeScript defs
   quikdown.light.css / .dark.css         # Theme stylesheets
   quikdown_bd.*                          # Bidirectional (ESM, UMD, CJS, d.ts)
-  quikdown_edit.esm.min.js              # Editor - ES Module (~98 KB)
-  quikdown_edit.umd.min.js              # Editor - UMD (~98 KB)
+  quikdown_edit.esm.min.js              # Editor - ES Module (~102.9 KB)
+  quikdown_edit.umd.min.js              # Editor - UMD (~102.9 KB)
   quikdown_edit.cjs                      # Editor - CommonJS
   quikdown_edit.d.ts                     # Editor - TypeScript defs
   quikdown_edit_standalone.esm.min.js   # Standalone editor (~7.7 MB)

@@ -8,7 +8,7 @@ quikdown is a lightweight, zero-dependency markdown-to-HTML parser with built-in
 
 - **Repository:** https://github.com/deftio/quikdown
 - **License:** BSD-2-Clause
-- **Version:** 1.2.17
+- **Version:** 1.2.21
 - **Language:** JavaScript (ES modules, UMD, CommonJS)
 - **TypeScript:** Definitions included in `dist/*.d.ts`
 - **Test framework:** Jest (unit) + Playwright (e2e)
@@ -31,11 +31,15 @@ quikdown/
 │   ├── quikdown_ast_html.js         # AST to HTML renderer
 │   ├── quikdown_mcp.js              # MCP server (Model Context Protocol)
 │   ├── quikdown_classify.js         # Line classification utilities
-│   └── quikdown_version.js          # Version constant
+│   ├── quikdown_version.js          # Version constant
+│   ├── basemap_loader.js            # GeoJSON basemap loader for Leaflet
+│   ├── leaflet_marker_icons.js      # Leaflet marker icon data URIs
+│   ├── mathjax_bundle.js            # MathJax standalone bundle
+│   └── mathjax_config.js            # MathJax configuration
 ├── dist/                             # Build output (ESM, UMD, CJS, d.ts, CSS)
-├── tests/                            # 30+ test files
+├── tests/                            # 40+ test files (33 Jest + 8 Playwright)
 ├── examples/                         # 20+ working HTML examples + sample .md files
-├── docs/                             # Detailed documentation (13 markdown files)
+├── docs/                             # Detailed documentation (16 markdown files)
 ├── pages/                            # Static site templates and generated pages
 ├── tools/                            # Build scripts (version, CSS, badges, site)
 ├── bin/                              # CLI entry points
@@ -129,6 +133,9 @@ const html = quikdown('# Hello **world**');
 - `bidirectional` (boolean, default: false) - Add `data-qd` attributes for roundtrip
 - `allow_unsafe_html` (boolean | Record | string[], default: false) - HTML passthrough control
 - `allow_unsafe_urls` (boolean, default: false) - Allow javascript:, vbscript:, data: URIs
+- `heading_ids` (boolean, default: false) - Add `id` attributes to headings based on their text content
+- `reference_links` (boolean, default: false) - Enable reference-style links `[text][id]` with definitions `[id]: url`
+- `footnotes` (boolean, default: false) - Enable footnotes `[^id]` with definitions `[^id]: text`
 
 **Static methods:**
 - `quikdown.emitStyles(prefix?, theme?)` - Generate CSS string ('light' or 'dark' theme)
@@ -205,8 +212,8 @@ new QuikdownEditor('#e', {
 
 | Variant | Size | Use Case |
 |---------|------|----------|
-| Regular (`quikdown_edit.*`) | ~98 KB | Standard use. Fence libs lazy-loaded from CDN. |
-| Standalone (`quikdown_edit_standalone.*`) | ~7.7 MB (~1.0 MB gzipped) | Offline / Electron / PWA. All fence libs pre-bundled. |
+| Regular (`quikdown_edit.*`) | ~102 KB | Standard use. Fence libs lazy-loaded from CDN. |
+| Standalone (`quikdown_edit_standalone.*`) | ~7.7 MB (~1.0 MB gzipped) | Offline / Tauri / PWA. All fence libs pre-bundled. |
 
 The standalone bundles Highlight.js (12 languages), Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax. Both variants have the identical API.
 
@@ -254,6 +261,8 @@ const editor = new QuikdownEditor('#container', { mode: 'split' });
 | `lazy_linefeeds` | boolean | `false` | Single `\n` becomes `<br>` |
 | `inline_styles` | boolean | `false` | Inline CSS vs class names |
 | `allowUnsafeHTML` | boolean\|'limited' | `false` | HTML passthrough |
+| `reference_links` | boolean | `false` | Enable reference-style links `[text][id]` |
+| `footnotes` | boolean | `false` | Enable footnotes `[^id]` |
 | `debounceDelay` | number | `20` | Preview update delay (ms) |
 | `undoStackSize` | number | `100` | Max undo states |
 | `enableComplexFences` | boolean | `true` | Built-in fence rendering |
@@ -373,6 +382,8 @@ Detailed docs in `docs/`:
 | `docs/release-notes.md` | Complete version history |
 | `docs/release-process.md` | Release workflow (standalone, verify:release, air-gap zip) |
 | `docs/quikdown-mcp.md` | MCP server setup, tool reference, AI host configuration |
+| `docs/lexer-implementation.md` | Lexer internals and implementation details |
+| `docs/README.md` | Documentation index |
 
 ## Examples Reference
 
