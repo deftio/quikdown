@@ -44,8 +44,8 @@ Use only the pieces you need.
 | Module | Size | Purpose |
 | --- | --- | --- |
 | quikdown.js | ~15–17 KB | Markdown → HTML parser. Safe defaults, fence plugin callbacks, inline styles or CSS classes. |
-| quikdown_bd.js | ~20 KB | Bidirectional Markdown ↔ HTML conversion. |
-| quikdown_edit.js | ~98 KB | Drop-in split-view headless editor control with undo/redo, toolbar, themes, copy-as-rich-text, and lazy-loaded fence plugins. |
+| quikdown_bd.js | ~22.7 KB | Bidirectional Markdown ↔ HTML conversion. |
+| quikdown_edit.js | ~102.9 KB | Drop-in split-view headless editor control with undo/redo, toolbar, themes, copy-as-rich-text, and lazy-loaded fence plugins. |
 | quikdown_edit_standalone.js | ~7.7 MB / ~1 MB gzipped | Offline editor with all fence libraries bundled. No CDN required. |
 | quikdown_mcp.js | ~26 KB | MCP server with 24 tools for AI agents. |
 | quikdown_ast / json / yaml / ast_html | ~5–8 KB each | Companion modules for structured output and AST-based rendering. |
@@ -592,7 +592,7 @@ Quikdown overlaps with Markdown parsers, textarea-based Markdown editors, and la
 |  | Quikdown | marked | markdown-it | ProseMirror + Markdown |
 | --- | --- | --- | --- | --- |
 | Parser size | ~15–17 KB | ~40 KB | ~100 KB | ~200 KB+ |
-| Editor included | Yes, ~98 KB | No | No | Yes, large stack |
+| Editor included | Yes, ~102.9 KB | No | No | Yes, large stack |
 | Bidirectional Markdown ↔ HTML | Yes | No | No | Yes, with framework integration |
 | Rich fence rendering | Built into editor | Plugin/custom | Plugin/custom | Plugin/schema work |
 | Fence round-trip preservation | Yes | No | No | Custom implementation |
