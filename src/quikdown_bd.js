@@ -350,6 +350,12 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         const indent = '  '.repeat(depth);
         
         for (const child of listNode.children) {
+            // The parser emits a nested list as a sibling of the <li> it
+            // belongs to (not inside it), so walk it one level deeper.
+            if (child.tagName === 'UL' || child.tagName === 'OL') {
+                result += walkList(child, child.tagName === 'OL', depth + 1);
+                continue;
+            }
             if (child.tagName !== 'LI') continue;
             
             const dataQd = child.getAttribute('data-qd');
@@ -360,6 +366,8 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
             if (checkbox) {
                 const checked = checkbox.checked ? 'x' : ' ';
                 marker = '-';
+                // Continuation lines (after <br>) indent to the item's text column
+                const cont = '\n' + indent + ' '.repeat(marker.length + 5);
                 // Get text without the checkbox
                 let text = '';
                 for (const node of child.childNodes) {
@@ -369,19 +377,22 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                         text += walkNode(node);
                     }
                 }
-                result += `${indent}${marker} [${checked}] ${text.trim()}\n`;
+                result += `${indent}${marker} [${checked}] ${text.trim().replace(/\n/g, cont)}\n`;
             } else {
-                let itemContent = '';
+                const cont = '\n' + indent + ' '.repeat(marker.length + 1);
+                let text = '';
+                let nested = '';
                 
                 for (const node of child.childNodes) {
                     if (node.tagName === 'UL' || node.tagName === 'OL') {
-                        itemContent += walkList(node, node.tagName === 'OL', depth + 1);
+                        // Nested list placed inside the <li> (hand-written or edited HTML)
+                        nested += walkList(node, node.tagName === 'OL', depth + 1);
                     } else {
-                        itemContent += walkNode(node);
+                        text += walkNode(node);
                     }
                 }
                 
-                result += `${indent}${marker} ${itemContent.trim()}\n`;
+                result += `${indent}${marker} ${text.trim().replace(/\n/g, cont)}\n${nested}`;
             }
             
             index++;

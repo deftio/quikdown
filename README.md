@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/deftio/quikdown/actions/workflows/ci.yml/badge.svg)](https://github.com/deftio/quikdown/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
-[![Coverage](https://img.shields.io/badge/coverage-99.2%25-brightgreen)](https://github.com/deftio/quikdown)
+[![Coverage](https://img.shields.io/badge/coverage-99.9%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
 [![Bundle Size](https://img.shields.io/badge/minified-17.5KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
@@ -529,6 +529,7 @@ Quikdown supports the Markdown structures most commonly used in application cont
 * Ordered lists
 * Unordered lists
 * Task lists
+* Nested lists and wrapped (multi-line) list items
 
 ### Links and media
 

@@ -11,9 +11,14 @@
 - **Ordered items wrapped to their text column** (`1. one` / `   wrapped.` / `2. two`) now produce a single `<ol>` with balanced tags; previously the list split in two around an unclosed `<p>`
 - Same continuation rule applied to the AST parser (`quikdown_ast.js`): wrapped text is appended to the `list_item` node (as a `br` node when the item ends with a hard break) instead of becoming a stray `paragraph` between lists. Continuation lines inside a nested list are routed to the nested item
 - Applies to all modes: CSS classes, `inline_styles`, `lazy_linefeeds`, and `bidirectional` (`data-qd` markers preserved); the bidirectional round trip emits each wrapped item as a single line
+- **Indented code block bodies are now protected**: a blank line inside a 4-space indented code block rendered as `</p><p>` inside the `<pre>`, `lazy_linefeeds` mode injected `<br>` between code lines, and a code line ending in two spaces or a backslash produced a `<br>`. Newlines inside indented code are now held as a placeholder (like fenced code) until the final restoration pass
+
+### Bidirectional
+- **Nested lists survive the HTML → Markdown round trip**: `quikdown_bd.toMarkdown` dropped every nested item because the parser emits a nested `<ul>`/`<ol>` as a sibling of its parent `<li>` and the list walker only looked at `<li>` children. `- a` / `  - b` / `- c` came back as `- a` / `- c`. Sibling lists are now walked one level deeper; lists placed inside an `<li>` (hand-written or edited HTML) keep working
+- Hard-break continuation lines inside a list item (`<br>`) are indented to the item's text column on the way back, so `- one  ` / `  two` round-trips exactly instead of producing an unindented second line
 
 ### Tests
-- New `quikdown_list_continuation.test.js` (56 tests) covering the issue input, 2-space / 4-space / tab continuation, ordered lists, task lists, hard breaks, inline formatting across the fold, indent jumps, indented list bases, block constructs that must not fold, code blocks after a blank line, and the AST parser, AST HTML renderer, JSON and YAML output, and bidirectional round trip
+- New `quikdown_list_continuation.test.js` (90 tests) covering the issue input, 2-space / 4-space / tab continuation, ordered lists, task lists, hard breaks, inline formatting across the fold, indent jumps, indented list bases, block constructs that must not fold, code blocks after a blank line, and the AST parser, AST HTML renderer, JSON and YAML output, and the bidirectional round trip including nested lists at five levels, mixed ordered/unordered nesting, task lists, and hard breaks
 
 ---
 

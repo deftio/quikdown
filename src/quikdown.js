@@ -80,6 +80,7 @@ const PLACEHOLDER_CB = '§CB';   // fenced code blocks
 const PLACEHOLDER_IC = '§IC';   // inline code spans
 const PLACEHOLDER_HT = '§HT';  // safe HTML tags (limited mode)
 const PLACEHOLDER_BE = '§BE';  // backslash escapes
+const PLACEHOLDER_NL = '§NL§'; // newlines inside indented code (restored in Phase 4)
 
 /** Attributes whose values need URL sanitization */
 const URL_ATTRIBUTES = { href:1, src:1, action:1, formaction:1 };
@@ -458,7 +459,9 @@ function processIndentedCodeBlocks(text, getAttr, dataQd) {
             }
         }
 
-        const codeBody = codeLines.join('\n');
+        // Join with a placeholder so the paragraph / line-break pass cannot
+        // turn blank lines into </p><p> or newlines into <br> inside <pre>.
+        const codeBody = codeLines.join(PLACEHOLDER_NL);
         result.push(`<pre${getAttr('pre')}${dataQd('    ')}><code${getAttr('code')}>${codeBody}</code></pre>`);
     }
 
@@ -1070,6 +1073,9 @@ function quikdown(markdown, options = {}) {
     backslashEscapes.forEach((char, i) => {
         html = html.replace(`${PLACEHOLDER_BE}${i}§`, char);
     });
+
+    // Restore newlines inside indented code blocks
+    html = html.split(PLACEHOLDER_NL).join('\n');
 
     return html.trim();
 }

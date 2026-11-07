@@ -390,6 +390,7 @@ function parseList(lines, startIndex, options) {
                 // Add nested list to last item
                 const nestedResult = parseList(subLines, 0, options);
                 const lastItem = items[items.length - 1];
+                /* istanbul ignore next -- defensive: parseInline always returns an array */
                 if (!lastItem.children) {
                     lastItem.children = [];
                 } else if (!Array.isArray(lastItem.children)) {

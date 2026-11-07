@@ -267,7 +267,7 @@
         <li><strong>Vega and Vega-Lite</strong> data visualizations</li>
       </ul>
 
-      <p>The editor lazy-loads these libraries from CDN on first use &mdash; the initial bundle is ~103.3 KB. When someone hands you an 80-page doc with Mermaid diagrams, syntax-highlighted code, and a few LaTeX equations, the editor handles all of it without you writing integration code.</p>
+      <p>The editor lazy-loads these libraries from CDN on first use &mdash; the initial bundle is ~103.6 KB. When someone hands you an 80-page doc with Mermaid diagrams, syntax-highlighted code, and a few LaTeX equations, the editor handles all of it without you writing integration code.</p>
 
       <p>Writing a custom fence handler is a few lines:</p>
 
@@ -284,7 +284,7 @@ quikdown(markdown, { fence_plugin: plugin });</code></pre>
 
       <h2>Bidirectional: editing in the rendered view</h2>
 
-      <p><code>quikdown_bd</code> (~23.1 KB) tracks the original markdown syntax through the HTML using <code>data-qd</code> attributes. Edit the rendered preview &mdash; fix a heading, rewrite a table cell, change bold to italic &mdash; and call <code>toMarkdown()</code> to get markdown back. Fences, tables, and formatting survive the round-trip.</p>
+      <p><code>quikdown_bd</code> (~23.3 KB) tracks the original markdown syntax through the HTML using <code>data-qd</code> attributes. Edit the rendered preview &mdash; fix a heading, rewrite a table cell, change bold to italic &mdash; and call <code>toMarkdown()</code> to get markdown back. Fences, tables, and formatting survive the round-trip.</p>
 
       <p>This is what makes the <a href="../../pages/edit/">split-view editor</a> more than a preview pane. Both sides are editable. The markdown stays the source of truth, but the human doesn't have to think in markdown if they don't want to.</p>
 

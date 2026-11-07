@@ -230,8 +230,6 @@ describe('issue #36: wrapped list items (regex parser)', () => {
 });
 
 describe('issue #36: bidirectional round trip', () => {
-    // Note: quikdown_bd.toMarkdown does not yet walk nested <ul>/<ol>
-    // siblings emitted by the parser, so nested items are not asserted here.
     test('wrapped ordered items round-trip to single-line items and are stable', () => {
         const html = quikdown_bd('1. one\n   wrapped.\n2. two');
         expect(html).not.toContain('<p>');
@@ -242,20 +240,57 @@ describe('issue #36: bidirectional round trip', () => {
 
     test('wrapped unordered item round-trips with its marker', () => {
         const html = quikdown_bd('- item\n  wrapped text\n- next');
-        const md = quikdown_bd.toMarkdown(html);
-        expect(md).toBe('- item wrapped text\n- next');
+        expect(quikdown_bd.toMarkdown(html)).toBe('- item wrapped text\n- next');
     });
 
-    test('issue input renders without code blocks or bare <li> in bidirectional mode', () => {
+    test('wrapped nested items round-trip as nested single-line items', () => {
+        const md = quikdown_bd.toMarkdown(quikdown_bd('- top\n  - nested one two\n    three four.\n  - next'));
+        expect(md).toBe('- top\n  - nested one two three four.\n  - next');
+    });
+
+    test('issue input round-trips without code blocks and keeps nesting', () => {
         const html = quikdown_bd(ISSUE_36);
         expect(html).not.toContain('<pre');
-        expect(html).toContain('data-qd="-">Mermaid, LaTeX, GeoJSON maps, Vega charts, STL models, all bundled offline, no CDN.</li>');
         expectNoBareLi(html);
         expectBalanced(html);
         const md = quikdown_bd.toMarkdown(html);
         expect(md).not.toContain('```');
-        expect(md).toContain('- **Docs that actually render**');
-        expect(md).toContain('- **Local-first by design**');
+        expect(md).toContain('- **Docs that actually render**\n  - Mermaid, LaTeX, GeoJSON maps, Vega charts, STL models, all bundled offline, no CDN.\n  - Writing a design doc? Sketch the architecture in a fence and it renders in the same tab.');
+        expect(md).toContain('- **Local-first by design**\n  - Bring your own key.');
+        expect(quikdown_bd.toMarkdown(quikdown_bd(md))).toBe(md);
+    });
+});
+
+describe('bidirectional: nested lists emitted as <ul>/<ol> siblings', () => {
+    // The parser places a nested list after its parent <li>, as a sibling.
+    // toMarkdown used to skip those and drop every nested item.
+    test.each([
+        '- a\n  - b\n- c',
+        '- Level 1\n  - Level 2\n    - Level 3\n      - Level 4\n        - Level 5',
+        '- a\n  1. b\n  2. c\n- d',
+        '1. a\n  - b\n2. c',
+        '- [ ] task\n  - sub\n- [x] done',
+        '- a  \n  b\n  - c',
+        '- **x**\n  - [l](https://example.com)\n\n- y',
+    ])('round-trips exactly: %j', (md) => {
+        const out = quikdown_bd.toMarkdown(quikdown_bd(md));
+        expect(out).toBe(md);
+    });
+
+    test('ordered nesting normalizes to 2-space indent and is then stable', () => {
+        const once = quikdown_bd.toMarkdown(quikdown_bd('1. a\n   1. b\n   2. c\n2. d'));
+        expect(once).toBe('1. a\n  1. b\n  2. c\n2. d');
+        expect(quikdown_bd.toMarkdown(quikdown_bd(once))).toBe(once);
+    });
+
+    test('nested list placed inside the <li> still works', () => {
+        const html = '<ul><li data-qd="-">Item 1\n  <ul><li data-qd="-">Nested 1</li><li data-qd="-">Nested 2</li></ul>\n</li><li data-qd="-">Item 2</li></ul>';
+        expect(quikdown_bd.toMarkdown(html)).toBe('- Item 1\n  - Nested 1\n  - Nested 2\n- Item 2');
+    });
+
+    test('hard break inside a task item indents the continuation', () => {
+        const md = '- [ ] one  \n      two';
+        expect(quikdown_bd.toMarkdown(quikdown_bd(md))).toBe(md);
     });
 });
 
@@ -384,6 +419,16 @@ describe('issue #36: JSON and YAML output (bundled AST parser)', () => {
         }
     });
 
+    test('json/yaml: a plain line after a nested item ends the sublist and the list', () => {
+        expect(JSON.parse(quikdown_json('- a\n  - b\ntext')).children.map(c => c.type)).toEqual(['list', 'paragraph']);
+        expect(quikdown_yaml('- a\n  - b\ntext')).toContain('type: paragraph');
+    });
+
+    test('ast_html: non-string input renders nothing', () => {
+        expect(quikdown_ast_html(null)).toBe('');
+        expect(quikdown_ast_html('')).toBe('');
+    });
+
     test('json: block constructs and blank lines are not folded', () => {
         expect(JSON.parse(quikdown_json('- a\n  > quoted')).children.map(c => c.type)).toEqual(['list', 'paragraph']);
         expect(JSON.parse(quikdown_json('- a\n  ```js')).children.map(c => c.type)).toEqual(['list', 'paragraph']);
@@ -398,5 +443,84 @@ describe('issue #36: JSON and YAML output (bundled AST parser)', () => {
         expect(quikdown_yaml('- one  \n  two')).toContain('type: br');
         expect(quikdown_yaml('- a\n  > quoted')).toContain('type: paragraph');
         expect(quikdown_yaml('- a\n\n  later')).toContain('type: paragraph');
+    });
+});
+
+describe('coverage: indented-code and blockquote paths reached through the list changes', () => {
+    // The continuation rule now passes list items through before the
+    // indented-code check, so these paths need direct coverage in both the
+    // core bundle and the bidirectional bundle (which inlines the parser).
+    const parsers = [['quikdown', quikdown], ['quikdown_bd', quikdown_bd]];
+
+    test.each(parsers)('%s: 4-space indented list/quote/heading lines with no list above are not code', (_, parse) => {
+        expect(parse('para\n\n    - item')).not.toContain('<pre');
+        expect(parse('para\n\n    - item')).toContain('<li');
+        expect(parse('para\n\n    1. item')).toContain('<li');
+        // A 4-space indented `>` line is an indented code block (CommonMark);
+        // the `>` has already been escaped to &gt; by this phase.
+        expect(parse('para\n\n    > quote')).toContain('<pre');
+        expect(parse('para\n\n    # heading')).not.toContain('<pre');
+    });
+
+    test.each(parsers)('%s: tab-indented code block strips one tab', (_, parse) => {
+        const html = parse('\tcode here');
+        expect(html).toMatch(/<pre[^>]*><code[^>]*>code here<\/code><\/pre>/);
+    });
+
+    test.each(parsers)('%s: mixed space-and-tab indent strips one indent level', (_, parse) => {
+        const html = parse('  \tcode here');
+        expect(html).toMatch(/<pre[^>]*><code[^>]*>code here<\/code><\/pre>/);
+    });
+
+    test.each(parsers)('%s: indented code ends at a blank line followed by text', (_, parse) => {
+        const html = parse('    code\n\nafter');
+        expect(html).toMatch(/<pre[^>]*><code[^>]*>code<\/code><\/pre>/);
+        expect(html).toContain('<p>after</p>');
+    });
+
+    test.each(parsers)('%s: indented code ends at a non-indented line', (_, parse) => {
+        const html = parse('    code\nafter');
+        expect(html).toMatch(/<pre[^>]*><code[^>]*>code<\/code><\/pre>/);
+        expect(html).toContain('after');
+    });
+
+    test.each(parsers)('%s: blank line inside indented code is kept', (_, parse) => {
+        const html = parse('    one\n\n    two');
+        expect(html).toMatch(/<pre[^>]*><code[^>]*>one\n\ntwo<\/code><\/pre>/);
+    });
+
+    test.each(parsers)('%s: lazy_linefeeds does not inject <br> into indented code', (_, parse) => {
+        const html = parse('    a\n    b', { lazy_linefeeds: true });
+        expect(html).toMatch(/<pre[^>]*><code[^>]*>a\nb<\/code><\/pre>/);
+        expect(html).not.toContain('<br');
+    });
+
+    test.each(parsers)('%s: trailing spaces or backslash on indented code lines are literal', (_, parse) => {
+        const html = parse('    a  \n    b\\\n    c');
+        expect(html).toMatch(/<pre[^>]*><code[^>]*>a  \nb\\\nc<\/code><\/pre>/);
+        expect(html).not.toContain('<br');
+    });
+
+    test.each(parsers)('%s: nested blockquote closes back to the outer level', (_, parse) => {
+        const html = parse('> outer\n>> inner\n> outer again');
+        expect(count(html, /<blockquote[\s>]/g)).toBe(2);
+        expect(count(html, /<\/blockquote>/g)).toBe(2);
+    });
+});
+
+describe('coverage: angle-bracket link destinations in the AST family', () => {
+    test('quikdown_ast parses [text](<url>)', () => {
+        const ast = quikdown_ast('[docs](<https://example.com/a b>)');
+        const link = ast.children[0].children.find(n => n.type === 'link');
+        expect(link.url).toBe('https://example.com/a b');
+    });
+
+    test('quikdown_json and quikdown_yaml parse [text](<url>)', () => {
+        expect(JSON.parse(quikdown_json('[d](<https://example.com/x>)')).children[0].children[0].url).toBe('https://example.com/x');
+        expect(quikdown_yaml('[d](<https://example.com/x>)')).toContain('https://example.com/x');
+    });
+
+    test('quikdown_ast_html renders [text](<url>)', () => {
+        expect(quikdown_ast_html('[d](<https://example.com/x>)')).toContain('href="https://example.com/x"');
     });
 });
