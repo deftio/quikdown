@@ -516,7 +516,7 @@ Gadget | 1 | 24.50
 {
   "name": "quikdown",
   "features": ["parser", "editor", "mcp"],
-  "version": "1.2.17"
+  "version": "1.2.22"
 }
 ```
 ````
