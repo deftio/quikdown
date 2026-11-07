@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.2.21
+ * @version 1.2.22
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -127,7 +127,7 @@ function isHRLine(trimmed) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.2.21';
+const quikdownVersion = '1.2.22';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -442,18 +442,56 @@ function stripCodeIndent(line) {
     return m ? m[1] : line;
 }
 
+/** List item: optional indent, a bullet or ordinal marker, whitespace, content. */
+const LIST_ITEM_RE = /^(\s*)([*\-+]|\d+\.)\s+(.+)$/;
+
+/**
+ * True when an indented, non-blank line is wrapped text belonging to the
+ * list item above it (issue #36).  Lines that start a block construct of
+ * their own (fence, blockquote, table row, heading, HR, or already-rendered
+ * HTML) are excluded so they keep their existing rendering.
+ */
+function isListContinuation(line) {
+    const m = line.match(/^[ \t]+(\S.*)$/);
+    if (!m) return false;
+    const t = m[1];
+    if (/^(```|~~~|>|&gt;|\||#{1,6}(\s|$)|<)/.test(t)) return false;
+    if (/^([-*_])\1{2,}\s*$/.test(t)) return false;
+    return true;
+}
+
 /**
  * processIndentedCodeBlocks — line walker for 4-space / tab indented code
- * @param {Function} escapeHtmlFn  Escape helper (for title attrs; code already escaped)
+ *
+ * An indented line directly under a list item (or under another
+ * continuation line of that item) is wrapped item text, not code, so it
+ * is passed through untouched for processLists to fold.  A blank line
+ * ends the item, so `- item\n\n    code` still produces a code block.
  */
 function processIndentedCodeBlocks(text, getAttr, dataQd) {
     const lines = text.split('\n');
     const result = [];
     let i = 0;
+    let inListItem = false;
 
     while (i < lines.length) {
-        if (!isIndentedCodeLine(lines[i])) {
-            result.push(lines[i]);
+        const line = lines[i];
+        if (LIST_ITEM_RE.test(line)) {
+            inListItem = true;
+            result.push(line);
+            i++;
+            continue;
+        }
+        if (inListItem) {
+            if (isListContinuation(line)) {
+                result.push(line);
+                i++;
+                continue;
+            }
+            inListItem = false;
+        }
+        if (!isIndentedCodeLine(line)) {
+            result.push(line);
             i++;
             continue;
         }
@@ -1367,8 +1405,13 @@ function buildTable(lines, getAttr, bidirectional) {
  * processLists — line walker for ordered, unordered, and task lists
  *
  * Scans each line for list markers (-, *, +, 1., 2., etc.) with
- * optional leading indentation for nesting.  Non-list lines close
- * any open lists and pass through unchanged.
+ * optional leading indentation for nesting.  The indent of the item
+ * that opens the outermost list is the base, so a list that starts at
+ * indent 2 is a top-level list.  An indented, non-blank line directly
+ * under an item is wrapped item text and is folded into that item
+ * (two trailing spaces or a trailing backslash on the item keep a hard
+ * break).  Any other non-list line closes all open lists and passes
+ * through unchanged.
  *
  * Task lists (- [ ] / - [x]) are detected and rendered with
  * checkbox inputs.
@@ -1383,6 +1426,8 @@ function processLists(text, getAttr, inline_styles, bidirectional) {
     const lines = text.split('\n');
     const result = [];
     const listStack = [];   // tracks nesting: [{type:'ul', level:0}, …]
+    let baseIndent = 0;     // indent of the item that opened the outermost list
+    let lastWasItem = false; // result[last] is an <li> a continuation line may extend
 
     // Helper to escape HTML for data-qd attributes. List markers (`-`, `*`,
     // `+`, `1.`, etc.) never contain HTML-special chars, so the replace
@@ -1396,11 +1441,12 @@ function processLists(text, getAttr, inline_styles, bidirectional) {
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const match = line.match(/^(\s*)([*\-+]|\d+\.)\s+(.+)$/);
+        const match = line.match(LIST_ITEM_RE);
 
         if (match) {
             const [, indent, marker, content] = match;
-            const level = Math.floor(indent.length / 2);
+            if (listStack.length === 0) baseIndent = indent.length;
+            const level = Math.max(0, Math.floor((indent.length - baseIndent) / 2));
             const isOrdered = /^\d+\./.test(marker);
             const listType = isOrdered ? 'ol' : 'ul';
 
@@ -1424,22 +1470,30 @@ function processLists(text, getAttr, inline_styles, bidirectional) {
                 result.push(`</${list.type}>`);
             }
 
-            // Open new list or switch type at current level
-            if (listStack.length === level) {
-                listStack.push({ type: listType, level });
+            // Switch list type at the current level
+            if (listStack.length === level + 1 && listStack[level].type !== listType) {
+                result.push(`</${listStack.pop().type}>`);
+            }
+
+            // Open lists up to the current level.  More than one opens when
+            // the indent jumps (`- a\n    - deep`) so no <li> is left bare.
+            while (listStack.length < level + 1) {
+                listStack.push({ type: listType, level: listStack.length });
                 result.push(`<${listType}${getAttr(listType)}>`);
-            } else if (listStack.length === level + 1) {
-                const currentList = listStack[listStack.length - 1];
-                if (currentList.type !== listType) {
-                    result.push(`</${currentList.type}>`);
-                    listStack.pop();
-                    listStack.push({ type: listType, level });
-                    result.push(`<${listType}${getAttr(listType)}>`);
-                }
             }
 
             const liAttr = taskListClass || getAttr('li');
             result.push(`<li${liAttr}${dataQd(marker)}>${listItemContent}</li>`);
+            lastWasItem = true;
+        } else if (lastWasItem && isListContinuation(line)) {
+            // Wrapped item text — fold into the <li> above (issue #36)
+            let body = result[result.length - 1].slice(0, -'</li>'.length);
+            if (/( {2}|\\)$/.test(body)) {
+                body = body.replace(/( {2}|\\)$/, `<br${getAttr('br')}>`);
+            } else {
+                body += ' ';
+            }
+            result[result.length - 1] = `${body}${line.trim()}</li>`;
         } else {
             // Not a list item — close all open lists
             while (listStack.length > 0) {
@@ -1447,6 +1501,7 @@ function processLists(text, getAttr, inline_styles, bidirectional) {
                 result.push(`</${list.type}>`);
             }
             result.push(line);
+            lastWasItem = false;
         }
     }
 
