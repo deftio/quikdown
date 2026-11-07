@@ -84,7 +84,7 @@ jobs:
       run: gzip -9 -k -f dist/quikdown_edit_standalone.esm.min.js dist/quikdown_edit_standalone.umd.min.js
 
     - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         tag_name: ${{ github.event.inputs.tag }}
         generate_release_notes: true
