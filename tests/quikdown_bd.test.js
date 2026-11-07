@@ -458,8 +458,6 @@ End of document.`;
       expect(recoveredMarkdown).toContain('[Link](https://example.com)');
       expect(recoveredMarkdown).toContain('![Image](test.png)');
       expect(recoveredMarkdown).toContain('---');
-      // Note: Nested lists aren't properly preserved in current implementation
-      // This is a known limitation that should be addressed in future versions
     });
   });
   

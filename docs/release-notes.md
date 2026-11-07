@@ -1,5 +1,71 @@
 # Release Notes
 
+## v1.2.22
+
+### Parser
+- **Wrapped list items** (issue #36): A continuation line indented to a list item's text column — the way most editors and LLMs wrap long bullets — is now folded into that item. Previously the 4-space continuation under a nested bullet was read as an indented code block, which closed every open list and left the next nested item as a bare `<li>` hanging at the left edge of the page
+- `processIndentedCodeBlocks` no longer starts a code block on an indented line that directly follows a list item or another continuation line of it. A blank line still ends the item, so `- item` followed by a blank line and a 4-space line still renders as code
+- `processLists` folds indented non-list lines into the `<li>` above them, joined with a space. Two trailing spaces or a trailing backslash on the item keep a `<br>` hard break. Lines that start a block construct (fence, blockquote, table row, heading, HR) are not folded and keep their previous rendering
+- **Indent jumps open intermediate levels**: `- a` followed by `    - deep` now nests `deep` instead of flattening it to a sibling
+- **Lists that start indented are top level**: the indent of the item that opens the outermost list is the base, so `  - a` / `  - b` renders as one `<ul>` instead of two bare `<li>` elements inside a `<p>`
+- **Ordered items wrapped to their text column** (`1. one` / `   wrapped.` / `2. two`) now produce a single `<ol>` with balanced tags; previously the list split in two around an unclosed `<p>`
+- Same continuation rule applied to the AST parser (`quikdown_ast.js`): wrapped text is appended to the `list_item` node (as a `br` node when the item ends with a hard break) instead of becoming a stray `paragraph` between lists. Continuation lines inside a nested list are routed to the nested item
+- Applies to all modes: CSS classes, `inline_styles`, `lazy_linefeeds`, and `bidirectional` (`data-qd` markers preserved); the bidirectional round trip emits each wrapped item as a single line
+- **Indented code block bodies are now protected**: a blank line inside a 4-space indented code block rendered as `</p><p>` inside the `<pre>`, `lazy_linefeeds` mode injected `<br>` between code lines, and a code line ending in two spaces or a backslash produced a `<br>`. Newlines inside indented code are now held as a placeholder (like fenced code) until the final restoration pass
+
+### Bidirectional
+- **Nested lists survive the HTML → Markdown round trip**: `quikdown_bd.toMarkdown` dropped every nested item because the parser emits a nested `<ul>`/`<ol>` as a sibling of its parent `<li>` and the list walker only looked at `<li>` children. `- a` / `  - b` / `- c` came back as `- a` / `- c`. Sibling lists are now walked one level deeper; lists placed inside an `<li>` (hand-written or edited HTML) keep working
+- Hard-break continuation lines inside a list item (`<br>`) are indented to the item's text column on the way back, so `- one  ` / `  two` round-trips exactly instead of producing an unindented second line
+
+### Tests
+- New `quikdown_list_continuation.test.js` (90 tests) covering the issue input, 2-space / 4-space / tab continuation, ordered lists, task lists, hard breaks, inline formatting across the fold, indent jumps, indented list bases, block constructs that must not fold, code blocks after a blank line, and the AST parser, AST HTML renderer, JSON and YAML output, and the bidirectional round trip including nested lists at five levels, mixed ordered/unordered nesting, task lists, and hard breaks
+
+---
+
+## v1.2.21
+
+### Docs
+- **README rewrite**: Reorganized around Why Quikdown, Highlights, Modules, Install, Quick start, Rendering support (fences), Security model, AST/JSON/YAML output, Common integration patterns, LLM and agent workflows, MCP server (Cursor and Claude Desktop configuration, programmatic use), Streaming, Undo and redo, Copy as rich text, and Styling
+- Follow-up doc updates after v1.2.20 shipped reference links and footnotes
+
+---
+
+## v1.2.20
+
+### Parser
+- **Reference-style links** (opt-in, `reference_links: true`): `[text][id]`, collapsed `[text][]`, and shortcut `[id]` resolve against `[id]: url "title"` definitions collected from the document. Definitions are removed from the output. Off by default — the syntax passes through as plain text
+- **Footnotes** (opt-in, `footnotes: true`): `[^id]` markers render as numbered `<sup>` links; `[^id]: text` definitions render in a `<section>` at the end of the document with back-links. Only footnotes that are actually referenced are rendered. Off by default
+- Both features run as a Phase 3.5 resolution pass after block scanning and are protected from the emphasis regexes like other rendered tags
+
+### Bidirectional
+- `quikdown_bd` reverses reference links (`data-qd-ref`) back to full, collapsed, or shortcut reference syntax and footnote markers (`data-qd-fn`) back to `[^id]`; the footnotes section is converted back to `[^id]: text` definitions and back-links are skipped
+
+### Editor and MCP
+- `QuikdownEditor` accepts `reference_links` and `footnotes` options and passes them to the parser
+- MCP render tools expose `reference_links` and `footnotes` boolean parameters
+
+### Docs and site
+- `docs/api-reference.md` documents both options with examples
+- New blog page (`pages/blog/`)
+- README limitations note updated: reference links and footnotes are no longer listed as omitted
+
+### Tests
+- New `quikdown_reflinks_footnotes.test.js` (800+ lines) covering definitions, all three reference forms, titles, footnote ordering and back-links, bidirectional round trips, and interaction with code spans and escapes
+
+---
+
+## v1.2.19
+
+### Docs and metadata
+- **README overhaul**: new positioning ("small, safe, bidirectional Markdown parser and editor"), Why Quikdown section, module size table, and a Security section summarizing escaping, URL sanitization, the trusted fence path, and static analysis
+- **Animated editor demo**: `pages/assets/editor-demo.gif` replaces the static screenshot in the README; generated by the new `tools/record-demo-gif.cjs` Playwright script and `tools/record-demo-page.html`
+- **package.json metadata**: longer description, homepage pointing at the live site, and additional keywords (markdown-editor, bidirectional, xss-safe, streaming, llm, offline, standalone, airgapped, undo-redo)
+- Page metadata cleanup across the site templates
+
+No parser changes. (v1.2.18 was not published.)
+
+---
+
 ## v1.2.17
 
 ### Parser robustness

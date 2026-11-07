@@ -105,15 +105,25 @@ This is done BEFORE markdown processing, ensuring no user input can inject HTML 
 
 ### Phase 3: Block Scanning + Inline + Paragraphs
 
-This is the core of the lexer rewrite. Three line-walkers process the text:
+This is the core of the lexer rewrite. Four line-walkers process the text:
 
+0. **Indented code walker** (`processIndentedCodeBlocks`) — turns runs of
+   4-space / tab indented lines into `<pre><code>`. An indented line directly
+   under a list item (or under another continuation line of that item) is
+   wrapped item text, not code, and is passed through for the list walker.
+   A blank line ends the item, so code after a blank line is still code.
 1. **Table walker** — scans for runs of pipe-containing lines, validates the
    separator row, and renders `<table>` HTML. Invalid runs are left as text.
 2. **Line scanner** (`scanLineBlocks`) — a single pass that identifies
    headings (`#`), horizontal rules (`---`), and blockquotes (`&gt;`).
    Each matched line is replaced with its HTML inline.
-3. **List walker** — tracks indentation levels to build nested `<ul>`/`<ol>`
-   structures, including task-list checkboxes.
+3. **List walker** (`processLists`) — tracks indentation levels to build
+   nested `<ul>`/`<ol>` structures, including task-list checkboxes. The
+   indent of the item that opens the outermost list is the base, indent
+   jumps open the intermediate levels, and an indented non-list line directly
+   under an item is folded into that item's text (a trailing two spaces or
+   backslash on the item keeps a `<br>`). Lines that start a fence,
+   blockquote, table row, heading, or HR are never folded.
 
 After block scanning, **inline formatting** is applied globally:
 images, links, autolinks, bold/italic/strikethrough.

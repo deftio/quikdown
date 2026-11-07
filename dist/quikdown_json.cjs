@@ -1,6 +1,6 @@
 /**
  * quikdown_json - JSON Markdown Parser
- * @version 1.2.21
+ * @version 1.2.22
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -15,7 +15,7 @@
  */
 
 // Version will be injected at build time
-const quikdownVersion$1 = '1.2.21';
+const quikdownVersion$1 = '1.2.22';
 
 // Safety limit to prevent infinite loops in list parsing
 const MAX_LOOP_ITERATIONS = 1000;
@@ -308,13 +308,40 @@ function parseTableRow(line) {
     return trimmed.split('|');
 }
 
+/** Leading-whitespace width of a line (tabs count as 1, like list indents). */
+function astIndentWidth(line) {
+    const m = line.match(/^[ \t]*/);
+    return m[0].length;
+}
+
+/**
+ * True when an indented, non-blank line is wrapped text belonging to the
+ * list item above it (issue #36).  Mirrors isListContinuation in quikdown.js:
+ * lines that start a block construct (fence, blockquote, table row, heading,
+ * HR) are excluded.
+ */
+function isAstListContinuation(line) {
+    const m = line.match(/^[ \t]+(\S.*)$/);
+    if (!m) return false;
+    const t = m[1];
+    if (/^(```|~~~|>|\||#{1,6}(\s|$))/.test(t)) return false;
+    if (/^([-*_])\1{2,}\s*$/.test(t)) return false;
+    return true;
+}
+
 /**
  * Parse a list starting at the given line
+ *
+ * An indented, non-blank line directly under an item is wrapped item text
+ * and is appended to that item (joined with a space, or kept as a line
+ * break when the item ends with two spaces or a backslash so parseInline
+ * emits a `br` node).
  */
 function parseList(lines, startIndex, options) {
     const items = [];
     let i = startIndex;
     let loopCount = 0;
+    let lastText = null;   // raw source text of the last direct item, for continuation lines
 
     // Determine initial list type
     const firstMatch = lines[i].match(/^(\s*)([*\-+]|\d+\.)\s+(.*)$/);
@@ -326,7 +353,17 @@ function parseList(lines, startIndex, options) {
         const line = lines[i];
         const match = line.match(/^(\s*)([*\-+]|\d+\.)\s+(.*)$/);
 
-        if (!match) break;
+        if (!match) {
+            // Wrapped item text — append to the item above
+            if (lastText !== null && isAstListContinuation(line) && astIndentWidth(line) >= baseIndent) {
+                const sep = /( {2}|\\)$/.test(lastText) ? '\n' : ' ';
+                lastText += sep + line.trim();
+                items[items.length - 1].children = parseInline(lastText);
+                i++;
+                continue;
+            }
+            break;
+        }
 
         const [, indent, marker, content] = match;
         const indentLevel = indent.length;
@@ -347,9 +384,12 @@ function parseList(lines, startIndex, options) {
                 subLoopCount++;
                 const subLine = lines[i];
                 const subMatch = subLine.match(/^(\s*)([*\-+]|\d+\.)\s+/);
-                if (!subMatch) break;
-                if (subMatch[1].length < baseIndent) break;
-                if (subMatch[1].length === baseIndent) break;
+                if (subMatch) {
+                    if (subMatch[1].length <= baseIndent) break;
+                } else if (!(isAstListContinuation(subLine) && astIndentWidth(subLine) > baseIndent)) {
+                    // Not a nested item and not wrapped text of one
+                    break;
+                }
                 subLines.push(subLine);
                 i++;
             }
@@ -358,6 +398,7 @@ function parseList(lines, startIndex, options) {
                 // Add nested list to last item
                 const nestedResult = parseList(subLines, 0);
                 const lastItem = items[items.length - 1];
+                /* istanbul ignore next -- defensive: parseInline always returns an array */
                 if (!lastItem.children) {
                     lastItem.children = [];
                 } else if (!Array.isArray(lastItem.children)) {
@@ -365,6 +406,7 @@ function parseList(lines, startIndex, options) {
                 }
                 lastItem.children.push(nestedResult.node);
             }
+            lastText = null;   // a continuation after a sublist belongs to the sublist
             continue;
         }
 
@@ -379,10 +421,11 @@ function parseList(lines, startIndex, options) {
         const taskMatch = content.match(/^\[([x ])\]\s*(.*)$/i);
         if (taskMatch && !isOrdered) {
             itemNode.checked = taskMatch[1].toLowerCase() === 'x';
-            itemNode.children = parseInline(taskMatch[2]);
+            lastText = taskMatch[2];
         } else {
-            itemNode.children = parseInline(content);
+            lastText = content;
         }
+        itemNode.children = parseInline(lastText);
 
         items.push(itemNode);
         i++;
@@ -612,7 +655,7 @@ if (typeof window !== 'undefined') {
 
 
 // Version will be injected at build time
-const quikdownVersion = '1.2.21';
+const quikdownVersion = '1.2.22';
 
 /**
  * Convert markdown to JSON
