@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.2.22 (unreleased)
+## v1.2.22
 
 ### Parser
 - **Wrapped list items** (issue #36): A continuation line indented to a list item's text column — the way most editors and LLMs wrap long bullets — is now folded into that item. Previously the 4-space continuation under a nested bullet was read as an indented code block, which closed every open list and left the next nested item as a bare `<li>` hanging at the left edge of the page
