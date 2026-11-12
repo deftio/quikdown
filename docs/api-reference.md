@@ -22,6 +22,7 @@ Converts markdown text to HTML.
 | `bidirectional` | `boolean` | `false` | Add data-qd attributes for source tracking (v1.0.5+) |
 | `lazy_linefeeds` | `boolean` | `false` | Single newlines become `<br>` tags (v1.0.5+) |
 | `allow_unsafe_urls` | `boolean` | `false` | Allow javascript: and other potentially unsafe URLs |
+| `allow_images` | `boolean` | `true` | Render `![alt](src)` as `<img>`. Set to `false` to render images as plain links instead, so nothing is fetched until the reader clicks (v1.2.23+). See [`allow_images`](#allow_images-option). |
 | `heading_ids` | `boolean` | `false` | Add `id` slug attributes to headings for anchor links |
 | `allow_unsafe_html` | `boolean \| string[] \| object` | `false` | HTML passthrough control (v1.2.13+). `false` = escape all HTML (safe default). `true` = no escaping (trusted pipelines only). Array of tag names or object with tag keys = whitelist mode — listed tags pass through with sanitized attributes, all others are escaped. Event handler attributes (`on*`) are always stripped in whitelist mode. See [Security Guide](security.md) for details. |
 | `reference_links` | `boolean` | `false` | Enable reference-style links: `[text][id]`, `[text][]`, `[id]` with definitions `[id]: url "title"` (v1.2.20+) |
@@ -430,6 +431,41 @@ quikdown('**bold**', { inline_styles: true });
 - Isolated components
 - Quick prototypes
 
+### `allow_images` Option
+
+An `<img>` makes the browser fetch its `src` as soon as the HTML is inserted — no click needed. For markdown you did not write (user comments, LLM or agent output) that fetch can be used to track readers or to leak data placed in the URL's query string. `allow_images: false` removes that channel:
+
+```javascript
+quikdown('![chart](https://example.com/c.png)');
+// <p><img class="quikdown-img" src="https://example.com/c.png" alt="chart"></p>
+
+quikdown('![chart](https://example.com/c.png)', { allow_images: false });
+// <p><a class="quikdown-a" href="https://example.com/c.png" rel="noopener noreferrer">chart</a></p>
+```
+
+- The image becomes an ordinary link (same URL sanitization and `rel` handling as any other link). An empty alt text is labelled `image`.
+- Applies to `quikdown` and `quikdown_bd`. In bidirectional mode the element round-trips as a link, not an image.
+- It does not affect `<img>` tags you explicitly allow through `allow_unsafe_html`, or HTML returned by fence plugins.
+
+## Output Stability
+
+Applications style quikdown's HTML and assert on it in their own tests, so the shape of the output is part of the public API.
+
+**Stable across 1.x releases:**
+
+- The element emitted for each construct (`<strong>` for `**bold**`, `<h1>`–`<h6>`, `<ul>`/`<ol>`/`<li>`, `<table>`, `<pre><code>`, …).
+- Class names in class mode: every styled element carries `class="quikdown-<name>"`, where `<name>` is the tag (`quikdown-strong`, `quikdown-h1`, `quikdown-a`, `quikdown-pre`, …) or one of the documented extras (`quikdown-task-item`, `quikdown-task-checkbox`, `quikdown-alert`, `quikdown-alert-title`, `quikdown-alert-<type>`). Paragraphs (`<p>`) carry no class.
+- The security behaviour described in the [Security Guide](security.md#security-contract): escaped HTML, unsafe URLs rewritten to `#`.
+- `quikdown()` returns a plain `string` for any string input (`''` for empty input) and does not throw on malformed markdown.
+
+**Not guaranteed — avoid depending on it:**
+
+- Whitespace and newlines between tags, and attribute order.
+- The exact inline CSS values produced by `inline_styles: true` or `emitStyles()`.
+- Output for malformed or ambiguous markdown; bug fixes may change it. Such changes are listed in the [release notes](release-notes.md).
+
+For tests, prefer asserting on fragments (`toContain('<strong class="quikdown-strong">Total</strong>')`) or on the parsed DOM rather than on a whole document string. These guarantees are enforced by `tests/quikdown_downstream_contract.test.js`.
+
 ## Supported Markdown
 
 ### Block Elements
@@ -732,7 +768,18 @@ Similar formats available for `quikdown_json`, `quikdown_yaml`, and `quikdown_as
 
 ## TypeScript
 
-TypeScript definitions are included for all modules:
+TypeScript definitions are included for all modules, for both module systems: `import quikdown from 'quikdown'` resolves to ESM declarations (`.d.ts`) and `require('quikdown')` to CommonJS declarations (`.d.cts`). Both work without `@ts-ignore` under `moduleResolution` `bundler`, `node16` and `nodenext`; CI type-checks the packed npm tarball in each mode (`npm run verify:types`).
+
+```typescript
+// ESM / bundlers
+import quikdown, { type QuikdownOptions } from 'quikdown';
+
+// CommonJS (TypeScript with module: nodenext)
+import quikdown = require('quikdown');
+const opts: quikdown.QuikdownOptions = { inline_styles: false };
+```
+
+The declarations, in summary:
 
 ```typescript
 declare module 'quikdown' {
@@ -751,6 +798,8 @@ declare module 'quikdown' {
     bidirectional?: boolean;
     lazy_linefeeds?: boolean;
     allow_unsafe_urls?: boolean;
+    allow_unsafe_html?: boolean | string[] | Record<string, 1>;
+    allow_images?: boolean;
     heading_ids?: boolean;
     reference_links?: boolean;
     footnotes?: boolean;

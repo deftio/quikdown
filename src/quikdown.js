@@ -817,7 +817,14 @@ function quikdown(markdown, options = {}) {
     // items, and paragraph text.
 
     // Images (must come before links — ![alt](src) vs [text](url))
-    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, dest) => {
+    // The destination allows one level of balanced parentheses so URLs
+    // like https://en.wikipedia.org/wiki/Foo_(bar) are captured whole.
+    // eslint-disable-next-line security/detect-unsafe-regex -- linear: the two alternatives differ on their first char, so each input has only one match path
+    html = html.replace(/!\[([^\]]*)\]\(((?:[^()]|\([^()]*\))+)\)/g, (match, alt, dest) => {
+        // allow_images:false — never emit <img> (no implicit resource load).
+        // Re-emit as link markdown so the link pass below renders a normal,
+        // sanitized <a> the reader can choose to follow.
+        if (options.allow_images === false) return `[${alt || 'image'}](${dest})`;
         const { url, title } = parseLinkDestination(dest);
         const sanitizedSrc = sanitizeUrl(url, options.allow_unsafe_urls);
         const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
@@ -831,7 +838,8 @@ function quikdown(markdown, options = {}) {
     });
 
     // Links
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, dest) => {
+    // eslint-disable-next-line security/detect-unsafe-regex -- linear: the two alternatives differ on their first char, so each input has only one match path
+    html = html.replace(/\[([^\]]+)\]\(((?:[^()]|\([^()]*\))+)\)/g, (match, text, dest) => {
         const { url, title } = parseLinkDestination(dest);
         const sanitizedHref = sanitizeUrl(url, options.allow_unsafe_urls);
         const isExternal = /^https?:\/\//i.test(sanitizedHref);

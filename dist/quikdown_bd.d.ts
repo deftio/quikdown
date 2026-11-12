@@ -2,7 +2,7 @@
  * quikdown_bd — Bidirectional markdown ↔ HTML converter.
  */
 
-import { QuikdownOptions } from './quikdown';
+import { QuikdownOptions } from './quikdown.js';
 
 export interface ToMarkdownOptions {
     /** Preserve whitespace formatting. */

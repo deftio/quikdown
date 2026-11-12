@@ -1,6 +1,6 @@
 /**
  * quikdown_ast - AST Markdown Parser
- * @version 1.2.22
+ * @version 1.2.23
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -13,7 +13,7 @@
  */
 
 // Version will be injected at build time
-const quikdownVersion = '1.2.22';
+const quikdownVersion = '1.2.23';
 
 // Safety limit to prevent infinite loops in list parsing
 const MAX_LOOP_ITERATIONS = 1000;
@@ -487,7 +487,8 @@ function parseInline(text, options) {
         }
 
         // Images: ![alt](url) or ![alt](url "title")
-        const imgMatch = remaining.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+        // eslint-disable-next-line security/detect-unsafe-regex -- linear: the two alternatives differ on their first char, so each input has only one match path
+        const imgMatch = remaining.match(/^!\[([^\]]*)\]\(((?:[^()]|\([^()]*\))+)\)/);
         if (imgMatch) {
             const { url, title } = parseLinkDestinationAst(imgMatch[2]);
             const node = {
@@ -502,7 +503,8 @@ function parseInline(text, options) {
         }
 
         // Links: [text](url) or [text](url "title")
-        const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/);
+        // eslint-disable-next-line security/detect-unsafe-regex -- linear: the two alternatives differ on their first char, so each input has only one match path
+        const linkMatch = remaining.match(/^\[([^\]]+)\]\(((?:[^()]|\([^()]*\))+)\)/);
         if (linkMatch) {
             const { url, title } = parseLinkDestinationAst(linkMatch[2]);
             const node = {

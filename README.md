@@ -4,7 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
 [![Coverage](https://img.shields.io/badge/coverage-99.9%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-17.5KB-green.svg)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-17.6KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 Quikdown is a small, safe, bidirectional Markdown parser with a drop-in editor for browser and Node.js apps — with rich fenced-block rendering, Markdown ↔ HTML round-tripping, undo/redo, headless APIs, MCP tools, and a standalone offline build.
 
@@ -49,6 +49,8 @@ Use only the pieces you need.
 | quikdown_edit_standalone.js | ~7.7 MB / ~1 MB gzipped | Offline editor with all fence libraries bundled. No CDN required. |
 | quikdown_mcp.js | ~26 KB | MCP server with 24 tools for AI agents. |
 | quikdown_ast / json / yaml / ast_html | ~5–8 KB each | Companion modules for structured output and AST-based rendering. |
+
+> **Want a desktop app instead of a library?** [QuikLeaf](https://github.com/deftio/quikleaf) is a standalone Markdown editor for macOS, Windows, and Linux, built on Quikdown. It adds LLM chat that can read and edit the open document (bring your own key or a local model) and renders all the rich fences offline. Try it with `npx quikleaf notes.md` or grab an installer from its [Releases](https://github.com/deftio/quikleaf/releases) page.
 
 ## Install
 
@@ -203,6 +205,7 @@ Security-related defaults and checks include:
 
 * HTML escaped by default
 * URL sanitization for links and images
+* Optional `allow_images: false` renders images as links, so untrusted or LLM-generated Markdown cannot trigger remote image requests
 * Blocking of `javascript:`, `vbscript:`, and non-image `data:` URIs
 * No `eval`
 * No dynamic `RegExp`
@@ -622,7 +625,7 @@ Raw HTML and SVG can be rendered through fence plugins with appropriate sanitiza
 ## Related projects
 
 * [QuikChat](https://github.com/deftio/quikchat) — simple chat UI library that can use Quikdown for Markdown rendering.
-* [QuikLeaf](https://github.com/deftio/quikleaf) — offline desktop app built around the standalone Quikdown editor.
+* [QuikLeaf](https://github.com/deftio/quikleaf) — standalone desktop Markdown editor for macOS, Windows, and Linux with LLM integration, built around the standalone Quikdown editor.
 
 ## API reference
 

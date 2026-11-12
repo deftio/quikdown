@@ -2,7 +2,7 @@
  * quikdown_ast_html — AST to HTML renderer.
  */
 
-import { ASTDocument } from './quikdown_ast';
+import { ASTDocument } from './quikdown_ast.js';
 
 export interface ASTHtmlOptions {
     /** Use inline styles instead of CSS classes. Default: false. */

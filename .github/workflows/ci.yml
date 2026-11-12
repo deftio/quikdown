@@ -61,6 +61,9 @@ jobs:
     - name: Verify package exports and types
       run: npm run verify:package
 
+    - name: Type-check and smoke-run the packed tarball as a consumer
+      run: npm run verify:types
+
     - name: Dry-run publish release steps
       run: |
         npm run build:all

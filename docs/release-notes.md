@@ -1,5 +1,35 @@
 # Release Notes
 
+## v1.2.23
+
+Changes driven by a review of how a downstream application uses quikdown to render LLM output.
+
+### Parser
+- **URLs with parentheses**: `[text](url)` and `![alt](url)` now keep one level of balanced parentheses in the destination. `[w](https://en.wikipedia.org/wiki/Foo_(bar))` previously produced `href="…/Foo_(bar"` followed by a stray `)`; it now links to the full URL. The same applies to the AST parser (`quikdown_ast`, and so `quikdown_json` / `quikdown_yaml` / `quikdown_ast_html`).
+- Side effects of the same fix: a blocked URL such as `[x](javascript:alert(1))` no longer leaves a trailing `)` after the neutralised link, and a destination with an unclosed `(` (`[a](un(bal)`) is left as literal text instead of becoming a truncated link.
+- No other output changes: rendering of 703 real-world markdown files is byte-identical to v1.2.22.
+
+### Security
+- **New `allow_images` option** (default `true`). With `allow_images: false`, `![alt](src)` renders as a normal sanitized link instead of `<img>`, so the browser makes no request until the reader clicks. Intended for untrusted and LLM-generated markdown, where remote images can be used for tracking or data exfiltration. Works in `quikdown` and `quikdown_bd`.
+- `docs/security.md` gains a **Security Contract** table (what is guaranteed under each option) and a section on remote images.
+
+### TypeScript / packaging
+- **CommonJS consumers now get correct types.** `require('quikdown')` under `moduleResolution: node16/nodenext` previously failed with "This expression is not callable", because the only declarations were ESM-style while the CJS bundles use `module.exports`. Every entry point now ships a `.d.cts` (generated from the `.d.ts` by `tools/buildDts.cjs` during `npm run build`).
+- `package.json` `exports` now nest `types` first under both `import` and `require`, per TypeScript's guidance. Runtime resolution is unchanged.
+- Relative imports between declaration files carry `.js` extensions, fixing errors for `nodenext` ESM consumers of `quikdown/bd`, `/json`, `/yaml` and `/ast-html` that do not use `skipLibCheck`.
+- `npm run verify:types` now tests the real `npm pack` tarball through the `exports` map in four TypeScript modes plus Node `import`/`require`, and runs in CI. It previously imported `dist/` by relative path under one mode and was not part of CI.
+
+### Docs
+- `docs/api-reference.md`: new **Output Stability** section stating that element choice and `quikdown-*` class names are stable across 1.x, and what is not guaranteed.
+
+- README, landing page and downloads page now point to [QuikLeaf](https://github.com/deftio/quikleaf), the standalone desktop Markdown editor (macOS, Windows, Linux) with LLM integration built on quikdown.
+- Jest ignores `tmp/` so scratch checkouts there are not picked up as tests.
+
+### Tests
+- New `quikdown_downstream_contract.test.js` pins the output that consumers assert on: escaping, `href="#"` rewriting, `quikdown-*` classes, parenthesised URLs, `allow_images`, and a timing guard for the new link pattern on adversarial input.
+
+---
+
 ## v1.2.22
 
 ### Parser

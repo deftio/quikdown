@@ -21,51 +21,32 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 // ---------------------------------------------------------------------------
 // 1. Package structure contracts
 // ---------------------------------------------------------------------------
-describe('package.json exports contract', () => {
-  test('every exports.types file exists on disk', () => {
-    const exportsMap = pkg.exports || {};
-    for (const [subpath, conditions] of Object.entries(exportsMap)) {
-      if (subpath === './package.json') continue;
-      if (typeof conditions !== 'object' || conditions === null) continue;
-      if (conditions.types) {
-        const abs = path.join(ROOT, conditions.types);
-        expect(fs.existsSync(abs)).toBe(true);
-      }
-    }
-  });
+/** package.json export entries, excluding the ./package.json passthrough. */
+const exportEntries = Object.entries(pkg.exports || {}).filter(([subpath]) => subpath !== './package.json');
 
+describe('package.json exports contract', () => {
   test('root "types" entry exists on disk', () => {
     expect(pkg.types).toBeDefined();
     const abs = path.join(ROOT, pkg.types);
     expect(fs.existsSync(abs)).toBe(true);
   });
 
-  test('every exports.import file exists on disk', () => {
-    for (const [subpath, conditions] of Object.entries(pkg.exports || {})) {
-      if (subpath === './package.json') continue;
-      if (typeof conditions !== 'object' || conditions === null) continue;
-      if (conditions.import) {
-        const abs = path.join(ROOT, conditions.import);
-        expect(fs.existsSync(abs)).toBe(true);
+  // import → ESM bundle + .d.ts, require → CJS bundle + .d.cts.
+  // "types" must come first so TypeScript picks the matching declaration.
+  test.each([['import', '.d.ts'], ['require', '.d.cts']])(
+    'every exports.%s is { types, default } with existing files', (kind, typesExt) => {
+      expect(exportEntries.length).toBeGreaterThan(0);
+      for (const [, conditions] of exportEntries) {
+        const entry = conditions[kind];
+        expect(Object.keys(entry)).toEqual(['types', 'default']);
+        expect(entry.types.endsWith(typesExt)).toBe(true);
+        expect(fs.existsSync(path.join(ROOT, entry.types))).toBe(true);
+        expect(fs.existsSync(path.join(ROOT, entry.default))).toBe(true);
       }
-    }
-  });
-
-  test('every exports.require file exists on disk', () => {
-    for (const [subpath, conditions] of Object.entries(pkg.exports || {})) {
-      if (subpath === './package.json') continue;
-      if (typeof conditions !== 'object' || conditions === null) continue;
-      if (conditions.require) {
-        const abs = path.join(ROOT, conditions.require);
-        expect(fs.existsSync(abs)).toBe(true);
-      }
-    }
-  });
+    });
 
   test('every exports.browser file exists on disk', () => {
-    for (const [subpath, conditions] of Object.entries(pkg.exports || {})) {
-      if (subpath === './package.json') continue;
-      if (typeof conditions !== 'object' || conditions === null) continue;
+    for (const [, conditions] of exportEntries) {
       if (conditions.browser) {
         const abs = path.join(ROOT, conditions.browser);
         expect(fs.existsSync(abs)).toBe(true);
@@ -79,17 +60,22 @@ describe('package.json exports contract', () => {
     if (pkg.browser) expect(fs.existsSync(path.join(ROOT, pkg.browser))).toBe(true);
   });
 
-  test('.d.ts files are non-empty and declare exports', () => {
-    for (const [subpath, conditions] of Object.entries(pkg.exports || {})) {
-      if (subpath === './package.json') continue;
-      if (typeof conditions !== 'object' || conditions === null) continue;
-      if (conditions.types) {
-        const abs = path.join(ROOT, conditions.types);
-        const content = fs.readFileSync(abs, 'utf8');
+  test('declaration files are non-empty and declare exports', () => {
+    for (const [, conditions] of exportEntries) {
+      for (const kind of ['import', 'require']) {
+        const content = fs.readFileSync(path.join(ROOT, conditions[kind].types), 'utf8');
         expect(content.length).toBeGreaterThan(0);
-        // Should declare at least one export
         expect(content).toMatch(/export\s/);
       }
+    }
+  });
+
+  test('CommonJS declarations use `export =` to match module.exports', () => {
+    for (const [subpath, conditions] of exportEntries) {
+      if (subpath === './mcp') continue; // named exports + exports.default
+      const content = fs.readFileSync(path.join(ROOT, conditions.require.types), 'utf8');
+      expect(content).toMatch(/^export = \w+;$/m);
+      expect(content).not.toMatch(/^export default/m);
     }
   });
 

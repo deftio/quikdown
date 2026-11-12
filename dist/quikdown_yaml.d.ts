@@ -2,7 +2,7 @@
  * quikdown_yaml — Markdown to YAML converter.
  */
 
-import { ASTDocument } from './quikdown_ast';
+import { ASTDocument } from './quikdown_ast.js';
 
 /**
  * Convert markdown to a YAML string representation of its AST.
