@@ -62,19 +62,34 @@ function checkMainEntrypoints() {
   if (pkg.browser) fileMustExist(pkg.browser, 'browser');
 }
 
+/** Flatten a (possibly nested) exports condition object to its file targets. */
+function exportTargets(conditions) {
+  if (typeof conditions === 'string') return [conditions];
+  if (typeof conditions !== 'object' || conditions === null) return [];
+  return Object.values(conditions).flatMap(exportTargets);
+}
+
 function checkExportsMap() {
   console.log('\n── package.json exports ──');
   const exportsMap = pkg.exports || {};
 
   for (const [subpath, conditions] of Object.entries(exportsMap)) {
     if (subpath === './package.json') continue;
-    if (typeof conditions !== 'object' || conditions === null) continue;
-
     const label = `exports["${subpath}"]`;
 
-    for (const [, target] of Object.entries(conditions)) {
-      if (typeof target !== 'string') continue;
+    for (const target of exportTargets(conditions)) {
       fileMustExist(target, `${label}`);
+    }
+
+    // "types" must be the first key of import/require so TypeScript picks the
+    // matching declaration flavour (.d.ts for import, .d.cts for require).
+    for (const kind of ['import', 'require']) {
+      const entry = conditions && conditions[kind];
+      if (!entry || typeof entry !== 'object' || Object.keys(entry)[0] !== 'types') {
+        fail(`${label}.${kind}: expected { types, default } with "types" first`);
+      } else if (!entry.types.endsWith(kind === 'import' ? '.d.ts' : '.d.cts')) {
+        fail(`${label}.${kind}.types: wrong declaration flavour ${entry.types}`);
+      }
     }
   }
 }
@@ -111,6 +126,7 @@ function checkTypeScriptDefinitions() {
   ];
   for (const f of expected) {
     fileMustExist(f, 'types');
+    fileMustExist(f.replace(/\.d\.ts$/, '.d.cts'), 'types (cjs)');
   }
 }
 
@@ -136,11 +152,9 @@ function collectExportTargets() {
   if (pkg.types) targets.add(pkg.types.replace(/^\.\//, ''));
   if (pkg.browser) targets.add(pkg.browser.replace(/^\.\//, ''));
 
-  for (const conditions of Object.values(pkg.exports || {})) {
-    if (typeof conditions !== 'object' || conditions === null) continue;
-    for (const target of Object.values(conditions)) {
-      if (typeof target === 'string') targets.add(target.replace(/^\.\//, ''));
-    }
+  for (const [subpath, conditions] of Object.entries(pkg.exports || {})) {
+    if (subpath === './package.json') continue;
+    for (const target of exportTargets(conditions)) targets.add(target.replace(/^\.\//, ''));
   }
   return [...targets];
 }
@@ -188,11 +202,6 @@ function checkNpmPackContents() {
   }
 }
 
-function checkTypeScriptConsumer() {
-  console.log(`\n${DIM}── TypeScript consumer fixture (not implemented) ──${RESET}`);
-  warn('TODO: add tests/fixtures/ts-consumer/ and run tsc --noEmit');
-}
-
 function checkDistFreshness() {
   console.log(`\n${DIM}── dist vs src staleness (not implemented) ──${RESET}`);
   warn('TODO: tools/checkDistFresh.cjs — fail if src/*.js mtime > dist/*.esm.js');
@@ -213,7 +222,6 @@ function main() {
   }
 
   if (!releaseMode) {
-    checkTypeScriptConsumer();
     checkDistFreshness();
   }
 

@@ -2,8 +2,8 @@
  * quikdown_json — Markdown to JSON converter.
  */
 
-import quikdown_ast from './quikdown_ast';
-import { ASTDocument } from './quikdown_ast';
+import quikdown_ast from './quikdown_ast.js';
+import { ASTDocument } from './quikdown_ast.js';
 
 export interface JsonOptions {
     /** JSON indentation level. Default: 2. */

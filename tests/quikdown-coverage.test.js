@@ -84,9 +84,9 @@ describe('quikdown edge cases and coverage', () => {
     });
 
     test('should allow unsafe URLs when option is set', () => {
-      // Note: URLs with parentheses get cut off at the first )
+      // Balanced parentheses in the URL are kept whole
       const html = quikdown('[click](javascript:alert(1))', { allow_unsafe_urls: true });
-      expect(html).toContain('href="javascript:alert(1"');
+      expect(html).toContain('href="javascript:alert(1)"');
       
       // Test with URL without parentheses
       const html2 = quikdown('[click](javascript:void)', { allow_unsafe_urls: true });
@@ -697,9 +697,9 @@ describe('quikdown edge cases and coverage', () => {
     });
 
     test('should test image sanitization with allow_unsafe_urls', () => {
-      // Parentheses in URL get cut off
+      // Balanced parentheses in the URL are kept whole
       const html = quikdown('![test](javascript:alert(1))', { allow_unsafe_urls: true });
-      expect(html).toContain('src="javascript:alert(1"');
+      expect(html).toContain('src="javascript:alert(1)"');
       
       // Test without parentheses
       const html2 = quikdown('![test](javascript:void)', { allow_unsafe_urls: true });

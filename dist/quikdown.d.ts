@@ -28,6 +28,13 @@ export interface QuikdownOptions {
     allow_unsafe_html?: boolean | string[] | Record<string, 1>;
     /** Allow javascript: and other potentially unsafe URLs. Default: false. */
     allow_unsafe_urls?: boolean;
+    /**
+     * Render images as <img>. Default: true.
+     * When false, ![alt](src) renders as a link to the image instead, so no
+     * resource is loaded until the reader clicks. Use for untrusted or
+     * LLM-generated markdown where remote image loads can leak data.
+     */
+    allow_images?: boolean;
     /** Add id attributes to headings for in-page anchor links. Default: false. */
     heading_ids?: boolean;
     /** Enable reference-style links ([text][id], [id]). Default: false. */

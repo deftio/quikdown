@@ -150,7 +150,7 @@ git commit --no-verify -m "wip: temporary"
 |--------|---------------|-------------|
 | `npm run verify:package` | All `exports.types` paths exist, npm pack dry-run | Every PR (ci.yml) |
 | `npm run verify:release` | `verify:package` + standalone bundle size/imports + npm pack | `release.sh` + `publish.yml` |
-| `npm run verify:types` | TypeScript consumer fixture compiles (`tsc --noEmit`) | Optional — run locally before release |
+| `npm run verify:types` | Installs the `npm pack` tarball into a temp project; type-checks ESM and CommonJS consumers (bundler, preserve, nodenext) and loads every entry point via `import` and `require` | Every PR (ci.yml) |
 
 ### Standalone (offline) editor
 

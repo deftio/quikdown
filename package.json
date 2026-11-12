@@ -1,6 +1,6 @@
 {
   "name": "quikdown",
-  "version": "1.2.22",
+  "version": "1.2.23",
   "description": "Small, safe, bidirectional Markdown parser and editor with streaming, undo/redo, rich fences, MCP tools, and a standalone airgapped build. Zero runtime deps. Browser and Node.js.",
   "author": "deftio (https://github.com/deftio)",
   "license": "BSD-2-Clause",
@@ -55,51 +55,91 @@
   "types": "dist/quikdown.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/quikdown.esm.js",
-      "require": "./dist/quikdown.cjs",
-      "browser": "./dist/quikdown.umd.min.js",
-      "types": "./dist/quikdown.d.ts"
+      "import": {
+        "types": "./dist/quikdown.d.ts",
+        "default": "./dist/quikdown.esm.js"
+      },
+      "require": {
+        "types": "./dist/quikdown.d.cts",
+        "default": "./dist/quikdown.cjs"
+      },
+      "browser": "./dist/quikdown.umd.min.js"
     },
     "./bd": {
-      "import": "./dist/quikdown_bd.esm.js",
-      "require": "./dist/quikdown_bd.cjs",
-      "browser": "./dist/quikdown_bd.umd.min.js",
-      "types": "./dist/quikdown_bd.d.ts"
+      "import": {
+        "types": "./dist/quikdown_bd.d.ts",
+        "default": "./dist/quikdown_bd.esm.js"
+      },
+      "require": {
+        "types": "./dist/quikdown_bd.d.cts",
+        "default": "./dist/quikdown_bd.cjs"
+      },
+      "browser": "./dist/quikdown_bd.umd.min.js"
     },
     "./edit": {
-      "import": "./dist/quikdown_edit.esm.js",
-      "require": "./dist/quikdown_edit.cjs",
-      "browser": "./dist/quikdown_edit.umd.min.js",
-      "types": "./dist/quikdown_edit.d.ts"
+      "import": {
+        "types": "./dist/quikdown_edit.d.ts",
+        "default": "./dist/quikdown_edit.esm.js"
+      },
+      "require": {
+        "types": "./dist/quikdown_edit.d.cts",
+        "default": "./dist/quikdown_edit.cjs"
+      },
+      "browser": "./dist/quikdown_edit.umd.min.js"
     },
     "./ast": {
-      "import": "./dist/quikdown_ast.esm.js",
-      "require": "./dist/quikdown_ast.cjs",
-      "browser": "./dist/quikdown_ast.umd.min.js",
-      "types": "./dist/quikdown_ast.d.ts"
+      "import": {
+        "types": "./dist/quikdown_ast.d.ts",
+        "default": "./dist/quikdown_ast.esm.js"
+      },
+      "require": {
+        "types": "./dist/quikdown_ast.d.cts",
+        "default": "./dist/quikdown_ast.cjs"
+      },
+      "browser": "./dist/quikdown_ast.umd.min.js"
     },
     "./json": {
-      "import": "./dist/quikdown_json.esm.js",
-      "require": "./dist/quikdown_json.cjs",
-      "browser": "./dist/quikdown_json.umd.min.js",
-      "types": "./dist/quikdown_json.d.ts"
+      "import": {
+        "types": "./dist/quikdown_json.d.ts",
+        "default": "./dist/quikdown_json.esm.js"
+      },
+      "require": {
+        "types": "./dist/quikdown_json.d.cts",
+        "default": "./dist/quikdown_json.cjs"
+      },
+      "browser": "./dist/quikdown_json.umd.min.js"
     },
     "./yaml": {
-      "import": "./dist/quikdown_yaml.esm.js",
-      "require": "./dist/quikdown_yaml.cjs",
-      "browser": "./dist/quikdown_yaml.umd.min.js",
-      "types": "./dist/quikdown_yaml.d.ts"
+      "import": {
+        "types": "./dist/quikdown_yaml.d.ts",
+        "default": "./dist/quikdown_yaml.esm.js"
+      },
+      "require": {
+        "types": "./dist/quikdown_yaml.d.cts",
+        "default": "./dist/quikdown_yaml.cjs"
+      },
+      "browser": "./dist/quikdown_yaml.umd.min.js"
     },
     "./ast-html": {
-      "import": "./dist/quikdown_ast_html.esm.js",
-      "require": "./dist/quikdown_ast_html.cjs",
-      "browser": "./dist/quikdown_ast_html.umd.min.js",
-      "types": "./dist/quikdown_ast_html.d.ts"
+      "import": {
+        "types": "./dist/quikdown_ast_html.d.ts",
+        "default": "./dist/quikdown_ast_html.esm.js"
+      },
+      "require": {
+        "types": "./dist/quikdown_ast_html.d.cts",
+        "default": "./dist/quikdown_ast_html.cjs"
+      },
+      "browser": "./dist/quikdown_ast_html.umd.min.js"
     },
     "./mcp": {
-      "import": "./dist/quikdown_mcp.esm.js",
-      "require": "./dist/quikdown_mcp.cjs",
-      "types": "./dist/quikdown_mcp.d.ts"
+      "import": {
+        "types": "./dist/quikdown_mcp.d.ts",
+        "default": "./dist/quikdown_mcp.esm.js"
+      },
+      "require": {
+        "types": "./dist/quikdown_mcp.d.cts",
+        "default": "./dist/quikdown_mcp.cjs"
+      }
     },
     "./package.json": "./package.json"
   },
@@ -135,7 +175,7 @@
     "release:legacy": "node ./tools/createRelease.js",
     "tag": "./tools/createTag.sh",
     "docs:api": "npx jsdoc src/quikdown.js -d docs/api",
-    "build": "npm run lint && npm run updateVersion && rollup -c && npm run css && npm run sizes && npm run updateBadges && npm run buildSite",
+    "build": "npm run lint && npm run updateVersion && rollup -c && node tools/buildDts.cjs && npm run css && npm run sizes && npm run updateBadges && npm run buildSite",
     "dev": "npx bwcli serve . -p 6811",
     "serve": "npx bwcli serve . -p 6811",
     "buildSite": "node ./tools/buildSite.js",
@@ -149,7 +189,7 @@
     "lint": "eslint src/",
     "verify:package": "node tools/verifyPackage.cjs",
     "verify:standalone": "node tools/checkStandalone.cjs",
-    "verify:types": "tsc --noEmit -p tests/fixtures/ts-consumer/tsconfig.json",
+    "verify:types": "node tools/verifyTypes.cjs",
     "verify:release": "node tools/verifyPackage.cjs --release && node tools/checkStandalone.cjs",
     "build:airgap": "node tools/buildAirgapZip.cjs",
     "sizes": "node tools/printSizes.cjs",
@@ -168,7 +208,8 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/tests/.*\\.spec\\.js$",
-      "/dev/lex-old-dev/"
+      "/dev/lex-old-dev/",
+      "<rootDir>/tmp/"
     ],
     "transform": {
       "^.+\\.js$": "babel-jest"
@@ -244,7 +285,10 @@
         "branches": 90,
         "statements": 90
       }
-    }
+    },
+    "modulePathIgnorePatterns": [
+      "<rootDir>/tmp/"
+    ]
   },
   "devDependencies": {
     "@babel/core": "^7.29.0",
