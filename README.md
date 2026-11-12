@@ -10,6 +10,8 @@ Quikdown is a small, safe, bidirectional Markdown parser with a drop-in editor f
 
 It is useful anywhere Markdown needs to remain the source of truth while users edit either the source or rendered view: docs, dashboards, CMS fields, internal tools, local/offline apps, chat UIs, and human/LLM co-editing workflows.
 
+[QuikLeaf](https://github.com/deftio/quikleaf) is a standalone desktop Markdown editor for macOS, Windows, and Linux that uses Quikdown, with LLM integration.
+
 **[Try the Editor](https://deftio.github.io/quikdown/pages/edit/)** | **[Live Site](https://deftio.github.io/quikdown/pages/)** | **[Examples](https://deftio.github.io/quikdown/pages/examples/)** | **[Downloads](https://deftio.github.io/quikdown/pages/downloads/)** | **[Docs](docs/)**
 
 ![quikdown editor demo — markdown, Mermaid diagram, MathJax equation, and syntax-highlighted code](pages/assets/editor-demo.gif)
@@ -49,8 +51,6 @@ Use only the pieces you need.
 | quikdown_edit_standalone.js | ~7.7 MB / ~1 MB gzipped | Offline editor with all fence libraries bundled. No CDN required. |
 | quikdown_mcp.js | ~26 KB | MCP server with 24 tools for AI agents. |
 | quikdown_ast / json / yaml / ast_html | ~5–8 KB each | Companion modules for structured output and AST-based rendering. |
-
-> **Want a desktop app instead of a library?** [QuikLeaf](https://github.com/deftio/quikleaf) is a standalone Markdown editor for macOS, Windows, and Linux, built on Quikdown. It adds LLM chat that can read and edit the open document (bring your own key or a local model) and renders all the rich fences offline. Try it with `npx quikleaf notes.md` or grab an installer from its [Releases](https://github.com/deftio/quikleaf/releases) page.
 
 ## Install
 
