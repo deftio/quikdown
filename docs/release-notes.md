@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.3.1 (unreleased)
+## v1.3.1
 
 ### Editor: line numbers ([#45](https://github.com/deftio/quikdown/issues/45))
 - **`lineNumbers` option** (default `false`) and **`setLineNumbers(enabled)` / `getLineNumbers()`** show line numbers beside the source pane. Numbers start at 1.
