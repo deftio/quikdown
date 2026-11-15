@@ -157,6 +157,8 @@ const html = quikdown_ast_html('# Hello');
 }
 ```
 
+`lang` is the first word of the info string. Any text after it is in `meta`, which is only present when there is such text. ```` ```js run #a ```` gives `lang: 'js', meta: 'run #a'`. This follows mdast.
+
 #### Blockquote
 
 ```javascript

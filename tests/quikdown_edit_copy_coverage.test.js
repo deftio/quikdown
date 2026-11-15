@@ -851,6 +851,16 @@ describe('Leaflet containers without a stored source', () => {
         expect(overlayCall.slice(1)).toEqual([50, 50, 100, 50]);
     });
 
+    test('a map whose fence has arguments (```geojson #map) is captured too', async () => {
+        const { live } = liveLegacyMap();
+        live.setAttribute('data-qd-lang', 'geojson #map title="Sites"');
+        await editor.copyRendered();
+        const fragment = await copiedFragment();
+
+        expect(fragment.querySelector('#map-1')).toBeNull();
+        expect(fragment.querySelector('img[alt="Map"]').getAttribute('src')).toBe(PNG_FROM_CANVAS);
+    });
+
     test('a tainted canvas yields a grey box of the same size', async () => {
         liveLegacyMap();
         HTMLCanvasElement.prototype.toDataURL.mockImplementation(() => { throw new Error('tainted'); });

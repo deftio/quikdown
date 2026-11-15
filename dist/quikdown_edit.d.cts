@@ -111,8 +111,19 @@ interface EditorOptions {
     plugins?: { highlightjs?: boolean; mermaid?: boolean };
     /** Preload fence-rendering libraries. */
     preloadFences?: 'all' | string[] | Array<string | { name?: string; script: string; css?: string }> | null;
-    /** Custom fence renderers. */
-    customFences?: Record<string, (code: string, lang: string) => string>;
+    /**
+     * Custom fence renderers, keyed by language. `lang` is the first word of
+     * the fence info string and `info` is the whole string, so ```js run #a
+     * calls the `js` handler with lang "js" and info "js run #a". A key equal
+     * to the whole info string is tried first.
+     */
+    customFences?: Record<string, (code: string, lang: string, info: string) => string | undefined>;
+    /**
+     * Use the first word of a fence info string as its language, and ignore
+     * the rest when choosing a renderer. Default: true. With false, the whole
+     * info string is the language, as before 1.3.2.
+     */
+    allowFenceArguments?: boolean;
     /** Enable CSV tables, math rendering, SVG, etc. Default: true. */
     enableComplexFences?: boolean;
     /** Show undo/redo toolbar buttons. Default: false. */

@@ -12,12 +12,12 @@ This guide is for **authors** writing markdown that should render correctly in t
 
 | Layer | Behavior |
 |-------|----------|
-| **Core parser** (`quikdown`) | Renders fences as `<pre><code class="quikdown-code">…</code></pre>` unless you supply a `fence_plugin`. |
+| **Core parser** (`quikdown`) | Renders fences as `<pre class="quikdown-pre"><code class="language-…">…</code></pre>` unless you supply a `fence_plugin`. |
 | **Editor** (`quikdown/edit`) | With `enableComplexFences: true` (default), built-in handlers replace many fence types with live previews. |
 
 ### Fence syntax
 
-Use standard markdown fences. Language tag is case-insensitive in the editor.
+Use standard markdown fences. The editor matches built-in fence names as written: `mermaid` renders a diagram, `Mermaid` does not. Highlight.js accepts language names in any case.
 
 ````markdown
 ```language
@@ -34,6 +34,33 @@ graph LR
 ~~~
 ~~~
 
+### Fence arguments
+
+The text after the fence marker is the info string. Its first word is the language, as in CommonMark. Anything after the first word is an argument. quikdown does not interpret arguments; it keeps them and passes them to your handlers.
+
+````markdown
+```mermaid #arch title="Service map"
+graph LR
+  A --> B
+```
+````
+
+What each layer does with ```` ```js run #summary ````:
+
+- **Core parser** - the class is `language-js`. A `fence_plugin` receives the whole info string, `"js run #summary"`, as its second argument.
+- **Bidirectional** - `data-qd-lang` holds the whole info string, so `toMarkdown()` writes the fence line back unchanged.
+- **AST** - the `code_block` node has `lang: "js"` and `meta: "run #summary"`. `meta` is only present when there are arguments.
+- **Editor** - the first word picks the renderer, so the fence above is highlighted as JavaScript and ```` ```mermaid #arch ```` draws a diagram. The editor itself ignores the arguments. A `customFences` handler receives `(code, lang, info)`, where `info` is the whole string. Editing in the preview pane keeps the fence line, arguments included.
+
+A host that wants fences to do more (name them, run them, link them to other content) can read the arguments in either place:
+
+- **With the core parser** - a `fence_plugin` reads the info string and returns whatever HTML it wants.
+- **With the editor** - a `customFences` handler reads `info`. `onRender(preview)` runs after each repaint, so the host can find its fences by `data-qd-lang` and attach behaviour. `getMarkdown()` and `replaceRange()` read and rewrite fence bodies in the source, and `lineOf(element)` maps a rendered fence to its source line. The preview is rebuilt on each change, so anything attached to rendered nodes has to be attached again in `onRender`.
+
+A brace-first info string such as ```` ```{.js #foo} ```` has `{.js` as its first word, so it is treated as an unknown language and rendered as plain code.
+
+Set `allowFenceArguments: false` on the editor to use the whole info string as the language, as before 1.3.2.
+
 ### Editor options that affect fences
 
 | Option | Default | Effect |
@@ -42,6 +69,7 @@ graph LR
 | `preloadFences` | `null` | `'all'`, a library name array, or lazy-load on first use. |
 | `allowExternalFetch` | `true` (regular editor) / `false` (standalone) | Blocks CDN loads and external Vega `url` / OSM tiles when `false`. |
 | `customFences` | `{}` | Your handlers run **before** built-ins. |
+| `allowFenceArguments` | `true` | The first word of the info string picks the renderer. `false` uses the whole string. |
 
 **Regular editor:** fence libraries load from CDN the first time a block of that type appears.
 
@@ -550,10 +578,12 @@ Override or extend built-ins:
 new QuikdownEditor('#editor', {
   customFences: {
     plantuml: (code) => `<img src="…" alt="diagram">`,
-    mychart: (code, lang) => renderFromJson(code)
+    mychart: (code, lang, info) => renderFromJson(code, info)
   }
 });
 ```
+
+Handlers are keyed by language and called with `(code, lang, info)`. For ```` ```mychart #q1 ```` that is `lang` `"mychart"` and `info` `"mychart #q1"`. A key equal to the whole info string is tried before the first word, so keys registered with spaces before 1.3.2 still match.
 
 Return `undefined` to fall through to built-in handling. See [Plugin Development](plugin-guide.md).
 

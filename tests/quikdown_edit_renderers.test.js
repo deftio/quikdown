@@ -1272,7 +1272,7 @@ describe('createFencePlugin', () => {
         await makeEditor({ customFences: { csv } });
         await editor.setMarkdown(fence('csv', 'a,b'));
 
-        expect(csv).toHaveBeenCalledWith('a,b', 'csv');
+        expect(csv).toHaveBeenCalledWith('a,b', 'csv', 'csv');
         expect(preview('.mine').textContent).toBe('csv:a,b');
         expect(preview('table')).toBeNull();
     });

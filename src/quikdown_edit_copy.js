@@ -1120,7 +1120,10 @@ export async function getRenderedContent(previewPanel, options = {}) {
         
         
         // 6. Process GeoJSON/Leaflet maps - capture as single image (compose tiles + overlays)
-        const mapContainers = clone.querySelectorAll('[data-qd-lang="geojson"]');
+        // data-qd-lang holds the whole fence info string (```geojson #map),
+        // so match on its first word.
+        const mapContainers = Array.from(clone.querySelectorAll('[data-qd-lang]'))
+            .filter(el => el.getAttribute('data-qd-lang').split(/\s/, 1)[0] === 'geojson');
         for (const container of mapContainers) {
             try {
                 const containerId = container.id;

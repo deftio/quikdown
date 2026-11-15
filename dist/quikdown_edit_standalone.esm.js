@@ -1,6 +1,6 @@
 /**
  * quikdown_edit_standalone — Offline editor with all fence renderers
- * @version 1.3.1
+ * @version 1.3.2
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  *
@@ -226549,7 +226549,7 @@ function looksLikeTableRow(line) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.3.1';
+const quikdownVersion = '1.3.2';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -226689,6 +226689,15 @@ function headingSlug(text) {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '') || 'section';
+}
+
+/**
+ * Language of a fenced code block: the first word of the (trimmed) info
+ * string, as in CommonMark. ```js run #id → "js". The rest of the info
+ * string is left for fence plugins and kept verbatim in data-qd-lang.
+ */
+function fenceLang(info) {
+    return info.split(/\s/, 1)[0];
 }
 
 /** Return a unique slug, suffixing -1, -2, … on duplicates. */
@@ -227063,7 +227072,8 @@ function quikdown(markdown, options = {}) {
     // ── Fenced code blocks ──
     // Matches paired fences: ``` with ``` and ~~~ with ~~~.
     // The fence must start at column 0 of a line (^ with /m flag).
-    // Group 1 = fence marker, Group 2 = language hint, Group 3 = code body.
+    // Group 1 = fence marker, Group 2 = info string (language, then any
+    // arguments), Group 3 = code body.
     html = html.replace(/^(```|~~~)([^\n]*)\n([\s\S]*?)^\1$/gm, (match, fence, lang, code) => {
         const placeholder = `${PLACEHOLDER_CB}${codeBlocks.length}§`;
         const langTrimmed = lang ? lang.trim() : '';
@@ -227536,7 +227546,7 @@ function quikdown(markdown, options = {}) {
 
             if (replacement === undefined) {
                 // Plugin declined — fall back to default rendering.
-                const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
+                const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(fenceLang(block.lang))}"` : '';
                 const codeAttr = inline_styles ? getAttr('code') : langClass;
                 /* istanbul ignore next - bd-only branch */
                 const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -227550,7 +227560,7 @@ function quikdown(markdown, options = {}) {
             }
         } else {
             // Default rendering — wrap in <pre><code>.
-            const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
+            const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(fenceLang(block.lang))}"` : '';
             const codeAttr = inline_styles ? getAttr('code') : langClass;
             /* istanbul ignore next - bd-only branch */
             const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -229681,7 +229691,10 @@ async function getRenderedContent(previewPanel, options = {}) {
         
         
         // 6. Process GeoJSON/Leaflet maps - capture as single image (compose tiles + overlays)
-        const mapContainers = clone.querySelectorAll('[data-qd-lang="geojson"]');
+        // data-qd-lang holds the whole fence info string (```geojson #map),
+        // so match on its first word.
+        const mapContainers = Array.from(clone.querySelectorAll('[data-qd-lang]'))
+            .filter(el => el.getAttribute('data-qd-lang').split(/\s/, 1)[0] === 'geojson');
         for (const container of mapContainers) {
             try {
                 const containerId = container.id;
@@ -230765,7 +230778,7 @@ function skipBlockPrefix(md, offset) {
 
 
 /** Build-time version stamp (injected by rollup replaceVersion plugin) */
-const quikdownEditorVersion = '1.3.1';
+const quikdownEditorVersion = '1.3.2';
 
 // Private-use characters that mark a selection's two ends while it is
 // carried between the rendered pane and the markdown source.
@@ -230840,7 +230853,11 @@ const DEFAULT_OPTIONS = {
      * renderers, not the size of the editor bundle itself.
      */
     preloadFences: null,
-    customFences: {}, // { 'language': (code, lang) => html }
+    customFences: {}, // { 'language': (code, lang, info) => html }
+    // Fence info strings like ```js run #id: when true, the first word picks
+    // the renderer and the rest is passed to customFences handlers as `info`.
+    // When false, the whole info string is the language (pre-1.3.2 behaviour).
+    allowFenceArguments: true,
     enableComplexFences: true, // Enable CSV tables, math rendering, SVG, etc.
     showUndoRedo: false,      // Show undo/redo toolbar buttons
     undoStackSize: 100,       // Maximum number of undo states to keep
@@ -232168,8 +232185,9 @@ let QuikdownEditor$1 = class QuikdownEditor {
         // Convert CSV tables back to CSV fence blocks (these ARE editable)
         const csvTables = panel.querySelectorAll('table.qde-csv-table[data-qd-lang]');
         csvTables.forEach(table => {
-            const lang = table.getAttribute('data-qd-lang');
-            if (!lang || !['csv', 'psv', 'tsv'].includes(lang)) return;
+            const info = table.getAttribute('data-qd-lang');
+            const lang = this._fenceLang(info);
+            if (!['csv', 'psv', 'tsv'].includes(lang)) return;
             
             const delimiter = lang === 'csv' ? ',' : lang === 'psv' ? '|' : '\t';
             
@@ -232202,7 +232220,7 @@ let QuikdownEditor$1 = class QuikdownEditor {
             // Create a pre element with the CSV data
             const pre = document.createElement('pre');
             pre.setAttribute('data-qd-fence', '```');
-            pre.setAttribute('data-qd-lang', lang);
+            pre.setAttribute('data-qd-lang', info);
             const code = document.createElement('code');
             code.textContent = csv.trim();
             pre.appendChild(code);
@@ -232213,16 +232231,50 @@ let QuikdownEditor$1 = class QuikdownEditor {
     }
     
     /**
+     * Language of a fence info string: its first word, or the whole string
+     * when allowFenceArguments is false.
+     * @private
+     */
+    _fenceLang(info) {
+        return this.options.allowFenceArguments === false ? info : info.split(/\s/, 1)[0];
+    }
+
+    /**
+     * True if customFences has its own handler function under `key`
+     * (not one inherited from Object.prototype, such as "toString").
+     * @private
+     */
+    _customFenceKey(custom, key) {
+        return !!custom && key !== '' && Object.prototype.hasOwnProperty.call(custom, key)
+            && typeof custom[key] === 'function';
+    }
+
+    /**
      * Create fence plugin for syntax highlighting
      */
     createFencePlugin() {
-        const render = (code, lang) => {
-            // Check custom fences first (they take precedence)
-            if (this.options.customFences && this.options.customFences[lang]) {
+        // `info` is the whole text after the fence marker (trimmed), e.g.
+        // "js run #summary". The renderer is chosen by `lang`, which is its
+        // first word when allowFenceArguments is on. Arguments the editor does
+        // not understand are ignored. The verbatim info string still reaches
+        // the preview: in bidirectional mode quikdown core puts it in
+        // data-qd-lang on the first tag of whatever HTML is returned here, so
+        // editing in the preview pane writes the fence line back unchanged.
+        const render = (code, info) => {
+            info = info || '';
+            const lang = this._fenceLang(info);
+
+            // Custom fences take precedence. A key equal to the whole info
+            // string wins over one equal to the first word, so hosts that
+            // registered keys with spaces before 1.3.2 keep working.
+            const custom = this.options.customFences;
+            const key = this._customFenceKey(custom, info) ? info
+                : this._customFenceKey(custom, lang) ? lang : null;
+            if (key !== null) {
                 try {
-                    return this.options.customFences[lang](code, lang);
+                    return custom[key](code, key === info ? info : lang, info);
                 } catch (err) {
-                    console.error(`Custom fence plugin error for ${lang}:`, err);
+                    console.error(`Custom fence plugin error for ${key}:`, err);
                     return `<pre><code class="language-${this.escapeHtml(lang)}">${this.escapeHtml(code)}</code></pre>`;
                 }
             }
@@ -232284,9 +232336,9 @@ let QuikdownEditor$1 = class QuikdownEditor {
             if (window.hljs && lang && hljs.getLanguage(lang)) {
                 const highlighted = hljs.highlight(code, { language: lang }).value;
                 // Don't add contenteditable="false" - the bidirectional system can extract text from the highlighted code
-                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${this.escapeHtml(lang)}"><code class="hljs language-${this.escapeHtml(lang)}">${highlighted}</code></pre>`;
+                return `<pre data-qd-fence="\`\`\`" data-qd-lang="${this.escapeHtml(info)}"><code class="hljs language-${this.escapeHtml(lang)}">${highlighted}</code></pre>`;
             }
-            
+
             // Default: let quikdown handle it
             return undefined;
         };
@@ -232410,9 +232462,9 @@ let QuikdownEditor$1 = class QuikdownEditor {
                     const clean = DOMPurify.sanitize(code);
                     element.innerHTML = clean;
                     // Update attributes after loading
+                    // data-qd-fence and data-qd-lang are already on the
+                    // placeholder; data-qd-lang holds the full info string.
                     element.setAttribute('data-qd-source', code);
-                    element.setAttribute('data-qd-fence', '```');
-                    element.setAttribute('data-qd-lang', 'html');
                 }
             }
         });

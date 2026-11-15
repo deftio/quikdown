@@ -187,6 +187,7 @@ new QuikdownEditor('#e', {
   }
 });
 ```
+Handlers are called as `(code, lang, info)`. `lang` is the first word of the fence info string and `info` the whole string (```` ```chart #q1 ```` → `"chart"`, `"chart #q1"`). Built-ins also use the first word; the arguments are ignored and kept verbatim in `data-qd-lang`. `allowFenceArguments: false` uses the whole string instead.
 
 **3. enableComplexFences** - Master toggle for all built-in fence rendering (default: true).
 
@@ -270,7 +271,8 @@ const editor = new QuikdownEditor('#container', { mode: 'split' });
 | `undoStackSize` | number | `100` | Max undo states |
 | `enableComplexFences` | boolean | `true` | Built-in fence rendering |
 | `preloadFences` | various | `null` | Preload fence libraries |
-| `customFences` | object | `{}` | Custom fence handlers |
+| `customFences` | object | `{}` | Custom fence handlers `(code, lang, info)` |
+| `allowFenceArguments` | boolean | `true` | First word of the info string picks the renderer |
 | `plugins` | object | `{}` | Legacy: `{ highlightjs, mermaid }` |
 | `lineNumbers` | boolean | `false` | Line numbers beside the source pane |
 | `shortcuts` | boolean | `true` | Keyboard shortcuts; they act only on the editor that has focus |
@@ -345,6 +347,8 @@ const ast = quikdown_ast('# Heading\n\nParagraph');
 const json = quikdown_json('# Heading');
 const yaml = quikdown_yaml('# Heading');
 ```
+
+`code_block` has `lang` (first word of the info string) and `meta` (the rest, only when present).
 
 Node types: `document`, `heading`, `paragraph`, `code_block`, `blockquote`, `list`, `list_item`, `table`, `hr`, `text`, `strong`, `em`, `del`, `code`, `link`, `image`, `br`.
 

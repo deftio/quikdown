@@ -31,7 +31,7 @@ const myPlugin = {
    - Preserves internal spacing and newlines
 
 2. **`language`** (string)
-   - Language identifier after ` ``` `
+   - The whole info string after ` ``` `, trimmed. For ```` ```js run #a ```` this is `"js run #a"`; the first word is the language. See [Fence arguments](fences.md#fence-arguments).
    - Empty string if no language specified
    - Can be any string (not limited to programming languages)
 

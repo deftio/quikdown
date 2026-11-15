@@ -67,6 +67,11 @@ const hostOpts: EditorOptions = {
     onRender: (preview: HTMLElement) => { void preview; },
     onSelectionChange: (sel) => { const bold: boolean = sel.format.bold; void bold; },
     onLinkClick: (href: string, event: MouseEvent) => { void href; void event; return true; },
+    allowFenceArguments: true,
+    customFences: {
+        js: (code: string, lang: string, info: string) => (info.includes('run') ? `<div>${lang}:${code}</div>` : undefined),
+        old: (code, lang) => `<pre>${lang}${code}</pre>`,
+    },
 };
 function useEditor(editor: QuikdownEditor): void {
     const mode: EditorMode = editor.getMode();
@@ -111,6 +116,8 @@ void [hostOpts, useEditor, formatted, maybe, fstate, mapped, commands, makeStand
 
 // AST
 const ast: ASTNode = quikdown_ast('# Heading\n\nParagraph');
+const fenceMeta: string | undefined = ast.meta;
+void fenceMeta;
 
 // JSON serialization
 const json: string = quikdown_json('# Heading');

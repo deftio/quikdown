@@ -100,7 +100,8 @@ const editor = new QuikdownEditor('#editor', {
 | `initialContent` | string | `''` | Initial markdown content |
 | `plugins` | object | `{}` | Built-in plugin configuration (legacy — prefer `preloadFences`) |
 | `preloadFences` | string \| array \| null | `null` | Preload fence libraries at construction (see below) |
-| `customFences` | object | `{}` | Custom fence plugin handlers |
+| `customFences` | object | `{}` | Custom fence handlers, `{ lang: (code, lang, info) => html }` |
+| `allowFenceArguments` | boolean | `true` | Use the first word of a fence info string (`js` in `js run #a`) to pick the renderer; `false` uses the whole string. See [Fence arguments](fences.md#fence-arguments) |
 | `showLazyLinefeeds` | boolean | `false` | Show "Fix Linefeeds" button in toolbar |
 | `showUndoRedo` | boolean | `false` | Show undo/redo buttons in toolbar |
 | `undoStackSize` | number | `100` | Maximum undo states to keep |
@@ -1007,6 +1008,8 @@ const editor = new QuikdownEditor('#editor', {
     }
 });
 ```
+
+Handlers receive `(code, lang, info)`. `lang` is the first word of the fence info string and `info` is the whole string, so ```` ```custom #a size=2 ```` calls the `custom` handler with `lang` `"custom"` and `info` `"custom #a size=2"`. A key equal to the whole info string is tried first. Return `undefined` to fall back to the built-in renderer or a plain code block. See [Fence arguments](fences.md#fence-arguments).
 
 #### MathJax Integration
 

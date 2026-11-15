@@ -8,7 +8,10 @@ interface ASTNode {
     children?: ASTNode[];
     value?: string;
     level?: number;
+    /** code_block: first word of the fence info string. */
     lang?: string;
+    /** code_block: the rest of the info string after the language, when present. */
+    meta?: string;
     content?: string;
     ordered?: boolean;
     items?: ASTNode[];
