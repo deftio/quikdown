@@ -39,6 +39,10 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         return '';
     }
     
+    // Reference-link definitions seen while walking, keyed by lowercased id.
+    // They are written back at the end of the document.
+    const refDefs = new Map();
+
     // Walk the DOM tree and reconstruct markdown
     function walkNode(node, parentContext = {}) {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -149,6 +153,14 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                 const refId = node.getAttribute('data-qd-ref');
                 if (refId !== null) {
                     const linkText = childContent.trim() || node.getAttribute('data-qd-text') || '';
+                    const defId = refId === '' ? linkText : refId;
+                    if (!refDefs.has(defId.toLowerCase())) {
+                        refDefs.set(defId.toLowerCase(), {
+                            id: defId,
+                            url: node.getAttribute('data-qd-ref-url') || href,
+                            title: node.getAttribute('title')
+                        });
+                    }
                     if (refId === '') {
                         // Collapsed reference: [text][]
                         return `[${linkText}][]`;
@@ -452,6 +464,17 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
     // Clean up
     markdown = markdown.replace(/\n{3,}/g, '\n\n'); // Remove excessive newlines
     markdown = markdown.trim();
+
+    // Write the reference-link definitions back, after the content
+    if (refDefs.size > 0) {
+        const lines = [];
+        for (const { id, url, title } of refDefs.values()) {
+            let line = `[${id}]: ${url}`;
+            if (title) line += title.includes('"') ? ` '${title}'` : ` "${title}"`;
+            lines.push(line);
+        }
+        markdown += '\n\n' + lines.join('\n');
+    }
     
     return markdown;
 };

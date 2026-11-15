@@ -108,6 +108,7 @@ const editor = new QuikdownEditor('#editor', {
 | `enableComplexFences` | boolean | `true` | Enable complex fence rendering (mermaid, math, geojson, stl, etc.) |
 | `inline_styles` | boolean | `false` | Embed styles inline instead of using class-based CSS |
 | `onModeChange` | function | `null` | Callback when mode changes |
+| `lineNumbers` | boolean | `false` | Show line numbers beside the source pane (see [`setLineNumbers()`](#setlinenumbersenabled--getlinenumbers)) |
 | `shortcuts` | boolean | `true` | Keyboard shortcuts for the editor that has focus (see [Keyboard Shortcuts](#keyboard-shortcuts)) |
 | `mount` | string | `'replace'` | `'replace'` takes over the container; `'append'` adds the editor as a child and leaves the container's other content alone |
 | `syncScroll` | boolean | `false` | Keep both panes at the same relative scroll position in split mode |
@@ -368,6 +369,19 @@ editor.setAllowUnsafeHTML('limited');
 editor.getAllowUnsafeHTML(); // 'limited'
 ```
 
+#### `setLineNumbers(enabled)` / `getLineNumbers()`
+
+Shows or hides line numbers beside the source pane. They are off by default and can also be turned on with the `lineNumbers` option. Numbers start at 1. A line that wraps keeps one number, at the top of the line.
+
+```javascript
+const editor = new QuikdownEditor('#editor', { lineNumbers: true });
+
+editor.setLineNumbers(false);
+editor.getLineNumbers(); // false
+```
+
+The rendered pane has no line numbers. `scrollToLine()` and `lineOf()` use zero-based lines, so line `n` in the gutter is `n - 1` in those calls. The gutter colours can be set with `--qde-gutter-bg`, `--qde-gutter-fg` and `--qde-gutter-border`.
+
 #### `getDebounceDelay()`
 
 Returns the current debounce delay in milliseconds.
@@ -601,7 +615,7 @@ Each built-in toolbar button and keyboard shortcut calls a public method, so a h
 | Cmd/Ctrl+B, Cmd/Ctrl+I | `format('bold')`, `format('italic')` |
 | Tab, Shift+Tab in a list item | `format('indent')`, `format('outdent')` |
 
-The theme has no toolbar button: use `setTheme()` and `getTheme()`.
+The theme and line numbers have no toolbar button: use `setTheme()` / `getTheme()` and `setLineNumbers()` / `getLineNumbers()`.
 
 ## Host API
 
@@ -779,6 +793,7 @@ The built-in stylesheet reads these custom properties, falling back to its own d
 | `--qde-padding` | Padding of both panes |
 | `--qde-font`, `--qde-preview-font-size`, `--qde-line-height`, `--qde-preview-bg`, `--qde-preview-fg` | Rendered pane |
 | `--qde-source-font`, `--qde-source-font-size`, `--qde-source-line-height`, `--qde-source-bg`, `--qde-source-fg` | Source pane |
+| `--qde-gutter-bg`, `--qde-gutter-fg`, `--qde-gutter-border` | Line-number gutter |
 | `--qde-font-size` | Both panes, when the pane-specific size is not set |
 | `--qde-code-font`, `--qde-code-bg`, `--qde-code-fg`, `--qde-inline-code-bg` | Code blocks and inline code |
 | `--qde-table-border`, `--qde-table-header-bg`, `--qde-table-stripe-bg` | Tables |

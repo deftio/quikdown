@@ -1390,6 +1390,241 @@ describe('mount', () => {
     });
 });
 
+describe('line numbers', () => {
+    const numbers = () => Array.from(ed.lineNumbersEl.querySelectorAll('.qde-ln')).map(el => el.textContent);
+    const rowText = () => Array.from(ed.lineNumbersEl.children).map(row => row.lastChild.textContent);
+    const type = (value) => {
+        ed.sourceTextarea.value = value;
+        ed.sourceTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+
+    test('off by default: no rows, no class, no gutter width', async () => {
+        await make({ mode: 'source' });
+        expect(ed.getLineNumbers()).toBe(false);
+        expect(ed.lineNumbersEl.className).toBe('qde-lines');
+        expect(ed.lineNumbersEl.getAttribute('aria-hidden')).toBe('true');
+        expect(ed.lineNumbersEl.children).toHaveLength(0);
+        expect(host.classList.contains('qde-line-numbers')).toBe(false);
+        expect(host.style.getPropertyValue('--qde-gutter-width')).toBe('');
+    });
+
+    test('lineNumbers: true numbers every line of the initial content', async () => {
+        ed = new QuikdownEditor(host, { showToolbar: false, mode: 'source', lineNumbers: true, initialContent: 'a\n\nc' });
+        await ed.initPromise;
+        expect(ed.getLineNumbers()).toBe(true);
+        expect(host.classList.contains('qde-line-numbers')).toBe(true);
+        expect(numbers()).toEqual(['1', '2', '3']);
+        // An empty line holds a zero-width space so it keeps its height
+        expect(rowText()).toEqual(['a', '​', 'c']);
+        expect(host.style.getPropertyValue('--qde-gutter-width')).toBe('4ch');
+    });
+
+    test('an empty document has one numbered line', async () => {
+        await make({ mode: 'source', lineNumbers: true }, '');
+        expect(numbers()).toEqual(['1']);
+    });
+
+    test('setLineNumbers turns the gutter on and off', async () => {
+        await make({ mode: 'source' }, 'one\ntwo');
+        ed.setLineNumbers(true);
+        expect(ed.getLineNumbers()).toBe(true);
+        expect(numbers()).toEqual(['1', '2']);
+
+        ed.setLineNumbers(false);
+        expect(ed.getLineNumbers()).toBe(false);
+        expect(ed.lineNumbersEl.children).toHaveLength(0);
+        expect(host.classList.contains('qde-line-numbers')).toBe(false);
+        expect(host.style.getPropertyValue('--qde-gutter-width')).toBe('');
+
+        // Truthy and falsy values are accepted
+        ed.setLineNumbers(1);
+        expect(ed.getLineNumbers()).toBe(true);
+        expect(numbers()).toEqual(['1', '2']);
+        ed.setLineNumbers(undefined);
+        expect(ed.getLineNumbers()).toBe(false);
+    });
+
+    test('typing updates the rows before the debounce fires', async () => {
+        await make({ mode: 'source', lineNumbers: true, debounceDelay: 500 }, 'one\ntwo');
+        type('one\ntwo\nthree');
+        expect(numbers()).toEqual(['1', '2', '3']);
+        expect(rowText()).toEqual(['one', 'two', 'three']);
+        ed.flush();
+        expect(ed.getMarkdown()).toBe('one\ntwo\nthree');
+    });
+
+    test('an edit replaces only the rows that changed', async () => {
+        await make({ mode: 'source', lineNumbers: true }, 'a\nb\nc\nd\ne');
+        const before = Array.from(ed.lineNumbersEl.children);
+
+        // Change one line in the middle
+        type('a\nb\nC!\nd\ne');
+        let after = Array.from(ed.lineNumbersEl.children);
+        expect(after[0]).toBe(before[0]);
+        expect(after[1]).toBe(before[1]);
+        expect(after[2]).not.toBe(before[2]);
+        expect(after[3]).toBe(before[3]);
+        expect(after[4]).toBe(before[4]);
+        expect(rowText()).toEqual(['a', 'b', 'C!', 'd', 'e']);
+
+        // Insert two lines: later rows are kept and renumbered
+        type('a\nb\nx\ny\nC!\nd\ne');
+        after = Array.from(ed.lineNumbersEl.children);
+        expect(after[6]).toBe(before[4]);
+        expect(numbers()).toEqual(['1', '2', '3', '4', '5', '6', '7']);
+        expect(rowText()).toEqual(['a', 'b', 'x', 'y', 'C!', 'd', 'e']);
+
+        // Delete from the middle
+        type('a\ne');
+        expect(numbers()).toEqual(['1', '2']);
+        expect(rowText()).toEqual(['a', 'e']);
+        expect(ed.lineNumbersEl.children[1]).toBe(before[4]);
+    });
+
+    test('repeated and duplicate lines stay consistent', async () => {
+        await make({ mode: 'source', lineNumbers: true }, 'x\nx\nx');
+        type('x\nx\nx\nx');
+        expect(rowText()).toEqual(['x', 'x', 'x', 'x']);
+        expect(numbers()).toEqual(['1', '2', '3', '4']);
+        type('x');
+        expect(numbers()).toEqual(['1']);
+        type('');
+        expect(numbers()).toEqual(['1']);
+        expect(rowText()).toEqual(['​']);
+    });
+
+    test('random edits always leave one correctly numbered row per line', async () => {
+        await make({ mode: 'source', lineNumbers: true }, '');
+        let seed = 7;
+        const rnd = (n) => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed % n; };
+        const words = ['', 'a', 'b', 'a', 'long line', '- item'];
+        let lines = [''];
+        for (let step = 0; step < 300; step++) {
+            const at = rnd(lines.length + 1);
+            const op = rnd(3);
+            if (op === 0) lines.splice(at, 0, words[rnd(words.length)]);
+            else if (op === 1 && lines.length > 1) lines.splice(Math.min(at, lines.length - 1), 1 + rnd(2));
+            else lines[Math.min(at, lines.length - 1)] = words[rnd(words.length)];
+            if (lines.length === 0) lines = [''];
+            type(lines.join('\n'));
+            expect(rowText()).toEqual(lines.map(l => l || '​'));
+            expect(numbers()).toEqual(lines.map((_, i) => String(i + 1)));
+        }
+    });
+
+    test('the gutter widens with the number of digits', async () => {
+        await make({ mode: 'source', lineNumbers: true }, 'x');
+        expect(host.style.getPropertyValue('--qde-gutter-width')).toBe('4ch');
+        await ed.setMarkdown(Array(100).fill('x').join('\n'));
+        expect(host.style.getPropertyValue('--qde-gutter-width')).toBe('5ch');
+        await ed.setMarkdown(Array(1000).fill('x').join('\n'));
+        expect(host.style.getPropertyValue('--qde-gutter-width')).toBe('6ch');
+        await ed.setMarkdown('x');
+        expect(host.style.getPropertyValue('--qde-gutter-width')).toBe('4ch');
+    });
+
+    test('API edits, formatting, undo and redo keep the rows current', async () => {
+        await make({ mode: 'source', lineNumbers: true }, 'one\ntwo');
+        const expected = () => ed.getMarkdown().split('\n').map(l => l || '\u200b');
+        ed.insertText('zero\n');
+        expect(rowText()).toEqual(expected());
+        ed.setSelection(0, 4);
+        ed.format('h1');
+        expect(rowText()).toEqual(expected());
+        ed.undo();
+        expect(rowText()).toEqual(expected());
+        ed.redo();
+        expect(rowText()).toEqual(expected());
+    });
+
+    test('an edit made in the rendered pane updates the rows', async () => {
+        await make({ mode: 'split', lineNumbers: true }, 'one\n\ntwo');
+        ed.previewPanel.querySelector('p').textContent = 'changed';
+        ed.updateFromHTML();
+        expect(rowText()).toEqual(ed.getMarkdown().split('\n').map(l => l || '​'));
+        expect(rowText()[0]).toBe('changed');
+    });
+
+    test('the layer follows the textarea scroll position and width', async () => {
+        await make({ mode: 'source', lineNumbers: true }, Array(50).fill('x').join('\n'));
+        ed.sourceTextarea.scrollTop = 120;
+        ed.sourceTextarea.dispatchEvent(new Event('scroll'));
+        expect(ed.lineNumbersEl.scrollTop).toBe(120);
+
+        // jsdom reports no layout width: the layer keeps its CSS width
+        expect(ed.lineNumbersEl.style.width).toBe('');
+        Object.defineProperty(ed.sourceTextarea, 'clientWidth', { configurable: true, value: 321 });
+        ed.setMode('split');
+        expect(ed.lineNumbersEl.style.width).toBe('321px');
+    });
+
+    test('a ResizeObserver, when the browser has one, re-syncs the width and is released by destroy()', async () => {
+        const observers = [];
+        global.ResizeObserver = class {
+            constructor(callback) { this.callback = callback; this.observed = []; this.disconnected = false; observers.push(this); }
+            observe(el) { this.observed.push(el); }
+            disconnect() { this.disconnected = true; }
+        };
+        try {
+            await make({ mode: 'source', lineNumbers: true }, 'x');
+            expect(observers).toHaveLength(1);
+            expect(observers[0].observed).toEqual([ed.sourceTextarea]);
+
+            Object.defineProperty(ed.sourceTextarea, 'clientWidth', { configurable: true, value: 250 });
+            observers[0].callback();
+            expect(ed.lineNumbersEl.style.width).toBe('250px');
+
+            ed.destroy();
+            expect(observers[0].disconnected).toBe(true);
+            ed = null;
+        } finally {
+            delete global.ResizeObserver;
+        }
+    });
+
+    test('line text is inserted as text, not HTML', async () => {
+        await make({ mode: 'source', lineNumbers: true }, '<img src=x onerror=alert(1)>\n<b>bold</b>');
+        expect(ed.lineNumbersEl.querySelector('img')).toBeNull();
+        expect(ed.lineNumbersEl.querySelector('b')).toBeNull();
+        expect(rowText()[0]).toBe('<img src=x onerror=alert(1)>');
+    });
+
+    test('destroy() removes the class and the gutter width from a host element', async () => {
+        await make({ mode: 'source', lineNumbers: true }, 'x');
+        ed.destroy();
+        expect(host.classList.contains('qde-line-numbers')).toBe(false);
+        expect(host.style.getPropertyValue('--qde-gutter-width')).toBe('');
+        expect(host.innerHTML).toBe('');
+        ed = null;
+    });
+
+    test('setLineNumbers before the editor has finished loading takes effect once it has', async () => {
+        ed = new QuikdownEditor(host, { showToolbar: false, mode: 'source', initialContent: 'a\nb' });
+        ed.setLineNumbers(true);
+        ed.setLineNumbers(false);
+        ed.setLineNumbers(true);
+        await ed.initPromise;
+        expect(numbers()).toEqual(['1', '2']);
+    });
+
+    test('two editors keep separate line-number state', async () => {
+        await make({ mode: 'source', lineNumbers: true }, 'a\nb\nc');
+        const otherHost = document.createElement('div');
+        document.body.appendChild(otherHost);
+        const other = new QuikdownEditor(otherHost, { showToolbar: false, mode: 'source' });
+        await other.initPromise;
+        await other.setMarkdown('x\ny');
+        expect(other.getLineNumbers()).toBe(false);
+        expect(other.lineNumbersEl.children).toHaveLength(0);
+        other.setLineNumbers(true);
+        expect(other.lineNumbersEl.children).toHaveLength(2);
+        expect(numbers()).toEqual(['1', '2', '3']);
+        other.destroy();
+        otherHost.remove();
+        expect(numbers()).toEqual(['1', '2', '3']);
+    });
+});
+
 describe('theming variables', () => {
     test('the injected stylesheet reads CSS custom properties with the old values as fallbacks', async () => {
         await make();

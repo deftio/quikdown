@@ -601,6 +601,20 @@ describe('renderGeoJSON', () => {
         expect(leaflet.L.map).not.toHaveBeenCalled();
     });
 
+    test('allowExternalFetch: false without an offline basemap draws the features and requests no tiles', async () => {
+        const leaflet = makeLeaflet();
+        window.L = leaflet.L;
+        await makeEditor({ allowExternalFetch: false });
+        await editor.setMarkdown(fence('geojson', POINTS));
+        await settle();
+
+        const container = preview('.geojson-container');
+        expect(leaflet.L.map).toHaveBeenCalled();
+        expect(leaflet.L.tileLayer).not.toHaveBeenCalled();
+        expect(container._tileLayer).toBeNull();
+        expect(leaflet.L.geoJSON).toHaveBeenCalled();
+    });
+
     test('offline with a world basemap: vector layers, no tiles, zoom-dependent styling (light)', async () => {
         const leaflet = makeLeaflet({ zoom: 3 });
         window.L = leaflet.L;

@@ -72,6 +72,8 @@ function useEditor(editor: QuikdownEditor): void {
     const mode: EditorMode = editor.getMode();
     editor.setSplitPane('preview');
     const splitPane: EditorPane = editor.getSplitPane();
+    editor.setLineNumbers(true);
+    const numbered: boolean = editor.getLineNumbers();
     const sel: EditorSelection = editor.getSelection();
     const pane: EditorPane | null = editor.getFocusedPane();
     const range: { start: number; end: number } = editor.setSelection(sel.start, sel.end, 'preview');

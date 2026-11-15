@@ -272,6 +272,7 @@ const editor = new QuikdownEditor('#container', { mode: 'split' });
 | `preloadFences` | various | `null` | Preload fence libraries |
 | `customFences` | object | `{}` | Custom fence handlers |
 | `plugins` | object | `{}` | Legacy: `{ highlightjs, mermaid }` |
+| `lineNumbers` | boolean | `false` | Line numbers beside the source pane |
 | `shortcuts` | boolean | `true` | Keyboard shortcuts; they act only on the editor that has focus |
 | `mount` | string | `'replace'` | `'replace'` takes over the container, `'append'` adds the editor as a child |
 | `syncScroll` | boolean | `false` | Keep both panes at the same relative scroll position in split mode |
@@ -288,7 +289,7 @@ const editor = new QuikdownEditor('#container', { mode: 'split' });
 
 **Content:** `getMarkdown()`, `setMarkdown(md, { history?: 'keep'|'reset'|'push', source? })`, `getHTML()`, `flush()`, `.markdown` (getter/setter), `.html` (getter)
 
-**View:** `setMode(mode)`, `getMode()`, `.mode` (getter), `setSplitPane(pane)`, `getSplitPane()`, `setTheme(theme)`, `getTheme()`, `setLazyLinefeeds(bool)`, `getLazyLinefeeds()`, `setDebounceDelay(ms)`, `getDebounceDelay()`, `setAllowUnsafeHTML(mode)`, `getAllowUnsafeHTML()`, `cycleAllowUnsafeHTML()`
+**View:** `setMode(mode)`, `getMode()`, `.mode` (getter), `setSplitPane(pane)`, `getSplitPane()`, `setLineNumbers(bool)`, `getLineNumbers()`, `setTheme(theme)`, `getTheme()`, `setLazyLinefeeds(bool)`, `getLazyLinefeeds()`, `setDebounceDelay(ms)`, `getDebounceDelay()`, `setAllowUnsafeHTML(mode)`, `getAllowUnsafeHTML()`, `cycleAllowUnsafeHTML()`
 
 **Undo/Redo:** `undo()`, `redo()`, `canUndo()`, `canRedo()`, `clearHistory()`, `getHistory()`, `setHistory(state)`
 

@@ -135,6 +135,8 @@ interface EditorOptions {
      * italic), Tab / Shift+Tab in a list item. Default: true.
      */
     shortcuts?: boolean;
+    /** Show line numbers beside the source pane (default: false). */
+    lineNumbers?: boolean;
     /**
      * 'replace' (default) takes over the container. 'append' adds the
      * editor as a child and leaves the container's other content alone.
@@ -223,6 +225,10 @@ declare class QuikdownEditor {
     setSplitPane(pane: EditorPane): void;
     /** The pane split mode shows on a narrow editor. */
     getSplitPane(): EditorPane;
+    /** Show or hide line numbers beside the source pane. */
+    setLineNumbers(enabled: boolean): void;
+    /** Whether line numbers are shown. */
+    getLineNumbers(): boolean;
     /** Set the color theme. */
     setTheme(theme: 'light' | 'dark' | 'auto'): void;
     /** Get the configured theme. */

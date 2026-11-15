@@ -1,6 +1,6 @@
 /**
  * Quikdown Editor - Drop-in Markdown Parser
- * @version 1.3.0
+ * @version 1.3.1
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -199,7 +199,7 @@ function looksLikeTableRow(line) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.3.0';
+const quikdownVersion = '1.3.1';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -1001,7 +1001,13 @@ function quikdown(markdown, options = {}) {
             const titleAttr = def.title ? ` title="${escapeHtml(def.title)}"` : '';
             /* istanbul ignore next - bd-only branch */
             const refAttr = bidirectional ? ` data-qd-ref="${escapeHtml(id)}"` : '';
-            return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${titleAttr}${refAttr}${dataQd('[ref')}>${displayText}</a>`;
+            // When sanitizing changed the URL, keep the original for the
+            // round trip back to markdown.
+            /* istanbul ignore next - bd-only branch */
+            const refUrlAttr = bidirectional && sanitizedHref !== def.url ? ` data-qd-ref-url="${escapeHtml(def.url)}"` : '';
+            // Definitions are collected before HTML escaping, so the URL is
+            // escaped here: a quote in it must not end the href attribute.
+            return `<a${getAttr('a')} href="${escapeHtml(sanitizedHref)}"${rel}${titleAttr}${refAttr}${refUrlAttr}${dataQd('[ref')}>${displayText}</a>`;
         }
 
         // Full reference: [text][id]  and collapsed: [text][]
@@ -1018,6 +1024,10 @@ function quikdown(markdown, options = {}) {
     }
 
     if (footnotes && fnDefs.size > 0) {
+        // A footnote can be referenced more than once. The first reference
+        // keeps the id fnref-<id> (the back-link target); later ones get
+        // fnref-<id>-2, fnref-<id>-3, so ids stay unique.
+        const fnUses = new Map();
         // Footnote markers: [^id]
         html = html.replace(/\[\^([^\]]+)\]/g, (match, id) => {
             if (!fnDefs.has(id)) return match; // unresolved — leave as text
@@ -1031,7 +1041,10 @@ function quikdown(markdown, options = {}) {
             }
             /* istanbul ignore next - bd-only branch */
             const fnAttr = bidirectional ? ` data-qd-fn="${escapeHtml(id)}"` : '';
-            return `<sup${getAttr('sup')}${fnAttr}${dataQd('[^')}><a href="#fn-${escapeHtml(id)}" id="fnref-${escapeHtml(id)}">${fnNum}</a></sup>`;
+            const uses = (fnUses.get(id) || 0) + 1;
+            fnUses.set(id, uses);
+            const refSuffix = uses === 1 ? '' : `-${uses}`;
+            return `<sup${getAttr('sup')}${fnAttr}${dataQd('[^')}><a href="#fn-${escapeHtml(id)}" id="fnref-${escapeHtml(id)}${refSuffix}">${fnNum}</a></sup>`;
         });
     }
 
@@ -1732,6 +1745,10 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
         return '';
     }
     
+    // Reference-link definitions seen while walking, keyed by lowercased id.
+    // They are written back at the end of the document.
+    const refDefs = new Map();
+
     // Walk the DOM tree and reconstruct markdown
     function walkNode(node, parentContext = {}) {
         if (node.nodeType === Node.TEXT_NODE) {
@@ -1842,6 +1859,14 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                 const refId = node.getAttribute('data-qd-ref');
                 if (refId !== null) {
                     const linkText = childContent.trim() || node.getAttribute('data-qd-text') || '';
+                    const defId = refId === '' ? linkText : refId;
+                    if (!refDefs.has(defId.toLowerCase())) {
+                        refDefs.set(defId.toLowerCase(), {
+                            id: defId,
+                            url: node.getAttribute('data-qd-ref-url') || href,
+                            title: node.getAttribute('title')
+                        });
+                    }
                     if (refId === '') {
                         // Collapsed reference: [text][]
                         return `[${linkText}][]`;
@@ -2145,6 +2170,17 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
     // Clean up
     markdown = markdown.replace(/\n{3,}/g, '\n\n'); // Remove excessive newlines
     markdown = markdown.trim();
+
+    // Write the reference-link definitions back, after the content
+    if (refDefs.size > 0) {
+        const lines = [];
+        for (const { id, url, title } of refDefs.values()) {
+            let line = `[${id}]: ${url}`;
+            if (title) line += title.includes('"') ? ` '${title}'` : ` "${title}"`;
+            lines.push(line);
+        }
+        markdown += '\n\n' + lines.join('\n');
+    }
     
     return markdown;
 };
@@ -4379,7 +4415,7 @@ function skipBlockPrefix(md, offset) {
 
 
 /** Build-time version stamp (injected by rollup replaceVersion plugin) */
-const quikdownEditorVersion = '1.3.0';
+const quikdownEditorVersion = '1.3.1';
 
 // Private-use characters that mark a selection's two ends while it is
 // carried between the rendered pane and the markdown source.
@@ -4463,6 +4499,7 @@ const DEFAULT_OPTIONS = {
     allowExternalFetch: true, // Allow fence renderers to fetch external resources (CDN, tiles, etc.)
     reference_links: false,   // Enable reference-style links [text][id]
     footnotes: false,         // Enable footnotes [^id]
+    lineNumbers: false,       // Show line numbers beside the source pane
     shortcuts: true,          // Keyboard shortcuts (mode, undo/redo, bold, italic, list indent)
     mount: 'replace',         // 'replace' — take over the container; 'append' — add the editor as a child
     syncScroll: false,        // Keep the two panes at the same relative scroll position in split mode
@@ -4610,6 +4647,7 @@ class QuikdownEditor {
         this._savedRange = null;     // last selection range seen inside the preview
         this._previewFresh = false;  // preview DOM is an untouched render of _markdown
         this._blocks = null;         // cached preview block → source line map
+        this._lineCache = [];        // source lines currently shown in the line-number layer
         this._lastSelKey = '';
         this._scrollLock = null;
 
@@ -4647,6 +4685,8 @@ class QuikdownEditor {
         
         // Set initial mode
         this.setMode(this.currentMode);
+
+        if (this.options.lineNumbers) this.setLineNumbers(true);
         
         // Set initial content if provided
         if (this.options.initialContent) {
@@ -4705,6 +4745,14 @@ class QuikdownEditor {
         this.sourceTextarea.spellcheck = false;
         this.sourceTextarea.placeholder = this.options.placeholder;
         this.sourcePanel.appendChild(this.sourceTextarea);
+
+        // Line-number layer. It lies over the textarea, ignores the pointer,
+        // and holds an invisible copy of each line so that a number sits at
+        // the top of its line however the line wraps.
+        this.lineNumbersEl = document.createElement('div');
+        this.lineNumbersEl.className = 'qde-lines';
+        this.lineNumbersEl.setAttribute('aria-hidden', 'true');
+        this.sourcePanel.appendChild(this.lineNumbersEl);
         
         // Create preview panel
         this.previewPanel = document.createElement('div');
@@ -5219,9 +5267,61 @@ class QuikdownEditor {
                 background: var(--qde-btn-hover-bg, #4a4a4a);
             }
             
+            /* Line numbers: a layer over the textarea with the same font,
+               padding and wrapping, so each row is as tall as its line. */
+            .qde-lines {
+                display: none;
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                margin: 0;
+                overflow: hidden;
+                pointer-events: none;
+                user-select: none;
+                -webkit-user-select: none;
+                padding: var(--qde-padding, 16px);
+                box-sizing: border-box;
+                font-family: var(--qde-source-font, 'Monaco', 'Courier New', monospace);
+                font-size: var(--qde-source-font-size, var(--qde-font-size, 14px));
+                line-height: var(--qde-source-line-height, 1.5);
+                white-space: pre-wrap;
+                overflow-wrap: break-word;
+                word-wrap: break-word;
+                color: transparent;
+                background: linear-gradient(to right,
+                    var(--qde-gutter-bg, #f7f7f7) var(--qde-gutter-width, 4ch),
+                    var(--qde-gutter-border, #ddd) var(--qde-gutter-width, 4ch),
+                    var(--qde-gutter-border, #ddd) calc(var(--qde-gutter-width, 4ch) + 1px),
+                    transparent calc(var(--qde-gutter-width, 4ch) + 1px));
+            }
+            .qde-line-numbers .qde-lines { display: block; }
+            .qde-line-numbers .qde-textarea,
+            .qde-line-numbers .qde-lines {
+                padding-left: calc(var(--qde-gutter-width, 4ch) + 8px);
+            }
+            .qde-line { position: relative; }
+            .qde-ln {
+                position: absolute;
+                right: 100%;
+                margin-right: calc(8px + 1ch);
+                white-space: nowrap;
+                color: var(--qde-gutter-fg, #999);
+            }
+
             .qde-dark .qde-source {
                 border-color: var(--qde-border, #444);
             }
+
+            .qde-dark .qde-lines {
+                background: linear-gradient(to right,
+                    var(--qde-gutter-bg, #252525) var(--qde-gutter-width, 4ch),
+                    var(--qde-gutter-border, #444) var(--qde-gutter-width, 4ch),
+                    var(--qde-gutter-border, #444) calc(var(--qde-gutter-width, 4ch) + 1px),
+                    transparent calc(var(--qde-gutter-width, 4ch) + 1px));
+            }
+            .qde-dark .qde-ln { color: var(--qde-gutter-fg, #777); }
             
             .qde-dark .qde-textarea {
                 background: var(--qde-source-bg, var(--qde-bg, #1e1e1e));
@@ -5277,7 +5377,7 @@ class QuikdownEditor {
                 .qde-source, .qde-preview {
                     padding: 10px;
                 }
-                .qde-textarea {
+                .qde-textarea, .qde-lines {
                     padding: 10px;
                 }
                 /* Undo/Redo: show circular arrows instead of text */
@@ -5312,8 +5412,18 @@ class QuikdownEditor {
     attachEvents() {
         // Source textarea input
         this._on(this.sourceTextarea, 'input', () => {
+            this._syncLineNumbers();
             this.handleSourceInput();
         });
+
+        // Line numbers follow the textarea's scroll position and width
+        this._on(this.sourceTextarea, 'scroll', () => {
+            this.lineNumbersEl.scrollTop = this.sourceTextarea.scrollTop;
+        });
+        if (typeof ResizeObserver !== 'undefined') {
+            this._resizeObserver = new ResizeObserver(() => this._syncLineNumbers());
+            this._resizeObserver.observe(this.sourceTextarea);
+        }
 
         // Preview contenteditable input
         this._on(this.previewPanel, 'input', () => {
@@ -5609,6 +5719,7 @@ class QuikdownEditor {
      */
     _emitChange(source) {
         this._lastSelKey = '';
+        this._syncLineNumbers();
         if (this.options.onChange) {
             this.options.onChange(this._markdown, this._html, { source });
         }
@@ -6270,8 +6381,10 @@ class QuikdownEditor {
                     };
                     map.on('zoomend', syncBasemapForZoom);
                     syncBasemapForZoom();
-                } else {
-                    // Standard OSM tiles
+                } else if (this.options.allowExternalFetch) {
+                    // Standard OSM tiles. With allowExternalFetch off and no
+                    // offline basemap, the features are drawn with no
+                    // background and no tile requests are made.
                     tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         attribution: '',
                         crossOrigin: 'anonymous' // Important for canvas capture
@@ -6900,6 +7013,76 @@ class QuikdownEditor {
     }
     
     /**
+     * Show or hide line numbers beside the source pane.
+     * @param {boolean} enabled
+     */
+    setLineNumbers(enabled) {
+        this.options.lineNumbers = !!enabled;
+        this.container.classList.toggle('qde-line-numbers', this.options.lineNumbers);
+        if (this.options.lineNumbers) {
+            this._syncLineNumbers();
+        } else {
+            if (this.lineNumbersEl) this.lineNumbersEl.textContent = '';
+            this._lineCache = [];
+            this.container.style.removeProperty('--qde-gutter-width');
+        }
+    }
+
+    /**
+     * Whether line numbers are shown.
+     * @returns {boolean}
+     */
+    getLineNumbers() {
+        return !!this.options.lineNumbers;
+    }
+
+    // Bring the line-number layer in line with the textarea: one row per
+    // line of text, the same width, the same scroll position. Only the rows
+    // that changed since the last call are touched.
+    _syncLineNumbers() {
+        if (!this.options.lineNumbers || !this.lineNumbersEl) return;
+        const layer = this.lineNumbersEl;
+        const lines = this.sourceTextarea.value.split('\n');
+        const old = this._lineCache;
+
+        // Lines unchanged at the start and at the end keep their rows
+        const max = Math.min(old.length, lines.length);
+        let head = 0;
+        while (head < max && old[head] === lines[head]) head++;
+        let tail = 0;
+        while (tail < max - head && old[old.length - 1 - tail] === lines[lines.length - 1 - tail]) tail++;
+
+        for (let i = old.length - tail - head; i > 0; i--) layer.children[head].remove();
+        const before = layer.children[head] || null;
+        for (let i = head; i < lines.length - tail; i++) {
+            const row = document.createElement('div');
+            row.className = 'qde-line';
+            const number = document.createElement('span');
+            number.className = 'qde-ln';
+            number.textContent = String(i + 1);
+            row.appendChild(number);
+            // An empty line still needs content to be one line tall
+            row.appendChild(document.createTextNode(lines[i] || '\u200b'));
+            layer.insertBefore(row, before);
+        }
+        if (old.length !== lines.length) {
+            // Rows after the change moved up or down: renumber them
+            for (let i = lines.length - tail; i < lines.length; i++) {
+                layer.children[i].firstChild.textContent = String(i + 1);
+            }
+            // Room for the widest number, and at least two digits
+            const digits = Math.max(2, String(lines.length).length);
+            this.container.style.setProperty('--qde-gutter-width', `${digits + 2}ch`);
+        }
+        this._lineCache = lines;
+
+        // Match the textarea's inner width, which excludes its scrollbar
+        const width = this.sourceTextarea.clientWidth;
+        if (width) layer.style.width = `${width}px`;
+        layer.scrollTop = this.sourceTextarea.scrollTop;
+    }
+
+    /**
      * Get lazy linefeeds option
      * @returns {boolean}
      */
@@ -6959,6 +7142,9 @@ class QuikdownEditor {
         if (mode !== 'source' && previousMode === 'source' && this._html) {
             this._renderPreview();
         }
+
+        // The source pane may have just become visible or changed width
+        this._syncLineNumbers();
 
         // Trigger mode change event
         if (this.options.onModeChange) {
@@ -8057,6 +8243,10 @@ class QuikdownEditor {
         // Listeners (document, media queries, own elements)
         this._listeners.forEach(([target, type, handler]) => target.removeEventListener(type, handler));
         this._listeners = [];
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect();
+            this._resizeObserver = null;
+        }
         if (this._autoThemeListener) {
             window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', this._autoThemeListener);
             this._autoThemeListener = null;
@@ -8078,8 +8268,9 @@ class QuikdownEditor {
             this.container.remove();
         } else {
             this.container.innerHTML = '';
+            this.container.style.removeProperty('--qde-gutter-width');
             this.container.classList.remove(
-                'qde-container', 'qde-dark', 'qde-split-preview',
+                'qde-container', 'qde-dark', 'qde-split-preview', 'qde-line-numbers',
                 'qde-mode-source', 'qde-mode-split', 'qde-mode-preview'
             );
         }
