@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.3.2 (unreleased)
+## v1.3.2
 
 ### Fence arguments ([#49](https://github.com/deftio/quikdown/issues/49))
 The first word of a fence info string is now the language everywhere, as in CommonMark. The rest of the string is kept and passed to handlers; quikdown does not interpret it. See [Fence arguments](fences.md#fence-arguments).
