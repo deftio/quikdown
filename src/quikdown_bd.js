@@ -148,7 +148,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                 // Reference link
                 const refId = node.getAttribute('data-qd-ref');
                 if (refId !== null) {
-                    const linkText = node.getAttribute('data-qd-text') || childContent.trim();
+                    const linkText = childContent.trim() || node.getAttribute('data-qd-text') || '';
                     if (refId === '') {
                         // Collapsed reference: [text][]
                         return `[${linkText}][]`;
@@ -160,7 +160,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                     // Full reference: [text][id]
                     return `[${linkText}][${refId}]`;
                 }
-                const linkText = node.getAttribute('data-qd-text') || childContent.trim();
+                const linkText = childContent.trim() || node.getAttribute('data-qd-text') || '';
                 // Check for autolinks
                 if (linkText === href && !dataQd) {
                     return `<${href}>`;

@@ -36,5 +36,12 @@ module.exports = defineConfig({
       },
       grep: /Mobile/,
     },
+    // WebKit (Safari's engine) runs the tests tagged @webkit. Opt-in, because
+    // it needs `npx playwright install webkit`:  QD_WEBKIT=1 npm run test:e2e
+    ...(process.env.QD_WEBKIT === '1' ? [{
+      name: 'webkit',
+      use: { browserName: 'webkit' },
+      grep: /@webkit/,
+    }] : []),
   ],
 });

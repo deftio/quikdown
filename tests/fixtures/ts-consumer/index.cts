@@ -26,6 +26,13 @@ const md: string = quikdown_bd.toMarkdown('<h1>Hello</h1>');
 
 const editorOpts: QuikdownEditor.EditorOptions = { mode: 'split' };
 const EditorCtor: typeof QuikdownEditor = QuikdownEditor;
+const fmtState: QuikdownEditor.FormatState = QuikdownEditor.getFormatState('**x**', 2, 3);
+const fmtResult: QuikdownEditor.FormatResult = QuikdownEditor.formatMarkdown('x', 0, 1, 'bold');
+const hostOptions: QuikdownEditor.EditorOptions = {
+    mount: 'append',
+    onChange: (markdown: string, html: string, meta: QuikdownEditor.ChangeMeta) => { void [markdown, html, meta.source]; },
+};
+void [fmtState, fmtResult, hostOptions];
 
 const ast: quikdown_ast.ASTDocument = quikdown_ast('# Heading');
 const json: string = quikdown_json('# Heading');

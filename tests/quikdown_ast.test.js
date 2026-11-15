@@ -363,4 +363,123 @@ const x = 1;
             expect(types).toContain('table');
         });
     });
+    describe('Inline scanner', () => {
+        const inline = (md) => quikdown_ast(md).children[0].children;
+
+        test('hard break on a later line of a paragraph (two trailing spaces)', () => {
+            expect(inline('ab\ncd  \nef')).toEqual([
+                { type: 'text', value: 'ab\ncd' },
+                { type: 'br' },
+                { type: 'text', value: 'ef' }
+            ]);
+        });
+
+        test('hard break on a later line of a paragraph (backslash)', () => {
+            expect(inline('ab\ncd\\\nef')).toEqual([
+                { type: 'text', value: 'ab\ncd' },
+                { type: 'br' },
+                { type: 'text', value: 'ef' }
+            ]);
+        });
+
+        test('hard break after inline formatting on an earlier line', () => {
+            expect(inline('x *a*\ncd  \nef')).toEqual([
+                { type: 'text', value: 'x ' },
+                { type: 'em', children: [{ type: 'text', value: 'a' }] },
+                { type: 'text', value: '\ncd' },
+                { type: 'br' },
+                { type: 'text', value: 'ef' }
+            ]);
+        });
+
+        test('several hard breaks in one paragraph', () => {
+            const types = inline('a  \nb  \nc\nd  \ne').map(n => n.type);
+            expect(types).toEqual(['text', 'br', 'text', 'br', 'text', 'br', 'text']);
+        });
+
+        test('soft line breaks stay in the text', () => {
+            expect(inline('ab\ncd\nef')).toEqual([{ type: 'text', value: 'ab\ncd\nef' }]);
+        });
+
+        test('a link label can span a soft line break', () => {
+            expect(inline('[a\nb](u) c')).toEqual([
+                { type: 'link', url: 'u', children: [{ type: 'text', value: 'a b' }] },
+                { type: 'text', value: ' c' }
+            ]);
+        });
+
+        test('brackets without a destination stay text', () => {
+            expect(inline('[a] [b]c [d')).toEqual([{ type: 'text', value: '[a] [b]c [d' }]);
+            expect(inline('[](u) ![](v)')).toEqual([
+                { type: 'text', value: '[](u) ' },
+                { type: 'image', alt: '', url: 'v' }
+            ]);
+            expect(inline('[a](b')).toEqual([{ type: 'text', value: '[a](b' }]);
+        });
+
+        test('several bracket openers before one link', () => {
+            expect(inline('[[x](u)')).toEqual([
+                { type: 'link', url: 'u', children: [{ type: 'text', value: '[x' }] }
+            ]);
+            expect(inline('![a [b](u)')).toEqual([
+                { type: 'image', alt: 'a [b', url: 'u' }
+            ]);
+        });
+
+        test('underscore emphasis needs a closing underscore on the same line', () => {
+            expect(inline('_a _b _c')).toEqual([{ type: 'text', value: '_a _b _c' }]);
+            expect(inline('_a\nb_')).toEqual([{ type: 'text', value: '_a\nb_' }]);
+            expect(inline('_a_ and _b_')).toEqual([
+                { type: 'em', children: [{ type: 'text', value: 'a' }] },
+                { type: 'text', value: ' and ' },
+                { type: 'em', children: [{ type: 'text', value: 'b' }] }
+            ]);
+            expect(inline('_a _b c_')).toEqual([
+                { type: 'em', children: [{ type: 'text', value: 'a _b c' }] }
+            ]);
+            expect(inline('_a b_c d_')).toEqual([
+                { type: 'em', children: [{ type: 'text', value: 'a b_c d' }] }
+            ]);
+            expect(inline('_a_\n_b_')).toEqual([
+                { type: 'em', children: [{ type: 'text', value: 'a' }] },
+                { type: 'text', value: '\n' },
+                { type: 'em', children: [{ type: 'text', value: 'b' }] }
+            ]);
+        });
+
+        test('a line with a pipe followed by a whitespace-only line is a paragraph', () => {
+            // Used to loop forever: the next line looked like a table separator
+            // to the paragraph scanner but not to the table parser.
+            expect(quikdown_ast('a|b\n ').children).toEqual([
+                { type: 'paragraph', children: [{ type: 'text', value: 'a|b' }] }
+            ]);
+            expect(quikdown_ast('x\na|b\n | \ny').children).toEqual([
+                { type: 'paragraph', children: [{ type: 'text', value: 'x\na|b\n | \ny' }] }
+            ]);
+            expect(quikdown_ast('a|b\n-|-\n1|2').children[0].type).toBe('table');
+        });
+
+        test('time grows linearly with input size', () => {
+            const cases = [
+                n => '_a '.repeat(n),
+                n => '[a '.repeat(n) + ']',
+                n => '[a]('.repeat(n),
+                n => '['.repeat(n) + 'x](' + 'a'.repeat(n) + '(',
+                n => '![a '.repeat(n) + ']',
+                n => '*a* '.repeat(n) + '\nx',
+                n => 'n '.repeat(n) + '\nx',
+                n => '*a** '.repeat(n),
+                n => '**a '.repeat(n),
+                n => '~~a '.repeat(n),
+                n => '`a '.repeat(n),
+                n => '_a *b [c `d ~~e **f __g '.repeat(n),
+                n => 'http://a.b/c_d '.repeat(n),
+            ];
+            // 20,000 repeats took 1 to 16 seconds per case with the old
+            // quadratic scanner; all of them together now take well under one.
+            const start = Date.now();
+            for (const make of cases) quikdown_ast(make(20000));
+            expect(Date.now() - start).toBeLessThan(5000);
+        });
+    });
 });

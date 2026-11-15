@@ -11,7 +11,7 @@ Complete documentation for the quikdown markdown parser, editor, and companion l
 | **[LLM integration](llm-integration.md)** | Streaming, agent tools, quikchat — agent UI patterns |
 | **[Editor](quikdown-editor.md)** | QuikdownEditor API, headless mode, fences, themes |
 | **[Fence authoring](fences.md)** | ABC, Vega-Lite, Mermaid, math, GeoJSON, and all built-in fences |
-| **[Standalone editor](standalone-editor.md)** | Offline / air-gapped bundle (~7.7 MB / ~1.0 MB gzipped) |
+| **[Standalone editor](standalone-editor.md)** | Offline / air-gapped bundle (~7.6 MB / ~2.1 MB gzipped) |
 
 ## Core reference
 
@@ -60,8 +60,8 @@ Run locally: `npm run serve` → http://localhost:6811
 quikdown is a lightweight, secure markdown toolkit for chat, LLM output, and embeddable editing:
 
 - **Security** — HTML escaped by default; URL sanitization
-- **Size** — ~14.9 KB parser, ~98 KB editor (fences lazy-loaded)
-- **Offline** — Standalone editor bundles fence libs (~7.7 MB / ~1.0 MB gzipped)
+- **Size** — ~18 KB parser, ~128 KB editor (fences lazy-loaded)
+- **Offline** — Standalone editor bundles fence libs (~7.6 MB / ~2.1 MB gzipped)
 - **Bidirectional** — Optional HTML ↔ Markdown round-trip
 - **Zero deps (core)** — Parser and BD modules have no runtime dependencies
 

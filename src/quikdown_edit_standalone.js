@@ -118,7 +118,7 @@ import { loadOfflineBasemap } from './basemap_loader.js';
 /** Bundle directory URL — basemap *.topojson live alongside standalone JS. */
 const BASEMAP_BASE = new URL('./', import.meta.url).href;
 
-window._qde_ensureBasemap = () => loadOfflineBasemap(BASEMAP_BASE);
+window._qde_ensureBasemap = (base) => loadOfflineBasemap(base || BASEMAP_BASE);
 
 // MathJax — tex-svg math rendering (side-effect import, configures window.MathJax)
 import './mathjax_bundle.js';
@@ -136,7 +136,7 @@ class QuikdownEditor extends _QuikdownEditor {
         super(container, { allowExternalFetch: false, ...options });
         // Preload basemap sibling asset (non-blocking)
         if (typeof window !== 'undefined' && window._qde_ensureBasemap) {
-            window._qde_ensureBasemap().catch(() => {});
+            window._qde_ensureBasemap(this.options.assetBase).catch(() => {});
         }
     }
 }

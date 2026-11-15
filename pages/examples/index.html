@@ -140,7 +140,7 @@
     <a class="qd-nav-brand" href="../../pages/" aria-label="quikdown home">
       <img class="qd-nav-brand-icon" src="../../pages/assets/logo-nav.svg" alt="" aria-hidden="true">
       <span class="qd-nav-brand-text">quikdown</span>
-      <span class="qd-nav-brand-version">v1.2.23</span>
+      <span class="qd-nav-brand-version">v1.3.0</span>
     </a>
     <button class="qd-nav-toggle" id="qd-nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false">
       <span class="qd-nav-toggle-bar"></span>
@@ -184,7 +184,7 @@
           <div class="ex-track-header">
             <span class="ex-track-num">1</span>
             <h2>Parser — quikdown core</h2>
-            <span class="ex-track-sub">17.6 KB · zero deps · XSS-safe</span>
+            <span class="ex-track-sub">17.7 KB · zero deps · XSS-safe</span>
           </div>
           <p class="ex-track-intro">
             Start here if you only need to <strong>render markdown to HTML</strong> — chat messages, blog posts, README previews, LLM output. The parser is the smallest layer of the stack: a single function that takes a markdown string and returns safe HTML. These four examples walk you from a five-line "hello world" to a custom fence plugin and runtime themes.
@@ -275,7 +275,7 @@
           <div class="ex-track-header">
             <span class="ex-track-num">3</span>
             <h2>Editor — quikdown_edit</h2>
-            <span class="ex-track-sub">103.6 KB · drop-in or headless</span>
+            <span class="ex-track-sub">127.5 KB · drop-in or headless</span>
           </div>
           <p class="ex-track-intro">
             The full markdown editor as a drop-in component. Live preview, contenteditable bidirectional editing, fence plugins for code, SVG, Mermaid, MathJax, CSV/TSV/PSV, GeoJSON, and STL. Toolbar, themes, undo/redo, keyboard shortcuts. Or run it <strong>headless</strong> with <code>showToolbar: false</code> and wire your own UI to the public API. The API playground example proves every public method is callable from code — the toolbar is just sugar.
@@ -292,8 +292,8 @@
             </a>
             <a class="ex-card" href="../../pages/examples/demo-headless.html">
               <span class="ex-card-num">Example 9</span>
-              <h3>Headless mode <span style="font-size:0.75rem; background: #9550bb; color: white; padding: 0.1em 0.5em; border-radius: 100px;">★ killer</span></h3>
-              <p><code>showToolbar: false</code>. Custom UI wired to public API methods. The way to integrate the editor into your app shell.</p>
+              <h3>Headless mode</h3>
+              <p><code>showToolbar: false</code>. Custom UI wired to public API methods. Shows how to integrate the editor into your app shell.</p>
               <div class="ex-card-meta">
                 <span class="ex-card-tag">~120 lines</span>
                 <span class="ex-card-tag">advanced</span>
@@ -302,7 +302,7 @@
             <a class="ex-card" href="../../pages/examples/editor-api-playground.html">
               <span class="ex-card-num">Example 10</span>
               <h3>API playground <span style="font-size:0.75rem; background: #9550bb; color: white; padding: 0.1em 0.5em; border-radius: 100px;">★ showcase</span></h3>
-              <p>Every public API method as a button with live console log. Proves the editor is fully drivable from code.</p>
+              <p>Public API methods as buttons with a live console log, driving the editor from code.</p>
               <div class="ex-card-meta">
                 <span class="ex-card-tag">~200 lines</span>
                 <span class="ex-card-tag">advanced</span>
@@ -394,7 +394,7 @@
             <a class="ex-card" href="../../pages/examples/integration-llm-stream.html">
               <span class="ex-card-num">Example 16</span>
               <h3>Streaming LLM output (parser-only)</h3>
-              <p>Render markdown chunks as they arrive from an LLM into a div via <code>quikdown(buffer)</code>. Re-parse on every chunk — fast enough you can't see it. Live simulated stream.</p>
+              <p>Render markdown chunks as they arrive from an LLM into a div via <code>quikdown(buffer)</code>. Re-parses on every chunk. Live simulated stream.</p>
               <div class="ex-card-meta">
                 <span class="ex-card-tag">interactive</span>
               </div>
@@ -426,7 +426,7 @@
             <span class="ex-track-sub">zero network dependencies</span>
           </div>
           <p class="ex-track-intro">
-            A single-file editor bundle (~7.7 MB minified, ~1.0 MB gzipped) with <strong>all fence renderers built in</strong>: highlight.js, Mermaid diagrams, DOMPurify HTML sanitization, Leaflet GeoJSON maps, Three.js STL 3D rendering, ABCJS music notation, Vega/Vega-Lite charts, and MathJax equations. No CDN requests, no lazy loading — works fully offline and in air-gapped environments.
+            A single-file editor bundle (~7.6 MB minified, ~2.1 MB gzipped) with <strong>all fence renderers built in</strong>: highlight.js, Mermaid diagrams, DOMPurify HTML sanitization, Leaflet GeoJSON maps, Three.js STL 3D rendering, ABCJS music notation, Vega/Vega-Lite charts, and MathJax equations. No CDN requests, no lazy loading — works fully offline and in air-gapped environments.
           </p>
           <div class="ex-list">
             <a class="ex-card" href="../../pages/examples/test-standalone.html">
@@ -463,7 +463,7 @@
           <span>quikdown</span>
         </a>
         <p style="margin-top: 0.6rem; max-width: 36ch; color: #4b5563;">
-          Tiny, secure markdown for browsers and Node — with a drop-in editor that handles everything from Mermaid to MathJax to GeoJSON.
+          Small markdown parser with XSS protection for browsers and Node, with a drop-in editor that renders Mermaid, MathJax, GeoJSON and other fences.
         </p>
       </div>
       <div class="qd-footer-col">
@@ -495,7 +495,7 @@
       </div>
     </div>
     <div class="qd-footer-bottom">
-      <div>quikdown v1.2.23 — © deftio · BSD-2 licensed</div>
+      <div>quikdown v1.3.0 — © deftio · BSD-2 licensed</div>
       <div>Built with HTML, CSS, and JavaScript. Zero runtime dependencies.</div>
     </div>
   </div>

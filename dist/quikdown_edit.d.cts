@@ -3,9 +3,92 @@
  * QuikdownEditor — A drop-in markdown editor control.
  */
 
+/** Editor view mode. */
+type EditorMode = 'source' | 'preview' | 'split';
+
+/** One of the editor's two panes. */
+type EditorPane = 'source' | 'preview';
+
+/** HTML passthrough setting. */
+type HtmlMode = false | 'limited' | true;
+
+/** A selection as character offsets into the markdown. A caret has start === end. */
+interface EditorSelection {
+    start: number;
+    end: number;
+    /** The selected markdown text. */
+    text: string;
+    /** The pane the selection was read from. */
+    pane: EditorPane;
+}
+
+/** Formatting at the caret or selection. */
+interface FormatState {
+    bold: boolean;
+    italic: boolean;
+    strike: boolean;
+    code: boolean;
+    link: boolean;
+    /** Heading level 1–6, or 0 when the line is not a heading. */
+    heading: number;
+    list: 'ul' | 'ol' | 'task' | null;
+    quote: boolean;
+    /** The caret is inside a fenced code block. */
+    codeblock: boolean;
+}
+
+/** Command names accepted by `format()`. */
+type FormatCommand =
+    | 'bold' | 'italic' | 'strike' | 'code' | 'link'
+    | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'heading' | 'paragraph'
+    | 'ul' | 'ol' | 'task' | 'quote' | 'codeblock' | 'hr' | 'table'
+    | 'indent' | 'outdent';
+
+/** Result of `QuikdownEditor.formatMarkdown()`. */
+interface FormatResult {
+    markdown: string;
+    start: number;
+    end: number;
+}
+
+/**
+ * Where a change came from: typing ('user'), `setMarkdown` and option
+ * setters ('api'), `format()` and its shortcuts ('format'), `insertText` /
+ * `replaceRange` ('edit'), 'undo', 'redo', or the string passed as
+ * `setMarkdown(md, { source })`.
+ */
+type ChangeSource = 'user' | 'api' | 'format' | 'edit' | 'undo' | 'redo' | (string & {});
+
+interface ChangeMeta {
+    source: ChangeSource;
+}
+
+/** Undo and redo stacks, oldest entry first. */
+interface EditorHistory {
+    undo: string[];
+    redo: string[];
+}
+
+/** Scroll positions (scrollTop) of the two panes. */
+interface EditorScroll {
+    source: number;
+    preview: number;
+}
+
+interface SetMarkdownOptions {
+    /**
+     * 'keep' (default) leaves the undo history as it is, 'reset' clears it
+     * (use when loading a different document), 'push' records the replaced
+     * text as an undo step.
+     */
+    history?: 'keep' | 'reset' | 'push';
+    /** Reported to `onChange` as `meta.source`. Default: 'api'. */
+    source?: ChangeSource;
+}
+
 interface EditorOptions {
     /** Editor mode. Default: 'split'. */
-    mode?: 'source' | 'preview' | 'split';
+    mode?: EditorMode;
     /** Show the toolbar. Default: true. */
     showToolbar?: boolean;
     /** Show button to remove horizontal rules. Default: false. */
@@ -22,10 +105,12 @@ interface EditorOptions {
     debounceDelay?: number;
     /** Placeholder text for the source panel. */
     placeholder?: string;
+    /** Markdown to load when the editor is ready. */
+    initialContent?: string;
     /** Legacy plugin flags. */
     plugins?: { highlightjs?: boolean; mermaid?: boolean };
     /** Preload fence-rendering libraries. */
-    preloadFences?: 'all' | string[] | Array<{ name: string; script: string; css?: string }> | null;
+    preloadFences?: 'all' | string[] | Array<string | { name?: string; script: string; css?: string }> | null;
     /** Custom fence renderers. */
     customFences?: Record<string, (code: string, lang: string) => string>;
     /** Enable CSV tables, math rendering, SVG, etc. Default: true. */
@@ -35,9 +120,48 @@ interface EditorOptions {
     /** Maximum number of undo states. Default: 100. */
     undoStackSize?: number;
     /** HTML passthrough control. Default: false. */
-    allowUnsafeHTML?: false | 'limited' | true;
+    allowUnsafeHTML?: HtmlMode;
     /** Show toolbar button to cycle HTML mode. Default: false. */
     showAllowUnsafeHTML?: boolean;
+    /** Let fence renderers fetch external resources (CDN scripts, map tiles). Default: true. */
+    allowExternalFetch?: boolean;
+    /** Enable reference-style links. Default: false. */
+    reference_links?: boolean;
+    /** Enable footnotes. Default: false. */
+    footnotes?: boolean;
+    /**
+     * Keyboard shortcuts for the editor that has focus: Cmd/Ctrl+1/2/3
+     * (mode), Cmd/Ctrl+Z / Shift+Z / Y (history), Cmd/Ctrl+B / I (bold,
+     * italic), Tab / Shift+Tab in a list item. Default: true.
+     */
+    shortcuts?: boolean;
+    /**
+     * 'replace' (default) takes over the container. 'append' adds the
+     * editor as a child and leaves the container's other content alone.
+     */
+    mount?: 'replace' | 'append';
+    /** Keep both panes at the same relative scroll position in split mode. Default: false. */
+    syncScroll?: boolean;
+    /** Directory URL for the standalone build's runtime assets (basemap files). */
+    assetBase?: string | null;
+    /**
+     * Rewrite image URLs for display. The markdown and `getHTML()` keep the
+     * original URL.
+     */
+    resolveImageSrc?: ((src: string, info: { alt: string; title: string }) => string | void) | null;
+    /** Called after every change with the markdown, the HTML, and where the change came from. */
+    onChange?: (markdown: string, html: string, meta: ChangeMeta) => void;
+    /** Called after the mode changes. */
+    onModeChange?: (mode: EditorMode) => void;
+    /** Called after every render of the preview pane. */
+    onRender?: ((preview: HTMLElement) => void) | null;
+    /** Called when the selection in either pane changes. */
+    onSelectionChange?: ((selection: EditorSelection & { format: FormatState }) => void) | null;
+    /**
+     * Called when a link in the rendered pane is clicked. Navigation is
+     * cancelled unless the handler returns true.
+     */
+    onLinkClick?: ((href: string, event: MouseEvent) => boolean | void) | null;
 }
 
 /**
@@ -46,23 +170,63 @@ interface EditorOptions {
 declare class QuikdownEditor {
     /** Curated safe HTML tag whitelist for use with allow_unsafe_html. */
     static readonly SAFE_HTML_TAGS: Record<string, 1>;
+    /** Library version. */
+    static readonly version: string;
+    /** Command names accepted by `format()`. */
+    static readonly FORMAT_COMMANDS: FormatCommand[];
+
+    /** Apply a formatting command to a markdown string. Returns null for an unknown command. */
+    static formatMarkdown(markdown: string, start: number, end: number, command: FormatCommand, value?: unknown): FormatResult;
+    static formatMarkdown(markdown: string, start: number, end: number, command: string, value?: unknown): FormatResult | null;
+    /** Formatting state at a selection in a markdown string. */
+    static getFormatState(markdown: string, start: number, end: number): FormatState;
+    /** Translate a character offset in one version of a document to the matching offset in another. */
+    static mapOffset(from: string, to: string, offset: number): number;
+    /** Remove horizontal rules from a markdown string. */
+    static removeHRFromMarkdown(markdown: string): string;
+    /** Turn single newlines between lines into paragraph breaks in a markdown string. */
+    static convertLazyLinefeeds(markdown: string): string;
 
     constructor(container: string | HTMLElement, options?: EditorOptions);
+
+    /** Resolves when the editor has built its UI. */
+    readonly initPromise: Promise<void>;
+    /** The element passed to the constructor. */
+    readonly host: HTMLElement;
+    /** The editor's root element: the host, or a child of it with `mount: 'append'`. */
+    readonly container: HTMLElement;
+    /** Current markdown. Assigning calls `setMarkdown`. */
+    markdown: string;
+    /** Current HTML. */
+    readonly html: string;
+    /** Current mode. */
+    readonly mode: EditorMode;
 
     /** Initialize the editor (called automatically by constructor). */
     init(): Promise<void>;
     /** Set the markdown source and update preview. */
-    setMarkdown(markdown: string): Promise<void>;
+    setMarkdown(markdown: string, options?: SetMarkdownOptions): Promise<void>;
     /** Get the current markdown source. */
     getMarkdown(): string;
-    /** Get the rendered HTML from the preview panel. */
+    /** Get the rendered HTML. */
     getHTML(): string;
+    /** Apply an edit that is still waiting on the debounce timer. */
+    flush(): void;
     /** Set the editor mode. */
-    setMode(mode: 'source' | 'preview' | 'split'): void;
+    setMode(mode: EditorMode): void;
+    /** Get the editor mode. */
+    getMode(): EditorMode;
+    /**
+     * Choose the pane split mode shows when the editor is too narrow for two
+     * panes. setMode() resets it to 'source'.
+     */
+    setSplitPane(pane: EditorPane): void;
+    /** The pane split mode shows on a narrow editor. */
+    getSplitPane(): EditorPane;
     /** Set the color theme. */
     setTheme(theme: 'light' | 'dark' | 'auto'): void;
-    /** Get the current theme. */
-    getTheme(): string;
+    /** Get the configured theme. */
+    getTheme(): 'light' | 'dark' | 'auto';
     /** Enable or disable lazy linefeeds. */
     setLazyLinefeeds(enabled: boolean): void;
     /** Get whether lazy linefeeds are enabled. */
@@ -71,10 +235,49 @@ declare class QuikdownEditor {
     setDebounceDelay(delay: number): void;
     /** Get the debounce delay. */
     getDebounceDelay(): number;
+    /** Set the HTML passthrough mode. */
+    setAllowUnsafeHTML(mode: HtmlMode): void;
+    /** Get the HTML passthrough mode. */
+    getAllowUnsafeHTML(): HtmlMode;
+    /** Cycle the HTML passthrough mode: off → limited → raw → off. */
+    cycleAllowUnsafeHTML(): void;
     /** Remove all horizontal rules from the markdown. */
     removeHR(): Promise<void>;
-    /** Toggle lazy linefeeds and update. */
-    toggleLazyLinefeeds(): Promise<void>;
+    /** Turn single newlines between lines into paragraph breaks. */
+    convertLazyLinefeeds(): Promise<void>;
+    /** Copy the markdown or the HTML to the clipboard as text. */
+    copy(type: 'markdown' | 'html'): Promise<void>;
+    /** Copy the rendered preview to the clipboard as rich text. */
+    copyRendered(output?: 'default' | 'quikdown' | 'stripped'): Promise<void>;
+
+    /** The pane that has keyboard focus, or null when focus is outside the editor. */
+    getFocusedPane(): EditorPane | null;
+    /** Move keyboard focus into the editor. */
+    focus(pane?: EditorPane): void;
+    /** Current selection as offsets into the markdown, from whichever pane the user is in. */
+    getSelection(): EditorSelection;
+    /** Select a range of the markdown, or place the caret when `end` is omitted. */
+    setSelection(start: number, end?: number, pane?: EditorPane): { start: number; end: number };
+    /** Insert text at the caret, replacing the selection. Returns the caret after the text. */
+    insertText(text: string): { start: number; end: number };
+    /** Replace a range of the markdown. Returns the resulting selection. */
+    replaceRange(start: number, end: number, text: string, select?: boolean): { start: number; end: number };
+
+    /** Apply a formatting command to the selection. Returns false for an unknown command. */
+    format(command: FormatCommand, value?: unknown): boolean;
+    format(command: string, value?: unknown): boolean;
+    /** Formatting at the caret or selection. */
+    getFormatState(): FormatState;
+
+    /** Scroll positions of both panes. */
+    getScroll(): EditorScroll;
+    /** Restore scroll positions. Either field may be omitted. */
+    setScroll(scroll?: Partial<EditorScroll> | null): void;
+    /** Zero-based source line of an element in the rendered pane, or -1. */
+    lineOf(element: Element | null): number;
+    /** Scroll a zero-based source line into view. Returns the preview block scrolled to, if any. */
+    scrollToLine(line: number, pane?: EditorPane): Element | null;
+
     /** Undo the last edit. */
     undo(): void;
     /** Redo the last undone edit. */
@@ -83,12 +286,43 @@ declare class QuikdownEditor {
     canUndo(): boolean;
     /** Whether redo is available. */
     canRedo(): boolean;
-    /** Tear down the editor and remove event listeners. */
+    /** Clear the undo and redo history. */
+    clearHistory(): void;
+    /** Copy of the undo and redo stacks. */
+    getHistory(): EditorHistory;
+    /** Replace the undo and redo stacks. */
+    setHistory(state?: Partial<EditorHistory> | null): void;
+
+    /** Tear down the editor: remove its listeners, timers and DOM. */
     destroy(): void;
 }
 
+type __EditorMode = EditorMode;
+type __EditorPane = EditorPane;
+type __HtmlMode = HtmlMode;
+type __EditorSelection = EditorSelection;
+type __FormatState = FormatState;
+type __FormatCommand = FormatCommand;
+type __FormatResult = FormatResult;
+type __ChangeSource = ChangeSource;
+type __ChangeMeta = ChangeMeta;
+type __EditorHistory = EditorHistory;
+type __EditorScroll = EditorScroll;
+type __SetMarkdownOptions = SetMarkdownOptions;
 type __EditorOptions = EditorOptions;
 declare namespace QuikdownEditor {
+    export type EditorMode = __EditorMode;
+    export type EditorPane = __EditorPane;
+    export type HtmlMode = __HtmlMode;
+    export type EditorSelection = __EditorSelection;
+    export type FormatState = __FormatState;
+    export type FormatCommand = __FormatCommand;
+    export type FormatResult = __FormatResult;
+    export type ChangeSource = __ChangeSource;
+    export type ChangeMeta = __ChangeMeta;
+    export type EditorHistory = __EditorHistory;
+    export type EditorScroll = __EditorScroll;
+    export type SetMarkdownOptions = __SetMarkdownOptions;
     export type EditorOptions = __EditorOptions;
 }
 

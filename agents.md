@@ -20,11 +20,12 @@ quikdown is a lightweight, zero-dependency markdown-to-HTML parser with built-in
 ```
 quikdown/
 ├── src/                              # Source files
-│   ├── quikdown.js                  # Core parser (~1000 lines)
+│   ├── quikdown.js                  # Core parser (~1600 lines)
 │   ├── quikdown_bd.js               # Bidirectional conversion (MD ↔ HTML)
-│   ├── quikdown_edit.js             # Editor component (~2600 lines)
+│   ├── quikdown_edit.js             # Editor component (~3800 lines)
+│   ├── quikdown_edit_format.js      # Formatting transforms on markdown text (pure functions)
 │   ├── quikdown_edit_standalone.js  # Standalone editor (bundles all fence libs)
-│   ├── quikdown_edit_copy.js        # Rich clipboard / copyRendered() (~1400 lines)
+│   ├── quikdown_edit_copy.js        # Rich clipboard / copyRendered() (~1600 lines)
 │   ├── quikdown_ast.js              # AST parser
 │   ├── quikdown_json.js             # AST to JSON
 │   ├── quikdown_yaml.js             # AST to YAML
@@ -37,7 +38,7 @@ quikdown/
 │   ├── mathjax_bundle.js            # MathJax standalone bundle
 │   └── mathjax_config.js            # MathJax configuration
 ├── dist/                             # Build output (ESM, UMD, CJS, d.ts, CSS)
-├── tests/                            # 40+ test files (33 Jest + 8 Playwright)
+├── tests/                            # 50 test files (41 Jest + 9 Playwright)
 ├── examples/                         # 20+ working HTML examples + sample .md files
 ├── docs/                             # Detailed documentation (16 markdown files)
 ├── pages/                            # Static site templates and generated pages
@@ -103,7 +104,8 @@ The core parser (`src/quikdown.js`) processes markdown in four phases:
 | Core parser | `src/quikdown.js` | `quikdown` | Markdown to HTML |
 | Bidirectional | `src/quikdown_bd.js` | `quikdown/bd` | HTML ↔ Markdown roundtrip |
 | Editor | `src/quikdown_edit.js` | `quikdown/edit` | Drop-in editor component |
-| Editor standalone | `src/quikdown_edit_standalone.js` | (standalone builds) | Editor + all fence libs bundled |
+| Editor standalone | `src/quikdown_edit_standalone.js` | `quikdown/edit-standalone` (ESM and UMD only) | Editor + all fence libs bundled |
+| Editor formatting | `src/quikdown_edit_format.js` | (internal; exposed as `QuikdownEditor` statics) | Bold, italic, headings, lists etc. as transforms on markdown text |
 | Editor copy | `src/quikdown_edit_copy.js` | (internal) | Rich clipboard for copyRendered() |
 | AST | `src/quikdown_ast.js` | `quikdown/ast` | Markdown to AST |
 | JSON | `src/quikdown_json.js` | `quikdown/json` | Markdown to JSON |
@@ -212,8 +214,8 @@ new QuikdownEditor('#e', {
 
 | Variant | Size | Use Case |
 |---------|------|----------|
-| Regular (`quikdown_edit.*`) | ~102 KB | Standard use. Fence libs lazy-loaded from CDN. |
-| Standalone (`quikdown_edit_standalone.*`) | ~7.7 MB (~1.0 MB gzipped) | Offline / Tauri / PWA. All fence libs pre-bundled. |
+| Regular (`quikdown_edit.*`) | ~128 KB | Standard use. Fence libs lazy-loaded from CDN. |
+| Standalone (`quikdown_edit_standalone.*`) | ~7.6 MB (~2.1 MB gzipped) | Offline / Tauri / PWA. All fence libs pre-bundled. |
 
 The standalone bundles Highlight.js (12 languages), Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax. Both variants have the identical API.
 
@@ -222,7 +224,7 @@ The standalone bundles Highlight.js (12 languages), Mermaid, DOMPurify, Leaflet,
 ```javascript
 import QuikdownEditor from 'quikdown/edit';
 
-// Full-featured
+// With toolbar and options
 const editor = new QuikdownEditor('#container', {
   mode: 'split',
   theme: 'auto',
@@ -235,14 +237,15 @@ const editor = new QuikdownEditor('#container', {
 // Headless (no built-in UI)
 const editor = new QuikdownEditor('#container', {
   showToolbar: false,
-  onChange: (md, html) => myCustomPreview.innerHTML = html
+  onChange: (md, html, meta) => myCustomPreview.innerHTML = html
 });
-// Control programmatically: editor.setMode(), editor.undo(), editor.copy(), etc.
+// Control programmatically: editor.setMode(), editor.undo(), editor.format('bold'), etc.
+// Every toolbar button and shortcut has a public method; see docs/quikdown-editor.md
 
-// Standalone (offline)
-import QuikdownEditor from './quikdown_edit_standalone.esm.min.js';
+// Standalone (offline), from npm or from the file
+import QuikdownEditor from 'quikdown/edit-standalone';
 const editor = new QuikdownEditor('#container', { mode: 'split' });
-// All fence types render instantly with no network calls
+// Fence libraries are in the bundle, so no network calls are made
 ```
 
 ### Editor Options
@@ -269,16 +272,31 @@ const editor = new QuikdownEditor('#container', { mode: 'split' });
 | `preloadFences` | various | `null` | Preload fence libraries |
 | `customFences` | object | `{}` | Custom fence handlers |
 | `plugins` | object | `{}` | Legacy: `{ highlightjs, mermaid }` |
-| `onChange` | function | `null` | `(markdown, html) => void` |
+| `shortcuts` | boolean | `true` | Keyboard shortcuts; they act only on the editor that has focus |
+| `mount` | string | `'replace'` | `'replace'` takes over the container, `'append'` adds the editor as a child |
+| `syncScroll` | boolean | `false` | Keep both panes at the same relative scroll position in split mode |
+| `allowExternalFetch` | boolean | `true` (`false` in standalone) | Allow fence renderers to fetch external resources |
+| `resolveImageSrc` | function | `null` | `(src, { alt, title }) => string`; rewrites image URLs for display only |
+| `assetBase` | string | `null` | Standalone build: directory URL for its basemap files |
+| `onChange` | function | `null` | `(markdown, html, meta) => void`; `meta.source` is `'user'`, `'api'`, `'format'`, `'edit'`, `'undo'` or `'redo'` |
 | `onModeChange` | function | `null` | `(mode) => void` |
+| `onRender` | function | `null` | `(previewElement) => void`, after every preview render |
+| `onSelectionChange` | function | `null` | `({ start, end, text, pane, format }) => void` |
+| `onLinkClick` | function | `null` | `(href, event) => void \| true`; return `true` to let the browser follow the link |
 
 ### Editor Methods
 
-**Content:** `getMarkdown()`, `setMarkdown(md)`, `getHTML()`, `.markdown` (getter/setter), `.html` (getter)
+**Content:** `getMarkdown()`, `setMarkdown(md, { history?: 'keep'|'reset'|'push', source? })`, `getHTML()`, `flush()`, `.markdown` (getter/setter), `.html` (getter)
 
-**View:** `setMode(mode)`, `.mode` (getter), `setTheme(theme)`, `getTheme()`, `setLazyLinefeeds(bool)`, `getLazyLinefeeds()`, `setDebounceDelay(ms)`, `getDebounceDelay()`
+**View:** `setMode(mode)`, `getMode()`, `.mode` (getter), `setSplitPane(pane)`, `getSplitPane()`, `setTheme(theme)`, `getTheme()`, `setLazyLinefeeds(bool)`, `getLazyLinefeeds()`, `setDebounceDelay(ms)`, `getDebounceDelay()`, `setAllowUnsafeHTML(mode)`, `getAllowUnsafeHTML()`, `cycleAllowUnsafeHTML()`
 
-**Undo/Redo:** `undo()`, `redo()`, `canUndo()`, `canRedo()`, `clearHistory()`
+**Undo/Redo:** `undo()`, `redo()`, `canUndo()`, `canRedo()`, `clearHistory()`, `getHistory()`, `setHistory(state)`
+
+**Selection and edits (either pane, offsets into the markdown):** `getSelection()`, `setSelection(start, end?, pane?)`, `insertText(text)`, `replaceRange(start, end, text, select?)`, `focus(pane?)`, `getFocusedPane()`
+
+**Formatting (either pane):** `format(command, value?)` with `bold`, `italic`, `strike`, `code`, `link`, `h1`–`h6`, `heading`, `paragraph`, `ul`, `ol`, `task`, `quote`, `codeblock`, `hr`, `table`, `indent`, `outdent`; `getFormatState()`
+
+**Scroll and lines (zero-based lines):** `getScroll()`, `setScroll(scroll)`, `scrollToLine(line, pane?)`, `lineOf(element)`
 
 **Transforms:** `removeHR()`, `convertLazyLinefeeds()`
 
@@ -286,13 +304,15 @@ const editor = new QuikdownEditor('#container', { mode: 'split' });
 
 **Resources:** `loadScript(src)`, `loadCSS(href)`
 
-**Lifecycle:** `destroy()`
+**Lifecycle:** `destroy()` removes the editor's listeners, timers and DOM; safe to call twice. Each editor keeps its own state, so many can be created and destroyed on one page.
 
-**Static:** `QuikdownEditor.removeHRFromMarkdown(md)`, `QuikdownEditor.convertLazyLinefeeds(md)`, `QuikdownEditor.SAFE_HTML_TAGS`
+**Static:** `QuikdownEditor.removeHRFromMarkdown(md)`, `QuikdownEditor.convertLazyLinefeeds(md)`, `QuikdownEditor.formatMarkdown(md, start, end, command, value?)`, `QuikdownEditor.getFormatState(md, start, end)`, `QuikdownEditor.mapOffset(from, to, offset)`, `QuikdownEditor.FORMAT_COMMANDS`, `QuikdownEditor.SAFE_HTML_TAGS`
 
 ### Editor Keyboard Shortcuts
 
-Ctrl/Cmd + 1/2/3 for source/split/preview. Ctrl/Cmd + Z for undo. Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo.
+Ctrl/Cmd + 1/2/3 for source/split/preview. Ctrl/Cmd + Z for undo. Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y for redo. Ctrl/Cmd + B and Ctrl/Cmd + I for bold and italic in either pane. Tab and Shift + Tab indent and outdent the list item under the caret.
+
+Shortcuts are bound to the editor's own element and act only on the editor that has focus. `shortcuts: false` turns them off.
 
 ### Editor UI CSS Classes
 
@@ -301,7 +321,7 @@ The editor DOM follows this structure:
 .qde-container > .qde-toolbar + .qde-editor > (.qde-source > textarea.qde-textarea) + .qde-preview
 ```
 
-Dark mode adds `.qde-dark` to the container. Mode classes: `.qde-mode-source`, `.qde-mode-split`, `.qde-mode-preview`. Override preview styles via `.qde-preview h1`, `.qde-preview pre`, etc. - no `!important` needed.
+Dark mode adds `.qde-dark` to the container. Mode classes: `.qde-mode-source`, `.qde-mode-split`, `.qde-mode-preview`. Override preview styles via `.qde-preview h1`, `.qde-preview pre`, etc. - no `!important` needed. Colours, fonts and spacing can also be set with CSS custom properties (`--qde-bg`, `--qde-fg`, `--qde-border`, `--qde-font`, `--qde-preview-font-size` and others, listed in `docs/quikdown-editor.md`).
 
 ## Bidirectional Conversion
 
@@ -352,7 +372,7 @@ Tests are in `tests/` using Jest (jsdom environment) and Playwright:
 
 - `quikdown.test.js` - Core parser (100% coverage target)
 - `quikdown_bd.test.js` - Bidirectional conversion
-- `quikdown_edit*.test.js` - Editor (multiple test files)
+- `quikdown_edit*.test.js` - Editor (multiple test files, including formatting, host API and many editors on one page)
 - `quikdown_ast.test.js` - AST parser
 - `quikdown_json.test.js` - JSON converter
 - `quikdown_yaml.test.js` - YAML converter
@@ -360,7 +380,7 @@ Tests are in `tests/` using Jest (jsdom environment) and Playwright:
 - `quikdown_stress.test.js` - Performance
 - `*.spec.js` - Playwright e2e tests
 
-Coverage thresholds: 99% for core, 90-99% for variants (BD, AST, JSON, YAML, AST-HTML, MCP), minimum 80% for editor.
+Coverage thresholds are set per bundle in `package.json`: 99% of lines for the core parser, 94-99% for the variants (BD, AST, JSON, YAML, AST-HTML), and 98% of lines / 95% of branches for the editor. Coverage is measured on the `dist/` bundles, so rebuild (`npx rollup -c`) after changing `src/` and before running tests.
 
 ## Documentation Reference
 

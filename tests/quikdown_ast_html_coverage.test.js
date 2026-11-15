@@ -1193,4 +1193,27 @@ children:
             expect(result).toBe('');
         });
     });
+
+    describe('Inline scanner through the AST-to-HTML path', () => {
+        test('underscore emphasis with and without a closer', () => {
+            expect(quikdown_ast_html('_a_ and _b c_')).toMatch(/<em[^>]*>a<\/em> and <em[^>]*>b c<\/em>/);
+            expect(quikdown_ast_html('_a _b _c')).toContain('_a _b _c');
+            expect(quikdown_ast_html('_a b_c d_')).toMatch(/<em[^>]*>a b_c d<\/em>/);
+            expect(quikdown_ast_html('_a\nb_')).not.toContain('<em>');
+        });
+
+        test('hard break on a later line of a paragraph', () => {
+            expect(quikdown_ast_html('ab\ncd  \nef')).toMatch(/cd<br[^>]*>/);
+        });
+
+        test('brackets without a destination stay text', () => {
+            const html = quikdown_ast_html('[a] [b]c ![d] [e](f');
+            expect(html).not.toContain('<a');
+            expect(html).not.toContain('<img');
+        });
+
+        test('a pipe line followed by a whitespace-only line is a paragraph', () => {
+            expect(quikdown_ast_html('a|b\n ')).toContain('a|b');
+        });
+    });
 });

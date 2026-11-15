@@ -770,7 +770,7 @@ function quikdown(markdown, options = {}) {
     // Restore safe HTML tag placeholders after escaping
     if (htmlAllow) {
         safeTags.forEach((tag, i) => {
-            html = html.replace(`${PLACEHOLDER_HT}${i}§`, tag);
+            html = html.replace(`${PLACEHOLDER_HT}${i}§`, () => tag);
         });
     }
 
@@ -959,7 +959,7 @@ function quikdown(markdown, options = {}) {
             .replace(/§P§/g, '</p><p>');
 
         // Restore protected blocks
-        blocks.forEach((b, i) => html = html.replace(`§B${i}§`, b));
+        blocks.forEach((b, i) => html = html.replace(`§B${i}§`, () => b));
 
         html = '<p>' + html + '</p>';
     } else {
@@ -1053,8 +1053,8 @@ function quikdown(markdown, options = {}) {
                 replacement = `<pre${getAttr('pre')}${fenceAttr}${langAttr}><code${codeAttr}>${escapeHtml(block.code)}</code></pre>`;
             } else /* istanbul ignore next - bd-only branch */ if (bidirectional) {
                 // Plugin returned HTML — inject data attributes for roundtrip.
-                replacement = replacement.replace(/^<(\w+)/,
-                    `<$1 data-qd-fence="${escapeHtml(block.fence)}" data-qd-lang="${escapeHtml(block.lang)}" data-qd-source="${escapeHtml(block.code)}"`);
+                replacement = replacement.replace(/^<(\w+)/, (m, tag) =>
+                    `<${tag} data-qd-fence="${escapeHtml(block.fence)}" data-qd-lang="${escapeHtml(block.lang)}" data-qd-source="${escapeHtml(block.code)}"`);
             }
         } else {
             // Default rendering — wrap in <pre><code>.
@@ -1068,18 +1068,20 @@ function quikdown(markdown, options = {}) {
         }
 
         const placeholder = `${PLACEHOLDER_CB}${i}§`;
-        html = html.replace(placeholder, replacement);
+        // Function replacements: the restored text may contain "$&", "$$" and
+        // similar sequences that a string replacement would interpret.
+        html = html.replace(placeholder, () => replacement);
     });
 
     // Restore inline code spans
     inlineCodes.forEach((code, i) => {
         const placeholder = `${PLACEHOLDER_IC}${i}§`;
-        html = html.replace(placeholder, `<code${getAttr('code')}${dataQd('`')}>${code}</code>`);
+        html = html.replace(placeholder, () => `<code${getAttr('code')}${dataQd('`')}>${code}</code>`);
     });
 
     // Restore backslash escapes
     backslashEscapes.forEach((char, i) => {
-        html = html.replace(`${PLACEHOLDER_BE}${i}§`, char);
+        html = html.replace(`${PLACEHOLDER_BE}${i}§`, () => char);
     });
 
     // Restore newlines inside indented code blocks

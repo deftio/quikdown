@@ -15,7 +15,7 @@ The standalone editor bundles all fence-rendering libraries into a single file s
 | Vega + Vega-Lite + Vega-Embed | Data visualization charts | ~1.5 MB |
 | MathJax (tex-svg) | Math equation rendering | ~1.5 MB |
 | Natural Earth (110m + admin-1) | Offline vector basemap for GeoJSON maps (2 sibling `.topojson` files) | ~1 MB |
-| **quikdown editor** | Core editor + parser | ~98 KB |
+| **quikdown editor** | Core editor + parser | ~128 KB |
 
 **Total offline core (JS + basemap):** ≤ 9 MB uncompressed (~1.5 MB gzipped for JS alone)
 
@@ -103,9 +103,9 @@ Use the standalone bundle when:
 
 Use the regular editor when:
 
-- **Bundle size matters** — the regular editor is 86 KB; fence libraries are loaded on demand
+- **Bundle size matters** — the regular editor is about 128 KB; fence libraries are loaded on demand
 - **Most fences aren't used** — if your users only write text and code blocks, loading mermaid/leaflet/three.js upfront is waste
-- **CDN is available** — lazy loading gives the best initial load time
+- **CDN is available** — lazy loading keeps the initial load small
 
 ## Supported Languages (highlight.js)
 

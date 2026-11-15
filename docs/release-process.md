@@ -154,7 +154,7 @@ git commit --no-verify -m "wip: temporary"
 
 ### Standalone (offline) editor
 
-The **`quikdown_edit_standalone`** bundle (~7.7 MB / ~1.0 MB gzipped) ships on every release for air-gapped deployments. It is **not** part of the normal debug cycle.
+The **`quikdown_edit_standalone`** bundle (~7.6 MB / ~2.1 MB gzipped) ships on every release for air-gapped deployments. It is **not** part of the normal debug cycle.
 
 | Check | Command |
 |-------|---------|

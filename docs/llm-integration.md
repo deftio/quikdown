@@ -130,8 +130,8 @@ const result = mcp.callTool('markdown_to_html', { markdown: '# Hello' });
 |--------|----------------|--------------|
 | `quikdown` | Zero | ~14.9 KB min |
 | `quikdown/bd` | Zero | ~19.7 KB min |
-| `quikdown/edit` | Lazy CDN for fences | ~98 KB + on-demand libs |
-| `quikdown_edit_standalone` | Bundled fences | ~7.7 MB min (~1.0 MB gz) |
+| `quikdown/edit` | Lazy CDN for fences | ~128 KB + on-demand libs |
+| `quikdown_edit_standalone` | Bundled fences | ~7.6 MB min (~2.1 MB gz) |
 | `quikdown/mcp` | quikdown + quikdown_bd | ~26 KB (JSON-RPC server) |
 
 For **air-gapped** agent UIs, use the [standalone editor](standalone-editor.md) — highlight.js, Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax bundled.

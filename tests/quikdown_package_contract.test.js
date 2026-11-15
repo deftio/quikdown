@@ -24,6 +24,10 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 /** package.json export entries, excluding the ./package.json passthrough. */
 const exportEntries = Object.entries(pkg.exports || {}).filter(([subpath]) => subpath !== './package.json');
 
+/** Entry points that ship as ESM + UMD only: no CommonJS bundle, so no `require` condition. */
+const ESM_ONLY = ['./edit-standalone'];
+const kindsOf = (subpath) => (ESM_ONLY.includes(subpath) ? ['import'] : ['import', 'require']);
+
 describe('package.json exports contract', () => {
   test('root "types" entry exists on disk', () => {
     expect(pkg.types).toBeDefined();
@@ -36,7 +40,8 @@ describe('package.json exports contract', () => {
   test.each([['import', '.d.ts'], ['require', '.d.cts']])(
     'every exports.%s is { types, default } with existing files', (kind, typesExt) => {
       expect(exportEntries.length).toBeGreaterThan(0);
-      for (const [, conditions] of exportEntries) {
+      for (const [subpath, conditions] of exportEntries) {
+        if (!kindsOf(subpath).includes(kind)) continue;
         const entry = conditions[kind];
         expect(Object.keys(entry)).toEqual(['types', 'default']);
         expect(entry.types.endsWith(typesExt)).toBe(true);
@@ -61,8 +66,8 @@ describe('package.json exports contract', () => {
   });
 
   test('declaration files are non-empty and declare exports', () => {
-    for (const [, conditions] of exportEntries) {
-      for (const kind of ['import', 'require']) {
+    for (const [subpath, conditions] of exportEntries) {
+      for (const kind of kindsOf(subpath)) {
         const content = fs.readFileSync(path.join(ROOT, conditions[kind].types), 'utf8');
         expect(content.length).toBeGreaterThan(0);
         expect(content).toMatch(/export\s/);
@@ -73,9 +78,20 @@ describe('package.json exports contract', () => {
   test('CommonJS declarations use `export =` to match module.exports', () => {
     for (const [subpath, conditions] of exportEntries) {
       if (subpath === './mcp') continue; // named exports + exports.default
+      if (ESM_ONLY.includes(subpath)) continue;
       const content = fs.readFileSync(path.join(ROOT, conditions.require.types), 'utf8');
       expect(content).toMatch(/^export = \w+;$/m);
       expect(content).not.toMatch(/^export default/m);
+    }
+  });
+
+  test('ESM-only entries have types and a browser build, and no require condition', () => {
+    for (const subpath of ESM_ONLY) {
+      const conditions = pkg.exports[subpath];
+      expect(conditions).toBeDefined();
+      expect(conditions.require).toBeUndefined();
+      expect(Object.keys(conditions.import)).toEqual(['types', 'default']);
+      expect(fs.existsSync(path.join(ROOT, conditions.browser))).toBe(true);
     }
   });
 

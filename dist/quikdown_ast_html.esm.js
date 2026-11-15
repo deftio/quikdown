@@ -1,6 +1,6 @@
 /**
  * quikdown_ast_html - AST to HTML Markdown Parser
- * @version 1.2.23
+ * @version 1.3.0
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -13,7 +13,7 @@
  */
 
 // Version will be injected at build time
-const quikdownVersion$1 = '1.2.23';
+const quikdownVersion$1 = '1.3.0';
 
 // Safety limit to prevent infinite loops in list parsing
 const MAX_LOOP_ITERATIONS = 1000;
@@ -213,21 +213,34 @@ function parseBlocks(text, options) {
             if (/^---+\s*$/.test(pLine) || /^\*\*\*+\s*$/.test(pLine) || /^___+\s*$/.test(pLine)) break;
             if (/^>\s*/.test(pLine)) break;
             if (/^(\s*)([*\-+]|\d+\.)\s+/.test(pLine)) break;
-            if (pLine.includes('|') && i + 1 < lines.length && /^\|?[\s\-:|]+\|?$/.test(lines[i + 1])) break;
+            if (pLine.includes('|') && i + 1 < lines.length && isTableSeparator(lines[i + 1])) break;
 
             paragraphLines.push(pLine);
             i++;
         }
 
-        if (paragraphLines.length > 0) {
-            blocks.push({
-                type: 'paragraph',
-                children: parseInline(paragraphLines.join('\n'))
-            });
+        // Every pass must consume a line. If a line stopped the paragraph
+        // but no block parser above took it, keep it as paragraph text.
+        /* istanbul ignore next -- guard against a scanner hang; no known input reaches it */
+        if (paragraphLines.length === 0) {
+            paragraphLines.push(lines[i]);
+            i++;
         }
+
+        blocks.push({
+            type: 'paragraph',
+            children: parseInline(paragraphLines.join('\n'))
+        });
     }
 
     return blocks;
+}
+
+/**
+ * A table separator row: pipes, dashes, colons and spaces, with at least one dash.
+ */
+function isTableSeparator(line) {
+    return /^\|?[\s\-:|]+\|?$/.test(line) && line.includes('-');
 }
 
 /**
@@ -240,10 +253,7 @@ function tryParseTable(lines, startIndex, options) {
     const headerLine = lines[startIndex];
     const separatorLine = lines[startIndex + 1];
 
-    // Check if separator line is valid
-    if (!/^\|?[\s\-:|]+\|?$/.test(separatorLine) || !separatorLine.includes('-')) {
-        return null;
-    }
+    if (!isTableSeparator(separatorLine)) return null;
 
     // Parse header
     const headerCells = parseTableRow(headerLine);
@@ -456,118 +466,170 @@ function parseLinkDestinationAst(raw) {
     return { url: raw, title: null };
 }
 
+// Inline patterns. All are sticky: they are matched at an index into the
+// full text, so the scanner never has to copy the unparsed remainder.
+const INLINE_CODE = /`([^`\n]+)`/y;
+const INLINE_BOLD = /(\*\*|__)(.+?)\1/y;
+const INLINE_STRIKE = /~~(.+?)~~/y;
+const INLINE_EM_STAR = /\*(?!\*)(.+?)(?<!\*)\*(?!\*)/y;
+const INLINE_EM_UNDERSCORE = /_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/y;
+const INLINE_URL = /(https?:\/\/[^\s<>[\]]+)/y;
+// eslint-disable-next-line security/detect-unsafe-regex -- linear: the two alternatives differ on their first char, so each input has only one match path
+const INLINE_DESTINATION = /\(((?:[^()]|\([^()]*\))+)\)/y;
+const INLINE_MARKER = /[`*_~![\n]|https?:\/\//g;
+
+function matchAt(pattern, text, index) {
+    pattern.lastIndex = index;
+    return pattern.exec(text);
+}
+
 /**
- * Parse inline elements
+ * Parse inline elements.
+ *
+ * The scanner walks the text by index. The lookups that would otherwise
+ * rescan the rest of the text at every marker (next newline, next `]`,
+ * next closing `_`) are cached, so the cost stays linear in the text length.
  */
 function parseInline(text, options) {
     if (!text) return [];
 
     const nodes = [];
-    let remaining = text;
+    let pos = 0;
+    // Cached forward lookups; -2 = not searched yet, -1 = none left.
+    let newlineAt = -2;      // next '\n' at or after pos
+    let bracketAt = -2;      // next ']' after the last '[' looked at
+    let underscoreAt = -2;   // next '_' that can close an emphasis
+    let destinationAt = -1;  // index of the ']' the cached destination follows
+    let destination = null;
 
-    while (remaining.length > 0) {
-        // Line break (1+ trailing spaces or explicit \n after processing)
-        // Handle inline line breaks (two spaces at end of line or backslash before newline)
-        const brMatch = remaining.match(/^(.+?)(?: {2}|\\\n|\n)/);
-        if (brMatch && remaining.includes('\n')) {
-            const beforeBr = remaining.indexOf('\n');
-            const beforeText = remaining.slice(0, beforeBr);
-            const afterText = remaining.slice(beforeBr + 1);
+    // Match `[label](destination)` whose '[' is at `open`.
+    const matchBracket = (open, minLabel) => {
+        if (bracketAt !== -1 && bracketAt <= open) bracketAt = text.indexOf(']', open + 1);
+        if (bracketAt === -1 || bracketAt - open - 1 < minLabel || text[bracketAt + 1] !== '(') return null;
+        if (destinationAt !== bracketAt) {
+            destinationAt = bracketAt;
+            destination = matchAt(INLINE_DESTINATION, text, bracketAt + 1);
+        }
+        if (!destination) return null;
+        return {
+            label: text.slice(open + 1, bracketAt),
+            target: destination[1],
+            end: bracketAt + 1 + destination[0].length
+        };
+    };
 
-            // Check if line break is significant (2+ trailing spaces or backslash)
+    // True when a '_' that can close an emphasis opened at `open` exists on the same line.
+    const hasUnderscoreCloser = (open) => {
+        if (underscoreAt !== -1 && underscoreAt < open + 2) {
+            underscoreAt = -1;
+            for (let k = text.indexOf('_', open + 2); k !== -1; k = text.indexOf('_', k + 1)) {
+                if (!/[\s_]/.test(text[k - 1]) && !/[A-Za-z0-9_]/.test(text[k + 1] || '')) {
+                    underscoreAt = k;
+                    break;
+                }
+            }
+        }
+        return underscoreAt !== -1 && (newlineAt === -1 || underscoreAt < newlineAt);
+    };
+
+    while (pos < text.length) {
+        if (newlineAt !== -1 && newlineAt < pos) newlineAt = text.indexOf('\n', pos);
+
+        // Hard line break: two trailing spaces or a backslash before the newline
+        if (newlineAt !== -1) {
+            const beforeText = text.slice(pos, newlineAt);
             if (beforeText.endsWith('  ') || beforeText.endsWith('\\')) {
                 const cleanText = beforeText.replace(/\\$/, '').replace(/  +$/, '');
                 if (cleanText) {
                     nodes.push(...parseInlineContent(cleanText));
                 }
                 nodes.push({ type: 'br' });
-                remaining = afterText;
+                pos = newlineAt + 1;
                 continue;
             }
         }
 
+        const ch = text[pos];
+
         // Images: ![alt](url) or ![alt](url "title")
-        // eslint-disable-next-line security/detect-unsafe-regex -- linear: the two alternatives differ on their first char, so each input has only one match path
-        const imgMatch = remaining.match(/^!\[([^\]]*)\]\(((?:[^()]|\([^()]*\))+)\)/);
-        if (imgMatch) {
-            const { url, title } = parseLinkDestinationAst(imgMatch[2]);
+        const img = ch === '!' && text[pos + 1] === '[' ? matchBracket(pos + 1, 0) : null;
+        if (img) {
+            const { url, title } = parseLinkDestinationAst(img.target);
             const node = {
                 type: 'image',
-                alt: imgMatch[1],
+                alt: img.label,
                 url: url.trim()
             };
             if (title) node.title = title;
             nodes.push(node);
-            remaining = remaining.slice(imgMatch[0].length);
+            pos = img.end;
             continue;
         }
 
         // Links: [text](url) or [text](url "title")
-        // eslint-disable-next-line security/detect-unsafe-regex -- linear: the two alternatives differ on their first char, so each input has only one match path
-        const linkMatch = remaining.match(/^\[([^\]]+)\]\(((?:[^()]|\([^()]*\))+)\)/);
-        if (linkMatch) {
-            const { url, title } = parseLinkDestinationAst(linkMatch[2]);
+        const link = ch === '[' ? matchBracket(pos, 1) : null;
+        if (link) {
+            const { url, title } = parseLinkDestinationAst(link.target);
             const node = {
                 type: 'link',
                 url: url.trim(),
-                children: parseInlineContent(linkMatch[1])
+                children: parseInlineContent(link.label)
             };
             if (title) node.title = title;
             nodes.push(node);
-            remaining = remaining.slice(linkMatch[0].length);
+            pos = link.end;
             continue;
         }
 
         // Inline code: `code`
-        const codeMatch = remaining.match(/^`([^`\n]+)`/);
+        const codeMatch = matchAt(INLINE_CODE, text, pos);
         if (codeMatch) {
             nodes.push({
                 type: 'code',
                 value: codeMatch[1]
             });
-            remaining = remaining.slice(codeMatch[0].length);
+            pos += codeMatch[0].length;
             continue;
         }
 
         // Bold: **text** or __text__
-        const boldMatch = remaining.match(/^(\*\*|__)(.+?)\1/);
+        const boldMatch = matchAt(INLINE_BOLD, text, pos);
         if (boldMatch) {
             nodes.push({
                 type: 'strong',
                 children: parseInlineContent(boldMatch[2])
             });
-            remaining = remaining.slice(boldMatch[0].length);
+            pos += boldMatch[0].length;
             continue;
         }
 
         // Strikethrough: ~~text~~
-        const strikeMatch = remaining.match(/^~~(.+?)~~/);
+        const strikeMatch = matchAt(INLINE_STRIKE, text, pos);
         if (strikeMatch) {
             nodes.push({
                 type: 'del',
                 children: parseInlineContent(strikeMatch[1])
             });
-            remaining = remaining.slice(strikeMatch[0].length);
+            pos += strikeMatch[0].length;
             continue;
         }
 
         // Italic: *text* or _text_. Single underscores require word boundaries
         // so identifiers like snake_case_variable stay plain text.
-        const previousChar = text[text.length - remaining.length - 1] || '';
-        const canOpenUnderscore = !/[A-Za-z0-9_]/.test(previousChar);
-        const emMatch = remaining.match(/^\*(?!\*)(.+?)(?<!\*)\*(?!\*)/)
-            || (canOpenUnderscore && remaining.match(/^_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/));
+        const canOpenUnderscore = ch === '_' && !/[A-Za-z0-9_]/.test(text[pos - 1] || '');
+        const emMatch = matchAt(INLINE_EM_STAR, text, pos)
+            || (canOpenUnderscore && hasUnderscoreCloser(pos) && matchAt(INLINE_EM_UNDERSCORE, text, pos));
         if (emMatch) {
             nodes.push({
                 type: 'em',
                 children: parseInlineContent(emMatch[1])
             });
-            remaining = remaining.slice(emMatch[0].length);
+            pos += emMatch[0].length;
             continue;
         }
 
         // Autolinks: URLs starting with http:// or https://
-        const urlMatch = remaining.match(/^(https?:\/\/[^\s<>[\]]+)/);
+        const urlMatch = matchAt(INLINE_URL, text, pos);
         if (urlMatch) {
             const { url: cleanUrl, trailing } = stripTrailingPunctuationAst(urlMatch[1]);
             nodes.push({
@@ -578,25 +640,23 @@ function parseInline(text, options) {
             if (trailing) {
                 nodes.push({ type: 'text', value: trailing });
             }
-            remaining = remaining.slice(urlMatch[0].length);
+            pos += urlMatch[0].length;
             continue;
         }
 
-        // Plain text - consume until next potential inline element or end
-        // Find next potential inline marker
-        const nextMarker = remaining.search(/[`*_~![\\n]|https?:\/\//);
-        if (nextMarker === -1) {
-            // No more markers, consume rest as text
-            nodes.push({ type: 'text', value: remaining });
+        // Plain text: consume up to the next potential inline marker. A
+        // newline is a marker so the hard-break check runs on every line.
+        const marker = matchAt(INLINE_MARKER, text, pos);
+        if (!marker) {
+            nodes.push({ type: 'text', value: text.slice(pos) });
             break;
-        } else if (nextMarker === 0) {
+        } else if (marker.index === pos) {
             // Current char is a marker but didn't match - consume it as text
-            nodes.push({ type: 'text', value: remaining[0] });
-            remaining = remaining.slice(1);
+            nodes.push({ type: 'text', value: ch });
+            pos += 1;
         } else {
-            // Consume text up to next marker
-            nodes.push({ type: 'text', value: remaining.slice(0, nextMarker) });
-            remaining = remaining.slice(nextMarker);
+            nodes.push({ type: 'text', value: text.slice(pos, marker.index) });
+            pos = marker.index;
         }
     }
 
@@ -654,7 +714,7 @@ if (typeof window !== 'undefined') {
 
 
 // Version will be injected at build time
-const quikdownVersion = '1.2.23';
+const quikdownVersion = '1.3.0';
 
 // Constants
 const CLASS_PREFIX = 'quikdown-';

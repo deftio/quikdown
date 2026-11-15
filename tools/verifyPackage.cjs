@@ -62,6 +62,9 @@ function checkMainEntrypoints() {
   if (pkg.browser) fileMustExist(pkg.browser, 'browser');
 }
 
+/** Entry points with no CommonJS build. */
+const ESM_ONLY_EXPORTS = new Set(['./edit-standalone']);
+
 /** Flatten a (possibly nested) exports condition object to its file targets. */
 function exportTargets(conditions) {
   if (typeof conditions === 'string') return [conditions];
@@ -83,7 +86,12 @@ function checkExportsMap() {
 
     // "types" must be the first key of import/require so TypeScript picks the
     // matching declaration flavour (.d.ts for import, .d.cts for require).
-    for (const kind of ['import', 'require']) {
+    // The standalone editor ships as ESM + UMD only (no CommonJS bundle).
+    const kinds = ESM_ONLY_EXPORTS.has(subpath) ? ['import'] : ['import', 'require'];
+    if (ESM_ONLY_EXPORTS.has(subpath) && conditions.require) {
+      fail(`${label}.require: unexpected for an ESM-only entry`);
+    }
+    for (const kind of kinds) {
       const entry = conditions && conditions[kind];
       if (!entry || typeof entry !== 'object' || Object.keys(entry)[0] !== 'types') {
         fail(`${label}.${kind}: expected { types, default } with "types" first`);
@@ -128,6 +136,7 @@ function checkTypeScriptDefinitions() {
     fileMustExist(f, 'types');
     fileMustExist(f.replace(/\.d\.ts$/, '.d.cts'), 'types (cjs)');
   }
+  fileMustExist('dist/quikdown_edit_standalone.d.ts', 'types (standalone, ESM only)');
 }
 
 function checkStandaloneBundle() {

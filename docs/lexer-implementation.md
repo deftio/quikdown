@@ -283,7 +283,7 @@ npm test  # Uses main implementation
 
 ## Migration Guide
 
-If the lexer becomes the primary implementation, migration would be seamless:
+If the lexer becomes the primary implementation, migration would look like this:
 
 1. The API is 100% compatible
 2. All options work identically

@@ -177,6 +177,20 @@ describe('URLs containing parentheses', () => {
         const start = Date.now();
         for (const input of inputs) {
             quikdown(input);
+        }
+        expect(Date.now() - start).toBeLessThan(2000);
+    });
+
+    test('adversarial link input stays fast in the AST parser', () => {
+        const inputs = [
+            '[a](' + '('.repeat(20000),
+            '[a](' + '(x)'.repeat(20000),
+            '[a]('.repeat(20000),
+            '![a](' + 'x('.repeat(20000),
+            '[a](' + 'x'.repeat(50000),
+        ];
+        const start = Date.now();
+        for (const input of inputs) {
             quikdown_ast(input);
         }
         expect(Date.now() - start).toBeLessThan(2000);
