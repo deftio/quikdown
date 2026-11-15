@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.3.0 (unreleased)
+## v1.3.0
 
 Editor API for hosts that run the editor headless and draw their own controls ([#39](https://github.com/deftio/quikdown/issues/39), [#41](https://github.com/deftio/quikdown/issues/41)). The parser's output is unchanged except for the `$` fix below. The AST parser has two fixes of its own.
 

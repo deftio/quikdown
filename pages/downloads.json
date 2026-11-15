@@ -187,7 +187,7 @@
   },
   {
     "file": "quikdown_edit_standalone.esm.js",
-    "size": 14894344,
+    "size": 14894342,
     "format": "ESM",
     "minified": false
   },
@@ -202,7 +202,7 @@
   },
   {
     "file": "quikdown_edit_standalone.umd.js",
-    "size": 15231085,
+    "size": 15231083,
     "format": "UMD",
     "minified": false
   },
