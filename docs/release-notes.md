@@ -1,5 +1,26 @@
 # Release Notes
 
+## v1.3.2 (unreleased)
+
+### Fence arguments ([#49](https://github.com/deftio/quikdown/issues/49))
+The first word of a fence info string is now the language everywhere, as in CommonMark. The rest of the string is kept and passed to handlers; quikdown does not interpret it. See [Fence arguments](fences.md#fence-arguments).
+
+- **Core** - ```` ```js run #a ```` gets `class="language-js"` instead of `class="language-js run #a"`. `fence_plugin.render(code, info)` still receives the whole info string. Fences without arguments render as before.
+- **Bidirectional** - `data-qd-lang` keeps the whole info string, so `toMarkdown()` writes the fence line back unchanged. This was already the case; it is now tested.
+- **AST** - `code_block.lang` is the first word, and a new `meta` field holds the rest. `meta` is only present when there is text after the language, so JSON and YAML output for other documents is unchanged.
+- **Editor** - new option `allowFenceArguments` (default `true`):
+  - Built-in renderers and highlight.js dispatch on the first word, so ```` ```mermaid #arch ```` draws a diagram instead of a plain code block.
+  - `customFences` handlers are called as `(code, lang, info)`. A key equal to the whole info string is tried before the first word, so existing keys that contain spaces still match.
+  - Every built-in renderer keeps the whole info string in `data-qd-lang`, so editing in the preview pane keeps the fence line. The `html` fence lost its arguments when DOMPurify loaded late, and an edited CSV table with arguments was not converted back to CSV; both are fixed.
+  - Copy-as-rendered captures `geojson` maps whose fence has arguments.
+  - `allowFenceArguments: false` restores whole-string matching for renderer and handler lookup.
+
+### Fixes
+- **Editor: `customFences` only calls the host's own handlers.** The lookup was a plain property read, so a fence named ```` ```toString ```` or ```` ```constructor ```` called a method inherited from `Object.prototype` and rendered its result. Non-function values are now ignored too.
+
+### Docs
+- `docs/fences.md` said built-in fence names are case-insensitive in the editor. They are matched as written; only highlight.js ignores case. It also gave the wrong class for the core's `<pre>`.
+
 ## v1.3.1
 
 ### Editor: line numbers ([#45](https://github.com/deftio/quikdown/issues/45))

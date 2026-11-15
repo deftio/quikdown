@@ -1361,7 +1361,7 @@ describe('QuikdownEditor Coverage', () => {
             await editor.initPromise;
             const plugin = editor.createFencePlugin();
             const result = plugin.render('some code', 'mytype');
-            expect(customRender).toHaveBeenCalledWith('some code', 'mytype');
+            expect(customRender).toHaveBeenCalledWith('some code', 'mytype', 'mytype');
             expect(result).toBe('<div>custom</div>');
         });
 
@@ -2265,7 +2265,7 @@ describe('QuikdownEditor Coverage', () => {
             });
             await editor.initPromise;
             await editor.setMarkdown('```mycustom\ntest content\n```');
-            expect(customHandler).toHaveBeenCalledWith(expect.stringContaining('test content'), 'mycustom');
+            expect(customHandler).toHaveBeenCalledWith(expect.stringContaining('test content'), 'mycustom', 'mycustom');
         });
 
         test('custom fence handler error falls through gracefully', async () => {

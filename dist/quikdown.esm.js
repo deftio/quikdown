@@ -1,6 +1,6 @@
 /**
  * quikdown - Lightweight Markdown Parser
- * @version 1.3.1
+ * @version 1.3.2
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -125,7 +125,7 @@ function isHRLine(trimmed) {
 // ────────────────────────────────────────────────────────────────────
 
 /** Build-time version stamp (injected by tools/updateVersion) */
-const quikdownVersion = '1.3.1';
+const quikdownVersion = '1.3.2';
 
 /** CSS class prefix used for all generated elements */
 const CLASS_PREFIX = 'quikdown-';
@@ -265,6 +265,15 @@ function headingSlug(text) {
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '') || 'section';
+}
+
+/**
+ * Language of a fenced code block: the first word of the (trimmed) info
+ * string, as in CommonMark. ```js run #id → "js". The rest of the info
+ * string is left for fence plugins and kept verbatim in data-qd-lang.
+ */
+function fenceLang(info) {
+    return info.split(/\s/, 1)[0];
 }
 
 /** Return a unique slug, suffixing -1, -2, … on duplicates. */
@@ -639,7 +648,8 @@ function quikdown(markdown, options = {}) {
     // ── Fenced code blocks ──
     // Matches paired fences: ``` with ``` and ~~~ with ~~~.
     // The fence must start at column 0 of a line (^ with /m flag).
-    // Group 1 = fence marker, Group 2 = language hint, Group 3 = code body.
+    // Group 1 = fence marker, Group 2 = info string (language, then any
+    // arguments), Group 3 = code body.
     html = html.replace(/^(```|~~~)([^\n]*)\n([\s\S]*?)^\1$/gm, (match, fence, lang, code) => {
         const placeholder = `${PLACEHOLDER_CB}${codeBlocks.length}§`;
         const langTrimmed = lang ? lang.trim() : '';
@@ -1112,7 +1122,7 @@ function quikdown(markdown, options = {}) {
 
             if (replacement === undefined) {
                 // Plugin declined — fall back to default rendering.
-                const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
+                const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(fenceLang(block.lang))}"` : '';
                 const codeAttr = inline_styles ? getAttr('code') : langClass;
                 /* istanbul ignore next - bd-only branch */
                 const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';
@@ -1126,7 +1136,7 @@ function quikdown(markdown, options = {}) {
             }
         } else {
             // Default rendering — wrap in <pre><code>.
-            const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(block.lang)}"` : '';
+            const langClass = !inline_styles && block.lang ? ` class="language-${escapeHtml(fenceLang(block.lang))}"` : '';
             const codeAttr = inline_styles ? getAttr('code') : langClass;
             /* istanbul ignore next - bd-only branch */
             const langAttr = bidirectional && block.lang ? ` data-qd-lang="${escapeHtml(block.lang)}"` : '';

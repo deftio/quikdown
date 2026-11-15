@@ -1,6 +1,6 @@
 /**
  * quikdown_json - JSON Markdown Parser
- * @version 1.3.1
+ * @version 1.3.2
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -19,7 +19,7 @@
      */
 
     // Version will be injected at build time
-    const quikdownVersion$1 = '1.3.1';
+    const quikdownVersion$1 = '1.3.2';
 
     // Safety limit to prevent infinite loops in list parsing
     const MAX_LOOP_ITERATIONS = 1000;
@@ -104,7 +104,11 @@
             const fenceMatch = line.match(/^(```|~~~)(.*)$/);
             if (fenceMatch) {
                 const [, openFence, langPart] = fenceMatch;
-                const lang = langPart.trim();
+                // Info string: the first word is the language, the rest (if any)
+                // is kept as `meta`, following mdast.
+                const info = langPart.trim();
+                const lang = info.split(/\s/, 1)[0];
+                const meta = info.slice(lang.length).trim();
                 const codeLines = [];
                 i++;
 
@@ -119,12 +123,14 @@
                     i++;
                 }
 
-                blocks.push({
+                const codeBlock = {
                     type: 'code_block',
                     lang: lang || null,
                     content: codeLines.join('\n'),
                     fence: openFence
-                });
+                };
+                if (meta) codeBlock.meta = meta;
+                blocks.push(codeBlock);
                 continue;
             }
 
@@ -721,7 +727,7 @@
 
 
     // Version will be injected at build time
-    const quikdownVersion = '1.3.1';
+    const quikdownVersion = '1.3.2';
 
     /**
      * Convert markdown to JSON
