@@ -4,7 +4,7 @@
 
 quikdown is a zero-dependency markdown parser for browser and Node.js. It converts markdown to HTML with security by default, supports bidirectional HTML-to-markdown roundtrip, ships an editor component (including headless mode), and provides structured output as AST, JSON, or YAML.
 
-- Version: 1.3.0
+- Version: 1.3.1
 - License: BSD-2-Clause
 - Repository: https://github.com/deftio/quikdown
 - Bundle size: ~17.7 KB minified (core parser), ~127.5 KB (editor), ~7.6 MB / ~2.1 MB gzipped (standalone editor with all fence libraries)
@@ -252,6 +252,7 @@ const fixed = QuikdownEditor.convertLazyLinefeeds(rawMarkdown);
 | `preloadFences` | 'all'\|string[]\|LibraryConfig[]\|null | `null` | Preload fence libraries at construction |
 | `customFences` | object | `{}` | Custom fence handlers `{ lang: (code, lang) => html }` |
 | `plugins` | object | `{}` | Legacy: `{ highlightjs: boolean, mermaid: boolean }` |
+| `lineNumbers` | boolean | `false` | Line numbers beside the source pane |
 | `shortcuts` | boolean | `true` | Keyboard shortcuts; they act only on the editor that has focus |
 | `mount` | string | `'replace'` | `'replace'` takes over the container, `'append'` adds the editor as a child |
 | `syncScroll` | boolean | `false` | Keep both panes at the same relative scroll position in split mode |
@@ -279,6 +280,7 @@ const fixed = QuikdownEditor.convertLazyLinefeeds(rawMarkdown);
 - `getMode(): 'source' | 'split' | 'preview'`
 - `mode` (read-only property)
 - `setSplitPane(pane: 'source' | 'preview'): void`, `getSplitPane()` - the pane split mode shows on a narrow portrait viewport (the toolbar's Preview/Source button)
+- `setLineNumbers(enabled: boolean): void`, `getLineNumbers(): boolean` - line numbers beside the source pane (off by default; a wrapped line keeps one number)
 - `setAllowUnsafeHTML(mode: false | 'limited' | true): void`, `getAllowUnsafeHTML()`, `cycleAllowUnsafeHTML()`
 - `setTheme(theme: 'light' | 'dark' | 'auto'): void`
 - `getTheme(): 'light' | 'dark' | 'auto'`

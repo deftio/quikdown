@@ -1,5 +1,22 @@
 # Release Notes
 
+## v1.3.1
+
+### Editor: line numbers ([#45](https://github.com/deftio/quikdown/issues/45))
+- **`lineNumbers` option** (default `false`) and **`setLineNumbers(enabled)` / `getLineNumbers()`** show line numbers beside the source pane. Numbers start at 1.
+- A line that wraps keeps one number, at the top of the line. Wrapping stays on.
+- Gutter colours: `--qde-gutter-bg`, `--qde-gutter-fg`, `--qde-gutter-border`.
+- With the option off, the editor's layout and styles are as before.
+- Tested in Chromium and WebKit against the textarea's real wrapping (`tests/quikdown-editor-line-numbers.spec.js`).
+
+### Security
+- **Reference-link URLs are now escaped in the `href` attribute.** With `reference_links: true`, a definition such as `[a]: http://x"onmouseover="alert(1)` produced `<a href="http://x"onmouseover="alert(1)">`: the quote ended the attribute and the rest became attributes of the link. Inline links (`[text](url)`) were not affected. `reference_links` is off by default, so only callers that turn it on for untrusted markdown were exposed. Affects `quikdown`, `quikdown_bd` and the editor.
+
+### Fixes
+- **Reference-link definitions survive the HTML to markdown round trip** ([#42](https://github.com/deftio/quikdown/issues/42)). `quikdown_bd.toMarkdown()` kept `[text][id]` but dropped the `[id]: url` line, so the links stopped resolving after an edit in the editor's rendered pane. Definitions are now written at the end of the document, once each, in order of first use. Definitions that no link uses are still not kept.
+- **Footnote reference ids are unique** ([#44](https://github.com/deftio/quikdown/issues/44)). A footnote referenced more than once gave every reference `id="fnref-<id>"`. The first keeps that id; later ones get `fnref-<id>-2`, `fnref-<id>-3`. The back-link still goes to the first reference.
+- **Editor: `allowExternalFetch: false` no longer requests OpenStreetMap tiles in the regular build** ([#43](https://github.com/deftio/quikdown/issues/43)). With no offline basemap available, a `geojson` fence fell back to the tile layer. It now draws the features with no background. The standalone build already used its bundled basemap.
+
 ## v1.3.0
 
 Editor API for hosts that run the editor headless and draw their own controls ([#39](https://github.com/deftio/quikdown/issues/39), [#41](https://github.com/deftio/quikdown/issues/41)). The parser's output is unchanged except for the `$` fix below. The AST parser has two fixes of its own.

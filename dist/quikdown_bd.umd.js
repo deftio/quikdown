@@ -1,6 +1,6 @@
 /**
  * quikdown_bd - Bidirectional Markdown Parser
- * @version 1.3.0
+ * @version 1.3.1
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -131,7 +131,7 @@
     // ────────────────────────────────────────────────────────────────────
 
     /** Build-time version stamp (injected by tools/updateVersion) */
-    const quikdownVersion = '1.3.0';
+    const quikdownVersion = '1.3.1';
 
     /** CSS class prefix used for all generated elements */
     const CLASS_PREFIX = 'quikdown-';
@@ -933,7 +933,13 @@
                 const titleAttr = def.title ? ` title="${escapeHtml(def.title)}"` : '';
                 /* istanbul ignore next - bd-only branch */
                 const refAttr = bidirectional ? ` data-qd-ref="${escapeHtml(id)}"` : '';
-                return `<a${getAttr('a')} href="${sanitizedHref}"${rel}${titleAttr}${refAttr}${dataQd('[ref')}>${displayText}</a>`;
+                // When sanitizing changed the URL, keep the original for the
+                // round trip back to markdown.
+                /* istanbul ignore next - bd-only branch */
+                const refUrlAttr = bidirectional && sanitizedHref !== def.url ? ` data-qd-ref-url="${escapeHtml(def.url)}"` : '';
+                // Definitions are collected before HTML escaping, so the URL is
+                // escaped here: a quote in it must not end the href attribute.
+                return `<a${getAttr('a')} href="${escapeHtml(sanitizedHref)}"${rel}${titleAttr}${refAttr}${refUrlAttr}${dataQd('[ref')}>${displayText}</a>`;
             }
 
             // Full reference: [text][id]  and collapsed: [text][]
@@ -950,6 +956,10 @@
         }
 
         if (footnotes && fnDefs.size > 0) {
+            // A footnote can be referenced more than once. The first reference
+            // keeps the id fnref-<id> (the back-link target); later ones get
+            // fnref-<id>-2, fnref-<id>-3, so ids stay unique.
+            const fnUses = new Map();
             // Footnote markers: [^id]
             html = html.replace(/\[\^([^\]]+)\]/g, (match, id) => {
                 if (!fnDefs.has(id)) return match; // unresolved — leave as text
@@ -963,7 +973,10 @@
                 }
                 /* istanbul ignore next - bd-only branch */
                 const fnAttr = bidirectional ? ` data-qd-fn="${escapeHtml(id)}"` : '';
-                return `<sup${getAttr('sup')}${fnAttr}${dataQd('[^')}><a href="#fn-${escapeHtml(id)}" id="fnref-${escapeHtml(id)}">${fnNum}</a></sup>`;
+                const uses = (fnUses.get(id) || 0) + 1;
+                fnUses.set(id, uses);
+                const refSuffix = uses === 1 ? '' : `-${uses}`;
+                return `<sup${getAttr('sup')}${fnAttr}${dataQd('[^')}><a href="#fn-${escapeHtml(id)}" id="fnref-${escapeHtml(id)}${refSuffix}">${fnNum}</a></sup>`;
             });
         }
 
@@ -1664,6 +1677,10 @@
             return '';
         }
         
+        // Reference-link definitions seen while walking, keyed by lowercased id.
+        // They are written back at the end of the document.
+        const refDefs = new Map();
+
         // Walk the DOM tree and reconstruct markdown
         function walkNode(node, parentContext = {}) {
             if (node.nodeType === Node.TEXT_NODE) {
@@ -1774,6 +1791,14 @@
                     const refId = node.getAttribute('data-qd-ref');
                     if (refId !== null) {
                         const linkText = childContent.trim() || node.getAttribute('data-qd-text') || '';
+                        const defId = refId === '' ? linkText : refId;
+                        if (!refDefs.has(defId.toLowerCase())) {
+                            refDefs.set(defId.toLowerCase(), {
+                                id: defId,
+                                url: node.getAttribute('data-qd-ref-url') || href,
+                                title: node.getAttribute('title')
+                            });
+                        }
                         if (refId === '') {
                             // Collapsed reference: [text][]
                             return `[${linkText}][]`;
@@ -2077,6 +2102,17 @@
         // Clean up
         markdown = markdown.replace(/\n{3,}/g, '\n\n'); // Remove excessive newlines
         markdown = markdown.trim();
+
+        // Write the reference-link definitions back, after the content
+        if (refDefs.size > 0) {
+            const lines = [];
+            for (const { id, url, title } of refDefs.values()) {
+                let line = `[${id}]: ${url}`;
+                if (title) line += title.includes('"') ? ` '${title}'` : ` "${title}"`;
+                lines.push(line);
+            }
+            markdown += '\n\n' + lines.join('\n');
+        }
         
         return markdown;
     };

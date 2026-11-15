@@ -475,11 +475,26 @@ const x = 1;
                 n => '_a *b [c `d ~~e **f __g '.repeat(n),
                 n => 'http://a.b/c_d '.repeat(n),
             ];
-            // 20,000 repeats took 1 to 16 seconds per case with the old
-            // quadratic scanner; all of them together now take well under one.
-            const start = Date.now();
-            for (const make of cases) quikdown_ast(make(20000));
-            expect(Date.now() - start).toBeLessThan(5000);
+            // Compare two sizes instead of a wall-clock limit, so a loaded
+            // machine does not fail the test. Four times the input should
+            // take about four times as long; the old quadratic scanner
+            // took about sixteen times as long.
+            const best = (input) => {
+                let fastest = Infinity;
+                for (let run = 0; run < 3; run++) {
+                    const start = performance.now();
+                    quikdown_ast(input);
+                    fastest = Math.min(fastest, performance.now() - start);
+                }
+                return fastest;
+            };
+            let small = 0;
+            let large = 0;
+            for (const make of cases) {
+                small += best(make(5000));
+                large += best(make(20000));
+            }
+            expect(large / small).toBeLessThan(9);
         });
     });
 });

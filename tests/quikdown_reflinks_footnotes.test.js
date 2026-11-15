@@ -806,3 +806,142 @@ describe('Coverage — Branch targeting', () => {
         expect(html).toContain('title="my title"');
     });
 });
+
+// ════════════════════════════════════════════════════════════════════
+//  v1.3.1 — attribute escaping, unique footnote ids, definition round trip
+// ════════════════════════════════════════════════════════════════════
+
+describe('Reference link URLs are escaped in the href attribute', () => {
+    const opts = { reference_links: true };
+
+    test.each([quikdown, quikdown_bd])('a quote in a definition URL cannot end the attribute', (parse) => {
+        const html = parse('[x][a]\n\n[a]: http://a"onmouseover="alert(1)', opts);
+        expect(html).toContain('href="http://a&quot;onmouseover=&quot;alert(1)"');
+        expect(html).not.toMatch(/<a[^>]*\sonmouseover=/);
+    });
+
+    test('the parsed element has one href and no handler', () => {
+        const div = document.createElement('div');
+        div.innerHTML = quikdown('[x][a] and [a]\n\n[a]: http://a"onmouseover="alert(1)"x="', opts);
+        const links = div.querySelectorAll('a');
+        expect(links).toHaveLength(2);
+        links.forEach(a => {
+            expect(a.hasAttribute('onmouseover')).toBe(false);
+            expect(a.getAttribute('href')).toBe('http://a"onmouseover="alert(1)"x="');
+        });
+    });
+
+    test('ampersands and angle brackets in the URL are escaped once', () => {
+        const html = quikdown("[x][a]\n\n[a]: http://a/?q=1&r='2'", opts);
+        expect(html).toContain('href="http://a/?q=1&amp;r=&#39;2&#39;"');
+    });
+
+    test('unsafe URL schemes are still blocked', () => {
+        const html = quikdown('[x][a]\n\n[a]: javascript:alert(1)', opts);
+        expect(html).toContain('href="#"');
+    });
+});
+
+describe('Footnote reference ids are unique', () => {
+    const opts = { footnotes: true };
+
+    test('a footnote referenced three times gets three ids and one number', () => {
+        const div = document.createElement('div');
+        div.innerHTML = quikdown('A[^1] B[^1] C[^1].\n\n[^1]: note', opts);
+        const refs = Array.from(div.querySelectorAll('sup a'));
+        expect(refs.map(a => a.id)).toEqual(['fnref-1', 'fnref-1-2', 'fnref-1-3']);
+        expect(refs.map(a => a.textContent)).toEqual(['1', '1', '1']);
+        expect(refs.map(a => a.getAttribute('href'))).toEqual(['#fn-1', '#fn-1', '#fn-1']);
+        const ids = Array.from(div.querySelectorAll('[id]')).map(el => el.id);
+        expect(new Set(ids).size).toBe(ids.length);
+        // The back-link goes to the first reference
+        expect(div.querySelector('.quikdown-footnote-backref').getAttribute('href')).toBe('#fnref-1');
+        expect(div.querySelectorAll('li')).toHaveLength(1);
+    });
+
+    test('ids of different footnotes are counted separately', () => {
+        const div = document.createElement('div');
+        div.innerHTML = quikdown('A[^a] B[^b] C[^a] D[^b] E[^b].\n\n[^a]: one\n[^b]: two', opts);
+        expect(Array.from(div.querySelectorAll('sup a')).map(a => a.id))
+            .toEqual(['fnref-a', 'fnref-b', 'fnref-a-2', 'fnref-b-2', 'fnref-b-3']);
+    });
+
+    test('a footnote referenced once keeps the id it had before', () => {
+        expect(quikdown('A[^1].\n\n[^1]: note', opts)).toContain('id="fnref-1"');
+    });
+
+    test('repeated references round-trip through quikdown_bd', () => {
+        const md = 'A[^1] B[^1].\n\n[^1]: note';
+        const back = quikdown_bd.toMarkdown(quikdown_bd(md, opts));
+        expect(back).toContain('A[^1] B[^1].');
+        expect(back.match(/\[\^1\]: note/g)).toHaveLength(1);
+        expect(quikdown_bd(back, opts)).toContain('id="fnref-1-2"');
+    });
+});
+
+describe('Reference definitions survive the HTML to markdown round trip', () => {
+    const opts = { reference_links: true, footnotes: true };
+    const roundTrip = (md) => quikdown_bd.toMarkdown(quikdown_bd(md, opts));
+
+    test('full, shortcut and collapsed references keep their definitions', () => {
+        const md = 'See [the docs][d] and [d] and [Site][].\n\n[d]: https://example.com/docs "Docs"\n[Site]: https://e.com/a?b=1&c=2';
+        expect(roundTrip(md)).toBe(md);
+    });
+
+    test('the result renders to the same HTML and is stable', () => {
+        const md = 'A [one][1], [two][2] and [one][1] again.\n\n[1]: https://one.example/\n[2]: https://two.example/ "Two"';
+        const once = roundTrip(md);
+        expect(once).toBe(md);
+        expect(roundTrip(once)).toBe(once);
+        expect(quikdown_bd(once, opts)).toBe(quikdown_bd(md, opts));
+    });
+
+    test('each definition is written once, in order of first use', () => {
+        const md = '[b] then [a] then [b].\n\n[a]: https://a.example/\n[b]: https://b.example/';
+        expect(roundTrip(md)).toBe('[b] then [a] then [b].\n\n[b]: https://b.example/\n[a]: https://a.example/');
+    });
+
+    test('definitions placed before the text move to the end', () => {
+        expect(roundTrip('[d]: https://example.com/\n\nSee [d].')).toBe('See [d].\n\n[d]: https://example.com/');
+    });
+
+    test('angle-bracket URLs and other title quote styles are normalised', () => {
+        expect(roundTrip("[a] [b] [c]\n\n[a]: <https://a.example/>\n[b]: https://b.example/ 'B'\n[c]: https://c.example/ (C)"))
+            .toBe('[a] [b] [c]\n\n[a]: https://a.example/\n[b]: https://b.example/ "B"\n[c]: https://c.example/ "C"');
+    });
+
+    test('a title containing a double quote is written with single quotes', () => {
+        const md = "[q]\n\n[q]: http://a/ 'say \"hi\"'";
+        expect(roundTrip(md)).toBe(md);
+    });
+
+    test('a URL changed by sanitizing keeps its original text', () => {
+        const md = '[x][j]\n\n[j]: javascript:alert(1)';
+        const html = quikdown_bd(md, opts);
+        expect(html).toContain('href="#"');
+        expect(html).toContain('data-qd-ref-url="javascript:alert(1)"');
+        expect(quikdown_bd.toMarkdown(html)).toBe(md);
+    });
+
+    test('a URL with characters that need escaping round-trips', () => {
+        const md = '[x][a]\n\n[a]: http://a/?q="1"&r=<2';
+        expect(roundTrip(md)).toBe(md);
+    });
+
+    test('edited link text keeps the reference and its definition', () => {
+        const div = document.createElement('div');
+        div.innerHTML = quikdown_bd('See [d].\n\n[d]: https://example.com/', opts);
+        div.querySelector('a').textContent = 'the docs';
+        expect(quikdown_bd.toMarkdown(div.innerHTML)).toBe('See [the docs][d].\n\n[d]: https://example.com/');
+    });
+
+    test('footnote definitions come before reference definitions', () => {
+        const md = 'A[^n] [r].\n\n[^n]: note\n\n[r]: http://r/';
+        expect(roundTrip(md)).toBe(md);
+    });
+
+    test('documents without reference links are unchanged', () => {
+        expect(roundTrip('Plain [link](https://example.com) text.')).toBe('Plain [link](https://example.com) text.');
+    });
+});
+
