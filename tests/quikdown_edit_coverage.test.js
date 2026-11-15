@@ -304,13 +304,15 @@ describe('QuikdownEditor Coverage', () => {
             const errSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
             editor = new QuikdownEditor('#test-editor', { plugins: { highlightjs: true } });
             // Trigger all script errors and CSS timeouts
-            document.querySelectorAll('script[src*="highlight"]').forEach(s => {
+            const scripts = document.querySelectorAll('script[src*="highlight"]');
+            expect(scripts.length).toBeGreaterThanOrEqual(1);
+            scripts.forEach(s => {
                 if (s.onerror) s.onerror(new Error('test'));
             });
             jest.advanceTimersByTime(1100);
             await editor.initPromise;
-            const scripts = document.querySelectorAll('script[src*="highlight"]');
-            expect(scripts.length).toBeGreaterThanOrEqual(1);
+            // A script that failed to load is taken out of the page
+            expect(document.querySelectorAll('script[src*="highlight"]').length).toBe(0);
             warnSpy.mockRestore();
             errSpy.mockRestore();
             jest.useRealTimers();
@@ -445,25 +447,25 @@ describe('QuikdownEditor Coverage', () => {
         });
 
         test('Ctrl+1 switches to source mode', () => {
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: '1', ctrlKey: true }));
+            editor.container.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: '1', ctrlKey: true }));
             expect(editor.currentMode).toBe('source');
         });
 
         test('Ctrl+2 switches to split mode', () => {
             editor.setMode('source');
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: '2', ctrlKey: true }));
+            editor.container.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: '2', ctrlKey: true }));
             expect(editor.currentMode).toBe('split');
         });
 
         test('Ctrl+3 switches to preview mode', () => {
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: '3', ctrlKey: true }));
+            editor.container.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: '3', ctrlKey: true }));
             expect(editor.currentMode).toBe('preview');
         });
 
         test('Ctrl+Z triggers undo', () => {
             editor.updateFromMarkdown('first');
             editor.updateFromMarkdown('second');
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }));
+            editor.container.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'z', ctrlKey: true }));
             expect(editor.getMarkdown()).toBe('first');
         });
 
@@ -471,7 +473,7 @@ describe('QuikdownEditor Coverage', () => {
             editor.updateFromMarkdown('first');
             editor.updateFromMarkdown('second');
             editor.undo();
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Z', ctrlKey: true, shiftKey: true }));
+            editor.container.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Z', ctrlKey: true, shiftKey: true }));
             expect(editor.getMarkdown()).toBe('second');
         });
 
@@ -479,7 +481,7 @@ describe('QuikdownEditor Coverage', () => {
             editor.updateFromMarkdown('first');
             editor.updateFromMarkdown('second');
             editor.undo();
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'y', ctrlKey: true }));
+            editor.container.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'y', ctrlKey: true }));
             expect(editor.getMarkdown()).toBe('second');
         });
     });
@@ -504,7 +506,7 @@ describe('QuikdownEditor Coverage', () => {
             editor.sourceTextarea.dispatchEvent(new Event('input'));
             expect(spy).not.toHaveBeenCalled();
             jest.advanceTimersByTime(50);
-            expect(spy).toHaveBeenCalledWith('test input');
+            expect(spy).toHaveBeenCalledWith('test input', 'user');
         });
 
         test('preview panel input triggers updateFromHTML after debounce', () => {
@@ -534,7 +536,7 @@ describe('QuikdownEditor Coverage', () => {
             editor.sourceTextarea.dispatchEvent(new Event('input'));
             jest.advanceTimersByTime(50);
             expect(spy).toHaveBeenCalledTimes(1);
-            expect(spy).toHaveBeenCalledWith('abc');
+            expect(spy).toHaveBeenCalledWith('abc', 'user');
         });
 
         test('updateFromMarkdown("") shows placeholder in preview', () => {
@@ -904,7 +906,7 @@ describe('QuikdownEditor Coverage', () => {
             editor = new QuikdownEditor('#test-editor', { onChange });
             await editor.initPromise;
             await editor.setMarkdown('test');
-            expect(onChange).toHaveBeenCalledWith('test', expect.any(String));
+            expect(onChange).toHaveBeenCalledWith('test', expect.any(String), { source: 'api' });
         });
 
         test('onModeChange callback fires on mode change', async () => {
@@ -1645,7 +1647,7 @@ describe('QuikdownEditor Coverage', () => {
             editor = new QuikdownEditor('#test-editor', { onChange });
             await editor.initPromise;
             await editor.setMarkdown('# Hello');
-            expect(onChange).toHaveBeenCalledWith('# Hello', expect.any(String));
+            expect(onChange).toHaveBeenCalledWith('# Hello', expect.any(String), { source: 'api' });
         });
 
         test('onChange fires with empty content', async () => {
@@ -2150,7 +2152,7 @@ describe('QuikdownEditor Coverage', () => {
             editor = new QuikdownEditor('#test-editor', { onChange });
             await editor.initPromise;
             editor.updateFromMarkdown('# Hello');
-            expect(onChange).toHaveBeenCalledWith(expect.stringContaining('# Hello'), expect.stringContaining('<h1'));
+            expect(onChange).toHaveBeenCalledWith(expect.stringContaining('# Hello'), expect.stringContaining('<h1'), { source: 'api' });
         });
     });
 

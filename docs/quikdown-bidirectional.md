@@ -177,7 +177,7 @@ const markdown = quikdown_bd.toMarkdown(html);
 ## Limitations
 
 ### What Works Well
-- quikdown-generated HTML converts back perfectly
+- quikdown-generated HTML converts back using its `data-qd` attributes
 - Standard Markdown elements have high fidelity
 - Nested structures are preserved
 - Formatting preferences are maintained

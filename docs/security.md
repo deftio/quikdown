@@ -35,7 +35,7 @@ const html = quikdown(markdown);
 
 ### 2. No HTML Passthrough
 
-Unlike some markdown parsers, quikdown does **not** allow raw HTML to pass through by default. This is an intentional security decision.
+quikdown does **not** allow raw HTML to pass through by default. This is an intentional security decision.
 
 **Why?**
 - Prevents XSS attacks

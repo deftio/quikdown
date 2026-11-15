@@ -2,12 +2,12 @@
 
 > A lightweight, fast markdown-to-HTML parser with built-in XSS protection, plugin support, and a drop-in editor component.
 
-quikdown is a zero-dependency markdown parser for browser and Node.js. It converts markdown to HTML with security by default, supports bidirectional HTML-to-markdown roundtrip, ships a full-featured editor component (including headless mode), and provides structured output as AST, JSON, or YAML.
+quikdown is a zero-dependency markdown parser for browser and Node.js. It converts markdown to HTML with security by default, supports bidirectional HTML-to-markdown roundtrip, ships an editor component (including headless mode), and provides structured output as AST, JSON, or YAML.
 
-- Version: 1.2.22
+- Version: 1.3.0
 - License: BSD-2-Clause
 - Repository: https://github.com/deftio/quikdown
-- Bundle size: ~17.5 KB minified (core parser), ~103.6 KB (editor), ~7.7 MB / ~1.0 MB gzipped (standalone editor with all fence libraries)
+- Bundle size: ~17.7 KB minified (core parser), ~127.5 KB (editor), ~7.6 MB / ~2.1 MB gzipped (standalone editor with all fence libraries)
 - Test coverage: 99.9%
 - Zero runtime dependencies
 - TypeScript definitions included
@@ -18,10 +18,10 @@ quikdown ships nine modules, each available as ESM, UMD, and/or CommonJS:
 
 | Module | Import Path | Purpose | Minified Size |
 |--------|-------------|---------|---------------|
-| quikdown | `quikdown` | Core markdown-to-HTML parser | ~17.5 KB |
-| quikdown_bd | `quikdown/bd` | Bidirectional HTML-to-markdown roundtrip | ~23.3 KB |
-| quikdown_edit | `quikdown/edit` | Drop-in editor with toolbar, preview, undo/redo | ~103.6 KB |
-| quikdown_edit_standalone | (standalone build) | Editor with all fence libraries pre-bundled | ~7.7 MB |
+| quikdown | `quikdown` | Core markdown-to-HTML parser | ~17.7 KB |
+| quikdown_bd | `quikdown/bd` | Bidirectional HTML-to-markdown roundtrip | ~23.4 KB |
+| quikdown_edit | `quikdown/edit` | Drop-in editor with toolbar, preview, undo/redo, formatting and selection API | ~127.5 KB |
+| quikdown_edit_standalone | `quikdown/edit-standalone` (ESM and UMD only) | Editor with all fence libraries pre-bundled | ~7.6 MB |
 | quikdown_ast | `quikdown/ast` | Markdown to Abstract Syntax Tree | small |
 | quikdown_json | `quikdown/json` | Markdown to JSON string | small |
 | quikdown_yaml | `quikdown/yaml` | Markdown to YAML string | small |
@@ -150,11 +150,11 @@ QuikdownEditor is a drop-in markdown editing component with source/split/preview
 
 | Build | Files | Size | When to Use |
 |-------|-------|------|-------------|
-| **Regular** | `quikdown_edit.esm.min.js`, `.umd.min.js`, `.cjs` | ~103.6 KB | Standard use. Fence libraries lazy-loaded from CDN on first encounter. Best initial load time. |
-| **Standalone** | `quikdown_edit_standalone.esm.min.js`, `.umd.min.js` | ~7.7 MB | Offline / air-gapped / Electron / PWA. All fence libraries pre-bundled. Zero network calls. |
-| **TypeScript** | `quikdown_edit.d.ts` | 6.4 KB | Full type definitions for all editor APIs. |
+| **Regular** | `quikdown_edit.esm.min.js`, `.umd.min.js`, `.cjs` | ~127.5 KB | Standard use. Fence libraries lazy-loaded from CDN on first encounter. |
+| **Standalone** | `quikdown_edit_standalone.esm.min.js`, `.umd.min.js` | ~7.6 MB | Offline / air-gapped / Electron / PWA. All fence libraries pre-bundled. No network calls. |
+| **TypeScript** | `quikdown_edit.d.ts`, `quikdown_edit_standalone.d.ts` | 12 KB | Type definitions for the editor's public API. |
 
-**Regular vs. Standalone:** The regular editor is ~103.6 KB and lazy-loads fence libraries (Highlight.js, Mermaid, MathJax, Leaflet, Three.js, ABCJS, Vega) from CDN when a fence block is first encountered. The standalone editor bundles all libraries for instant offline rendering (~7.7 MB, ~1.0 MB gzipped). Both have the exact same API.
+**Regular vs. Standalone:** The regular editor is ~127.5 KB and lazy-loads fence libraries (Highlight.js, Mermaid, MathJax, Leaflet, Three.js, ABCJS, Vega) from CDN when a fence block is first encountered. The standalone editor bundles all libraries for instant offline rendering (~7.6 MB, ~2.1 MB gzipped). Both have the exact same API.
 
 **Standalone bundles:** Highlight.js (core + 12 languages: JS, TS, Python, Java, C, C++, CSS, HTML/XML, JSON, Bash, Shell, SQL), Mermaid, DOMPurify, Leaflet, Three.js, ABCJS, Vega, Vega-Lite, Vega-Embed, and MathJax.
 
@@ -186,13 +186,13 @@ const editor = new QuikdownEditor('#editor', {
 
 ### Headless Mode (Custom UI)
 
-Set `showToolbar: false` to hide the built-in toolbar and control the editor entirely through its API. This enables building a fully custom UI on top of the editor engine.
+Set `showToolbar: false` to hide the built-in toolbar and control the editor entirely through its API. A host can then build its own UI on top of the editor.
 
 ```javascript
 const editor = new QuikdownEditor('#container', {
   showToolbar: false,
   mode: 'split',
-  onChange: (md, html) => updateMyCustomPreview(html)
+  onChange: (md, html, meta) => updateMyCustomPreview(html)  // meta.source: 'user' | 'api' | 'format' | 'edit' | 'undo' | 'redo'
 });
 
 // Wire up your own controls
@@ -203,6 +203,17 @@ myCopyRenderedBtn.onclick = () => editor.copyRendered();
 myModeSelect.onchange = (e) => editor.setMode(e.target.value);
 myThemeToggle.onclick = () =>
   editor.setTheme(editor.getTheme() === 'light' ? 'dark' : 'light');
+
+// Formatting works in the source pane and the rendered pane
+myBoldBtn.onclick = () => editor.format('bold');
+myH2Btn.onclick = () => editor.format('h2');
+myLinkBtn.onclick = () => editor.format('link', 'https://example.com');
+const state = editor.getFormatState();   // { bold, italic, strike, code, link, heading, list, quote, codeblock }
+
+// Selection and edits use character offsets into the markdown
+const { start, end, text, pane } = editor.getSelection();
+editor.insertText('inserted at the caret');
+editor.replaceRange(0, 5, 'Hello');
 
 // Programmatic content control
 await editor.setMarkdown('# New content');
@@ -241,21 +252,34 @@ const fixed = QuikdownEditor.convertLazyLinefeeds(rawMarkdown);
 | `preloadFences` | 'all'\|string[]\|LibraryConfig[]\|null | `null` | Preload fence libraries at construction |
 | `customFences` | object | `{}` | Custom fence handlers `{ lang: (code, lang) => html }` |
 | `plugins` | object | `{}` | Legacy: `{ highlightjs: boolean, mermaid: boolean }` |
-| `onChange` | function | `null` | `(markdown, html) => void` |
+| `shortcuts` | boolean | `true` | Keyboard shortcuts; they act only on the editor that has focus |
+| `mount` | string | `'replace'` | `'replace'` takes over the container, `'append'` adds the editor as a child |
+| `syncScroll` | boolean | `false` | Keep both panes at the same relative scroll position in split mode |
+| `allowExternalFetch` | boolean | `true` (`false` in standalone) | Allow fence renderers to fetch external resources |
+| `resolveImageSrc` | function | `null` | `(src, { alt, title }) => string`; rewrites image URLs for display only |
+| `assetBase` | string | `null` | Standalone build: directory URL for its basemap files |
+| `onChange` | function | `null` | `(markdown, html, meta) => void`; `meta.source` is `'user'`, `'api'`, `'format'`, `'edit'`, `'undo'` or `'redo'` |
 | `onModeChange` | function | `null` | `(mode) => void` |
+| `onRender` | function | `null` | `(previewElement) => void`, after every preview render |
+| `onSelectionChange` | function | `null` | `({ start, end, text, pane, format }) => void` |
+| `onLinkClick` | function | `null` | `(href, event) => void \| true`; return `true` to let the browser follow the link |
 
 ### Editor Instance Methods
 
 **Content:**
 - `getMarkdown(): string`
-- `setMarkdown(markdown: string): Promise<void>`
+- `setMarkdown(markdown: string, options?: { history?: 'keep' | 'reset' | 'push', source?: string }): Promise<void>` - `history: 'reset'` clears undo when loading a different document
 - `getHTML(): string`
+- `flush(): void` - apply an edit still waiting on the debounce timer (`getMarkdown()` and `getHTML()` do this themselves)
 - `markdown` (property getter/setter)
 - `html` (read-only property)
 
 **View:**
 - `setMode(mode: 'source' | 'split' | 'preview'): void`
+- `getMode(): 'source' | 'split' | 'preview'`
 - `mode` (read-only property)
+- `setSplitPane(pane: 'source' | 'preview'): void`, `getSplitPane()` - the pane split mode shows on a narrow portrait viewport (the toolbar's Preview/Source button)
+- `setAllowUnsafeHTML(mode: false | 'limited' | true): void`, `getAllowUnsafeHTML()`, `cycleAllowUnsafeHTML()`
 - `setTheme(theme: 'light' | 'dark' | 'auto'): void`
 - `getTheme(): 'light' | 'dark' | 'auto'`
 - `setLazyLinefeeds(enabled: boolean): void`
@@ -269,6 +293,24 @@ const fixed = QuikdownEditor.convertLazyLinefeeds(rawMarkdown);
 - `canUndo(): boolean`
 - `canRedo(): boolean`
 - `clearHistory(): void`
+- `getHistory(): EditorHistory`, `setHistory(state: EditorHistory): void` - save and restore undo history per document
+
+**Selection and edits** (work in either pane; offsets are character offsets into the markdown):
+- `getSelection(): { start, end, text, pane }`
+- `setSelection(start: number, end?: number, pane?: 'source' | 'preview'): { start, end }`
+- `insertText(text: string): { start, end }`
+- `replaceRange(start: number, end: number, text: string, select?: boolean): { start, end }`
+- `focus(pane?: 'source' | 'preview'): void`
+- `getFocusedPane(): 'source' | 'preview' | null`
+
+**Formatting** (works in either pane, same result in Chromium, Firefox and WebKit):
+- `format(command, value?): boolean` - commands: `bold`, `italic`, `strike`, `code`, `link`, `h1`-`h6`, `heading`, `paragraph`, `ul`, `ol`, `task`, `quote`, `codeblock`, `hr`, `table`, `indent`, `outdent`. Inline commands toggle.
+- `getFormatState(): { bold, italic, strike, code, link, heading, list, quote, codeblock }` - for toolbar pressed states
+
+**Scroll and lines** (line numbers are zero-based):
+- `getScroll()`, `setScroll(scroll)`
+- `scrollToLine(line: number, pane?: 'source' | 'preview'): Element | null`
+- `lineOf(element: Element): number` - markdown line of a preview element
 
 **Transforms:**
 - `removeHR(): Promise<void>` - Remove horizontal rules (fence-safe, table-safe)
@@ -283,11 +325,15 @@ const fixed = QuikdownEditor.convertLazyLinefeeds(rawMarkdown);
 - `loadCSS(href: string): Promise<void>` - Load an external stylesheet
 
 **Lifecycle:**
-- `destroy(): void` - Remove listeners, styles, clear container
+- `destroy(): void` - Remove the editor's listeners, timers and DOM. Safe to call twice. Each editor keeps its own state, so several can be created and destroyed on one page (for example one per chat message).
 
 **Static:**
 - `QuikdownEditor.removeHRFromMarkdown(markdown: string): string`
 - `QuikdownEditor.convertLazyLinefeeds(markdown: string): string`
+- `QuikdownEditor.formatMarkdown(markdown, start, end, command, value?): { markdown, start, end } | null` - the formatting transform without an editor
+- `QuikdownEditor.getFormatState(markdown, start, end)`
+- `QuikdownEditor.mapOffset(from, to, offset): number`
+- `QuikdownEditor.FORMAT_COMMANDS`
 - `QuikdownEditor.SAFE_HTML_TAGS` - Curated whitelist for `allow_unsafe_html`
 
 ### Editor Keyboard Shortcuts
@@ -300,6 +346,11 @@ const fixed = QuikdownEditor.convertLazyLinefeeds(rawMarkdown);
 | Ctrl/Cmd + Z | Undo |
 | Ctrl/Cmd + Shift + Z | Redo |
 | Ctrl/Cmd + Y | Redo |
+| Ctrl/Cmd + B | Bold (either pane) |
+| Ctrl/Cmd + I | Italic (either pane) |
+| Tab / Shift + Tab | Indent / outdent the list item under the caret |
+
+Shortcuts act only on the editor that has keyboard focus. Set `shortcuts: false` to turn them off.
 
 ### Editor UI Structure
 
@@ -555,6 +606,8 @@ The editor injects its own CSS (`<style id="qde-styles">`). Themes are controlle
 
 Highlight.js automatically switches between light and dark stylesheets to match the editor theme.
 
+The built-in stylesheet reads CSS custom properties, so a host can restyle the editor without overriding rules: `--qde-bg`, `--qde-fg`, `--qde-border`, `--qde-accent`, `--qde-font`, `--qde-font-size`, `--qde-toolbar-bg`, `--qde-btn-bg`, `--qde-source-font`, `--qde-preview-font-size`, `--qde-code-bg` and others. The full list is in docs/quikdown-editor.md.
+
 ---
 
 ## Security
@@ -656,12 +709,13 @@ dist/
   quikdown.d.ts                          # Core parser - TypeScript defs
   quikdown.light.css / .dark.css         # Theme stylesheets
   quikdown_bd.*                          # Bidirectional (ESM, UMD, CJS, d.ts)
-  quikdown_edit.esm.min.js              # Editor - ES Module (~103.6 KB)
-  quikdown_edit.umd.min.js              # Editor - UMD (~103.6 KB)
+  quikdown_edit.esm.min.js              # Editor - ES Module (~127.5 KB)
+  quikdown_edit.umd.min.js              # Editor - UMD (~127.5 KB)
   quikdown_edit.cjs                      # Editor - CommonJS
   quikdown_edit.d.ts                     # Editor - TypeScript defs
-  quikdown_edit_standalone.esm.min.js   # Standalone editor (~7.7 MB)
+  quikdown_edit_standalone.esm.min.js   # Standalone editor (~7.6 MB)
   quikdown_edit_standalone.umd.min.js   # Standalone editor - UMD
+  quikdown_edit_standalone.d.ts         # Standalone editor - TypeScript defs
   quikdown_ast.*                         # AST parser (all formats)
   quikdown_json.*                        # JSON converter (all formats)
   quikdown_yaml.*                        # YAML converter (all formats)

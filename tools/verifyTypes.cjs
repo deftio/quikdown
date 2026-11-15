@@ -64,7 +64,8 @@ try {
     for (const [label, args] of matrix) run(label, process.execPath, [TSC, ...base, ...args]);
 
     // 3. Runtime: every entry point loads via import and via require
-    const subpaths = Object.keys(pkg.exports).filter(k => k !== './package.json')
+    // (the standalone editor is a browser bundle — it is type-checked above, not loaded in Node)
+    const subpaths = Object.keys(pkg.exports).filter(k => k !== './package.json' && k !== './edit-standalone')
         .map(k => 'quikdown' + k.slice(1));
     fs.writeFileSync(path.join(tmp, 'run.mjs'),
         subpaths.map((s, i) => `import m${i} from '${s}';\nif (typeof m${i} !== 'function') throw new Error('${s}: default export is ' + typeof m${i});`).join('\n') +

@@ -1,5 +1,71 @@
 # Release Notes
 
+## v1.3.0 (unreleased)
+
+Editor API for hosts that run the editor headless and draw their own controls ([#39](https://github.com/deftio/quikdown/issues/39), [#41](https://github.com/deftio/quikdown/issues/41)). The parser's output is unchanged except for the `$` fix below. The AST parser has two fixes of its own.
+
+### Editor: formatting
+- **Cmd/Ctrl+B and Cmd/Ctrl+I now work in the rendered pane in Safari and other WebKit hosts** (WKWebView, Tauri), and in the source pane, where they previously did nothing in any browser. The editor handles the keys itself instead of relying on the browser's `contenteditable` defaults, which WebKit does not provide. (#39)
+- **`editor.format(command, value?)`**: bold, italic, strike, code, link, h1–h6, heading, paragraph, ul, ol, task, quote, codeblock, hr, table, indent, outdent. Inline commands toggle. Works in either pane.
+- **`editor.getFormatState()`** returns `{ bold, italic, strike, code, link, heading, list, quote, codeblock }` at the caret, for toolbar pressed states.
+- **Tab / Shift+Tab** indent and outdent the list item under the caret in either pane. Outside a list, Tab keeps its normal meaning.
+- Statics for use without an editor: `QuikdownEditor.formatMarkdown()`, `getFormatState()`, `mapOffset()`, `FORMAT_COMMANDS`.
+- Formatting is done on the markdown text, so it behaves the same in every engine and does not use `document.execCommand`.
+
+### Editor: selection, events, history, scroll (#41)
+- **Selection and edits in either pane**: `getSelection()`, `setSelection()`, `insertText()`, `replaceRange()`, `focus()`, `getFocusedPane()`. Offsets are into the markdown, including when the user is in the rendered pane.
+- **`getMode()`**.
+- **`onChange(markdown, html, meta)`**: new third argument, `meta.source` is `'user'`, `'api'`, `'format'`, `'edit'`, `'undo'` or `'redo'`.
+- **New callbacks**: `onRender(previewEl)`, `onSelectionChange({ start, end, text, pane, format })`, `onLinkClick(href, event)`.
+- **History per document**: `getHistory()`, `setHistory()`, and `setMarkdown(md, { history: 'keep' | 'reset' | 'push' })`.
+- **Scroll and lines**: `getScroll()`, `setScroll()`, `scrollToLine(line, pane?)`, `lineOf(element)`, and a `syncScroll` option (proportional).
+- **`resolveImageSrc(src, { alt, title })`** option rewrites image URLs for display; the markdown keeps the original.
+- **`mount: 'append'`** adds the editor as a child of the container instead of taking it over.
+- **`flush()`**, and `getMarkdown()` / `getHTML()` now include text typed within the debounce window.
+- **CSS custom properties** (`--qde-bg`, `--qde-fg`, `--qde-border`, `--qde-font`, `--qde-preview-font-size`, and others) are read by the built-in stylesheet, with the previous values as fallbacks.
+- **`shortcuts: false`** turns the editor's keyboard shortcuts off.
+- **`setSplitPane(pane)` / `getSplitPane()`** switch the pane that split mode shows on a narrow portrait viewport, which only the toolbar's Preview/Source button could do before.
+
+### Editor: several editors on one page
+- **Keyboard shortcuts act only on the editor that has focus.** They were bound to `document`, so Cmd/Ctrl+Z ran undo in every editor on the page and was cancelled in unrelated inputs, and Cmd/Ctrl+1/2/3 switched every editor's mode.
+- **`destroy()` now removes everything the editor added**: its listeners (the `document` listener stayed before, so a destroyed editor kept reacting to keys), media-query listeners, pending timers, and Leaflet maps. It is safe to call twice, and safe to call while fence libraries are still loading.
+- Default option objects (`plugins`, `customFences`) are no longer shared between instances.
+- `setMode()` and `destroy()` keep classes the host put on the container; `setMode()` used to overwrite them.
+
+### Behaviour changes to check when upgrading
+- Shortcuts need focus inside the editor. A page that relied on Cmd/Ctrl+1/2/3 or Cmd/Ctrl+Z working with focus elsewhere must focus the editor first (`editor.focus()`).
+- Cmd/Ctrl+B and I in the rendered pane go through `format()`: the preview is re-rendered from the markdown, where Chrome and Firefox used to edit the DOM in place.
+- `onChange` receives a third argument.
+
+### Fixes
+- **`$` sequences in code no longer get corrupted.** `` `$$` `` rendered as `$`, and `$&`, `` $` `` and `$'` inside fenced or inline code were replaced with pieces of the surrounding text. Affects `quikdown`, `quikdown_bd` and the editor.
+- **Text edited inside a link in the rendered pane is kept.** The round trip used the link's original text, so the edit was reverted.
+- **Text edited in preview-only mode shows in the source pane** after switching modes; the source used to keep the old text.
+- **SVG fences**: event-handler attributes on the root `<svg>` element are now removed like those on its children.
+- `copy()` no longer logs "Failed to copy" when the editor has no toolbar.
+- **A failed MathJax load is retried.** After a failed load the editor left its MathJax config object on `window`, which made MathJax look loaded, so math stayed unrendered until the page was reloaded. The config is now removed on failure and a later render tries again, at most once every 5 seconds. The same applies to a failed `preloadFences` load of `math`.
+- **`preloadFences: 'all'` requests abcjs once.** The `abc` and `music` fences use the same library and each requested it. Requests for the same script URL that are in flight at the same time now share one `<script>` element, across editors as well. A script that fails to load is removed from the page.
+
+### AST parser (`quikdown_ast`, and `quikdown_json`, `quikdown_yaml`, `quikdown_ast_html`, which use it)
+- **Fixed a hang.** A line containing `|` followed by a line of only spaces (for example `a|b` then a line with one space) made the parser loop forever. It is now a paragraph.
+- **Hard line breaks are found on every line of a paragraph.** Two trailing spaces or a trailing backslash were only detected on the first line, or on later lines that happened to contain a formatting character or the letter `n`. A paragraph of three lines `ab`, `cd` plus two spaces, `ef` now gives a `br` node after `cd`.
+- **Inline parsing time is linear in the text length.** It was quadratic: a paragraph with 20,000 markers took 1 to 16 seconds depending on the marker, and now takes a few milliseconds.
+- Apart from the hard-break fix, output is unchanged: 150,000 generated inputs and 946 markdown files give the same AST as before.
+- Preloading a fence library with CSS (for example Leaflet) no longer leaves that stylesheet disabled in the dark theme.
+
+### TypeScript / packaging
+- `quikdown/edit` types now cover the whole public API: the new methods and options, plus members that existed but were untyped (`clearHistory`, `copy`, `copyRendered`, `convertLazyLinefeeds`, `markdown` / `html` / `mode`, `onChange`, `onModeChange`, `initialContent`, the statics). `toggleLazyLinefeeds`, which was declared but never existed, is removed.
+- **New `quikdown/edit-standalone` export** for the standalone bundle, with types. ESM and UMD only.
+- `assetBase` option tells the standalone build where to fetch its basemap files.
+
+### Docs
+- `docs/quikdown-editor.md` documents methods that existed but were not listed: `copy()`, `setTheme()` / `getTheme()`, `setAllowUnsafeHTML()` / `getAllowUnsafeHTML()` / `cycleAllowUnsafeHTML()`, `getDebounceDelay()`.
+- Wording in the docs and site was made plainer in a few places.
+
+### Tests
+- New unit tests for the formatting transforms, the host API, and many editors created and destroyed on one page; new tests for the existing fence renderers, copy and plugin loading. Coverage of the editor bundle goes from 77% to 99% of statements and from 70% to 96% of branches.
+- New browser tests (`tests/quikdown-editor-host-api.spec.js`) that also run in WebKit with `QD_WEBKIT=1`.
+
 ## v1.2.23
 
 Changes driven by a review of how a downstream application uses quikdown to render LLM output.

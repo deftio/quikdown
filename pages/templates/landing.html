@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>quikdown — Markdown done right. From parser to editor.</title>
-  <meta name="description" content="Tiny, secure markdown for browsers and Node — with a drop-in editor that handles everything from Mermaid diagrams to MathJax equations to GeoJSON maps. Parser and bidirectional modules have zero runtime dependencies.">
+  <meta name="description" content="Small markdown parser with XSS protection for browsers and Node, with a drop-in editor that renders Mermaid diagrams, MathJax equations, GeoJSON maps and other fences. Parser and bidirectional modules have zero runtime dependencies.">
   <meta name="keywords" content="markdown parser, markdown editor, javascript markdown, secure markdown, xss protection, mermaid editor, mathjax editor, dillinger alternative, embedded markdown editor, headless markdown editor, bidirectional markdown">
   <meta name="author" content="deftio@deftio.com">
   <meta name="theme-color" content="#9550bb">
@@ -15,7 +15,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="quikdown">
   <meta property="og:title" content="quikdown — Markdown done right. From parser to editor.">
-  <meta property="og:description" content="Tiny, secure markdown for browsers and Node. Includes a drop-in editor with bidirectional editing, Mermaid, MathJax, GeoJSON, and more.">
+  <meta property="og:description" content="Small markdown parser with XSS protection for browsers and Node. Includes a drop-in editor with bidirectional editing, Mermaid, MathJax, GeoJSON, and more.">
   <meta property="og:url" content="https://deftio.github.io/quikdown/pages/">
   <meta property="og:image" content="https://deftio.github.io/quikdown/pages/assets/og-landing.png">
   <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="quikdown — Markdown done right">
-  <meta name="twitter:description" content="A tiny markdown parser with a drop-in editor for browsers and Node. Mermaid, MathJax, SVG, GeoJSON. Zero deps.">
+  <meta name="twitter:description" content="A small markdown parser with a drop-in editor for browsers and Node. Mermaid, MathJax, SVG, GeoJSON. Zero deps.">
   <meta name="twitter:image" content="https://deftio.github.io/quikdown/pages/assets/og-landing.png">
 
   <!-- JSON-LD -->
@@ -33,7 +33,7 @@
     "@context": "https://schema.org",
     "@type": "SoftwareSourceCode",
     "name": "quikdown",
-    "description": "Tiny, secure markdown parser and drop-in editor for browsers and Node.",
+    "description": "Small markdown parser with XSS protection and a drop-in editor for browsers and Node.",
     "codeRepository": "https://github.com/deftio/quikdown",
     "programmingLanguage": "JavaScript",
     "license": "https://opensource.org/licenses/BSD-2-Clause",
@@ -200,7 +200,7 @@ new QuikdownEditor('#editor', {
     </section>
 
     <!-- ============================================================
-         Killer features
+         Capabilities
          ============================================================ -->
     <section class="qd-section">
       <div class="qd-container">
@@ -210,7 +210,7 @@ new QuikdownEditor('#editor', {
           <div class="qd-feature">
             <div class="qd-feature-icon">↔</div>
             <h4>Bidirectional editing</h4>
-            <p>Edit either pane. Both stay in sync. Round-trip preserves formatting, fences, and tables. Nobody else does this well.</p>
+            <p>Edit either pane. Both stay in sync. Round-trip preserves formatting, fences, and tables.</p>
           </div>
           <div class="qd-feature">
             <div class="qd-feature-icon">⚙</div>
@@ -225,7 +225,7 @@ new QuikdownEditor('#editor', {
           <div class="qd-feature">
             <div class="qd-feature-icon">⧉</div>
             <h4>Copy as rich text</h4>
-            <p>Copies the rendered preview to your clipboard with images, tables, and rendered fences intact. Paste into Gmail, Word, Slack, Notion — it just works.</p>
+            <p>Copies the rendered preview to your clipboard with images, tables, and rendered fences intact. Paste into Gmail, Word, Slack or Notion.</p>
           </div>
           <div class="qd-feature">
             <div class="qd-feature-icon">◑</div>

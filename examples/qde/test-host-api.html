@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuikdownEditor host API test page</title>
+    <style>
+        body { margin: 0; padding: 12px; font-family: sans-serif; }
+        /* id selectors: the editor's own stylesheet sets height: 100% on its root */
+        #a, #b, #themed { height: 220px; margin-bottom: 12px; }
+        #themed { --qde-bg: rgb(250, 240, 230); --qde-fg: rgb(10, 20, 30); --qde-preview-font-size: 21px; }
+    </style>
+</head>
+<body>
+    <!-- Used by tests/quikdown-editor-host-api.spec.js. The spec creates the editors. -->
+    <input id="plain" type="text" aria-label="plain input">
+    <button id="host-button" type="button">host toolbar button</button>
+    <div id="a" class="slot"></div>
+    <div id="b" class="slot"></div>
+    <div id="themed" class="slot"></div>
+    <script type="module">
+        import QuikdownEditor from '../../dist/quikdown_edit.esm.js';
+        window.QuikdownEditor = QuikdownEditor;
+        window.ready = true;
+    </script>
+</body>
+</html>

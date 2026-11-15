@@ -390,6 +390,7 @@ test.describe('Undo/Redo E2E', () => {
         await page.evaluate(() => {
             window.editor._markdown = '# First';
             window.editor.updateFromMarkdown('# Second');
+            window.editor.focus(); // shortcuts act on the editor that has focus
         });
         await page.waitForTimeout(200);
 
@@ -403,6 +404,7 @@ test.describe('Undo/Redo E2E', () => {
         await page.evaluate(() => {
             window.editor._markdown = '# First';
             window.editor.updateFromMarkdown('# Second');
+            window.editor.focus(); // shortcuts act on the editor that has focus
         });
         await page.waitForTimeout(200);
 

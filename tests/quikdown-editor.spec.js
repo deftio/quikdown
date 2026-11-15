@@ -83,6 +83,9 @@ test.describe('QuikdownEditor E2E Tests', () => {
         });
 
         test('should use keyboard shortcuts for mode switching', async () => {
+            // Shortcuts act on the editor that has focus
+            await page.locator('.qde-textarea').click();
+
             // Ctrl+1 for source mode
             await page.keyboard.press('Control+1');
             await expect(page.locator('.qde-container')).toHaveClass(/qde-mode-source/);

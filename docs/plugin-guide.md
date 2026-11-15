@@ -547,7 +547,7 @@ const debugPlugin = {
 
 ## Real-World Example: Complete Plugin
 
-Here's a production-ready plugin example:
+Here is a complete plugin example:
 
 ```javascript
 /**

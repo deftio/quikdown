@@ -4,7 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/quikdown.svg)](https://www.npmjs.com/package/quikdown)
 [![Coverage](https://img.shields.io/badge/coverage-99.9%25-brightgreen)](https://github.com/deftio/quikdown)
 [![License: BSD-2-Clause](https://img.shields.io/badge/License-BSD%202--Clause-blue.svg)](https://opensource.org/licenses/BSD-2-Clause)
-[![Bundle Size](https://img.shields.io/badge/minified-17.6KB-green.svg)](https://bundlephobia.com/package/quikdown)
+[![Bundle Size](https://img.shields.io/badge/minified-17.7KB-green.svg)](https://bundlephobia.com/package/quikdown)
 
 Quikdown is a small, safe, bidirectional Markdown parser with a drop-in editor for browser and Node.js apps — with rich fenced-block rendering, Markdown ↔ HTML round-tripping, undo/redo, headless APIs, MCP tools, and a standalone offline build.
 
@@ -31,7 +31,7 @@ Quikdown intentionally does not try to be a full CommonMark implementation or a 
 * **Drop-in editor** — one `<div>`, one import. Source, split, and preview modes with toolbar, themes, undo/redo, copy-as-rich-text, and rich fence rendering.
 * **Bidirectional Markdown Parser Lib** — convert Markdown → HTML and supported Quikdown HTML → Markdown. Edit the rendered side and get Markdown back.
 * **Rich fences** — built-in editor renderers for syntax-highlighted code, Mermaid, MathJax, SVG, CSV/TSV/PSV tables, GeoJSON maps, STL models, ABC music notation, Vega/Vega-Lite charts, and sanitized raw HTML.
-* **Small core** — approximately 15–17 KB minified for the parser, with zero runtime dependencies.
+* **Small core** — approximately 18 KB minified for the parser, with zero runtime dependencies.
 * **Safe by default** — HTML is escaped, unsafe URL schemes are blocked, and the core parser uses no `eval` or dynamic regular expressions.
 * **Offline standalone build** — a self-contained editor bundle for air-gapped, regulated, local, field, or desktop-app use with rich fence support.
 * **LLM/agent friendly** — stream Markdown into the editor, let an agent modify the document, and roll back mistakes with programmatic undo/redo.
@@ -45,10 +45,10 @@ Use only the pieces you need.
 
 | Module | Size | Purpose |
 | --- | --- | --- |
-| quikdown.js | ~15–17 KB | Markdown → HTML parser. Safe defaults, fence plugin callbacks, inline styles or CSS classes. |
-| quikdown_bd.js | ~22.7 KB | Bidirectional Markdown ↔ HTML conversion. |
-| quikdown_edit.js | ~102.9 KB | Drop-in split-view headless editor control with undo/redo, toolbar, themes, copy-as-rich-text, and lazy-loaded fence plugins. |
-| quikdown_edit_standalone.js | ~7.7 MB / ~1 MB gzipped | Offline editor with all fence libraries bundled. No CDN required. |
+| quikdown.js | ~18 KB | Markdown → HTML parser. Safe defaults, fence plugin callbacks, inline styles or CSS classes. |
+| quikdown_bd.js | ~23.4 KB | Bidirectional Markdown ↔ HTML conversion. |
+| quikdown_edit.js | ~127.5 KB | Drop-in split-view headless editor control with undo/redo, toolbar, themes, copy-as-rich-text, and lazy-loaded fence plugins. |
+| quikdown_edit_standalone.js | ~7.6 MB / ~2.1 MB gzipped | Offline editor with all fence libraries bundled. No CDN required. |
 | quikdown_mcp.js | ~26 KB | MCP server with 24 tools for AI agents. |
 | quikdown_ast / json / yaml / ast_html | ~5–8 KB each | Companion modules for structured output and AST-based rendering. |
 
@@ -595,8 +595,8 @@ Quikdown overlaps with Markdown parsers, textarea-based Markdown editors, and la
 
 |  | Quikdown | marked | markdown-it | ProseMirror + Markdown |
 | --- | --- | --- | --- | --- |
-| Parser size | ~15–17 KB | ~40 KB | ~100 KB | ~200 KB+ |
-| Editor included | Yes, ~102.9 KB | No | No | Yes, large stack |
+| Parser size | ~18 KB | ~40 KB | ~100 KB | ~200 KB+ |
+| Editor included | Yes, ~127.5 KB | No | No | Yes, large stack |
 | Bidirectional Markdown ↔ HTML | Yes | No | No | Yes, with framework integration |
 | Rich fence rendering | Built into editor | Plugin/custom | Plugin/custom | Plugin/schema work |
 | Fence round-trip preservation | Yes | No | No | Custom implementation |

@@ -10,6 +10,7 @@ Quikdown Editor is a drop-in markdown editor control that provides a complete ed
 - [API Reference](#api-reference)
 - [View Modes](#view-modes)
 - [Themes](#themes)
+- [Host API](#host-api)
 - [Plugin Integration](#plugin-integration)
 - [Events and Callbacks](#events-and-callbacks)
 - [Keyboard Shortcuts](#keyboard-shortcuts)
@@ -107,6 +108,14 @@ const editor = new QuikdownEditor('#editor', {
 | `enableComplexFences` | boolean | `true` | Enable complex fence rendering (mermaid, math, geojson, stl, etc.) |
 | `inline_styles` | boolean | `false` | Embed styles inline instead of using class-based CSS |
 | `onModeChange` | function | `null` | Callback when mode changes |
+| `shortcuts` | boolean | `true` | Keyboard shortcuts for the editor that has focus (see [Keyboard Shortcuts](#keyboard-shortcuts)) |
+| `mount` | string | `'replace'` | `'replace'` takes over the container; `'append'` adds the editor as a child and leaves the container's other content alone |
+| `syncScroll` | boolean | `false` | Keep both panes at the same relative scroll position in split mode |
+| `resolveImageSrc` | function | `null` | `(src, { alt, title }) => string` — rewrite image URLs for display only |
+| `onRender` | function | `null` | `(previewElement) => void` — after every render of the preview |
+| `onSelectionChange` | function | `null` | `({ start, end, text, pane, format }) => void` — when the selection changes in either pane |
+| `onLinkClick` | function | `null` | `(href, event) => void` — a link in the rendered pane was clicked; navigation is cancelled unless the handler returns `true` |
+| `assetBase` | string | `null` | Standalone build only: directory URL to load the offline basemap files from |
 
 ### Plugin Options (legacy)
 
@@ -125,7 +134,7 @@ for GeoJSON, Three.js for STL, highlight.js for syntax highlighting) is
 fence, it fetches `mermaid.min.js` from the CDN; the first STL fence triggers
 the Three.js download; and so on.
 
-Lazy loading keeps the editor lightweight (~98 KB minified) but introduces a
+Lazy loading keeps the editor lightweight (~128 KB minified) but introduces a
 small "loading…" delay the first time each fence type is rendered. For demo
 pages, documentation sites, or apps where you know in advance which fence
 types you'll need, you can preload those libraries at construction time:
@@ -190,13 +199,18 @@ new QuikdownEditor(container, options?)
 
 ### Methods
 
-#### `setMarkdown(markdown)`
+#### `setMarkdown(markdown, options?)`
 
 Sets the markdown content.
 
 ```javascript
 editor.setMarkdown('# New Content');
+
+// Loading a different document: start with an empty undo history
+editor.setMarkdown(text, { history: 'reset' });
 ```
+
+`options.history` is `'keep'` (default: replace the text, leave the undo history as it is), `'reset'` (clear the history), or `'push'` (record the replaced text as an undo step). `options.source` is passed to `onChange` as `meta.source` (default `'api'`).
 
 #### `getMarkdown()`
 
@@ -315,13 +329,62 @@ Converts single newlines in the current content to paragraph breaks (`\n\n`). Us
 editor.convertLazyLinefeeds();
 ```
 
+#### `getMode()`
+
+Returns the current view mode: `'source'`, `'split'`, or `'preview'`.
+
+#### `setSplitPane(pane)` / `getSplitPane()`
+
+On a portrait viewport up to 720px wide, split mode shows one pane at a time and the toolbar has a Preview/Source button to switch. These methods do the same from code. `pane` is `'source'` or `'preview'`. On other viewports both panes are visible and the setting has no visible effect. `setMode()` resets it to `'source'`.
+
+```javascript
+editor.setMode('split');
+editor.setSplitPane('preview');
+editor.getSplitPane(); // 'preview'
+```
+
+#### `setTheme(theme)` / `getTheme()`
+
+Sets the colour theme: `'light'`, `'dark'`, or `'auto'` (follow the system setting). `getTheme()` returns the configured value.
+
+```javascript
+editor.setTheme('dark');
+```
+
+#### `copy(type)`
+
+Copies the document to the clipboard as text. `type` is `'markdown'` or `'html'`. Returns a promise. These are the toolbar's Copy MD and Copy HTML buttons; `copyRendered()` is the Copy Rendered button.
+
+```javascript
+await editor.copy('markdown');
+```
+
+#### `setAllowUnsafeHTML(mode)` / `getAllowUnsafeHTML()` / `cycleAllowUnsafeHTML()`
+
+Sets how raw HTML in the markdown is handled, and re-renders. `mode` is `false` (escape all HTML, the default), `'limited'` (allow a small set of safe tags), or `true` (pass HTML through). `cycleAllowUnsafeHTML()` steps to the next mode, as the optional toolbar button does (`showAllowUnsafeHTML: true`).
+
+```javascript
+editor.setAllowUnsafeHTML('limited');
+editor.getAllowUnsafeHTML(); // 'limited'
+```
+
+#### `getDebounceDelay()`
+
+Returns the current debounce delay in milliseconds.
+
+#### `flush()`
+
+Applies an edit that is still waiting on the debounce timer. `getMarkdown()`, `getHTML()` and every method that reads or changes the document call it for you, so their results always include the latest keystroke.
+
 #### `destroy()`
 
-Cleans up the editor and removes event listeners.
+Removes the editor's event listeners, timers and DOM. Safe to call more than once. Other editors on the page are not affected.
 
 ```javascript
 editor.destroy();
 ```
+
+Selection, formatting, history, scroll and line-mapping methods are described under [Host API](#host-api).
 
 ### Static Methods
 
@@ -519,6 +582,230 @@ document.getElementById('my-copy-btn').onclick = () => {
     editor.copyRendered();
 };
 ```
+
+### Toolbar buttons and their API calls
+
+Each built-in toolbar button and keyboard shortcut calls a public method, so a host that hides the toolbar can do the same things from its own controls.
+
+| Toolbar button or key | API |
+|---|---|
+| Source / Split / Rendered, Cmd/Ctrl+1/2/3 | `setMode('source' \| 'split' \| 'preview')`, `getMode()` |
+| Preview / Source (narrow portrait viewport, split mode) | `setSplitPane('source' \| 'preview')`, `getSplitPane()` |
+| Undo, Redo, Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z, Cmd/Ctrl+Y | `undo()`, `redo()`, `canUndo()`, `canRedo()` |
+| Copy MD | `copy('markdown')` |
+| Copy HTML | `copy('html')` |
+| Copy Rendered | `copyRendered()` |
+| Remove HR | `removeHR()` |
+| Fix Linefeeds | `convertLazyLinefeeds()` |
+| HTML mode button | `cycleAllowUnsafeHTML()`, `setAllowUnsafeHTML(mode)`, `getAllowUnsafeHTML()` |
+| Cmd/Ctrl+B, Cmd/Ctrl+I | `format('bold')`, `format('italic')` |
+| Tab, Shift+Tab in a list item | `format('indent')`, `format('outdent')` |
+
+The theme has no toolbar button: use `setTheme()` and `getTheme()`.
+
+## Host API
+
+For applications that run the editor headless (`showToolbar: false`) and draw their own controls. Everything here works the same in the source pane and the rendered pane, and in Chromium, Firefox and WebKit: formatting and selection are done on the markdown text, not with `document.execCommand`.
+
+Offsets are character offsets into the markdown returned by `getMarkdown()`. Line numbers are zero-based.
+
+### Selection and edits
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `getSelection()` | `{ start, end, text, pane }` | The selection in whichever pane the user is in. A caret has `start === end`. |
+| `setSelection(start, end?, pane?)` | `{ start, end }` | Select a range, or place the caret. In the rendered pane the matching rendered text is selected. |
+| `insertText(text)` | `{ start, end }` | Insert at the caret, replacing the selection. |
+| `replaceRange(start, end, text, select?)` | `{ start, end }` | Replace a range. `select: true` selects the inserted text. |
+| `focus(pane?)` | | Move keyboard focus into the editor. |
+| `getFocusedPane()` | `'source'` \| `'preview'` \| `null` | The pane that has keyboard focus. |
+
+```javascript
+// Insert a link to a pasted image at the caret
+editor.insertText(`![${name}](images/${name})`);
+
+// Find and replace
+const at = editor.getMarkdown().indexOf('colour');
+if (at !== -1) editor.replaceRange(at, at + 6, 'color', true);
+```
+
+"The pane the user is in" is the focused pane, or the pane they last clicked or typed in. That means a button in your own toolbar can call these methods even though clicking it took focus away from the editor.
+
+Edits made through these methods go through the same path as typing: they update the other pane, add one undo step, and call `onChange`.
+
+In the rendered pane, a selection end that falls inside markdown syntax with no rendered text of its own (the `**` of bold, a link target) is placed at the nearest rendered position.
+
+### Formatting
+
+```javascript
+editor.format('bold');                      // toggle
+editor.format('link', 'https://example.com');
+editor.format('h2');
+editor.format('table', { rows: 3, cols: 2 });
+```
+
+| Command | Value | Effect |
+|---------|-------|--------|
+| `bold`, `italic`, `strike`, `code` | | Toggle the inline style on the selection, or on the word under the caret |
+| `link` | URL; `null` removes | Link the selection, change the link under it, or remove it |
+| `h1` … `h6` | | Set the heading level; the same level again clears it |
+| `heading` | `0`–`6` | Set the heading level; `0` clears |
+| `paragraph` | | Remove heading, list and quote markers |
+| `ul`, `ol`, `task` | | Toggle a bullet, numbered or task list on the selected lines |
+| `quote` | | Add or remove one blockquote level |
+| `codeblock` | language | Wrap the selected lines in a fence, or unwrap |
+| `hr` | | Insert a horizontal rule after the current line |
+| `table` | `{ rows, cols }` | Insert a table template |
+| `indent`, `outdent` | | Shift the selected lines by two spaces |
+
+`format()` returns `false` for a command it does not know.
+
+`getFormatState()` describes the formatting at the caret, for pressed states in a toolbar:
+
+```javascript
+editor.getFormatState();
+// { bold, italic, strike, code, link, heading: 0-6, list: 'ul'|'ol'|'task'|null, quote, codeblock }
+```
+
+The same transforms are available without an editor:
+
+```javascript
+QuikdownEditor.formatMarkdown('some text', 5, 9, 'bold');
+// { markdown: 'some **text**', start: 7, end: 11 }
+QuikdownEditor.getFormatState('some **text**', 8, 8).bold;   // true
+QuikdownEditor.FORMAT_COMMANDS;                               // every command name
+```
+
+### Events
+
+```javascript
+const editor = new QuikdownEditor('#editor', {
+    onChange(markdown, html, meta) {
+        if (meta.source !== 'api') markDirty();
+    },
+    onSelectionChange({ start, end, text, pane, format }) {
+        boldButton.classList.toggle('pressed', format.bold);
+    },
+    onRender(preview) { /* the preview element was just re-rendered */ },
+    onLinkClick(href, event) { openInSystemBrowser(href); }
+});
+```
+
+`meta.source` says where a change came from:
+
+| Value | Cause |
+|-------|-------|
+| `'user'` | Typing in either pane |
+| `'api'` | `setMarkdown()`, `initialContent`, and option setters that re-render |
+| `'format'` | `format()` and the formatting shortcuts |
+| `'edit'` | `insertText()` and `replaceRange()` |
+| `'undo'`, `'redo'` | History |
+| anything else | The string passed as `setMarkdown(md, { source })` |
+
+When `onLinkClick` is set, clicking a link in the rendered pane calls it and cancels navigation. Return `true` from the handler to let the browser follow the link.
+
+### History per document
+
+`setMarkdown()` keeps the undo history unless told otherwise, so a host that shows several documents in one editor should save and restore the history when it switches:
+
+```javascript
+function switchTo(next) {
+    current.text = editor.getMarkdown();
+    current.history = editor.getHistory();          // { undo: [...], redo: [...] }
+    editor.setMarkdown(next.text, { history: 'reset' });
+    editor.setHistory(next.history);                // undefined → empty
+    current = next;
+}
+```
+
+### Scroll and line mapping
+
+| Method | Description |
+|--------|-------------|
+| `getScroll()` | `{ source, preview }` scroll positions |
+| `setScroll({ source, preview })` | Restore them; either field may be omitted |
+| `scrollToLine(line, pane?)` | Scroll a source line into view in one pane or both; returns the preview block it scrolled to |
+| `lineOf(element)` | Source line of an element in the rendered pane, or `-1` |
+
+```javascript
+// Outline: jump to a heading
+editor.scrollToLine(heading.line);
+
+// Which source line was clicked in the preview?
+preview.addEventListener('click', e => console.log(editor.lineOf(e.target)));
+```
+
+`syncScroll: true` keeps the two panes at the same relative position in split mode. It is proportional, not line-accurate.
+
+The line mapping is computed from the rendered preview when it is asked for; the HTML does not carry line attributes.
+
+`QuikdownEditor.mapOffset(from, to, offset)` translates an offset in one version of a document to the matching offset in another, for keeping the caret when a file is reloaded after changing on disk.
+
+### Images
+
+`resolveImageSrc` rewrites image URLs for display, for hosts where a relative path cannot load from the page's origin:
+
+```javascript
+new QuikdownEditor('#editor', {
+    resolveImageSrc: (src, { alt, title }) =>
+        /^[a-z]+:/i.test(src) ? src : `asset://${documentDir}/${src}`
+});
+```
+
+The markdown and `getHTML()` keep the original URL. Return nothing to leave an image as it is.
+
+### Mounting
+
+By default the editor takes over the container: it empties it and uses it as its root element. Classes the host put on the container are kept. With `mount: 'append'` the editor adds its own root element as a child and removes only that element on `destroy()`. `editor.host` is the element you passed in; `editor.container` is the editor's root.
+
+### Theming with CSS variables
+
+The built-in stylesheet reads these custom properties, falling back to its own defaults. Set them on the container or any ancestor:
+
+```css
+#my-editor {
+  --qde-bg: #fdf6e3;
+  --qde-fg: #333;
+  --qde-border: #d8cfb4;
+  --qde-font: Georgia, serif;
+  --qde-preview-font-size: 18px;
+}
+#my-editor.qde-dark { --qde-bg: #1b1b1b; --qde-fg: #ddd; }
+```
+
+| Variable | Applies to |
+|----------|-----------|
+| `--qde-bg`, `--qde-fg`, `--qde-border`, `--qde-radius` | Editor frame |
+| `--qde-padding` | Padding of both panes |
+| `--qde-font`, `--qde-preview-font-size`, `--qde-line-height`, `--qde-preview-bg`, `--qde-preview-fg` | Rendered pane |
+| `--qde-source-font`, `--qde-source-font-size`, `--qde-source-line-height`, `--qde-source-bg`, `--qde-source-fg` | Source pane |
+| `--qde-font-size` | Both panes, when the pane-specific size is not set |
+| `--qde-code-font`, `--qde-code-bg`, `--qde-code-fg`, `--qde-inline-code-bg` | Code blocks and inline code |
+| `--qde-table-border`, `--qde-table-header-bg`, `--qde-table-stripe-bg` | Tables |
+| `--qde-toolbar-bg`, `--qde-btn-bg`, `--qde-btn-fg`, `--qde-btn-border`, `--qde-btn-hover-bg`, `--qde-btn-hover-border`, `--qde-accent`, `--qde-accent-fg`, `--qde-accent-border` | Built-in toolbar |
+
+A variable you set applies in both light and dark themes; scope it with `.qde-dark` (the class the editor puts on its root in dark mode) to give the two themes different values.
+
+### Several editors on one page
+
+Each editor keeps its own state, listeners and timers. Keyboard shortcuts act only on the editor that has focus, and leave other inputs on the page alone. `destroy()` removes everything an editor added; the shared stylesheet is removed when the last editor on the page is destroyed. This suits interfaces that create and destroy many editors, such as one per chat message:
+
+```javascript
+const turn = new QuikdownEditor(messageEl, { showToolbar: false, mode: 'preview' });
+await turn.setMarkdown(text);     // call again as the message streams in
+// later
+turn.destroy();
+```
+
+### Standalone build from npm
+
+The standalone bundle (every fence renderer included, no CDN requests) is exported as `quikdown/edit-standalone`, with the same TypeScript types as `quikdown/edit`:
+
+```javascript
+import QuikdownEditor from 'quikdown/edit-standalone';
+```
+
+It is an ESM and UMD browser bundle; there is no CommonJS build. The offline basemap files (`basemap_*.topojson`) are fetched from the bundle's own directory at run time. If your bundler moves the JavaScript, copy those two files somewhere you serve and pass that directory as `assetBase`.
 
 ## Plugin Integration
 
@@ -808,12 +1095,15 @@ Called when content changes:
 
 ```javascript
 const editor = new QuikdownEditor('#editor', {
-    onChange: (markdown, html) => {
+    onChange: (markdown, html, meta) => {
         console.log('Markdown:', markdown);
         console.log('HTML:', html);
+        console.log('Changed by:', meta.source);   // 'user', 'api', 'format', 'edit', 'undo', 'redo'
     }
 });
 ```
+
+`onRender`, `onSelectionChange` and `onLinkClick` are described under [Host API](#events).
 
 ### onModeChange
 
@@ -832,10 +1122,15 @@ const editor = new QuikdownEditor('#editor', {
 | Shortcut | Action |
 |----------|--------|
 | `Ctrl/Cmd + Z` | Undo |
-| `Ctrl/Cmd + Shift + Z` | Redo |
+| `Ctrl/Cmd + Shift + Z`, `Ctrl/Cmd + Y` | Redo |
 | `Ctrl/Cmd + 1` | Switch to source mode |
 | `Ctrl/Cmd + 2` | Switch to split mode |
 | `Ctrl/Cmd + 3` | Switch to preview mode |
+| `Ctrl/Cmd + B` | Bold (either pane) |
+| `Ctrl/Cmd + I` | Italic (either pane) |
+| `Tab` / `Shift + Tab` | Indent / outdent the list item under the caret; outside a list, Tab keeps its normal meaning |
+
+Shortcuts act on the editor that has keyboard focus. Set `shortcuts: false` to turn them all off.
 
 ## Examples
 

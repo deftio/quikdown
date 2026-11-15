@@ -314,7 +314,7 @@ Single newlines automatically become line breaks:
 quikdown('Line 1\nLine 2', { lazy_linefeeds: true });
 // Output: <p>Line 1<br class="quikdown-br">Line 2</p>
 ```
-**Perfect for:**
+**Useful for:**
 - Chat applications
 - LLM/AI output formatting
 - User-generated content where users expect Enter to create a new line
@@ -765,6 +765,18 @@ See [AST Documentation](quikdown-ast.md) for complete node type reference.
 | CommonJS | `dist/quikdown_ast.cjs` | Node.js |
 
 Similar formats available for `quikdown_json`, `quikdown_yaml`, and `quikdown_ast_html`.
+
+## Editor API
+
+`QuikdownEditor` (`quikdown/edit`, and `quikdown/edit-standalone` for the offline bundle) is documented in the [Editor Guide](quikdown-editor.md):
+
+- [Configuration options](quikdown-editor.md#configuration-options)
+- [Methods](quikdown-editor.md#methods), static methods and properties
+- [Toolbar buttons and their API calls](quikdown-editor.md#toolbar-buttons-and-their-api-calls)
+- [Host API](quikdown-editor.md#host-api): selection, formatting, events, history, scroll and line mapping
+- [Keyboard shortcuts](quikdown-editor.md#keyboard-shortcuts)
+
+The TypeScript declarations in `dist/quikdown_edit.d.ts` list every public member.
 
 ## TypeScript
 

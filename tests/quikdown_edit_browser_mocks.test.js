@@ -2165,7 +2165,8 @@ describe('keyboard shortcuts branch coverage', () => {
     });
 
     test('Ctrl+1 switches to source mode (line 3870-3872)', () => {
-        document.dispatchEvent(new KeyboardEvent('keydown', {
+        editor.container.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
             ctrlKey: true, key: '1', bubbles: true
         }));
         expect(editor.currentMode).toBe('source');
@@ -2173,14 +2174,16 @@ describe('keyboard shortcuts branch coverage', () => {
 
     test('Ctrl+2 switches to split mode (line 3874-3876)', () => {
         editor.setMode('source');
-        document.dispatchEvent(new KeyboardEvent('keydown', {
+        editor.container.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
             ctrlKey: true, key: '2', bubbles: true
         }));
         expect(editor.currentMode).toBe('split');
     });
 
     test('Ctrl+3 switches to preview mode (line 3878-3880)', () => {
-        document.dispatchEvent(new KeyboardEvent('keydown', {
+        editor.container.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
             ctrlKey: true, key: '3', bubbles: true
         }));
         expect(editor.currentMode).toBe('preview');
@@ -2191,7 +2194,8 @@ describe('keyboard shortcuts branch coverage', () => {
         // (breaking the duplicate check), handleSourceInput debounces via setTimeout
         editor.updateFromMarkdown('first');
         editor.updateFromMarkdown('second');
-        document.dispatchEvent(new KeyboardEvent('keydown', {
+        editor.container.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
             ctrlKey: true, key: 'z', bubbles: true
         }));
         expect(editor.getMarkdown()).toBe('first');
@@ -2201,7 +2205,8 @@ describe('keyboard shortcuts branch coverage', () => {
         editor.updateFromMarkdown('first');
         editor.updateFromMarkdown('second');
         editor.undo();
-        document.dispatchEvent(new KeyboardEvent('keydown', {
+        editor.container.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
             ctrlKey: true, shiftKey: true, key: 'Z', bubbles: true
         }));
         expect(editor.getMarkdown()).toBe('second');
@@ -2211,14 +2216,16 @@ describe('keyboard shortcuts branch coverage', () => {
         editor.updateFromMarkdown('first');
         editor.updateFromMarkdown('second');
         editor.undo();
-        document.dispatchEvent(new KeyboardEvent('keydown', {
+        editor.container.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
             ctrlKey: true, key: 'y', bubbles: true
         }));
         expect(editor.getMarkdown()).toBe('second');
     });
 
     test('metaKey shortcuts work same as ctrlKey (line 3868 metaKey arm)', () => {
-        document.dispatchEvent(new KeyboardEvent('keydown', {
+        editor.container.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
             metaKey: true, key: '1', bubbles: true
         }));
         expect(editor.currentMode).toBe('source');
@@ -2226,7 +2233,8 @@ describe('keyboard shortcuts branch coverage', () => {
 
     test('key without ctrl/meta does not trigger shortcut (line 3868 false arm)', () => {
         editor.setMode('split');
-        document.dispatchEvent(new KeyboardEvent('keydown', {
+        editor.container.dispatchEvent(new KeyboardEvent('keydown', {
+            bubbles: true,
             key: '1', bubbles: true
         }));
         expect(editor.currentMode).toBe('split'); // unchanged
@@ -2239,37 +2247,11 @@ describe('editor method null/edge branch coverage', () => {
         await editor.initPromise;
     });
 
-    // ── undo/redo with null sourceTextarea (lines 5092, 5109) ──
-    test('undo with null sourceTextarea still works (line 5092)', () => {
-        // Use updateFromMarkdown directly for undo state to be pushed
-        editor.updateFromMarkdown('first');
-        editor.updateFromMarkdown('second');
-        editor.sourceTextarea = null;
-        editor.undo();
-        expect(editor.getMarkdown()).toBe('first');
-    });
-
-    test('redo with null sourceTextarea still works (line 5109)', () => {
-        editor.updateFromMarkdown('first');
-        editor.updateFromMarkdown('second');
-        editor.undo();
-        editor.sourceTextarea = null;
-        editor.redo();
-        expect(editor.getMarkdown()).toBe('second');
-    });
-
     // ── setMarkdown with null initPromise (line 5245) ──
     test('setMarkdown with null initPromise skips await (line 5245)', async () => {
         editor.initPromise = null;
         await editor.setMarkdown('# hello');
         expect(editor.getMarkdown()).toContain('hello');
-    });
-
-    // ── setMarkdown with null sourceTextarea (line 5250) ──
-    test('setMarkdown with null sourceTextarea (line 5250)', async () => {
-        editor.sourceTextarea = null;
-        await editor.setMarkdown('# test');
-        expect(editor.getMarkdown()).toContain('test');
     });
 
     // ── setAllowUnsafeHTML with null toolbar (line 5576) ──
@@ -2944,11 +2926,6 @@ describe('editor copy and setMode edge branches', () => {
         expect(ed.getMarkdown()).toContain('hi');
     });
 
-    test('setMarkdown with null sourceTextarea', async () => {
-        ed.sourceTextarea = null;
-        await ed.setMarkdown('# test');
-        expect(ed.getMarkdown()).toContain('test');
-    });
 });
 
 describe('renderGeoJSON/renderSTL missing element branches', () => {

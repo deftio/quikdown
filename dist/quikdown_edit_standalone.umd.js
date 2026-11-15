@@ -1,6 +1,6 @@
 /**
  * quikdown_edit_standalone — Offline editor with all fence renderers
- * @version 1.2.23
+ * @version 1.3.0
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  *
@@ -226556,7 +226556,7 @@ void main() {
 	// ────────────────────────────────────────────────────────────────────
 
 	/** Build-time version stamp (injected by tools/updateVersion) */
-	const quikdownVersion = '1.2.23';
+	const quikdownVersion = '1.3.0';
 
 	/** CSS class prefix used for all generated elements */
 	const CLASS_PREFIX = 'quikdown-';
@@ -227256,7 +227256,7 @@ void main() {
 	    // Restore safe HTML tag placeholders after escaping
 	    if (htmlAllow) {
 	        safeTags.forEach((tag, i) => {
-	            html = html.replace(`${PLACEHOLDER_HT}${i}§`, tag);
+	            html = html.replace(`${PLACEHOLDER_HT}${i}§`, () => tag);
 	        });
 	    }
 
@@ -227445,7 +227445,7 @@ void main() {
 	            .replace(/§P§/g, '</p><p>');
 
 	        // Restore protected blocks
-	        blocks.forEach((b, i) => html = html.replace(`§B${i}§`, b));
+	        blocks.forEach((b, i) => html = html.replace(`§B${i}§`, () => b));
 
 	        html = '<p>' + html + '</p>';
 	    } else {
@@ -227539,8 +227539,8 @@ void main() {
 	                replacement = `<pre${getAttr('pre')}${fenceAttr}${langAttr}><code${codeAttr}>${escapeHtml(block.code)}</code></pre>`;
 	            } else /* istanbul ignore next - bd-only branch */ if (bidirectional) {
 	                // Plugin returned HTML — inject data attributes for roundtrip.
-	                replacement = replacement.replace(/^<(\w+)/,
-	                    `<$1 data-qd-fence="${escapeHtml(block.fence)}" data-qd-lang="${escapeHtml(block.lang)}" data-qd-source="${escapeHtml(block.code)}"`);
+	                replacement = replacement.replace(/^<(\w+)/, (m, tag) =>
+	                    `<${tag} data-qd-fence="${escapeHtml(block.fence)}" data-qd-lang="${escapeHtml(block.lang)}" data-qd-source="${escapeHtml(block.code)}"`);
 	            }
 	        } else {
 	            // Default rendering — wrap in <pre><code>.
@@ -227554,18 +227554,20 @@ void main() {
 	        }
 
 	        const placeholder = `${PLACEHOLDER_CB}${i}§`;
-	        html = html.replace(placeholder, replacement);
+	        // Function replacements: the restored text may contain "$&", "$$" and
+	        // similar sequences that a string replacement would interpret.
+	        html = html.replace(placeholder, () => replacement);
 	    });
 
 	    // Restore inline code spans
 	    inlineCodes.forEach((code, i) => {
 	        const placeholder = `${PLACEHOLDER_IC}${i}§`;
-	        html = html.replace(placeholder, `<code${getAttr('code')}${dataQd('`')}>${code}</code>`);
+	        html = html.replace(placeholder, () => `<code${getAttr('code')}${dataQd('`')}>${code}</code>`);
 	    });
 
 	    // Restore backslash escapes
 	    backslashEscapes.forEach((char, i) => {
-	        html = html.replace(`${PLACEHOLDER_BE}${i}§`, char);
+	        html = html.replace(`${PLACEHOLDER_BE}${i}§`, () => char);
 	    });
 
 	    // Restore newlines inside indented code blocks
@@ -228196,7 +228198,7 @@ void main() {
 	                // Reference link
 	                const refId = node.getAttribute('data-qd-ref');
 	                if (refId !== null) {
-	                    const linkText = node.getAttribute('data-qd-text') || childContent.trim();
+	                    const linkText = childContent.trim() || node.getAttribute('data-qd-text') || '';
 	                    if (refId === '') {
 	                        // Collapsed reference: [text][]
 	                        return `[${linkText}][]`;
@@ -228208,7 +228210,7 @@ void main() {
 	                    // Full reference: [text][id]
 	                    return `[${linkText}][${refId}]`;
 	                }
-	                const linkText = node.getAttribute('data-qd-text') || childContent.trim();
+	                const linkText = childContent.trim() || node.getAttribute('data-qd-text') || '';
 	                // Check for autolinks
 	                if (linkText === href && !dataQd) {
 	                    return `<${href}>`;
@@ -230101,13 +230103,646 @@ void main() {
 	}
 
 	/**
+	 * quikdown_edit_format — markdown text transforms behind QuikdownEditor.format()
+	 *
+	 * Everything here is a pure string function. A transform takes the markdown
+	 * source plus a selection (start/end character offsets) and returns the new
+	 * markdown plus the new selection. The editor uses the same functions for
+	 * the source pane and the rendered pane, so formatting behaves the same in
+	 * every browser engine and needs no document.execCommand.
+	 *
+	 * @license BSD-2-Clause
+	 */
+
+	/** Inline commands and the marker each one writes. */
+	const INLINE_MARKERS = { bold: '**', italic: '*', strike: '~~', code: '`' };
+
+	/** Every command name format() accepts. */
+	const FORMAT_COMMANDS = [
+	    'bold', 'italic', 'strike', 'code', 'link',
+	    'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'heading', 'paragraph',
+	    'ul', 'ol', 'task', 'quote', 'codeblock', 'hr', 'table',
+	    'indent', 'outdent'
+	];
+
+	// Block prefix of a line: indent, blockquote markers, then at most one of
+	// heading / task item / bullet / ordered marker.
+	// eslint-disable-next-line security/detect-unsafe-regex -- linear: every repetition of the quote group must start with ">", so there is one match path
+	const LINE_RE = /^([ \t]*)((?:>[ \t]?)*)(?:(#{1,6})(?:[ \t]+|$)|([-*+])[ \t]+(\[[ xX]\])(?:[ \t]+|$)|([-*+])(?:[ \t]+|$)|(\d+)\.(?:[ \t]+|$))?/;
+
+	const FENCE_RE = /^[ \t]*(`{3,}|~{3,})/;
+
+	/**
+	 * Split one line into its block prefix and its text.
+	 * @returns {{indent:string, quote:string, kind:(null|'h'|'ul'|'ol'|'task'), level:number, check:string, prefix:number, rest:string}}
+	 */
+	function parseLine(line) {
+	    const m = LINE_RE.exec(line);
+	    let kind = null;
+	    if (m[3]) kind = 'h';
+	    else if (m[5]) kind = 'task';
+	    else if (m[6]) kind = 'ul';
+	    else if (m[7]) kind = 'ol';
+	    return {
+	        indent: m[1],
+	        quote: m[2],
+	        kind,
+	        level: m[3] ? m[3].length : 0,
+	        check: m[5] || '',
+	        prefix: m[0].length,
+	        rest: line.slice(m[0].length)
+	    };
+	}
+
+	/**
+	 * Offsets of the whole lines a selection touches. A selection that ends
+	 * just after a newline does not include the following line.
+	 */
+	function lineRange(md, start, end) {
+	    const ls = md.lastIndexOf('\n', start - 1) + 1;
+	    const anchor = end > start && md[end - 1] === '\n' ? end - 1 : end;
+	    let le = md.indexOf('\n', anchor);
+	    if (le === -1) le = md.length;
+	    return { ls, le };
+	}
+
+	/**
+	 * Inline spans (code, bold, italic, strike, link) in one line of text.
+	 * Offsets are relative to `text`; `m` is the marker length on each side.
+	 */
+	function inlineSpans(text) {
+	    const spans = [];
+	    const blank = (s, from, to) => s.slice(0, from) + ' '.repeat(to - from) + s.slice(to);
+	    let masked = text;
+
+	    // Code spans win over everything else; hide their contents.
+	    text.replace(/`([^`\n]+)`/g, (match, inner, at) => {
+	        spans.push({ type: 'code', start: at, end: at + match.length, m: 1 });
+	        masked = blank(masked, at, at + match.length);
+	        return match;
+	    });
+
+	    // Links: keep the text visible to the emphasis passes, hide the target.
+	    // eslint-disable-next-line security/detect-unsafe-regex -- linear: every repetition of the inner group must start with "(", so there is one match path
+	    masked.replace(/\[([^\]\n]*)\]\(([^()\n]*(?:\([^()\n]*\)[^()\n]*)*)\)/g, (match, label, dest, at) => {
+	        spans.push({
+	            type: 'link', start: at, end: at + match.length, m: 1,
+	            textStart: at + 1, textEnd: at + 1 + label.length,
+	            destStart: at + label.length + 3, destEnd: at + match.length - 1
+	        });
+	        masked = blank(masked, at + 1 + label.length, at + match.length);
+	        return match;
+	    });
+
+	    // The closing marker is the end of its run, so "***x***" is bold around "*x*".
+	    const bold = (match, inner, at) => {
+	        spans.push({ type: 'bold', start: at, end: at + match.length, m: 2 });
+	        masked = blank(masked, at, at + 2);
+	        masked = blank(masked, at + match.length - 2, at + match.length);
+	        return match;
+	    };
+	    masked.replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*(?!\*)/g, bold);
+	    masked.replace(/__(?=\S)(.+?)(?<=\S)__(?!_)/g, bold);
+
+	    masked.replace(/~~(?=\S)(.+?)(?<=\S)~~/g, (match, inner, at) => {
+	        spans.push({ type: 'strike', start: at, end: at + match.length, m: 2 });
+	        return match;
+	    });
+
+	    const italic = (match, inner, at) => {
+	        spans.push({ type: 'italic', start: at, end: at + match.length, m: 1 });
+	        return match;
+	    };
+	    masked.replace(/(?<![*\\])\*(?![*\s])(.+?)(?<![*\s])\*(?!\*)/g, italic);
+	    masked.replace(/(?<![A-Za-z0-9_])_(?![_\s])(.+?)(?<![\s_])_(?![A-Za-z0-9_])/g, italic);
+
+	    return spans;
+	}
+
+	/** True for characters that belong to a word for caret expansion. */
+	function isWordChar(ch) {
+	    return ch !== undefined && !/[\s*_~`[\]()<>]/.test(ch);
+	}
+
+	/** Result helper. */
+	function result(markdown, start, end) {
+	    return { markdown, start, end };
+	}
+
+	/**
+	 * Toggle an inline marker (bold, italic, strike, code) over the selection.
+	 */
+	function toggleInline(md, start, end, type) {
+	    const mk = INLINE_MARKERS[type];
+	    let caretShift = null;
+
+	    if (start === end) {
+	        // Caret inside a word: act on the word and keep the caret in place.
+	        let a = start;
+	        let b = end;
+	        while (isWordChar(md[a - 1])) a--;
+	        while (isWordChar(md[b])) b++;
+	        if (a === b) {
+	            // Caret between an empty pair of this marker: remove the pair.
+	            let before = 0;
+	            let after = 0;
+	            const ch = mk[0];
+	            while (md[start - 1 - before] === ch) before++;
+	            while (md[start + after] === ch) after++;
+	            const run = Math.min(before, after);
+	            const paired = type === 'italic' ? run % 2 === 1
+	                : type === 'code' ? run >= 1
+	                    : run >= 2;
+	            if (paired) {
+	                return result(md.slice(0, start - mk.length) + md.slice(start + mk.length), start - mk.length, start - mk.length);
+	            }
+	            return result(md.slice(0, start) + mk + mk + md.slice(start), start + mk.length, start + mk.length);
+	        }
+	        caretShift = start - a;
+	        start = a;
+	        end = b;
+	    }
+
+	    // One segment per line, without the block prefix or outer whitespace.
+	    const segs = [];
+	    let pos = md.lastIndexOf('\n', start - 1) + 1;
+	    while (pos <= end) {
+	        let le = md.indexOf('\n', pos);
+	        if (le === -1) le = md.length;
+	        const line = md.slice(pos, le);
+	        let a = Math.max(start, pos + parseLine(line).prefix);
+	        let b = Math.min(end, le);
+	        while (a < b && /\s/.test(md[a])) a++;
+	        while (b > a && /\s/.test(md[b - 1])) b--;
+	        if (a < b && !FENCE_RE.test(line)) {
+	            const spans = inlineSpans(line)
+	                .filter(s => s.type === type)
+	                .map(s => ({ start: s.start + pos, end: s.end + pos, m: s.m }));
+	            segs.push({ a, b, spans, on: spans.find(s => s.start <= a && b <= s.end) || null });
+	        }
+	        pos = le + 1;
+	    }
+	    if (segs.length === 0) return result(md, start, end);
+
+	    const turnOff = segs.every(s => s.on);
+	    let out = '';
+	    let cursor = 0;
+	    let newStart = 0;
+	    let newEnd = 0;
+
+	    segs.forEach((seg, i) => {
+	        let r0;
+	        let r1;
+	        let rep;
+	        let selA;
+	        let selB;
+	        if (turnOff) {
+	            const sp = seg.on;
+	            const open = md.slice(sp.start, sp.start + sp.m);
+	            const innerStart = sp.start + sp.m;
+	            const innerEnd = sp.end - sp.m;
+	            // "Whole span" ignores other markers and spaces hugging the edges.
+	            let cs = innerStart;
+	            let ce = innerEnd;
+	            while (cs < ce && /[*_~`\s]/.test(md[cs])) cs++;
+	            while (ce > cs && /[*_~`\s]/.test(md[ce - 1])) ce--;
+	            r0 = sp.start;
+	            r1 = sp.end;
+	            if (seg.a <= cs && seg.b >= ce) {
+	                rep = md.slice(innerStart, innerEnd);
+	                selA = Math.max(seg.a, innerStart) - innerStart;
+	                selB = Math.min(seg.b, innerEnd) - innerStart;
+	            } else {
+	                // Selection is part of the span: split the span around it.
+	                const a = Math.max(seg.a, innerStart);
+	                const b = Math.min(seg.b, innerEnd);
+	                const left = md.slice(innerStart, a);
+	                const right = md.slice(b, innerEnd);
+	                const L = left.replace(/\s+$/, '');
+	                const R = right.replace(/^\s+/, '');
+	                const head = (L ? open + L + open : '') + left.slice(L.length);
+	                const tail = right.slice(0, right.length - R.length) + (R ? open + R + open : '');
+	                rep = head + md.slice(a, b) + tail;
+	                selA = head.length;
+	                selB = head.length + (b - a);
+	            }
+	        } else {
+	            // Merge any spans of this type the selection overlaps, then wrap.
+	            const hit = seg.spans.filter(s => s.start < seg.b && s.end > seg.a);
+	            r0 = Math.min(seg.a, ...hit.map(s => s.start));
+	            r1 = Math.max(seg.b, ...hit.map(s => s.end));
+	            let text = '';
+	            let at = r0;
+	            hit.forEach(s => {
+	                text += md.slice(at, s.start) + md.slice(s.start + s.m, s.end - s.m);
+	                at = s.end;
+	            });
+	            text += md.slice(at, r1);
+	            rep = mk + text + mk;
+	            selA = mk.length;
+	            selB = mk.length + text.length;
+	        }
+	        out += md.slice(cursor, r0);
+	        if (i === 0) newStart = out.length + selA;
+	        if (i === segs.length - 1) newEnd = out.length + selB;
+	        out += rep;
+	        cursor = r1;
+	    });
+	    out += md.slice(cursor);
+
+	    if (caretShift !== null) {
+	        const caret = Math.min(newStart + caretShift, newEnd);
+	        return result(out, caret, caret);
+	    }
+	    return result(out, newStart, newEnd);
+	}
+
+	/**
+	 * Insert, retarget, or remove a link.
+	 * `url` string: link the selection (or retarget the link under it).
+	 * `url` null / '' / false: remove the link under the selection.
+	 * `url` undefined: link the selection with a placeholder target, selected.
+	 */
+	function toggleLink(md, start, end, url) {
+	    const { ls } = lineRange(md, start, start);
+	    let le = md.indexOf('\n', start);
+	    if (le === -1) le = md.length;
+	    end = Math.min(end, le);
+	    const link = inlineSpans(md.slice(ls, le))
+	        .filter(s => s.type === 'link')
+	        .map(s => ({ start: s.start + ls, end: s.end + ls, textStart: s.textStart + ls, textEnd: s.textEnd + ls }))
+	        .find(s => s.start <= start && end <= s.end);
+	    const remove = url === null || url === '' || url === false;
+
+	    if (link) {
+	        const text = md.slice(link.textStart, link.textEnd);
+	        if (remove) {
+	            return result(md.slice(0, link.start) + text + md.slice(link.end), link.start, link.start + text.length);
+	        }
+	        if (url === undefined) return result(md, link.textStart, link.textEnd);
+	        const rep = `[${text}](${url})`;
+	        return result(md.slice(0, link.start) + rep + md.slice(link.end), link.start + 1, link.start + 1 + text.length);
+	    }
+	    if (remove) return result(md, start, end);
+
+	    if (start === end) {
+	        while (isWordChar(md[start - 1])) start--;
+	        while (isWordChar(md[end])) end++;
+	    }
+	    while (start < end && /\s/.test(md[start])) start++;
+	    while (end > start && /\s/.test(md[end - 1])) end--;
+	    const target = url === undefined ? 'url' : String(url);
+	    const text = md.slice(start, end) || (url === undefined ? 'link' : target);
+	    const rep = `[${text}](${target})`;
+	    const out = md.slice(0, start) + rep + md.slice(end);
+	    if (url === undefined) {
+	        const at = start + text.length + 3;
+	        return result(out, at, at + target.length);
+	    }
+	    return result(out, start + 1, start + 1 + text.length);
+	}
+
+	/**
+	 * Rewrite the whole lines under the selection with `fn(lines) → lines`.
+	 * A caret keeps its distance from the end of its line; a range selection
+	 * becomes the rewritten lines.
+	 */
+	function rewriteLines(md, start, end, fn) {
+	    const { ls, le } = lineRange(md, start, end);
+	    const oldLines = md.slice(ls, le).split('\n');
+	    const newLines = fn(oldLines);
+	    const block = newLines.join('\n');
+	    const out = md.slice(0, ls) + block + md.slice(le);
+	    if (start !== end) return result(out, ls, ls + block.length);
+	    const fromEnd = le - start;
+	    const caret = Math.max(ls + parseLine(newLines[0]).prefix, ls + block.length - fromEnd);
+	    return result(out, caret, caret);
+	}
+
+	/** Lines a block command acts on: the non-blank ones, or a lone blank line. */
+	function targets(lines) {
+	    const idx = [];
+	    lines.forEach((l, i) => { if (l.trim() !== '') idx.push(i); });
+	    return idx.length ? idx : [0];
+	}
+
+	function setHeading(md, start, end, level) {
+	    return rewriteLines(md, start, end, lines => {
+	        const t = targets(lines);
+	        const parsed = lines.map(parseLine);
+	        const same = level > 0 && t.every(i => parsed[i].kind === 'h' && parsed[i].level === level);
+	        const mark = level > 0 && !same ? '#'.repeat(level) + ' ' : '';
+	        return lines.map((l, i) => {
+	            if (!t.includes(i)) return l;
+	            const p = parsed[i];
+	            if (level === 0) return p.rest;
+	            return p.indent + p.quote + mark + p.rest;
+	        });
+	    });
+	}
+
+	function setList(md, start, end, kind) {
+	    return rewriteLines(md, start, end, lines => {
+	        const t = targets(lines);
+	        const parsed = lines.map(parseLine);
+	        const same = t.every(i => parsed[i].kind === kind);
+	        let n = 0;
+	        return lines.map((l, i) => {
+	            if (!t.includes(i)) return l;
+	            const p = parsed[i];
+	            let mark = '';
+	            if (!same) {
+	                if (kind === 'ol') mark = `${++n}. `;
+	                else if (kind === 'task') mark = `- ${p.check || '[ ]'} `;
+	                else mark = '- ';
+	            }
+	            return p.indent + p.quote + mark + p.rest;
+	        });
+	    });
+	}
+
+	function toggleQuote(md, start, end) {
+	    return rewriteLines(md, start, end, lines => {
+	        const t = targets(lines);
+	        const quoted = t.every(i => parseLine(lines[i]).quote !== '');
+	        if (quoted) return lines.map(l => l.replace(/^([ \t]*)>[ \t]?/, '$1'));
+	        return lines.map(l => (l.trim() === '' ? '>' : '> ' + l));
+	    });
+	}
+
+	function shiftIndent(md, start, end, dir) {
+	    return rewriteLines(md, start, end, lines => lines.map(l => {
+	        if (l.trim() === '') return l;
+	        return dir > 0 ? '  ' + l : l.replace(/^(?: {1,2}|\t)/, '');
+	    }));
+	}
+
+	function toggleCodeBlock(md, start, end, lang) {
+	    const { ls, le } = lineRange(md, start, end);
+	    const lines = md.slice(ls, le).split('\n');
+	    const isFence = l => FENCE_RE.test(l);
+	    // A fence line opens a block when an even number of fence lines precede it.
+	    const opens = at => md.slice(0, at).split('\n').filter(isFence).length % 2 === 0;
+
+	    // Selection includes its own fence lines: drop them.
+	    if (lines.length >= 2 && isFence(lines[0]) && isFence(lines[lines.length - 1]) && opens(ls)) {
+	        const inner = lines.slice(1, -1).join('\n');
+	        return result(md.slice(0, ls) + inner + md.slice(le), ls, ls + inner.length);
+	    }
+	    // Selection sits between two fence lines: drop those.
+	    const prevStart = ls > 0 ? md.lastIndexOf('\n', ls - 2) + 1 : -1;
+	    const nextEnd = le < md.length ? (md.indexOf('\n', le + 1) === -1 ? md.length : md.indexOf('\n', le + 1)) : -1;
+	    if (prevStart >= 0 && nextEnd >= 0 && isFence(md.slice(prevStart, ls - 1)) && isFence(md.slice(le + 1, nextEnd)) && opens(prevStart)) {
+	        const inner = md.slice(ls, le);
+	        const tail = md.slice(nextEnd);
+	        const out = md.slice(0, prevStart) + inner + tail;
+	        return result(out, start - (ls - prevStart), end - (ls - prevStart));
+	    }
+	    const open = '```' + (lang ? String(lang) : '') + '\n';
+	    const inner = md.slice(ls, le);
+	    const out = md.slice(0, ls) + open + inner + '\n```' + md.slice(le);
+	    return result(out, start + open.length, end + open.length);
+	}
+
+	/**
+	 * Insert a block on its own lines after the current line, padded with one
+	 * blank line on each side where there is neighbouring content.
+	 */
+	function insertBlock(md, start, end, block, selFrom, selTo) {
+	    const { ls, le } = lineRange(md, start, end);
+	    const blankLine = md.slice(ls, le).trim() === '';
+	    const at = blankLine ? ls : le;
+	    const before = md.slice(0, at);
+	    const after = md.slice(blankLine ? le : at);
+	    const lead = before === '' || before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
+	    // `after` is empty or starts at a line break
+	    const trail = after === '' ? '\n' : after.startsWith('\n\n') ? '' : '\n';
+	    const base = before.length + lead.length;
+	    const out = before + lead + block + trail + after;
+	    if (selFrom === undefined) {
+	        const caret = base + block.length + trail.length;
+	        return result(out, caret, caret);
+	    }
+	    return result(out, base + selFrom, base + selTo);
+	}
+
+	function insertTable(md, start, end, value) {
+	    const cols = Math.max(1, Math.min(20, parseInt(value && value.cols, 10) || 2));
+	    const rows = Math.max(1, Math.min(100, parseInt(value && value.rows, 10) || 2));
+	    const names = [];
+	    for (let c = 1; c <= cols; c++) names.push(`Column ${c}`);
+	    const lines = [
+	        '| ' + names.join(' | ') + ' |',
+	        '| ' + names.map(() => '---').join(' | ') + ' |'
+	    ];
+	    for (let r = 0; r < rows; r++) lines.push('| ' + names.map(() => ' ').join(' | ') + ' |');
+	    return insertBlock(md, start, end, lines.join('\n'), 2, 2 + names[0].length);
+	}
+
+	/**
+	 * Apply a formatting command to markdown.
+	 *
+	 * @param {string} markdown
+	 * @param {number} start  selection start offset
+	 * @param {number} end    selection end offset
+	 * @param {string} command one of FORMAT_COMMANDS
+	 * @param {*} [value]     link target, heading level, code language, or table size
+	 * @returns {{markdown:string, start:number, end:number}|null} null for an unknown command
+	 */
+	function formatMarkdown(markdown, start, end, command, value) {
+	    const md = typeof markdown === 'string' ? markdown : '';
+	    let s = Math.max(0, Math.min(md.length, Number(start) || 0));
+	    let e = Math.max(0, Math.min(md.length, Number(end) || 0));
+	    if (s > e) [s, e] = [e, s];
+
+	    switch (command) {
+	        case 'bold':
+	        case 'italic':
+	        case 'strike':
+	        case 'code':
+	            return toggleInline(md, s, e, command);
+	        case 'link':
+	            return toggleLink(md, s, e, value);
+	        case 'h1': case 'h2': case 'h3': case 'h4': case 'h5': case 'h6':
+	            return setHeading(md, s, e, parseInt(command[1], 10));
+	        case 'heading':
+	            return setHeading(md, s, e, Math.max(0, Math.min(6, parseInt(value, 10) || 0)));
+	        case 'paragraph':
+	            return setHeading(md, s, e, 0);
+	        case 'ul':
+	        case 'ol':
+	        case 'task':
+	            return setList(md, s, e, command);
+	        case 'quote':
+	            return toggleQuote(md, s, e);
+	        case 'indent':
+	            return shiftIndent(md, s, e, 1);
+	        case 'outdent':
+	            return shiftIndent(md, s, e, -1);
+	        case 'codeblock':
+	            return toggleCodeBlock(md, s, e, value);
+	        case 'hr':
+	            return insertBlock(md, s, e, '---');
+	        case 'table':
+	            return insertTable(md, s, e, value);
+	        default:
+	            return null;
+	    }
+	}
+
+	/**
+	 * Describe the formatting at a selection, for toolbar pressed states.
+	 *
+	 * @returns {{bold:boolean, italic:boolean, strike:boolean, code:boolean, link:boolean,
+	 *            heading:number, list:(null|'ul'|'ol'|'task'), quote:boolean, codeblock:boolean}}
+	 */
+	function getFormatState(markdown, start, end) {
+	    const md = typeof markdown === 'string' ? markdown : '';
+	    let s = Math.max(0, Math.min(md.length, Number(start) || 0));
+	    let e = Math.max(0, Math.min(md.length, Number(end) || 0));
+	    if (s > e) [s, e] = [e, s];
+
+	    const ls = md.lastIndexOf('\n', s - 1) + 1;
+	    let le = md.indexOf('\n', s);
+	    if (le === -1) le = md.length;
+	    const line = md.slice(ls, le);
+	    const p = parseLine(line);
+
+	    // Inside a fenced block when an odd number of fence lines precede this one.
+	    let fences = 0;
+	    md.slice(0, ls).split('\n').forEach(l => { if (FENCE_RE.test(l)) fences++; });
+	    const codeblock = fences % 2 === 1 && !FENCE_RE.test(line);
+
+	    const state = {
+	        bold: false, italic: false, strike: false, code: false, link: false,
+	        heading: codeblock ? 0 : p.level,
+	        list: codeblock || p.kind === 'h' ? null : p.kind,
+	        quote: !codeblock && p.quote !== '',
+	        codeblock
+	    };
+	    if (codeblock) return state;
+
+	    const a = s - ls;
+	    const b = Math.min(e, le) - ls;
+	    inlineSpans(line).forEach(sp => {
+	        const inside = a === b
+	            ? sp.start + sp.m <= a && a <= sp.end - sp.m
+	            : sp.start <= a && b <= sp.end;
+	        if (inside) state[sp.type] = true;
+	    });
+	    return state;
+	}
+
+	/**
+	 * Translate a character offset in `from` to the matching offset in `to`.
+	 * The two texts are expected to be near-identical (the same document before
+	 * and after a round trip through the rendered pane). Text outside the
+	 * changed region maps exactly; inside it, lines are aligned by a longest
+	 * common subsequence and the column is kept.
+	 */
+	function mapOffset(from, to, offset) {
+	    offset = Math.max(0, Math.min(from.length, offset));
+	    if (from === to) return offset;
+
+	    const max = Math.min(from.length, to.length);
+	    let p = 0;
+	    while (p < max && from.charCodeAt(p) === to.charCodeAt(p)) p++;
+	    // Before the first difference, or `to` only adds text after all of `from`
+	    if (offset < p || p === from.length) return offset;
+	    let x = 0;
+	    while (x < max - p && from.charCodeAt(from.length - 1 - x) === to.charCodeAt(to.length - 1 - x)) x++;
+	    if (x > 0 && offset >= from.length - x) return to.length - (from.length - offset);
+
+	    // Widen the changed region to whole lines.
+	    const top = from.lastIndexOf('\n', p - 1) + 1;
+	    let fromEnd = from.indexOf('\n', from.length - x);
+	    if (fromEnd === -1) fromEnd = from.length;
+	    const toEnd = to.length - (from.length - fromEnd);
+	    const A = from.slice(top, fromEnd).split('\n');
+	    const B = to.slice(top, Math.max(top, toEnd)).split('\n');
+
+	    // Line of the offset within A, and its column.
+	    let row = 0;
+	    let rowStart = top;
+	    while (row < A.length - 1 && rowStart + A[row].length < offset) {
+	        rowStart += A[row].length + 1;
+	        row++;
+	    }
+	    const col = offset - rowStart;
+
+	    const startOfB = j => {
+	        let at = top;
+	        for (let k = 0; k < j; k++) at += B[k].length + 1;
+	        return at;
+	    };
+
+	    if (A.length * B.length > 250000) {
+	        // Too large to align: keep the relative position.
+	        const ratio = (offset - top) / Math.max(1, fromEnd - top);
+	        return Math.min(to.length, top + Math.round(ratio * Math.max(0, toEnd - top)));
+	    }
+
+	    // Longest common subsequence over lines.
+	    const n = A.length;
+	    const m = B.length;
+	    const dp = [];
+	    for (let i = 0; i <= n; i++) dp.push(new Array(m + 1).fill(0));
+	    for (let i = n - 1; i >= 0; i--) {
+	        for (let j = m - 1; j >= 0; j--) {
+	            dp[i][j] = A[i] === B[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+	        }
+	    }
+	    const match = new Array(n).fill(-1);
+	    for (let i = 0, j = 0; i < n && j < m;) {
+	        if (A[i] === B[j]) { match[i] = j; i++; j++; }
+	        else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+	        else j++;
+	    }
+
+	    let target = match[row];
+	    if (target === -1) {
+	        // Unmatched line: pair it with the line at the same position in the
+	        // gap between the neighbouring matches, if there is one.
+	        let prev = row - 1;
+	        while (prev >= 0 && match[prev] === -1) prev--;
+	        let next = row + 1;
+	        while (next < n && match[next] === -1) next++;
+	        const gapStart = prev >= 0 ? match[prev] + 1 : 0;
+	        const gapEnd = next < n ? match[next] : m;
+	        const guess = gapStart + (row - prev - 1);
+	        if (guess < gapEnd) target = guess;
+	        else return Math.min(to.length, startOfB(gapEnd < m ? gapEnd : m - 1) + (gapEnd < m ? 0 : B[m - 1].length));
+	    }
+	    return Math.min(to.length, startOfB(target) + Math.min(col, B[target].length));
+	}
+
+	/**
+	 * Move an offset that sits inside a line's block prefix ("## ", "- ", "> ")
+	 * to the first character after it. Used before placing a caret marker so the
+	 * marker cannot break block syntax.
+	 */
+	function skipBlockPrefix(md, offset) {
+	    const ls = md.lastIndexOf('\n', offset - 1) + 1;
+	    let le = md.indexOf('\n', offset);
+	    if (le === -1) le = md.length;
+	    const prefix = parseLine(md.slice(ls, le)).prefix;
+	    return offset < ls + prefix ? ls + prefix : offset;
+	}
+
+	/**
 	 * Quikdown Editor - A drop-in markdown editor control
 	 * @license BSD-2-Clause
 	 */
 
 
 	/** Build-time version stamp (injected by rollup replaceVersion plugin) */
-	const quikdownEditorVersion = '1.2.23';
+	const quikdownEditorVersion = '1.3.0';
+
+	// Private-use characters that mark a selection's two ends while it is
+	// carried between the rendered pane and the markdown source.
+	const MARK_START = '\uE000';
+	const MARK_END = '\uE001';
+	const MARKS_RE = /[\uE000\uE001]/g;
 
 	/**
 	 * Curated safe HTML tag whitelist.
@@ -230172,8 +230807,8 @@ void main() {
 	     * moment. Set `preloadFences` if you want zero-delay rendering — at the
 	     * cost of a few hundred KB of upfront network.
 	     *
-	     * Developer's choice. The editor itself is still ~70 KB minified;
-	     * `preloadFences` only affects the OPTIONAL fence renderers.
+	     * Developer's choice. `preloadFences` only affects the OPTIONAL fence
+	     * renderers, not the size of the editor bundle itself.
 	     */
 	    preloadFences: null,
 	    customFences: {}, // { 'language': (code, lang) => html }
@@ -230184,8 +230819,59 @@ void main() {
 	    showAllowUnsafeHTML: false, // Show toolbar button to cycle HTML mode
 	    allowExternalFetch: true, // Allow fence renderers to fetch external resources (CDN, tiles, etc.)
 	    reference_links: false,   // Enable reference-style links [text][id]
-	    footnotes: false          // Enable footnotes [^id]
+	    footnotes: false,         // Enable footnotes [^id]
+	    shortcuts: true,          // Keyboard shortcuts (mode, undo/redo, bold, italic, list indent)
+	    mount: 'replace',         // 'replace' — take over the container; 'append' — add the editor as a child
+	    syncScroll: false,        // Keep the two panes at the same relative scroll position in split mode
+	    resolveImageSrc: null,    // (src, { alt, title }) => string — rewrite image URLs for display only
+	    onRender: null,           // (previewElement) => void — after every preview render
+	    onSelectionChange: null,  // ({ start, end, text, pane, format }) => void
+	    onLinkClick: null,        // (href, event) => void|true — return true to let the browser follow the link
+	    assetBase: null           // Directory URL for the standalone build's runtime assets (basemap *.topojson)
 	};
+
+	// MathJax reads its configuration from window.MathJax when its script runs,
+	// so the config object is put there before loading. If the load fails, the
+	// object must be removed again: it would otherwise look like a loaded library
+	// and no later render would retry.
+	let pendingMathJaxConfig = null;
+	const MATHJAX_RETRY_MS = 5000;
+
+	function configureMathJax() {
+	    if (!window.MathJax) {
+	        pendingMathJaxConfig = window.MathJax = {
+	            loader: { load: ['input/tex', 'output/svg'] },
+	            tex: {
+	                packages: { '[+]': ['ams'] },
+	                inlineMath: [['$', '$'], ['\\(', '\\)']],
+	                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+	                processEscapes: true,
+	                processEnvironments: true
+	            },
+	            options: {
+	                renderActions: { addMenu: [] },
+	                ignoreHtmlClass: 'tex2jax_ignore',
+	                processHtmlClass: 'tex2jax_process'
+	            },
+	            svg: {
+	                fontCache: 'none'  // self-contained SVGs (required for copy-rendered)
+	            },
+	            startup: { typeset: false }
+	        };
+	    }
+	}
+
+	function clearFailedMathJax() {
+	    if (window.MathJax && window.MathJax === pendingMathJaxConfig && !window.MathJax.version) {
+	        delete window.MathJax;
+	    }
+	    pendingMathJaxConfig = null;
+	    window._qde_mathjax_failed = Date.now();
+	}
+
+	// Script loads in flight, by URL, so two callers asking for the same library
+	// at the same time share one <script> element.
+	const scriptLoads = new Map();
 
 	// Library catalog used by preloadFences. Each entry knows how to:
 	//   - check if the library is already on the page (so we don't double-load)
@@ -230207,31 +230893,8 @@ void main() {
 	    math: {
 	        check: () => typeof window.MathJax !== 'undefined',
 	        script: 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js',
-	        beforeLoad: () => {
-	            // Configure MathJax before loading (must be set on window before script runs)
-	            // Must match the config in ensureMathJaxLoaded() for consistent behavior
-	            if (!window.MathJax) {
-	                window.MathJax = {
-	                    loader: { load: ['input/tex', 'output/svg'] },
-	                    tex: {
-	                        packages: { '[+]': ['ams'] },
-	                        inlineMath: [['$', '$'], ['\\(', '\\)']],
-	                        displayMath: [['$$', '$$'], ['\\[', '\\]']],
-	                        processEscapes: true,
-	                        processEnvironments: true
-	                    },
-	                    options: {
-	                        renderActions: { addMenu: [] },
-	                        ignoreHtmlClass: 'tex2jax_ignore',
-	                        processHtmlClass: 'tex2jax_process'
-	                    },
-	                    svg: {
-	                        fontCache: 'none'  // self-contained SVGs (required for copy-rendered)
-	                    },
-	                    startup: { typeset: false }
-	                };
-	            }
-	        }
+	        beforeLoad: configureMathJax,
+	        onError: clearFailedMathJax
 	    },
 	    geojson: {
 	        check: () => typeof window.L !== 'undefined',
@@ -230266,22 +230929,46 @@ void main() {
 	let QuikdownEditor$1 = class QuikdownEditor {
 	    constructor(container, options = {}) {
 	        // Resolve container
-	        this.container = typeof container === 'string' 
-	            ? document.querySelector(container) 
+	        const host = typeof container === 'string'
+	            ? document.querySelector(container)
 	            : container;
-	            
-	        if (!this.container) {
+
+	        if (!host) {
 	            throw new Error('QuikdownEditor: Invalid container');
 	        }
-	        
-	        // Merge options
+
+	        // Merge options. Nested defaults are copied so that no two editors
+	        // (and no editor and the defaults) ever share a mutable object.
 	        this.options = { ...DEFAULT_OPTIONS, ...options };
-	        
-	        // State
+	        if (!options.plugins) this.options.plugins = { ...DEFAULT_OPTIONS.plugins };
+	        if (!options.customFences) this.options.customFences = {};
+
+	        // `host` is the element the caller passed in. `container` is the
+	        // editor's own root: the host itself (mount: 'replace') or a child
+	        // the editor adds and later removes (mount: 'append').
+	        this.host = host;
+	        if (this.options.mount === 'append') {
+	            this.container = document.createElement('div');
+	            host.appendChild(this.container);
+	        } else {
+	            this.container = host;
+	        }
+
+	        // State — everything below belongs to this instance only
 	        this._markdown = '';
 	        this._html = '';
-	        this.currentMode = this.options.mode;
+	        this.currentMode = ['source', 'split', 'preview'].includes(this.options.mode) ? this.options.mode : 'split';
 	        this.updateTimer = null;
+	        this._pending = null;        // pane ('source' | 'preview') with a debounced update waiting
+	        this._destroyed = false;
+	        this._listeners = [];        // [target, type, handler] for removal in destroy()
+	        this._timers = new Set();    // UI feedback timers, cleared in destroy()
+	        this._lastPane = null;       // pane the user last worked in
+	        this._savedRange = null;     // last selection range seen inside the preview
+	        this._previewFresh = false;  // preview DOM is an untouched render of _markdown
+	        this._blocks = null;         // cached preview block → source line map
+	        this._lastSelKey = '';
+	        this._scrollLock = null;
 
 	        // Undo/redo state
 	        this._undoStack = [];
@@ -230302,7 +230989,10 @@ void main() {
 	    async init() {
 	        // Load plugins if requested
 	        await this.loadPlugins();
-	        
+
+	        // destroy() may have been called while libraries were loading
+	        if (this._destroyed) return;
+
 	        // Build UI
 	        this.buildUI();
 	        
@@ -230317,17 +231007,39 @@ void main() {
 	        
 	        // Set initial content if provided
 	        if (this.options.initialContent) {
-	            this.setMarkdown(this.options.initialContent);
+	            this._load(this.options.initialContent, 'api');
 	        }
+	    }
+
+	    /**
+	     * Add an event listener that destroy() will remove.
+	     * @private
+	     */
+	    _on(target, type, handler) {
+	        target.addEventListener(type, handler);
+	        this._listeners.push([target, type, handler]);
+	    }
+
+	    /**
+	     * setTimeout that is cancelled by destroy().
+	     * @private
+	     */
+	    _later(fn, ms) {
+	        const id = setTimeout(() => {
+	            this._timers.delete(id);
+	            fn();
+	        }, ms);
+	        this._timers.add(id);
+	        return id;
 	    }
 	    
 	    /**
 	     * Build the editor UI
 	     */
 	    buildUI() {
-	        // Clear container
+	        // Clear container (in 'append' mode it is our own, empty element)
 	        this.container.innerHTML = '';
-	        
+
 	        // Add editor class
 	        this.container.classList.add('qde-container');
 	        
@@ -230476,11 +231188,11 @@ void main() {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
-                border: 1px solid #ddd;
-                border-radius: 4px;
+                border: 1px solid var(--qde-border, #ddd);
+                border-radius: var(--qde-radius, 4px);
                 overflow: hidden;
-                background: white;
-                color: #1f2937;
+                background: var(--qde-bg, white);
+                color: var(--qde-fg, #1f2937);
             }
             
             .qde-toolbar {
@@ -230488,15 +231200,16 @@ void main() {
                 align-items: center;
                 flex-wrap: wrap;
                 padding: 8px;
-                background: #f5f5f5;
-                border-bottom: 1px solid #ddd;
+                background: var(--qde-toolbar-bg, #f5f5f5);
+                border-bottom: 1px solid var(--qde-border, #ddd);
                 gap: 4px;
             }
             
             .qde-btn {
                 padding: 6px 12px;
-                border: 1px solid #ccc;
-                background: white;
+                border: 1px solid var(--qde-btn-border, #ccc);
+                background: var(--qde-btn-bg, white);
+                color: var(--qde-btn-fg, inherit);
                 border-radius: 3px;
                 cursor: pointer;
                 font-size: 14px;
@@ -230504,14 +231217,14 @@ void main() {
             }
             
             .qde-btn:hover {
-                background: #e9e9e9;
-                border-color: #999;
+                background: var(--qde-btn-hover-bg, #e9e9e9);
+                border-color: var(--qde-btn-hover-border, #999);
             }
             
             .qde-btn.active {
-                background: #007bff;
-                color: white;
-                border-color: #0056b3;
+                background: var(--qde-accent, #007bff);
+                color: var(--qde-accent-fg, white);
+                border-color: var(--qde-accent-border, #0056b3);
             }
 
             .qde-btn.disabled {
@@ -230553,12 +231266,12 @@ void main() {
                 min-width: 0;       /* allow flex shrinking below content size */
                 min-height: 0;
                 overflow: auto;
-                padding: 16px;
+                padding: var(--qde-padding, 16px);
                 box-sizing: border-box;
             }
 
             .qde-source {
-                border-right: 1px solid #ddd;
+                border-right: 1px solid var(--qde-border, #ddd);
                 /* Source pane is just a container for the textarea — make it
                    a positioning context so the textarea can fill it absolutely */
                 position: relative;
@@ -230574,13 +231287,13 @@ void main() {
                 border: none;
                 outline: none;
                 resize: none;
-                padding: 16px;
+                padding: var(--qde-padding, 16px);
                 box-sizing: border-box;
-                font-family: 'Monaco', 'Courier New', monospace;
-                font-size: 14px;
-                line-height: 1.5;
-                background: transparent;
-                color: inherit;
+                font-family: var(--qde-source-font, 'Monaco', 'Courier New', monospace);
+                font-size: var(--qde-source-font-size, var(--qde-font-size, 14px));
+                line-height: var(--qde-source-line-height, 1.5);
+                background: var(--qde-source-bg, transparent);
+                color: var(--qde-source-fg, inherit);
                 /* Wrap long lines so the textarea only scrolls VERTICALLY.
                    pre-wrap preserves intentional line breaks/whitespace
                    while soft-wrapping at the right edge. */
@@ -230591,9 +231304,11 @@ void main() {
             }
             
             .qde-preview {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                font-size: 16px;
-                line-height: 1.6;
+                font-family: var(--qde-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+                font-size: var(--qde-preview-font-size, var(--qde-font-size, 16px));
+                line-height: var(--qde-line-height, 1.6);
+                background: var(--qde-preview-bg, transparent);
+                color: var(--qde-preview-fg, inherit);
                 outline: none;
                 cursor: text;  /* Standard text cursor */
                 overflow-x: hidden;  /* never scroll horizontally; clip wide content */
@@ -230602,25 +231317,25 @@ void main() {
             /* Code blocks and inline code — self-contained so the editor
                does not depend on any external stylesheet for these. */
             .qde-preview pre {
-                background: #f4f4f4;
-                color: #1f2937;
+                background: var(--qde-code-bg, #f4f4f4);
+                color: var(--qde-code-fg, #1f2937);
                 padding: 10px;
                 border-radius: 4px;
                 overflow-x: auto;
                 margin: 0.6em 0;
                 font-size: 0.9em;
                 line-height: 1.5;
-                font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code",
-                             "Roboto Mono", Consolas, "Courier New", monospace;
+                font-family: var(--qde-code-font, ui-monospace, "SF Mono", Monaco, "Cascadia Code",
+                             "Roboto Mono", Consolas, "Courier New", monospace);
             }
             .qde-preview code {
                 padding: 2px 4px;
                 font-size: 0.9em;
                 border-radius: 3px;
-                background: #f0f0f0;
-                color: #1f2937;
-                font-family: ui-monospace, "SF Mono", Monaco, "Cascadia Code",
-                             "Roboto Mono", Consolas, "Courier New", monospace;
+                background: var(--qde-inline-code-bg, var(--qde-code-bg, #f0f0f0));
+                color: var(--qde-code-fg, #1f2937);
+                font-family: var(--qde-code-font, ui-monospace, "SF Mono", Monaco, "Cascadia Code",
+                             "Roboto Mono", Consolas, "Courier New", monospace);
             }
             .qde-preview pre code {
                 padding: 0;
@@ -230697,7 +231412,7 @@ void main() {
             
             .qde-preview table th,
             .qde-preview table td {
-                border: 1px solid #ddd;
+                border: 1px solid var(--qde-table-border, var(--qde-border, #ddd));
                 padding: 8px;
             }
             
@@ -230707,12 +231422,12 @@ void main() {
             .qde-preview .quikdown-right { text-align: right; }
             
             .qde-preview table th {
-                background: #f5f5f5;
+                background: var(--qde-table-header-bg, #f5f5f5);
                 font-weight: bold;
             }
             
             .qde-preview table tr:nth-child(even) {
-                background: #f9f9f9;
+                background: var(--qde-table-stripe-bg, #f9f9f9);
             }
             
             /* Specific to CSV-generated tables */
@@ -230841,48 +231556,48 @@ void main() {
             
             /* Dark theme */
             .qde-dark {
-                background: #1e1e1e;
-                color: #e0e0e0;
-                border-color: #444;
+                background: var(--qde-bg, #1e1e1e);
+                color: var(--qde-fg, #e0e0e0);
+                border-color: var(--qde-border, #444);
             }
             
             .qde-dark .qde-toolbar {
-                background: #2d2d2d;
-                border-color: #444;
+                background: var(--qde-toolbar-bg, #2d2d2d);
+                border-color: var(--qde-border, #444);
             }
             
             .qde-dark .qde-btn {
-                background: #3a3a3a;
-                color: #e0e0e0;
-                border-color: #555;
+                background: var(--qde-btn-bg, #3a3a3a);
+                color: var(--qde-btn-fg, #e0e0e0);
+                border-color: var(--qde-btn-border, #555);
             }
             
             .qde-dark .qde-btn:hover {
-                background: #4a4a4a;
+                background: var(--qde-btn-hover-bg, #4a4a4a);
             }
             
             .qde-dark .qde-source {
-                border-color: #444;
+                border-color: var(--qde-border, #444);
             }
             
             .qde-dark .qde-textarea {
-                background: #1e1e1e;
-                color: #e0e0e0;
+                background: var(--qde-source-bg, var(--qde-bg, #1e1e1e));
+                color: var(--qde-source-fg, var(--qde-fg, #e0e0e0));
             }
             
             .qde-dark .qde-preview {
-                background: #1e1e1e;
-                color: #e0e0e0;
+                background: var(--qde-preview-bg, var(--qde-bg, #1e1e1e));
+                color: var(--qde-preview-fg, var(--qde-fg, #e0e0e0));
             }
             
             /* Dark mode code blocks */
             .qde-dark .qde-preview pre {
-                background: #2d2d3a;
-                color: #e6e6f0;
+                background: var(--qde-code-bg, #2d2d3a);
+                color: var(--qde-code-fg, #e6e6f0);
             }
             .qde-dark .qde-preview code {
-                background: #2a2a3a;
-                color: #e6e6f0;
+                background: var(--qde-inline-code-bg, var(--qde-code-bg, #2a2a3a));
+                color: var(--qde-code-fg, #e6e6f0);
             }
             .qde-dark .qde-preview pre code {
                 background: transparent;
@@ -230892,15 +231607,15 @@ void main() {
             /* Dark mode table styles */
             .qde-dark .qde-preview table th,
             .qde-dark .qde-preview table td {
-                border-color: #3a3a3a;
+                border-color: var(--qde-table-border, var(--qde-border, #3a3a3a));
             }
             
             .qde-dark .qde-preview table th {
-                background: #2d2d2d;
+                background: var(--qde-table-header-bg, #2d2d2d);
             }
             
             .qde-dark .qde-preview table tr:nth-child(even) {
-                background: #252525;
+                background: var(--qde-table-stripe-bg, #252525);
             }
             
             /* Mobile split toggle — hidden by default */
@@ -230953,26 +231668,24 @@ void main() {
 	     */
 	    attachEvents() {
 	        // Source textarea input
-	        this.sourceTextarea.addEventListener('input', () => {
+	        this._on(this.sourceTextarea, 'input', () => {
 	            this.handleSourceInput();
 	        });
-	        
+
 	        // Preview contenteditable input
-	        this.previewPanel.addEventListener('input', () => {
+	        this._on(this.previewPanel, 'input', () => {
 	            this.handlePreviewInput();
 	        });
-	        
+
 	        // Toolbar buttons
 	        if (this.toolbar) {
-	            this.toolbar.addEventListener('click', (e) => {
+	            this._on(this.toolbar, 'click', (e) => {
 	                const btn = e.target.closest('.qde-btn');
 	                if (!btn) return;
 
 	                // Mobile split-toggle button
 	                if (btn.classList.contains('qde-split-toggle')) {
-	                    this.container.classList.toggle('qde-split-preview');
-	                    const showingPreview = this.container.classList.contains('qde-split-preview');
-	                    btn.textContent = showingPreview ? 'Source' : 'Preview';
+	                    this.setSplitPane(this.getSplitPane() === 'preview' ? 'source' : 'preview');
 	                    return;
 	                }
 
@@ -230983,54 +231696,163 @@ void main() {
 	                }
 	            });
 	        }
-	        
-	        // Keyboard shortcuts
-	        document.addEventListener('keydown', (e) => {
-	            if (e.ctrlKey || e.metaKey) {
-	                switch(e.key) {
-	                    case '1':
-	                        e.preventDefault();
-	                        this.setMode('source');
-	                        break;
-	                    case '2':
-	                        e.preventDefault();
-	                        this.setMode('split');
-	                        break;
-	                    case '3':
-	                        e.preventDefault();
-	                        this.setMode('preview');
-	                        break;
-	                    case 'z':
-	                    case 'Z':
-	                        if (e.shiftKey) {
-	                            e.preventDefault();
-	                            this.redo();
-	                        } else {
-	                            e.preventDefault();
-	                            this.undo();
-	                        }
-	                        break;
-	                    case 'y':
-	                    case 'Y':
-	                        e.preventDefault();
-	                        this.redo();
-	                        break;
-	                }
-	            }
+
+	        // Keyboard shortcuts. The listener is on this editor's own element,
+	        // so a shortcut acts only on the editor that holds focus: other
+	        // editors and other inputs on the page are left alone.
+	        if (this.options.shortcuts) {
+	            this._on(this.container, 'keydown', (e) => this._handleKeydown(e));
+	        }
+
+	        // Track which pane the user is working in, so API calls made from a
+	        // host toolbar (which takes focus when clicked) still know the pane.
+	        ['focusin', 'mousedown', 'keydown', 'input'].forEach(type => {
+	            this._on(this.sourceTextarea, type, () => { this._lastPane = 'source'; });
+	            this._on(this.previewPanel, type, () => { this._lastPane = 'preview'; });
 	        });
+
+	        // Selection tracking. `selectionchange` only fires on the document;
+	        // the handler ignores selections outside this editor.
+	        this._on(document, 'selectionchange', () => this._handleSelectionChange());
+	        ['select', 'keyup', 'mouseup'].forEach(type => {
+	            this._on(this.sourceTextarea, type, () => this._handleSelectionChange());
+	        });
+
+	        // Link clicks in the rendered pane
+	        this._on(this.previewPanel, 'click', (e) => this._handlePreviewClick(e));
+
+	        // Scroll sync (no-op unless options.syncScroll is on)
+	        this._on(this.sourceTextarea, 'scroll', () => this._handleScroll('source'));
+	        this._on(this.previewPanel, 'scroll', () => this._handleScroll('preview'));
 
 	        // On narrow portrait viewports, auto-switch out of split mode to source.
 	        // Split is kept available on landscape where there is enough width.
 	        if (typeof window.matchMedia === 'function') {
 	            const portraitQuery = window.matchMedia('(max-width: 720px) and (orientation: portrait)');
 	            const switchIfPortrait = () => {
-	                if (portraitQuery.matches && this.currentMode === 'split') {
+	                if (!this._destroyed && portraitQuery.matches && this.currentMode === 'split') {
 	                    this.setMode('source');
 	                }
 	            };
 	            // Check after init's setMode() has run (microtask fires after sync code).
 	            Promise.resolve().then(switchIfPortrait);
-	            portraitQuery.addEventListener('change', switchIfPortrait);
+	            this._on(portraitQuery, 'change', switchIfPortrait);
+	        }
+	    }
+
+	    /**
+	     * Keyboard shortcuts for the editor that holds focus.
+	     * @private
+	     */
+	    _handleKeydown(e) {
+	        const mod = e.ctrlKey || e.metaKey;
+	        if (mod && !e.altKey) {
+	            switch (e.key.toLowerCase()) {
+	                case '1':
+	                    e.preventDefault();
+	                    this.setMode('source');
+	                    break;
+	                case '2':
+	                    e.preventDefault();
+	                    this.setMode('split');
+	                    break;
+	                case '3':
+	                    e.preventDefault();
+	                    this.setMode('preview');
+	                    break;
+	                case 'z':
+	                    e.preventDefault();
+	                    if (e.shiftKey) this.redo();
+	                    else this.undo();
+	                    break;
+	                case 'y':
+	                    e.preventDefault();
+	                    this.redo();
+	                    break;
+	                case 'b':
+	                    if (e.shiftKey) break;
+	                    e.preventDefault();
+	                    this.format('bold');
+	                    break;
+	                case 'i':
+	                    if (e.shiftKey) break;
+	                    e.preventDefault();
+	                    this.format('italic');
+	                    break;
+	            }
+	        } else if (e.key === 'Tab' && !mod && !e.altKey) {
+	            // Tab / Shift+Tab indent and outdent list items. Outside a list
+	            // the key keeps its normal meaning (move focus).
+	            if (this.getFormatState().list) {
+	                e.preventDefault();
+	                this.format(e.shiftKey ? 'outdent' : 'indent');
+	            }
+	        }
+	    }
+
+	    /**
+	     * Save the preview selection and report selection changes to the host.
+	     * @private
+	     */
+	    _handleSelectionChange() {
+	        const sel = window.getSelection();
+	        const range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+	        if (range && this._inPreview(range)) {
+	            this._savedRange = range.cloneRange();
+	            if (document.activeElement !== this.sourceTextarea) this._lastPane = 'preview';
+	        } else if (document.activeElement !== this.sourceTextarea) {
+	            return; // the selection is somewhere else on the page
+	        }
+	        this._notifySelection();
+	    }
+
+	    /**
+	     * Call onSelectionChange if the selection differs from the last report.
+	     * Skipped while a debounced edit is waiting; the update that follows
+	     * reports the selection itself.
+	     * @private
+	     */
+	    _notifySelection() {
+	        if (!this.options.onSelectionChange || this._pending) return;
+	        const sel = this.getSelection();
+	        const key = `${sel.pane}:${sel.start}:${sel.end}:${this._markdown.length}`;
+	        if (key === this._lastSelKey) return;
+	        this._lastSelKey = key;
+	        this.options.onSelectionChange({ ...sel, format: getFormatState(this._markdown, sel.start, sel.end) });
+	    }
+
+	    /**
+	     * Hand link clicks in the rendered pane to the host.
+	     * @private
+	     */
+	    _handlePreviewClick(e) {
+	        if (!this.options.onLinkClick) return;
+	        const link = e.target.closest ? e.target.closest('a[href]') : null;
+	        if (!link || !this.previewPanel.contains(link)) return;
+	        if (this.options.onLinkClick(link.getAttribute('href'), e) !== true) {
+	            e.preventDefault();
+	        }
+	    }
+
+	    /**
+	     * Mirror one pane's relative scroll position onto the other.
+	     * @private
+	     */
+	    _handleScroll(pane) {
+	        if (!this.options.syncScroll || this.currentMode !== 'split') return;
+	        if (this._scrollLock === pane) {
+	            // This event is the echo of the position we just wrote.
+	            this._scrollLock = null;
+	            return;
+	        }
+	        const from = pane === 'source' ? this.sourceTextarea : this.previewPanel;
+	        const to = pane === 'source' ? this.previewPanel : this.sourceTextarea;
+	        const range = from.scrollHeight - from.clientHeight;
+	        const ratio = range > 0 ? from.scrollTop / range : 0;
+	        const target = Math.round(ratio * Math.max(0, to.scrollHeight - to.clientHeight));
+	        if (Math.abs(to.scrollTop - target) > 1) {
+	            this._scrollLock = pane === 'source' ? 'preview' : 'source';
+	            to.scrollTop = target;
 	        }
 	    }
 
@@ -231039,25 +231861,124 @@ void main() {
 	     */
 	    handleSourceInput() {
 	        clearTimeout(this.updateTimer);
+	        this._pending = 'source';
 	        this.updateTimer = setTimeout(() => {
-	            this.updateFromMarkdown(this.sourceTextarea.value);
+	            this._pending = null;
+	            this.updateFromMarkdown(this.sourceTextarea.value, 'user');
 	        }, this.options.debounceDelay);
 	    }
-	    
+
 	    /**
 	     * Handle preview panel input
 	     */
 	    handlePreviewInput() {
 	        clearTimeout(this.updateTimer);
+	        this._pending = 'preview';
+	        this._previewFresh = false;
 	        this.updateTimer = setTimeout(() => {
-	            this.updateFromHTML();
+	            this._pending = null;
+	            this.updateFromHTML('user');
 	        }, this.options.debounceDelay);
 	    }
-	    
+
+	    /**
+	     * Apply any edit that is still waiting on the debounce timer, so that
+	     * the markdown, HTML and history are current. Called by every API
+	     * method that reads or changes the document.
+	     */
+	    flush() {
+	        if (!this._pending) return;
+	        const pane = this._pending;
+	        clearTimeout(this.updateTimer);
+	        this._pending = null;
+	        if (pane === 'source') this.updateFromMarkdown(this.sourceTextarea.value, 'user');
+	        else this.updateFromHTML('user');
+	    }
+
+	    /**
+	     * Render markdown to HTML with this editor's options.
+	     * @private
+	     */
+	    _renderMarkdown(markdown) {
+	        // Translate editor's allowUnsafeHTML to parser's allow_unsafe_html:
+	        //   false → false,  true → true,  'limited' → quikdown_bd.SAFE_HTML_TAGS
+	        const htmlMode = this.options.allowUnsafeHTML;
+	        const allowHtml = htmlMode === 'limited' ? SAFE_HTML_TAGS : htmlMode;
+
+	        return quikdown_bd(markdown, {
+	            fence_plugin: this.createFencePlugin(),
+	            lazy_linefeeds: this.options.lazy_linefeeds,
+	            inline_styles: this.options.inline_styles,
+	            allow_unsafe_html: allowHtml,
+	            reference_links: this.options.reference_links,
+	            footnotes: this.options.footnotes
+	        });
+	    }
+
+	    /**
+	     * Put the current HTML into the preview pane.
+	     * @private
+	     */
+	    _renderPreview() {
+	        if (!this._markdown.trim()) {
+	            this.previewPanel.innerHTML = '<div style="color: #999; font-style: italic; padding: 16px;">Start typing markdown in the source panel...</div>';
+	        } else {
+	            this.previewPanel.innerHTML = this._html;
+	            this._resolveImages();
+
+	            // Process all math elements with MathJax if loaded (like squibview)
+	            this._typesetMath(this.previewPanel);
+	        }
+	        this._previewFresh = true;
+	        this._blocks = null;
+	        this._savedRange = null;
+
+	        if (this.options.onRender) {
+	            this.options.onRender(this.previewPanel);
+	        }
+	    }
+
+	    /**
+	     * Rewrite image sources for display through options.resolveImageSrc.
+	     * The markdown keeps the original URL: it is stored in data-qd-src,
+	     * which the HTML → markdown conversion reads in preference to src.
+	     * @private
+	     */
+	    _resolveImages() {
+	        const resolve = this.options.resolveImageSrc;
+	        if (typeof resolve !== 'function') return;
+	        this.previewPanel.querySelectorAll('img').forEach(img => {
+	            const original = img.getAttribute('data-qd-src') || img.getAttribute('src') || '';
+	            const resolved = resolve(original, {
+	                alt: img.getAttribute('alt') || '',
+	                title: img.getAttribute('title') || ''
+	            });
+	            if (typeof resolved === 'string' && resolved !== img.getAttribute('src')) {
+	                img.setAttribute('data-qd-src', original);
+	                img.setAttribute('src', resolved);
+	            }
+	        });
+	    }
+
+	    /**
+	     * Report a change to the host.
+	     * @private
+	     */
+	    _emitChange(source) {
+	        this._lastSelKey = '';
+	        if (this.options.onChange) {
+	            this.options.onChange(this._markdown, this._html, { source });
+	        }
+	    }
+
 	    /**
 	     * Update from markdown source
+	     * @param {string} markdown
+	     * @param {string} [source='api'] reported to onChange as meta.source
 	     */
-	    updateFromMarkdown(markdown) {
+	    updateFromMarkdown(markdown, source = 'api') {
+	        if (this._destroyed) return;
+
 	        // Push current state to undo stack before changing (unless this is an undo/redo operation)
 	        if (!this._isUndoRedo) {
 	            this._pushUndoState(markdown || '');
@@ -231065,47 +231986,27 @@ void main() {
 	        this._isUndoRedo = false;
 
 	        this._markdown = markdown || '';
-	        
-	        // Show placeholder if empty
-	        if (!this._markdown.trim()) {
-	            this._html = '';
-	            if (this.currentMode !== 'source') {
-	                this.previewPanel.innerHTML = '<div style="color: #999; font-style: italic; padding: 16px;">Start typing markdown in the source panel...</div>';
-	            }
+	        this._html = this._markdown.trim() ? this._renderMarkdown(this._markdown) : '';
+
+	        // Update preview if visible
+	        if (this.currentMode !== 'source') {
+	            this._renderPreview();
 	        } else {
-	            // Translate editor's allowUnsafeHTML to parser's allow_unsafe_html:
-	            //   false → false,  true → true,  'limited' → quikdown_bd.SAFE_HTML_TAGS
-	            const htmlMode = this.options.allowUnsafeHTML;
-	            const allowHtml = htmlMode === 'limited' ? SAFE_HTML_TAGS : htmlMode;
-
-	            this._html = quikdown_bd(markdown, {
-	                fence_plugin: this.createFencePlugin(),
-	                lazy_linefeeds: this.options.lazy_linefeeds,
-	                inline_styles: this.options.inline_styles,
-	                allow_unsafe_html: allowHtml,
-	                reference_links: this.options.reference_links,
-	                footnotes: this.options.footnotes
-	            });
-	            
-	            // Update preview if visible
-	            if (this.currentMode !== 'source') {
-	                this.previewPanel.innerHTML = this._html;
-
-	                // Process all math elements with MathJax if loaded (like squibview)
-	                this._typesetMath(this.previewPanel);
-	            }
+	            this._previewFresh = false;
+	            this._blocks = null;
 	        }
-	        
-	        // Trigger change event
-	        if (this.options.onChange) {
-	            this.options.onChange(this._markdown, this._html);
-	        }
+
+	        this._emitChange(source);
+	        this._updateUndoButtons();
 	    }
-	    
+
 	    /**
 	     * Update from HTML preview
+	     * @param {string} [source='user'] reported to onChange as meta.source
 	     */
-	    updateFromHTML() {
+	    updateFromHTML(source = 'user') {
+	        if (this._destroyed) return;
+
 	        // Clone the preview panel to avoid modifying the actual DOM
 	        const clonedPanel = this.previewPanel.cloneNode(true);
 
@@ -231118,26 +232019,21 @@ void main() {
 	        });
 
 	        // Push previous state to undo stack (now that we know the new markdown)
-	        if (!this._isUndoRedo) {
-	            this._pushUndoState(newMarkdown);
-	        }
+	        this._pushUndoState(newMarkdown);
 	        this._isUndoRedo = false;
 
 	        this._markdown = newMarkdown;
+	        this._previewFresh = false;
+	        this._blocks = null;
 
-	        // Update source if visible
-	        if (this.currentMode !== 'preview') {
-	            this.sourceTextarea.value = this._markdown;
-	        }
+	        // Keep the source in step even while it is hidden, so a later
+	        // switch to source or split mode shows the current text.
+	        this.sourceTextarea.value = this._markdown;
 
-	        // Trigger change event
-	        if (this.options.onChange) {
-	            this.options.onChange(this._markdown, this._html);
-	        }
-
+	        this._emitChange(source);
 	        this._updateUndoButtons();
 	    }
-	    
+
 	    /**
 	     * Pre-process special elements before markdown conversion
 	     */
@@ -231343,9 +232239,9 @@ void main() {
 	            svg.querySelectorAll('script').forEach(el => el.remove());
 	            
 	            // Remove event handlers
+	            // Start at the root <svg> itself: nextNode() alone would skip it
 	            const walker = document.createTreeWalker(svg, NodeFilter.SHOW_ELEMENT);
-	            let node;
-	            while ((node = walker.nextNode())) {
+	            for (let node = svg; node; node = walker.nextNode()) {
 	                for (let i = node.attributes.length - 1; i >= 0; i--) {
 	                    const attr = node.attributes[i];
 	                    if (attr.name.startsWith('on') || attr.value.includes('javascript:')) {
@@ -231510,31 +232406,12 @@ void main() {
 	     */
 	    ensureMathJaxLoaded() {
 	        if (typeof window.MathJax === 'undefined' && !window.mathJaxLoading) {
+	            // After a failed load, wait before trying again so an offline
+	            // page does not request the script on every render.
+	            if (Date.now() - (window._qde_mathjax_failed || 0) < MATHJAX_RETRY_MS) return;
 	            window.mathJaxLoading = true;
-	            
-	            // Configure MathJax before loading
-	            if (!window.MathJax) {
-	                window.MathJax = {
-	                    loader: { load: ['input/tex', 'output/svg'] },
-	                    tex: { 
-	                        packages: { '[+]': ['ams'] },
-	                        inlineMath: [['$', '$'], ['\\(', '\\)']],
-	                        displayMath: [['$$', '$$'], ['\\[', '\\]']],
-	                        processEscapes: true,
-	                        processEnvironments: true
-	                    },
-	                    options: {
-	                        renderActions: { addMenu: [] },
-	                        ignoreHtmlClass: 'tex2jax_ignore',
-	                        processHtmlClass: 'tex2jax_process'
-	                    },
-	                    svg: {
-	                        fontCache: 'none'  // Important: self-contained SVGs for copy
-	                    },
-	                    startup: { typeset: false }
-	                };
-	            }
-	            
+	            configureMathJax();
+
 	            const script = document.createElement('script');
 	            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js';
 	            script.async = true;
@@ -231546,6 +232423,9 @@ void main() {
 	            };
 	            script.onerror = () => {
 	                window.mathJaxLoading = false;
+	                // Remove the config and the dead script so the next render retries
+	                clearFailedMathJax();
+	                script.remove();
 	                console.error('Failed to load MathJax');
 	            };
 	            document.head.appendChild(script);
@@ -231800,7 +232680,7 @@ void main() {
 	                && !window._qde_worldGeoJSON
 	                && typeof window._qde_ensureBasemap === 'function';
 	            if (needBasemap) {
-	                window._qde_ensureBasemap().then(() => renderMap()).catch(err => {
+	                window._qde_ensureBasemap(this.options.assetBase).then(() => renderMap()).catch(err => {
 	                    const el = document.getElementById(mapId + '-container');
 	                    if (el) {
 	                        el.innerHTML = `<pre class="qde-error">Basemap load failed: ${this.escapeHtml(err.message)}</pre>`;
@@ -232176,10 +233056,8 @@ void main() {
 	        const namesToLoad = new Set();
 
 	        // Legacy plugins option
-	        if (this.options.plugins) {
-	            if (this.options.plugins.highlightjs) namesToLoad.add('highlightjs');
-	            if (this.options.plugins.mermaid)     namesToLoad.add('mermaid');
-	        }
+	        if (this.options.plugins.highlightjs) namesToLoad.add('highlightjs');
+	        if (this.options.plugins.mermaid)     namesToLoad.add('mermaid');
 
 	        // New preloadFences option
 	        const pf = this.options.preloadFences;
@@ -232219,12 +233097,15 @@ void main() {
 	                    } else if (lib.script) {
 	                        tasks.push(this.loadScript(lib.script));
 	                    }
-	                    if (lib.css)    tasks.push(this.loadCSS(lib.css, 'qde-hljs-light'));
+	                    // Only the highlight.js pair is theme-switched by id; other
+	                    // libraries' CSS must stay enabled in both themes.
+	                    if (lib.css)    tasks.push(this.loadCSS(lib.css, lib.cssDark ? 'qde-hljs-light' : undefined));
 	                    if (lib.cssDark) tasks.push(this.loadCSS(lib.cssDark, 'qde-hljs-dark'));
 	                    await Promise.all(tasks);
 	                    if (lib.css && lib.cssDark) this._syncHljsTheme();
 	                    if (lib.afterLoad) lib.afterLoad();
 	                } catch (err) {
+	                    if (lib.onError) lib.onError();
 	                    console.warn(`QuikdownEditor: failed to preload ${name}:`, err);
 	                }
 	            })();
@@ -232270,13 +233151,25 @@ void main() {
 	     * Load external script
 	     */
 	    loadScript(src) {
-	        return new Promise((resolve, reject) => {
-	            const script = document.createElement('script');
+	        const pending = scriptLoads.get(src);
+	        if (pending && pending.script.isConnected) return pending.promise;
+
+	        const script = document.createElement('script');
+	        const promise = new Promise((resolve, reject) => {
 	            script.src = src;
-	            script.onload = resolve;
-	            script.onerror = reject;
+	            script.onload = (event) => {
+	                scriptLoads.delete(src);
+	                resolve(event);
+	            };
+	            script.onerror = (event) => {
+	                scriptLoads.delete(src);
+	                script.remove();
+	                reject(event);
+	            };
 	            document.head.appendChild(script);
 	        });
+	        scriptLoads.set(src, { script, promise });
+	        return promise;
 	    }
 	    
 	    /**
@@ -232393,25 +233286,21 @@ void main() {
 	    setMode(mode) {
 	        if (!['source', 'preview', 'split'].includes(mode)) return;
 
-	        // Preserve theme class across mode swap (the assignment to className
-	        // below would otherwise wipe it out — this used to be a no-op bug
-	        // where dark mode was lost on every setMode call).
-	        const wasDark = this.container.classList.contains('qde-dark');
+	        // Apply any edit still waiting on the debounce timer before the
+	        // panes change visibility.
+	        this.flush();
+
 	        const previousMode = this.currentMode;
-
 	        this.currentMode = mode;
-	        this.container.className = `qde-container qde-mode-${mode}`;
-	        if (wasDark) {
-	            this.container.classList.add('qde-dark');
-	        }
 
-	        // Reset mobile split-toggle button text
-	        if (this.toolbar) {
-	            const splitToggle = this.toolbar.querySelector('.qde-split-toggle');
-	            if (splitToggle) {
-	                splitToggle.textContent = 'Preview';
-	            }
-	        }
+	        // Swap only the editor's own mode classes; the theme class and any
+	        // classes the host put on the element stay.
+	        const classes = this.container.classList;
+	        classes.add('qde-container');
+	        classes.remove('qde-mode-source', 'qde-mode-split', 'qde-mode-preview', 'qde-split-preview');
+	        classes.add(`qde-mode-${mode}`);
+
+	        this._syncSplitToggle();
 
 	        // Update toolbar buttons
 	        if (this.toolbar) {
@@ -232425,8 +233314,7 @@ void main() {
 	        // Do NOT re-render if the preview was already visible — that would
 	        // destroy MathJax-typeset SVG output with raw pre-typeset HTML.
 	        if (mode !== 'source' && previousMode === 'source' && this._html) {
-	            this.previewPanel.innerHTML = this._html;
-	            this._typesetMath(this.previewPanel);
+	            this._renderPreview();
 	        }
 
 	        // Trigger mode change event
@@ -232464,35 +233352,28 @@ void main() {
 	     * Undo the last change. Restores the previous markdown state.
 	     */
 	    undo() {
+	        this.flush();
 	        if (!this.canUndo()) return;
 	        // Save current state to redo stack
 	        this._redoStack.push(this._markdown);
 	        const previous = this._undoStack.pop();
 	        this._isUndoRedo = true;
-	        // Update state directly (setMarkdown is async; keep it synchronous here)
-	        this._markdown = previous;
-	        if (this.sourceTextarea) {
-	            this.sourceTextarea.value = previous;
-	        }
-	        this.updateFromMarkdown(previous);
-	        this._updateUndoButtons();
+	        this.sourceTextarea.value = previous;
+	        this.updateFromMarkdown(previous, 'undo');
 	    }
 
 	    /**
 	     * Redo the last undone change.
 	     */
 	    redo() {
+	        this.flush();
 	        if (!this.canRedo()) return;
 	        // Save current state to undo stack
 	        this._undoStack.push(this._markdown);
 	        const next = this._redoStack.pop();
 	        this._isUndoRedo = true;
-	        this._markdown = next;
-	        if (this.sourceTextarea) {
-	            this.sourceTextarea.value = next;
-	        }
-	        this.updateFromMarkdown(next);
-	        this._updateUndoButtons();
+	        this.sourceTextarea.value = next;
+	        this.updateFromMarkdown(next, 'redo');
 	    }
 
 	    /**
@@ -232515,6 +233396,28 @@ void main() {
 	    clearHistory() {
 	        this._undoStack = [];
 	        this._redoStack = [];
+	        this._updateUndoButtons();
+	    }
+
+	    /**
+	     * Snapshot of the undo and redo stacks, for hosts that keep one
+	     * history per document. The arrays are copies.
+	     * @returns {{undo: string[], redo: string[]}}
+	     */
+	    getHistory() {
+	        this.flush();
+	        return { undo: this._undoStack.slice(), redo: this._redoStack.slice() };
+	    }
+
+	    /**
+	     * Replace the undo and redo stacks with a snapshot from getHistory().
+	     * @param {{undo?: string[], redo?: string[]}} [state] omitted or invalid parts become empty
+	     */
+	    setHistory(state) {
+	        const clean = list => (Array.isArray(list) ? list.filter(item => typeof item === 'string') : []);
+	        const max = this.options.undoStackSize || 100;
+	        this._undoStack = clean(state && state.undo).slice(-max);
+	        this._redoStack = clean(state && state.redo).slice(-max);
 	        this._updateUndoButtons();
 	    }
 
@@ -232570,17 +233473,18 @@ void main() {
 	     * Copy content to clipboard
 	     */
 	    async copy(type) {
+	        this.flush();
 	        const content = type === 'markdown' ? this._markdown : this._html;
 	        
 	        try {
 	            await navigator.clipboard.writeText(content);
 	            
 	            // Visual feedback
-	            const btn = this.toolbar.querySelector(`[data-action="copy-${type}"]`);
+	            const btn = this.toolbar?.querySelector(`[data-action="copy-${type}"]`);
 	            if (btn) {
 	                const originalText = btn.textContent;
 	                btn.textContent = 'Copied!';
-	                setTimeout(() => {
+	                this._later(() => {
 	                    btn.textContent = originalText;
 	                }, 1500);
 	            }
@@ -232620,35 +233524,554 @@ void main() {
 	    }
 	    
 	    /**
-	     * Set markdown content
+	     * Get current mode: 'source', 'split' or 'preview'.
+	     * @returns {'source'|'split'|'preview'}
 	     */
-	    async setMarkdown(markdown) {
+	    getMode() {
+	        return this.currentMode;
+	    }
+
+	    /**
+	     * Choose which pane split mode shows when the editor is too narrow to
+	     * show both side by side (the toolbar's Preview/Source toggle). On a wide
+	     * editor both panes stay visible and this has no visible effect. Changing
+	     * mode with setMode() resets it to 'source'.
+	     * @param {'source'|'preview'} pane
+	     */
+	    setSplitPane(pane) {
+	        if (pane !== 'source' && pane !== 'preview') return;
+	        this.container.classList.toggle('qde-split-preview', pane === 'preview');
+	        this._syncSplitToggle();
+	    }
+
+	    /**
+	     * The pane split mode shows on a narrow editor: 'source' or 'preview'.
+	     * @returns {'source'|'preview'}
+	     */
+	    getSplitPane() {
+	        return this.container.classList.contains('qde-split-preview') ? 'preview' : 'source';
+	    }
+
+	    // The toggle button names the pane a click would switch to
+	    _syncSplitToggle() {
+	        const label = this.getSplitPane() === 'preview' ? 'Source' : 'Preview';
+	        this.toolbar?.querySelectorAll('.qde-split-toggle').forEach(toggle => { toggle.textContent = label; });
+	    }
+
+	    /**
+	     * Set markdown content
+	     * @param {string} markdown
+	     * @param {Object} [options]
+	     * @param {'keep'|'reset'|'push'} [options.history='keep'] 'keep' leaves the
+	     *        undo history as it is, 'reset' clears it (use when loading a
+	     *        different document), 'push' records the replaced text as an undo step
+	     * @param {string} [options.source='api'] reported to onChange as meta.source
+	     */
+	    async setMarkdown(markdown, options = {}) {
 	        // Wait for initialization if needed
 	        if (this.initPromise) {
 	            await this.initPromise;
 	        }
-	        
-	        this._markdown = markdown;
-	        if (this.sourceTextarea) {
-	            this.sourceTextarea.value = markdown;
-	        }
-	        this.updateFromMarkdown(markdown);
+	        if (this._destroyed) return;
+	        this._load(markdown, options.source || 'api', options.history);
 	    }
-	    
+
+	    /**
+	     * Synchronous core of setMarkdown().
+	     * @private
+	     */
+	    _load(markdown, source, history) {
+	        const text = markdown === null || markdown === undefined ? '' : String(markdown);
+	        clearTimeout(this.updateTimer);
+	        this._pending = null;
+	        if (history === 'reset') {
+	            this._undoStack = [];
+	            this._redoStack = [];
+	        }
+	        // 'keep' (the default) replaces the text without adding an undo step
+	        if (history !== 'push') this._isUndoRedo = true;
+	        this.sourceTextarea.value = text;
+	        this.updateFromMarkdown(text, source);
+	    }
+
 	    /**
 	     * Get markdown content
 	     */
 	    getMarkdown() {
+	        this.flush();
 	        return this._markdown;
 	    }
-	    
+
 	    /**
 	     * Get HTML content
 	     */
 	    getHTML() {
+	        this.flush();
 	        return this._html;
 	    }
-	    
+
+	    // --- Selection, cursor and text edits ---
+
+	    /**
+	     * Which pane has keyboard focus.
+	     * @returns {'source'|'preview'|null} null when focus is outside the editor
+	     */
+	    getFocusedPane() {
+	        const active = document.activeElement;
+	        if (active === this.sourceTextarea) return 'source';
+	        if (active && this.previewPanel.contains(active)) return 'preview';
+	        return null;
+	    }
+
+	    /**
+	     * The pane API calls act on: the focused pane, else the pane the user
+	     * last worked in, limited to what the current mode shows.
+	     * @private
+	     */
+	    _activePane() {
+	        if (this.currentMode === 'source') return 'source';
+	        if (this.currentMode === 'preview') return 'preview';
+	        return this.getFocusedPane() || this._lastPane || 'source';
+	    }
+
+	    /** @private */
+	    _inPreview(range) {
+	        return this.previewPanel.contains(range.startContainer) && this.previewPanel.contains(range.endContainer);
+	    }
+
+	    /**
+	     * Current (or last seen) selection range inside the preview.
+	     * @private
+	     */
+	    _previewRange() {
+	        const sel = window.getSelection();
+	        if (sel && sel.rangeCount && this._inPreview(sel.getRangeAt(0))) return sel.getRangeAt(0);
+	        if (this._savedRange && this._inPreview(this._savedRange)) return this._savedRange;
+	        return null;
+	    }
+
+	    /**
+	     * Convert a copy of the preview to markdown after `mark(clone, locate)`
+	     * has dropped marker text into the copy. `locate(node)` returns the
+	     * copy's counterpart of a node in the live preview.
+	     * @private
+	     */
+	    _markedMarkdown(mark) {
+	        const clone = this.previewPanel.cloneNode(true);
+	        const locate = (node) => {
+	            const path = [];
+	            for (let n = node; n !== this.previewPanel; n = n.parentNode) {
+	                path.unshift(Array.prototype.indexOf.call(n.parentNode.childNodes, n));
+	            }
+	            return path.reduce((at, index) => at.childNodes[index], clone);
+	        };
+	        mark(clone, locate);
+	        this.preprocessSpecialElements(clone);
+	        return quikdown_bd.toMarkdown(clone, { fence_plugin: this.createFencePlugin() });
+	    }
+
+	    /**
+	     * The preview selection as offsets into the markdown the preview
+	     * converts to. Null when there is no selection in the preview or its
+	     * ends fall inside content that has no text of its own in the markdown.
+	     * @private
+	     */
+	    _previewSelection() {
+	        const range = this._previewRange();
+	        if (!range) return null;
+	        const marked = this._markedMarkdown((clone, locate) => {
+	            const put = (node, offset, mark) => {
+	                const target = locate(node);
+	                if (target.nodeType === 3) target.insertData(offset, mark);
+	                else target.insertBefore(document.createTextNode(mark), target.childNodes[offset] || null);
+	            };
+	            // End first, so the start offset is still valid in a shared node
+	            put(range.endContainer, range.endOffset, MARK_END);
+	            put(range.startContainer, range.startOffset, MARK_START);
+	        });
+	        const a = marked.indexOf(MARK_START);
+	        const b = marked.indexOf(MARK_END);
+	        if (a === -1 || b === -1) return null;
+	        return {
+	            markdown: marked.replace(MARKS_RE, ''),
+	            start: Math.min(a, b),
+	            end: Math.max(a, b) - 1
+	        };
+	    }
+
+	    /**
+	     * Current selection as character offsets into the markdown, whichever
+	     * pane the user is in. A caret is a selection with start === end.
+	     * @returns {{start: number, end: number, text: string, pane: 'source'|'preview'}}
+	     */
+	    getSelection() {
+	        this.flush();
+	        const pane = this._activePane();
+	        const md = this._markdown;
+	        if (pane === 'preview') {
+	            const found = this._previewSelection();
+	            if (found) {
+	                const start = mapOffset(found.markdown, md, found.start);
+	                const end = Math.max(start, mapOffset(found.markdown, md, found.end));
+	                return { start, end, text: md.slice(start, end), pane };
+	            }
+	        }
+	        const start = Math.min(md.length, this.sourceTextarea.selectionStart || 0);
+	        const end = Math.min(md.length, Math.max(start, this.sourceTextarea.selectionEnd || 0));
+	        return { start, end, text: md.slice(start, end), pane };
+	    }
+
+	    /**
+	     * Select a range of the markdown (or place the caret when end is omitted).
+	     * In the rendered pane the matching rendered text is selected.
+	     * @param {number} start
+	     * @param {number} [end=start]
+	     * @param {'source'|'preview'} [pane] defaults to the pane the user is in
+	     * @returns {{start: number, end: number}} the clamped range
+	     */
+	    setSelection(start, end = start, pane) {
+	        this.flush();
+	        const len = this._markdown.length;
+	        let a = Math.max(0, Math.min(len, Number(start) || 0));
+	        let b = Math.max(0, Math.min(len, Number(end) || 0));
+	        if (a > b) [a, b] = [b, a];
+
+	        // The source pane always carries the selection, so it is already
+	        // in place when the user switches panes.
+	        this.sourceTextarea.setSelectionRange(a, b);
+
+	        const target = pane === 'source' || pane === 'preview' ? pane : this._activePane();
+	        if (target === 'preview' && this.currentMode !== 'source') {
+	            this._selectInPreview(a, b);
+	        }
+	        this._lastSelKey = '';
+	        return { start: a, end: b };
+	    }
+
+	    /**
+	     * Select the rendered text that corresponds to markdown offsets.
+	     * Renders a marked copy of the document off-screen to find where the
+	     * two ends land, then selects the same places in the live preview.
+	     * @private
+	     */
+	    _selectInPreview(start, end) {
+	        // The live preview must be an untouched render for positions found
+	        // in the off-screen copy to line up with it.
+	        if (!this._previewFresh) this._renderPreview();
+
+	        const md = this._markdown;
+	        const a = skipBlockPrefix(md, start);
+	        const b = Math.max(a, skipBlockPrefix(md, end));
+	        const scratch = document.createElement('div');
+	        scratch.innerHTML = this._renderMarkdown(md.slice(0, a) + MARK_START + md.slice(a, b) + MARK_END + md.slice(b));
+
+	        // Find a marker in the copy, remove it, and describe where it was.
+	        const take = (mark) => {
+	            const walker = document.createTreeWalker(scratch, 4 /* NodeFilter.SHOW_TEXT */);
+	            for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+	                const at = node.data.indexOf(mark);
+	                if (at === -1) continue;
+	                node.deleteData(at, 1);
+	                let anchor = node;
+	                let offset = at;
+	                let text = node.data.replace(MARKS_RE, '');
+	                if (text === '') {
+	                    // The marker stood alone between elements
+	                    anchor = node.parentNode;
+	                    offset = Array.prototype.indexOf.call(anchor.childNodes, node);
+	                    anchor.removeChild(node);
+	                    text = null;
+	                }
+	                const path = [];
+	                for (let n = anchor; n !== scratch; n = n.parentNode) {
+	                    path.unshift(Array.prototype.indexOf.call(n.parentNode.childNodes, n));
+	                }
+	                return { path, offset, text };
+	            }
+	            return null;
+	        };
+
+	        // Resolve a description against the live preview, or fall back to
+	        // the start of the block that holds the offset.
+	        const resolve = (point, offset) => {
+	            if (point) {
+	                let node = this.previewPanel;
+	                for (const index of point.path) {
+	                    node = node && node.childNodes[index];
+	                }
+	                if (node && point.text !== null && node.nodeType === 3 && node.data === point.text) {
+	                    return [node, Math.min(point.offset, node.data.length)];
+	                }
+	                if (node && point.text === null && node.nodeType === 1 && point.offset <= node.childNodes.length) {
+	                    return [node, point.offset];
+	                }
+	            }
+	            const block = this._blockAt(this._markdown.slice(0, offset).split('\n').length - 1);
+	            return [block || this.previewPanel, 0];
+	        };
+
+	        const from = resolve(take(MARK_START), start);
+	        const to = start === end ? from : resolve(take(MARK_END), end);
+	        const range = document.createRange();
+	        range.setStart(from[0], from[1]);
+	        range.setEnd(to[0], to[1]);
+	        if (range.collapsed && start !== end) range.setEnd(from[0], from[1]);
+	        const sel = window.getSelection();
+	        sel.removeAllRanges();
+	        sel.addRange(range);
+	        this._savedRange = range.cloneRange();
+	    }
+
+	    /**
+	     * Move keyboard focus into the editor.
+	     * @param {'source'|'preview'} [pane] defaults to the pane the user is in;
+	     *        a pane the current mode hides falls back to the visible one
+	     */
+	    focus(pane) {
+	        let target = pane === 'source' || pane === 'preview' ? pane : this._activePane();
+	        if (this.currentMode === 'source') target = 'source';
+	        if (this.currentMode === 'preview') target = 'preview';
+	        this._lastPane = target;
+	        if (target === 'source') {
+	            this.sourceTextarea.focus();
+	            return;
+	        }
+	        this.previewPanel.focus();
+	        if (this._savedRange && this._inPreview(this._savedRange)) {
+	            const sel = window.getSelection();
+	            sel.removeAllRanges();
+	            sel.addRange(this._savedRange);
+	        }
+	    }
+
+	    /**
+	     * Replace the document with an edited version and restore view state.
+	     * Every programmatic edit goes through here so it reaches the history,
+	     * the other pane and onChange the same way typing does.
+	     * @private
+	     */
+	    _applyEdit(markdown, start, end, source, pane) {
+	        clearTimeout(this.updateTimer);
+	        this._pending = null;
+	        const scroll = this.getScroll();
+	        this.sourceTextarea.value = markdown;
+	        this.updateFromMarkdown(markdown, source);
+	        this.setScroll(scroll);
+	        return this.setSelection(start, end, pane);
+	    }
+
+	    /**
+	     * Replace a range of the markdown.
+	     * @param {number} start
+	     * @param {number} end
+	     * @param {string} text
+	     * @param {boolean} [select=false] select the inserted text instead of placing the caret after it
+	     * @returns {{start: number, end: number}} the resulting selection
+	     */
+	    replaceRange(start, end, text, select = false) {
+	        this.flush();
+	        const md = this._markdown;
+	        let a = Math.max(0, Math.min(md.length, Number(start) || 0));
+	        let b = Math.max(0, Math.min(md.length, Number(end) || 0));
+	        if (a > b) [a, b] = [b, a];
+	        const insert = text === null || text === undefined ? '' : String(text);
+	        const pane = this._activePane();
+	        const to = a + insert.length;
+	        return this._applyEdit(md.slice(0, a) + insert + md.slice(b), select ? a : to, to, 'edit', pane);
+	    }
+
+	    /**
+	     * Insert text at the caret, replacing the selection if there is one.
+	     * @param {string} text
+	     * @returns {{start: number, end: number}} the caret after the inserted text
+	     */
+	    insertText(text) {
+	        const sel = this.getSelection();
+	        return this.replaceRange(sel.start, sel.end, text);
+	    }
+
+	    // --- Formatting ---
+
+	    /**
+	     * Apply a formatting command to the selection in whichever pane the
+	     * user is in. Inline commands toggle.
+	     *
+	     * Commands: bold, italic, strike, code, link (value: URL; null removes),
+	     * h1…h6, heading (value: 0–6), paragraph, ul, ol, task, quote,
+	     * codeblock (value: language), hr, table (value: { rows, cols }),
+	     * indent, outdent.
+	     *
+	     * @param {string} command
+	     * @param {*} [value]
+	     * @returns {boolean} false for an unknown command
+	     */
+	    format(command, value) {
+	        const sel = this.getSelection();
+	        const next = formatMarkdown(this._markdown, sel.start, sel.end, command, value);
+	        if (!next) return false;
+	        if (next.markdown === this._markdown) {
+	            this.setSelection(next.start, next.end, sel.pane);
+	        } else {
+	            this._applyEdit(next.markdown, next.start, next.end, 'format', sel.pane);
+	        }
+	        return true;
+	    }
+
+	    /**
+	     * Formatting at the caret or selection, for toolbar pressed states.
+	     * @returns {{bold: boolean, italic: boolean, strike: boolean, code: boolean, link: boolean,
+	     *            heading: number, list: ('ul'|'ol'|'task'|null), quote: boolean, codeblock: boolean}}
+	     */
+	    getFormatState() {
+	        const sel = this.getSelection();
+	        return getFormatState(this._markdown, sel.start, sel.end);
+	    }
+
+	    // --- Scroll and line mapping ---
+
+	    /**
+	     * Scroll positions of both panes.
+	     * @returns {{source: number, preview: number}}
+	     */
+	    getScroll() {
+	        return { source: this.sourceTextarea.scrollTop, preview: this.previewPanel.scrollTop };
+	    }
+
+	    /**
+	     * Restore scroll positions from getScroll(). Either field may be omitted.
+	     * @param {{source?: number, preview?: number}} [scroll]
+	     */
+	    setScroll(scroll) {
+	        if (!scroll) return;
+	        if (Number.isFinite(scroll.source)) {
+	            this._scrollLock = null;
+	            this.sourceTextarea.scrollTop = scroll.source;
+	        }
+	        if (Number.isFinite(scroll.preview)) {
+	            this._scrollLock = null;
+	            this.previewPanel.scrollTop = scroll.preview;
+	        }
+	    }
+
+	    /**
+	     * Top-level preview blocks with the zero-based source line each starts on.
+	     * Built on demand (one HTML → markdown pass) and cached until the next
+	     * render or edit.
+	     * @private
+	     */
+	    _blockMap() {
+	        if (this._blocks) return this._blocks;
+	        const blocks = [];
+	        if (this._markdown.trim() && this.currentMode !== 'source') {
+	            const live = Array.from(this.previewPanel.children);
+	            const marked = this._markedMarkdown((clone) => {
+	                Array.from(clone.children).forEach((el, i) => {
+	                    clone.insertBefore(document.createTextNode(MARK_START + i + MARK_END), el);
+	                });
+	            });
+	            let clean = '';
+	            let last = 0;
+	            const found = [];
+	            marked.replace(/(\d+)/g, (match, index, at) => {
+	                clean += marked.slice(last, at);
+	                last = at + match.length;
+	                found.push({ el: live[Number(index)], offset: clean.length });
+	                return match;
+	            });
+	            clean += marked.slice(last);
+	            found.forEach(item => {
+	                let at = item.offset;
+	                while (at < clean.length && /\s/.test(clean[at])) at++;
+	                const offset = mapOffset(clean, this._markdown, at);
+	                blocks.push({ el: item.el, line: this._markdown.slice(0, offset).split('\n').length - 1 });
+	            });
+	        }
+	        this._blocks = blocks;
+	        return blocks;
+	    }
+
+	    /**
+	     * The preview block that holds a source line.
+	     * @private
+	     */
+	    _blockAt(line) {
+	        let hit = null;
+	        for (const block of this._blockMap()) {
+	            if (block.line > line && hit) break;
+	            hit = block.el;
+	        }
+	        return hit;
+	    }
+
+	    /**
+	     * Zero-based source line of an element in the rendered pane.
+	     * @param {Element} element
+	     * @returns {number} -1 when the element is not in the preview
+	     */
+	    lineOf(element) {
+	        this.flush();
+	        if (!element || element === this.previewPanel || !this.previewPanel.contains(element)) return -1;
+
+	        const lineAt = (marked) => {
+	            const at = marked.indexOf(MARK_START);
+	            if (at === -1) return -1;
+	            const clean = marked.replace(MARKS_RE, '');
+	            let pos = at;
+	            while (pos < clean.length && /\s/.test(clean[pos])) pos++;
+	            return this._markdown.slice(0, mapOffset(clean, this._markdown, pos)).split('\n').length - 1;
+	        };
+
+	        // A marker as the element's first text, then one just before it
+	        let line = lineAt(this._markedMarkdown((clone, locate) => {
+	            const target = locate(element);
+	            target.insertBefore(document.createTextNode(MARK_START), target.firstChild);
+	        }));
+	        if (line === -1) {
+	            line = lineAt(this._markedMarkdown((clone, locate) => {
+	                const target = locate(element);
+	                target.parentNode.insertBefore(document.createTextNode(MARK_START), target);
+	            }));
+	        }
+	        if (line !== -1) return line;
+
+	        // Fall back to the top-level block that contains the element
+	        let top = element;
+	        while (top.parentNode !== this.previewPanel) top = top.parentNode;
+	        const block = this._blockMap().find(item => item.el === top);
+	        return block ? block.line : -1;
+	    }
+
+	    /**
+	     * Scroll a zero-based source line into view.
+	     * @param {number} line
+	     * @param {'source'|'preview'} [pane] omitted scrolls both panes
+	     * @returns {Element|null} the preview block that was scrolled to, if any
+	     */
+	    scrollToLine(line, pane) {
+	        this.flush();
+	        const total = this._markdown.split('\n').length;
+	        const n = Math.max(0, Math.min(total - 1, Math.floor(Number(line)) || 0));
+	        let block = null;
+
+	        if (pane !== 'preview') {
+	            const ta = this.sourceTextarea;
+	            const lineHeight = parseFloat(window.getComputedStyle(ta).lineHeight);
+	            this._scrollLock = null;
+	            ta.scrollTop = Number.isFinite(lineHeight)
+	                ? n * lineHeight
+	                : (n / total) * ta.scrollHeight;
+	        }
+	        if (pane !== 'source' && this.currentMode !== 'source') {
+	            block = this._blockAt(n);
+	            if (block) {
+	                const panel = this.previewPanel;
+	                this._scrollLock = null;
+	                panel.scrollTop += block.getBoundingClientRect().top - panel.getBoundingClientRect().top;
+	            }
+	        }
+	        return block;
+	    }
+
 	    /**
 	     * Remove all horizontal rules (---) from markdown source.
 	     * Preserves content inside fences (``` or ~~~) and table separator rows.
@@ -232662,7 +234085,7 @@ void main() {
 	        if (btn) {
 	            const originalText = btn.textContent;
 	            btn.textContent = 'Removed!';
-	            setTimeout(() => {
+	            this._later(() => {
 	                btn.textContent = originalText;
 	            }, 1500);
 	        }
@@ -232748,7 +234171,7 @@ void main() {
 	        if (btn) {
 	            const originalText = btn.textContent;
 	            btn.textContent = 'Converted!';
-	            setTimeout(() => {
+	            this._later(() => {
 	                btn.textContent = originalText;
 	            }, 1500);
 	        }
@@ -232908,7 +234331,7 @@ void main() {
 	                if (btn) {
 	                    const originalText = btn.textContent;
 	                    btn.textContent = 'Copied!';
-	                    setTimeout(() => {
+	                    this._later(() => {
 	                        btn.textContent = originalText;
 	                    }, 1500);
 	                }
@@ -232975,16 +234398,55 @@ void main() {
 	    }
 
 	    /**
-	     * Destroy the editor
+	     * Destroy the editor: remove its listeners, timers and DOM. Safe to
+	     * call more than once. Other editors on the page are not affected.
 	     */
 	    destroy() {
-	        // Clear timers
+	        if (this._destroyed) return;
+	        this._destroyed = true;
+
+	        // Timers
 	        clearTimeout(this.updateTimer);
-	        
-	        // Clear container
-	        this.container.innerHTML = '';
-	        this.container.classList.remove('qde-container', 'qde-dark');
-	        
+	        this._pending = null;
+	        this._timers.forEach(id => clearTimeout(id));
+	        this._timers.clear();
+
+	        // Listeners (document, media queries, own elements)
+	        this._listeners.forEach(([target, type, handler]) => target.removeEventListener(type, handler));
+	        this._listeners = [];
+	        if (this._autoThemeListener) {
+	            window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', this._autoThemeListener);
+	            this._autoThemeListener = null;
+	        }
+
+	        // UI may not exist if init was still loading libraries
+	        if (this.previewPanel) {
+	            // Release Leaflet maps created by geojson fences
+	            this.previewPanel.querySelectorAll('[id$="-container"]').forEach(el => {
+	                if (el._map && typeof el._map.remove === 'function') {
+	                    try { el._map.remove(); } catch (_err) { /* already gone */ }
+	                    el._map = null;
+	                }
+	            });
+	        }
+
+	        // DOM
+	        if (this.options.mount === 'append') {
+	            this.container.remove();
+	        } else {
+	            this.container.innerHTML = '';
+	            this.container.classList.remove(
+	                'qde-container', 'qde-dark', 'qde-split-preview',
+	                'qde-mode-source', 'qde-mode-split', 'qde-mode-preview'
+	            );
+	        }
+
+	        // State
+	        this._undoStack = [];
+	        this._redoStack = [];
+	        this._savedRange = null;
+	        this._blocks = null;
+
 	        // Remove injected styles (only if no other editors exist)
 	        const otherEditors = document.querySelectorAll('.qde-container');
 	        if (otherEditors.length === 0) {
@@ -232993,6 +234455,22 @@ void main() {
 	        }
 	    }
 	};
+
+	/** Static: apply a formatting command to a markdown string (no editor needed). */
+	QuikdownEditor$1.formatMarkdown = formatMarkdown;
+
+	/** Static: formatting state at a selection in a markdown string. */
+	QuikdownEditor$1.getFormatState = getFormatState;
+
+	/**
+	 * Static: translate a character offset in one version of a document to the
+	 * matching offset in another (for example to keep the caret after reloading
+	 * a file that changed on disk).
+	 */
+	QuikdownEditor$1.mapOffset = mapOffset;
+
+	/** Static: command names accepted by format(). */
+	QuikdownEditor$1.FORMAT_COMMANDS = FORMAT_COMMANDS;
 
 	/** Static: curated safe HTML tag whitelist for allow_unsafe_html */
 	QuikdownEditor$1.SAFE_HTML_TAGS = SAFE_HTML_TAGS;
@@ -233087,7 +234565,7 @@ void main() {
 	/** Bundle directory URL — basemap *.topojson live alongside standalone JS. */
 	const BASEMAP_BASE = new URL('./', (typeof document === 'undefined' && typeof location === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : typeof document === 'undefined' ? location.href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('quikdown_edit_standalone.umd.js', document.baseURI).href))).href;
 
-	window._qde_ensureBasemap = () => loadOfflineBasemap(BASEMAP_BASE);
+	window._qde_ensureBasemap = (base) => loadOfflineBasemap(base || BASEMAP_BASE);
 
 	/**
 	 * Standalone version of QuikdownEditor that defaults allowExternalFetch to false.
@@ -233098,7 +234576,7 @@ void main() {
 	        super(container, { allowExternalFetch: false, ...options });
 	        // Preload basemap sibling asset (non-blocking)
 	        if (typeof window !== 'undefined' && window._qde_ensureBasemap) {
-	            window._qde_ensureBasemap().catch(() => {});
+	            window._qde_ensureBasemap(this.options.assetBase).catch(() => {});
 	        }
 	    }
 	}
