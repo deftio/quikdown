@@ -300,12 +300,9 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                     
                     // First check for data-qd-source attribute on the container
                     const source = node.getAttribute('data-qd-source');
+                    // getAttribute() already returns the decoded value
                     if (source) {
-                        // Decode HTML entities from the attribute (mainly &quot;)
-                        const temp = document.createElement('textarea');
-                        temp.innerHTML = source;
-                        const code = temp.value;
-                        return `${fence}${lang}\n${code}\n${fence}\n\n`;
+                        return `${fence}${lang}\n${source}\n${fence}\n\n`;
                     }
                     
                     // Check for source on the pre.mermaid element
@@ -313,10 +310,7 @@ quikdown_bd.toMarkdown = function(htmlOrElement, options = {}) {
                     if (mermaidPre) {
                         const preSource = mermaidPre.getAttribute('data-qd-source');
                         if (preSource) {
-                            const temp = document.createElement('textarea');
-                            temp.innerHTML = preSource;
-                            const code = temp.value;
-                            return `${fence}${lang}\n${code}\n${fence}\n\n`;
+                            return `${fence}${lang}\n${preSource}\n${fence}\n\n`;
                         }
                     }
                     

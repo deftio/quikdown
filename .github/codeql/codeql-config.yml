@@ -1,0 +1,21 @@
+# CodeQL config for the advanced-setup workflow (.github/workflows/codeql.yml).
+# Scans the library source (src/), the site templates and the CI workflows.
+# Skipped: build output that duplicates src/, tests, demos and old or
+# experimental folders that are not part of the npm package.
+name: quikdown CodeQL config
+
+paths-ignore:
+  - dist
+  - coverage
+  - node_modules
+  - tests
+  - dev
+  - exp-bd
+  - tmp
+  - site
+  - downloads
+  - examples
+  - pages/examples
+  - tools
+  - frameworks
+  - edit

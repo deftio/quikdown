@@ -317,10 +317,21 @@
       return String(v);
     }
 
+    // Build console rows with textContent so returned values are shown as text
+    function appendRow(row, call, result) {
+      [['ap-call', call], ['ap-arrow', '→'], ['ap-result', result]].forEach(([cls, text], i) => {
+        if (i) row.appendChild(document.createTextNode(' '));
+        const span = document.createElement('span');
+        span.className = cls;
+        span.textContent = text;
+        row.appendChild(span);
+      });
+    }
+
     function logCall(call, result) {
       const row = document.createElement('div');
       row.className = 'ap-console-row';
-      row.innerHTML = '<span class="ap-call">editor.' + call + '</span> <span class="ap-arrow">→</span> <span class="ap-result">' + fmt(result) + '</span>';
+      appendRow(row, 'editor.' + call, fmt(result));
       console_el.appendChild(row);
       console_el.scrollTop = console_el.scrollHeight;
     }
@@ -328,7 +339,7 @@
     function logStatic(call, result) {
       const row = document.createElement('div');
       row.className = 'ap-console-row';
-      row.innerHTML = '<span class="ap-call">QuikdownEditor.' + call + '</span> <span class="ap-arrow">→</span> <span class="ap-result">' + fmt(result) + '</span>';
+      appendRow(row, 'QuikdownEditor.' + call, fmt(result));
       console_el.appendChild(row);
       console_el.scrollTop = console_el.scrollHeight;
     }

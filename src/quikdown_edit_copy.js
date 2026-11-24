@@ -3,6 +3,41 @@
  * Handles copying rendered content with proper formatting for pasting into rich text editors
  */
 
+import { sanitizeUrl } from './quikdown_url.js';
+
+// Elements that can run script or load other documents
+const UNSAFE_TAGS = 'script,iframe,frame,frameset,object,embed,base,meta,link';
+
+/**
+ * Turn the source of an ```html fence into a sanitized fragment.
+ * Parses with DOMParser into a separate, inert document, so nothing runs
+ * or loads while parsing. Uses DOMPurify when loaded (as the preview
+ * does), then also drops unsafe elements, on* handlers, srcdoc and
+ * unsafe URLs before moving the result into a fragment of this document.
+ * @param {string} source
+ * @returns {DocumentFragment}
+ */
+export function sanitizeHtmlFragment(source) {
+    const purify = typeof window !== 'undefined' && window.DOMPurify;
+    // The leading <body> keeps <style>/<meta>/<link> in the body, where
+    // they can be kept or removed, instead of being moved to <head>.
+    const body = new DOMParser().parseFromString('<body>' + (purify ? purify.sanitize(source) : source), 'text/html').body;
+    // Sanitize while still in the inert document, then move into this one
+    body.querySelectorAll(UNSAFE_TAGS).forEach(el => el.remove());
+    body.querySelectorAll('*').forEach(el => {
+        for (const attr of Array.from(el.attributes)) {
+            const name = attr.name.toLowerCase();
+            if (name.startsWith('on') || name === 'srcdoc' ||
+                (/(^|:)(href|src|action|formaction)$/.test(name) && sanitizeUrl(attr.value) === '#')) {
+                el.removeAttribute(attr.name);
+            }
+        }
+    });
+    const frag = document.createDocumentFragment();
+    while (body.firstChild) frag.appendChild(document.adoptNode(body.firstChild));
+    return frag;
+}
+
 /**
  * Get platform information
  * @returns {string} The detected platform: 'macos', 'windows', 'linux', or 'unknown'
@@ -1249,17 +1284,8 @@ export async function getRenderedContent(previewPanel, options = {}) {
                 const pre = container.querySelector('pre');
                 
                 if (source) {
-                    // Parse the source HTML
                     const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = source;
-
-                    // Sanitize: remove script elements and on* event handlers
-                    tempDiv.querySelectorAll('script').forEach(s => s.remove());
-                    tempDiv.querySelectorAll('*').forEach(el => {
-                        for (const attr of Array.from(el.attributes)) {
-                            if (/^on/i.test(attr.name)) el.removeAttribute(attr.name);
-                        }
-                    });
+                    tempDiv.appendChild(sanitizeHtmlFragment(source));
                     
                     // Process all images in the HTML block
                     const htmlImages = tempDiv.querySelectorAll('img');

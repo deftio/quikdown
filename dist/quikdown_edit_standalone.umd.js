@@ -1,6 +1,6 @@
 /**
  * quikdown_edit_standalone — Offline editor with all fence renderers
- * @version 1.3.2
+ * @version 1.3.3
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  *
@@ -226275,7 +226275,7 @@ void main() {
 
 	function resolveBasemapUrls(base) {
 	    // base may be a file URL (import.meta.url of bundle) or explicit directory URL
-	    const root = base.endsWith('/') ? base : base.replace(/[^/]+$/, '');
+	    const root = base.slice(0, base.lastIndexOf('/') + 1);
 	    return {
 	        countries: new URL('basemap_countries_110m.topojson', root).href,
 	        admin1: new URL('basemap_admin1_lines.topojson', root).href
@@ -226486,6 +226486,66 @@ void main() {
 	}
 
 	/**
+	 * quikdown_url — Shared URL sanitizer
+	 * ═══════════════════════════════════
+	 *
+	 * Used by the main parser (quikdown.js) and the AST renderer
+	 * (quikdown_ast_html.js) so both block the same URLs.
+	 *
+	 * The check runs on a copy of the URL normalised the way a browser
+	 * would read it:
+	 *   1. Character references are decoded once, in a single pass, so a
+	 *      decoded '&' can never start a second reference
+	 *      (&#106;avascript:, javascript&colon;, java&Tab;script:).
+	 *   2. ASCII whitespace and control characters are dropped.  Browsers
+	 *      strip leading C0/space and remove tab/CR/LF anywhere, so
+	 *      "\x01javascript:" and "java\tscript:" both run as javascript:.
+	 * The URL returned is the caller's original (trimmed) string; the
+	 * normalised copy is only used for the decision.
+	 */
+
+	// Named references that can spell a scheme or hide one.  HTML has no
+	// named references for plain ASCII letters, so these are the only ones
+	// that matter for "javascript:", "vbscript:" and "data:".
+	const NAMED_REFS = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", colon: ':', tab: '\t', newline: '\n' };
+
+	function decodeRef(match, body) {
+	    if (body[0] === '#') {
+	        const code = body[1] === 'x' || body[1] === 'X'
+	            ? parseInt(body.slice(2), 16)
+	            : parseInt(body.slice(1), 10);
+	        // Out-of-range or surrogate code points decode to U+FFFD in browsers
+	        return code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF) ? '�' : String.fromCodePoint(code);
+	    }
+	    const named = NAMED_REFS[body.toLowerCase()];
+	    return named === undefined ? match : named;
+	}
+
+	/**
+	 * Block javascript:, vbscript: and non-image data: URLs.
+	 * @param {string} url
+	 * @param {boolean} [allowUnsafe=false]  Skip the check entirely
+	 * @returns {string} the trimmed URL, or '#' when blocked
+	 */
+	function sanitizeUrl(url, allowUnsafe = false) {
+	    if (!url) return '';
+	    if (allowUnsafe) return url;
+	    const trimmedUrl = url.trim();
+
+	    const decoded = trimmedUrl.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);?/gi, decodeRef);
+	    let scheme = '';
+	    for (let i = 0; i < decoded.length; i++) {
+	        const c = decoded.charCodeAt(i);
+	        if (c > 0x20 && c !== 0x7f) scheme += decoded[i];
+	    }
+	    scheme = scheme.toLowerCase();
+
+	    if (scheme.startsWith('javascript:') || scheme.startsWith('vbscript:')) return '#';
+	    if (scheme.startsWith('data:') && !scheme.startsWith('data:image/')) return '#';
+	    return trimmedUrl;
+	}
+
+	/**
 	 * quikdown — A compact, scanner-based markdown parser
 	 * ════════════════════════════════════════════════════
 	 *
@@ -226556,7 +226616,7 @@ void main() {
 	// ────────────────────────────────────────────────────────────────────
 
 	/** Build-time version stamp (injected by tools/updateVersion) */
-	const quikdownVersion = '1.3.2';
+	const quikdownVersion = '1.3.3';
 
 	/** CSS class prefix used for all generated elements */
 	const CLASS_PREFIX = 'quikdown-';
@@ -226569,7 +226629,7 @@ void main() {
 	const PLACEHOLDER_NL = '§NL§'; // newlines inside indented code (restored in Phase 4)
 
 	/** Attributes whose values need URL sanitization */
-	const URL_ATTRIBUTES = { href:1, src:1, action:1, formaction:1 };
+	const URL_ATTRIBUTES = { href:1, src:1, action:1, formaction:1, "xlink:href":1 };
 
 	/** HTML entity escape map */
 	const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -227001,45 +227061,19 @@ void main() {
 	    const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
 
 	    /**
-	     * Sanitize a URL to block javascript:, vbscript:, and non-image data: URIs.
-	     * Returns '#' for blocked URLs.
-	     */
-	    function sanitizeUrl(url, allowUnsafe = false) {
-	        /* istanbul ignore next - defensive programming, regex ensures url is never empty */
-	        if (!url) return '';
-	        if (allowUnsafe) return url;
-
-	        const trimmedUrl = url.trim();
-	        const lowerUrl = trimmedUrl.toLowerCase();
-	        const dangerousProtocols = ['javascript:', 'vbscript:', 'data:'];
-
-	        for (const protocol of dangerousProtocols) {
-	            if (lowerUrl.startsWith(protocol)) {
-	                if (protocol === 'data:' && lowerUrl.startsWith('data:image/')) {
-	                    return trimmedUrl;
-	                }
-	                return '#';
-	            }
-	        }
-	        return trimmedUrl;
-	    }
-
-	    /**
 	     * Sanitize attributes on an HTML tag string for limited mode.
 	     * Strips on* event handlers (case-insensitive) and runs sanitizeUrl()
 	     * on href/src/action/formaction values.
 	     */
 	    function sanitizeHtmlTagAttrs(tagStr) {
-	        // Self-closing or void tag without attributes — pass through
-	        if (!/\s/.test(tagStr.replace(/<\/?[a-zA-Z][a-zA-Z0-9]*/, '').replace(/\/?>$/, ''))) {
-	            return tagStr;
-	        }
 	        // Parse: <tagname ...attrs... > or <tagname ...attrs... />
 	        const m = tagStr.match(/^(<\/?[a-zA-Z][a-zA-Z0-9]*)([\s\S]*?)(\/?>)$/);
 	        /* istanbul ignore next - defensive: Phase 1.5 regex guarantees valid tag shape */
 	        if (!m) return tagStr;
 
 	        const [, open, attrStr, close] = m;
+	        // Tag without attributes — pass through
+	        if (!/\s/.test(attrStr)) return tagStr;
 	        // Match individual attributes: name="value", name='value', name=value, or bare name
 	        // eslint-disable-next-line security/detect-unsafe-regex -- linear: no nested quantifiers
 	        const attrRe = /([a-zA-Z_][\w\-.:]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+)))?/g;
@@ -227058,7 +227092,9 @@ void main() {
 	                if (name.toLowerCase() in URL_ATTRIBUTES) {
 	                    sanitized = sanitizeUrl(value);
 	                }
-	                attrs.push(`${name}="${sanitized}"`);
+	                // Values are re-emitted double-quoted, so a '"' taken from a
+	                // single-quoted or unquoted value must not close the attribute.
+	                attrs.push(`${name}="${sanitized.replace(/"/g, '&quot;')}"`);
 	            }
 	        }
 	        return open + (attrs.length ? ' ' + attrs.join(' ') : '') + close;
@@ -228373,12 +228409,9 @@ void main() {
 	                    
 	                    // First check for data-qd-source attribute on the container
 	                    const source = node.getAttribute('data-qd-source');
+	                    // getAttribute() already returns the decoded value
 	                    if (source) {
-	                        // Decode HTML entities from the attribute (mainly &quot;)
-	                        const temp = document.createElement('textarea');
-	                        temp.innerHTML = source;
-	                        const code = temp.value;
-	                        return `${fence}${lang}\n${code}\n${fence}\n\n`;
+	                        return `${fence}${lang}\n${source}\n${fence}\n\n`;
 	                    }
 	                    
 	                    // Check for source on the pre.mermaid element
@@ -228386,10 +228419,7 @@ void main() {
 	                    if (mermaidPre) {
 	                        const preSource = mermaidPre.getAttribute('data-qd-source');
 	                        if (preSource) {
-	                            const temp = document.createElement('textarea');
-	                            temp.innerHTML = preSource;
-	                            const code = temp.value;
-	                            return `${fence}${lang}\n${code}\n${fence}\n\n`;
+	                            return `${fence}${lang}\n${preSource}\n${fence}\n\n`;
 	                        }
 	                    }
 	                    
@@ -228580,6 +228610,40 @@ void main() {
 	 * Rich copy functionality for QuikdownEditor
 	 * Handles copying rendered content with proper formatting for pasting into rich text editors
 	 */
+
+
+	// Elements that can run script or load other documents
+	const UNSAFE_TAGS = 'script,iframe,frame,frameset,object,embed,base,meta,link';
+
+	/**
+	 * Turn the source of an ```html fence into a sanitized fragment.
+	 * Parses with DOMParser into a separate, inert document, so nothing runs
+	 * or loads while parsing. Uses DOMPurify when loaded (as the preview
+	 * does), then also drops unsafe elements, on* handlers, srcdoc and
+	 * unsafe URLs before moving the result into a fragment of this document.
+	 * @param {string} source
+	 * @returns {DocumentFragment}
+	 */
+	function sanitizeHtmlFragment(source) {
+	    const purify = typeof window !== 'undefined' && window.DOMPurify;
+	    // The leading <body> keeps <style>/<meta>/<link> in the body, where
+	    // they can be kept or removed, instead of being moved to <head>.
+	    const body = new DOMParser().parseFromString('<body>' + (purify ? purify.sanitize(source) : source), 'text/html').body;
+	    // Sanitize while still in the inert document, then move into this one
+	    body.querySelectorAll(UNSAFE_TAGS).forEach(el => el.remove());
+	    body.querySelectorAll('*').forEach(el => {
+	        for (const attr of Array.from(el.attributes)) {
+	            const name = attr.name.toLowerCase();
+	            if (name.startsWith('on') || name === 'srcdoc' ||
+	                (/(^|:)(href|src|action|formaction)$/.test(name) && sanitizeUrl(attr.value) === '#')) {
+	                el.removeAttribute(attr.name);
+	            }
+	        }
+	    });
+	    const frag = document.createDocumentFragment();
+	    while (body.firstChild) frag.appendChild(document.adoptNode(body.firstChild));
+	    return frag;
+	}
 
 	/**
 	 * Get platform information
@@ -229827,17 +229891,8 @@ void main() {
 	                const pre = container.querySelector('pre');
 	                
 	                if (source) {
-	                    // Parse the source HTML
 	                    const tempDiv = document.createElement('div');
-	                    tempDiv.innerHTML = source;
-
-	                    // Sanitize: remove script elements and on* event handlers
-	                    tempDiv.querySelectorAll('script').forEach(s => s.remove());
-	                    tempDiv.querySelectorAll('*').forEach(el => {
-	                        for (const attr of Array.from(el.attributes)) {
-	                            if (/^on/i.test(attr.name)) el.removeAttribute(attr.name);
-	                        }
-	                    });
+	                    tempDiv.appendChild(sanitizeHtmlFragment(source));
 	                    
 	                    // Process all images in the HTML block
 	                    const htmlImages = tempDiv.querySelectorAll('img');
@@ -230785,7 +230840,7 @@ void main() {
 
 
 	/** Build-time version stamp (injected by rollup replaceVersion plugin) */
-	const quikdownEditorVersion = '1.3.2';
+	const quikdownEditorVersion = '1.3.3';
 
 	// Private-use characters that mark a selection's two ends while it is
 	// carried between the rendered pane and the markdown source.

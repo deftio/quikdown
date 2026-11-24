@@ -64,6 +64,7 @@
  */
 
 import { isHRLine } from './quikdown_classify.js';
+import { sanitizeUrl } from './quikdown_url.js';
 
 // ────────────────────────────────────────────────────────────────────
 //  Constants
@@ -83,7 +84,7 @@ const PLACEHOLDER_BE = '§BE';  // backslash escapes
 const PLACEHOLDER_NL = '§NL§'; // newlines inside indented code (restored in Phase 4)
 
 /** Attributes whose values need URL sanitization */
-const URL_ATTRIBUTES = { href:1, src:1, action:1, formaction:1 };
+const URL_ATTRIBUTES = { href:1, src:1, action:1, formaction:1, "xlink:href":1 };
 
 /** HTML entity escape map */
 const ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
@@ -515,45 +516,19 @@ function quikdown(markdown, options = {}) {
     const dataQd = bidirectional ? (marker) => ` data-qd="${escapeHtml(marker)}"` : () => '';
 
     /**
-     * Sanitize a URL to block javascript:, vbscript:, and non-image data: URIs.
-     * Returns '#' for blocked URLs.
-     */
-    function sanitizeUrl(url, allowUnsafe = false) {
-        /* istanbul ignore next - defensive programming, regex ensures url is never empty */
-        if (!url) return '';
-        if (allowUnsafe) return url;
-
-        const trimmedUrl = url.trim();
-        const lowerUrl = trimmedUrl.toLowerCase();
-        const dangerousProtocols = ['javascript:', 'vbscript:', 'data:'];
-
-        for (const protocol of dangerousProtocols) {
-            if (lowerUrl.startsWith(protocol)) {
-                if (protocol === 'data:' && lowerUrl.startsWith('data:image/')) {
-                    return trimmedUrl;
-                }
-                return '#';
-            }
-        }
-        return trimmedUrl;
-    }
-
-    /**
      * Sanitize attributes on an HTML tag string for limited mode.
      * Strips on* event handlers (case-insensitive) and runs sanitizeUrl()
      * on href/src/action/formaction values.
      */
     function sanitizeHtmlTagAttrs(tagStr) {
-        // Self-closing or void tag without attributes — pass through
-        if (!/\s/.test(tagStr.replace(/<\/?[a-zA-Z][a-zA-Z0-9]*/, '').replace(/\/?>$/, ''))) {
-            return tagStr;
-        }
         // Parse: <tagname ...attrs... > or <tagname ...attrs... />
         const m = tagStr.match(/^(<\/?[a-zA-Z][a-zA-Z0-9]*)([\s\S]*?)(\/?>)$/);
         /* istanbul ignore next - defensive: Phase 1.5 regex guarantees valid tag shape */
         if (!m) return tagStr;
 
         const [, open, attrStr, close] = m;
+        // Tag without attributes — pass through
+        if (!/\s/.test(attrStr)) return tagStr;
         // Match individual attributes: name="value", name='value', name=value, or bare name
         // eslint-disable-next-line security/detect-unsafe-regex -- linear: no nested quantifiers
         const attrRe = /([a-zA-Z_][\w\-.:]*)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|(\S+)))?/g;
@@ -572,7 +547,9 @@ function quikdown(markdown, options = {}) {
                 if (name.toLowerCase() in URL_ATTRIBUTES) {
                     sanitized = sanitizeUrl(value);
                 }
-                attrs.push(`${name}="${sanitized}"`);
+                // Values are re-emitted double-quoted, so a '"' taken from a
+                // single-quoted or unquoted value must not close the attribute.
+                attrs.push(`${name}="${sanitized.replace(/"/g, '&quot;')}"`);
             }
         }
         return open + (attrs.length ? ' ' + attrs.join(' ') : '') + close;

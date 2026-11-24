@@ -57,8 +57,9 @@ async function main() {
     '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml',
   };
   const server = http.createServer((req, res) => {
-    const filePath = path.join(ROOT, decodeURIComponent(req.url.split('?')[0]));
-    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+    let filePath;
+    try { filePath = path.resolve(ROOT, '.' + decodeURIComponent(req.url.split('?')[0])); } catch { filePath = ''; }
+    if (!filePath.startsWith(ROOT + path.sep) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
       res.writeHead(404); res.end(); return;
     }
     const ext = path.extname(filePath);

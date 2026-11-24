@@ -1,5 +1,30 @@
 # Release Notes
 
+## v1.3.3 (unreleased)
+
+Fixes for the issues GitHub CodeQL code scanning reported when it was turned on for the repository.
+
+### Security
+- **Links could carry a `javascript:` URL hidden by control characters or whitespace.** Browsers drop leading control characters and remove tab, CR and LF anywhere in a URL, so `[x](\x01javascript:alert(1))` and `[x](java<TAB>script:alert(1))` produced links that ran script when clicked. URLs are now checked after the same normalisation. Affects `quikdown`, `quikdown_bd` and the editor in their default settings. `quikdown_ast_html` already stripped these characters.
+- **HTML whitelist mode (`allow_unsafe_html: [...]` or `{...}`): attribute values could end their quotes.** Values are written back in double quotes, so `<span title='x" onmouseover="alert(1)'>` became `<span title="x" onmouseover="alert(1)">`, adding an event handler. A `"` inside a value is now written as `&quot;`.
+- **HTML whitelist mode: entity-encoded schemes passed the URL check.** `<a href="&#106;avascript:...">` and `javascript&colon;...` were not recognised as `javascript:`. Character references are now decoded, once, before the check. `xlink:href` is checked as well.
+- **Editor: copying an `html` fence as rendered now sanitizes it like the preview.** The copy path re-parsed the fence source with only `<script>` and `on*` attributes removed. It now parses into an inert `<template>`, uses DOMPurify when it is loaded, and also removes frames, `<object>`, `<embed>`, `srcdoc` and unsafe URLs.
+
+### Fixes
+- **`quikdown_bd.toMarkdown()` decoded mermaid sources twice.** `data-qd-source` was decoded by `getAttribute()` and then again through a `<textarea>`, so a diagram containing `&amp;` or `&lt;` came back as `&` or `<`.
+- **YAML: multiline strings with backslashes did not round-trip.** `quikdown_yaml` did not escape `\` in multiline strings, and the reader in `quikdown_ast_html` unescaped in several passes, so `\\n` turned into a newline. Both now handle `\\`, `\"` and `\n` in one pass.
+- The URL sanitizer is now one shared module (`src/quikdown_url.js`) used by the core parser and `quikdown_ast_html`, so both block the same URLs. A reference such as `&#99999999;` no longer throws in `quikdown_ast_html`.
+- The basemap URL resolver in the standalone editor no longer uses a regex that could run slowly on long inputs.
+
+### Site and examples
+- GoatCounter visitor counting on the site pages.
+- Downloads pages (current and the old `downloads/` page) escape quotes in generated links; the editor API playground shows returned values as text.
+- The local servers in `examples/mcp-doc-host/start-mcp.js` and `tools/record-demo-gif.cjs` refuse paths outside the directory they serve.
+- CodeQL now runs from `.github/workflows/codeql.yml` with `.github/codeql/codeql-config.yml`, which skips build output, tests, demos and old folders that are not in the npm package.
+
+### Credits
+- Issues found by GitHub CodeQL. Triage, fixes and regression tests by Claude Code (Anthropic).
+
 ## v1.3.2
 
 ### Fence arguments ([#49](https://github.com/deftio/quikdown/issues/49))

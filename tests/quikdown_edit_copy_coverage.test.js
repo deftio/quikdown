@@ -925,6 +925,26 @@ describe('HTML fences', () => {
         expect(container.innerHTML).toBe('<p class="keep">hi</p>');
     });
 
+    test('source HTML loses frames, srcdoc and unsafe URLs but keeps safe links', async () => {
+        const container = await copied(htmlFence(
+            '<a href="javascript:alert(1)">a</a><a href="java&#x09;script:x">b</a>' +
+            '<a href="https://example.com/">c</a><iframe src="https://example.com"></iframe>' +
+            '<object data="x"></object><div srcdoc="<script>x</script>" title="t">d</div>'));
+
+        expect(container.innerHTML).toBe('<a>a</a><a>b</a><a href="https://example.com/">c</a><div title="t">d</div>');
+    });
+
+    test('source HTML goes through DOMPurify when it is loaded', async () => {
+        window.DOMPurify = { sanitize: jest.fn(() => '<b>purified</b>') };
+        try {
+            const container = await copied(htmlFence('<b onclick="x()">raw</b>'));
+            expect(window.DOMPurify.sanitize).toHaveBeenCalledWith('<b onclick="x()">raw</b>');
+            expect(container.innerHTML).toBe('<b>purified</b>');
+        } finally {
+            delete window.DOMPurify;
+        }
+    });
+
     test('an image with only a width keeps its aspect ratio', async () => {
         const container = await copied(htmlFence('<img src="https://example.com/a.png" width="250">'));
         const img = container.querySelector('img');

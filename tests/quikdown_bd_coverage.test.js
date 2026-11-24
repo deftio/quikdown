@@ -130,6 +130,14 @@ describe('quikdown_bd edge cases and full coverage', () => {
       expect(result).toContain('graph TD');
       expect(result).toContain('A-->B');
     });
+
+    test('mermaid data-qd-source is decoded once, not twice', () => {
+      const md = '```mermaid\nA["a &amp; b &lt;c&gt;"]\n```';
+      const html = `<div class="mermaid-container" data-qd-fence="\`\`\`" data-qd-lang="mermaid" data-qd-source="A[&quot;a &amp;amp; b &amp;lt;c&amp;gt;&quot;]"></div>`;
+      expect(quikdown_bd.toMarkdown(html).trim()).toBe(md);
+      const pre = `<div class="mermaid-container" data-qd-fence="\`\`\`" data-qd-lang="mermaid"><pre class="mermaid" data-qd-source="A[&quot;a &amp;amp; b &amp;lt;c&amp;gt;&quot;]"></pre></div>`;
+      expect(quikdown_bd.toMarkdown(pre).trim()).toBe(md);
+    });
     
     test('should handle mermaid diagrams with legacy .mermaid-source', () => {
       const html = `<div class="mermaid-container" data-qd-fence="\`\`\`" data-qd-lang="mermaid">
