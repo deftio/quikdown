@@ -1,6 +1,6 @@
 # Release Notes
 
-## v1.3.3 (unreleased)
+## v1.3.3
 
 Fixes for the issues GitHub CodeQL code scanning reported when it was turned on for the repository.
 

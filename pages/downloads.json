@@ -187,33 +187,33 @@
   },
   {
     "file": "quikdown_edit_standalone.esm.js",
-    "size": 14907919,
+    "size": 14908334,
     "format": "ESM",
     "minified": false
   },
   {
     "file": "quikdown_edit_standalone.esm.min.js",
-    "size": 7984166,
+    "size": 7984271,
     "format": "ESM",
     "minified": true,
-    "sri": "sha384-qehcidpHJvUixe9NpOeVRzQ/s18GgWChGwiTMgJ/aug5ZSlpWt2qbclhE00t1/JT",
+    "sri": "sha384-fD2ZC2VKdJgYXjmzao22Q/w4Okuz0GeBz42XoRssUfhWqJM9716XnUamtwtDzHKi",
     "gzFile": "quikdown_edit_standalone.esm.min.js.gz",
-    "gzSize": 2236647
+    "gzSize": 2236693
   },
   {
     "file": "quikdown_edit_standalone.umd.js",
-    "size": 15244880,
+    "size": 15245299,
     "format": "UMD",
     "minified": false
   },
   {
     "file": "quikdown_edit_standalone.umd.min.js",
-    "size": 7985379,
+    "size": 7985484,
     "format": "UMD",
     "minified": true,
-    "sri": "sha384-wpitBFQjW1X6oKJDzC6LZSH/oN3qtb357GvybUF48n6hblA6JsdryOGkzV+2KsUj",
+    "sri": "sha384-8el+iAWsjKA58pm5aWIzJ1eYGO/OI8Jtn2FBgWudAFM5aCwm/vzYJm7VfGbphVUD",
     "gzFile": "quikdown_edit_standalone.umd.min.js.gz",
-    "gzSize": 2236969
+    "gzSize": 2237015
   },
   {
     "file": "quikdown_json.d.ts",
