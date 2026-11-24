@@ -172,8 +172,8 @@ function formatYamlString(str) {
     // Use double quotes and escape special characters
     if (str.includes('\n')) {
         // For multiline strings, use literal block style
-        const escaped = str.replace(/\n/g, '\\n');
-        return `"${escaped.replace(/"/g, '\\"')}"`;
+        const escaped = str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+        return `"${escaped}"`;
     }
 
     // Simple string quoting

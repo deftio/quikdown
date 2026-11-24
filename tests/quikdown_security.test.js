@@ -201,3 +201,84 @@ describe('Security: fence info-string escaping', () => {
         assertSafe(html);
     });
 });
+
+// ── Regression tests for the CodeQL findings fixed in 1.3.3 ──
+
+describe('URL sanitizer normalises like a browser', () => {
+    const blocked = [
+        'java\tscript:alert(1)',
+        'java\nscript:alert(1)',
+        '\x01javascript:alert(1)',
+        'jav\x7fascript:alert(1)',
+        'vbscript:msgbox(1)',
+        'data:text/html;base64,PHNjcmlwdD4=',
+    ];
+    const tagBlocked = [
+        '&#106;avascript:alert(1)',
+        '&#x6A;avascript:alert(1)',
+        '&#X6a;avascript:alert(1)',
+        '&#106avascript:alert(1)',
+        'javascript&colon;alert(1)',
+        'java&Tab;script:alert(1)',
+        'java&NewLine;script:alert(1)',
+    ];
+
+    test.each(blocked)('markdown link %j is blocked in core, bd and ast_html', (url) => {
+        for (const render of [quikdown, quikdown_bd, quikdown_ast_html]) {
+            expect(render(`[x](${url})`)).not.toMatch(/href="[^"#]/);
+        }
+    });
+
+    test.each([...blocked, ...tagBlocked])('whitelisted <a href=%j> is blocked', (url) => {
+        const html = quikdown(`<a href="${url}">x</a>`, { allow_unsafe_html: ['a'] });
+        expect(html).toContain('href="#"');
+    });
+
+    test('entity-escaped scheme in a markdown link stays a harmless literal', () => {
+        // Phase 2 escapes '&', so the browser sees the text "&#106;avascript:"
+        expect(quikdown('[x](&#106;avascript:alert(1))')).toContain('href="&amp;#106;avascript:alert(1)"');
+    });
+
+    test('decoded "&" cannot start a second reference', () => {
+        // &#38; decodes to "&"; a multi-pass decoder would then read "&#106;" as "j"
+        const html = quikdown('<a href="&#38;#106;avascript:x">x</a>', { allow_unsafe_html: ['a'] });
+        expect(html).toContain('href="&#38;#106;avascript:x"');
+    });
+
+    test('out-of-range, surrogate and unknown references do not throw', () => {
+        for (const ref of ['&#99999999;', '&#xD800;', '&#0;', '&bogus;', '&amp;']) {
+            expect(() => quikdown(`<a href="${ref}x">x</a>`, { allow_unsafe_html: ['a'] })).not.toThrow();
+            expect(() => quikdown_ast_html(`[x](${ref}x)`)).not.toThrow();
+        }
+    });
+
+    test('safe URLs and data:image pass through unchanged', () => {
+        expect(quikdown('[x](https://example.com/?a=1&b=2)')).toContain('href="https://example.com/?a=1&amp;b=2"');
+        expect(quikdown('![x](data:image/png;base64,AAAA)')).toContain('src="data:image/png;base64,AAAA"');
+    });
+});
+
+describe('whitelisted tag attributes cannot break out of their quotes', () => {
+    test('a single-quoted value containing " is re-quoted safely', () => {
+        const html = quikdown(`<span title='x" onmouseover="alert(1)'>hi</span>`, { allow_unsafe_html: ['span'] });
+        expect(html).toContain('<span title="x&quot; onmouseover=&quot;alert(1)">');
+        const span = new JSDOM(html).window.document.querySelector('span');
+        expect(span.getAttribute('onmouseover')).toBeNull();
+        expect(span.getAttribute('title')).toBe('x" onmouseover="alert(1)');
+    });
+
+    test('an unquoted value containing " is re-quoted safely', () => {
+        const html = quikdown('<a href=x" onclick="alert(1)>hi</a>', { allow_unsafe_html: ['a'] });
+        const a = new JSDOM(html).window.document.querySelector('a');
+        expect(a.getAttribute('onclick')).toBeNull();
+    });
+
+    test('xlink:href is checked like href', () => {
+        const html = quikdown('<a xlink:href="javascript:alert(1)">x</a>', { allow_unsafe_html: ['a'] });
+        expect(html).toContain('xlink:href="#"');
+    });
+
+    test('tags without attributes pass through untouched', () => {
+        expect(quikdown('<b>x</b><br/>', { allow_unsafe_html: ['b', 'br'] })).toContain('<b>x</b><br/>');
+    });
+});

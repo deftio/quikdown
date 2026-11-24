@@ -7,6 +7,7 @@
  */
 
 import quikdown_ast from './quikdown_ast.js';
+import { sanitizeUrl } from './quikdown_url.js';
 
 // Version will be injected at build time
 const quikdownVersion = '__QUIKDOWN_VERSION__';
@@ -83,45 +84,6 @@ function createGetAttr(inline_styles) {
             return classAttr;
         }
     };
-}
-
-/**
- * Sanitize URLs
- */
-function sanitizeUrl(url, allowUnsafe = false) {
-    if (!url) return '';
-    if (allowUnsafe) return url;
-    const trimmedUrl = url.trim();
-
-    // Decode HTML entities before protocol check to prevent bypass via
-    // &#106;avascript: or javascript&#58; etc.
-    const decoded = trimmedUrl
-        .replace(/&#x([0-9a-f]+);?/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
-        .replace(/&#(\d+);?/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
-        .replace(/&amp;/gi, '&')
-        .replace(/&lt;/gi, '<')
-        .replace(/&gt;/gi, '>')
-        .replace(/&quot;/gi, '"')
-        .replace(/&#039;|&apos;/gi, "'");
-    // Strip control chars and whitespace before protocol check
-    let stripped = '';
-    for (let i = 0; i < decoded.length; i++) {
-        const c = decoded.charCodeAt(i);
-        if (c > 0x20 && c !== 0x7f) stripped += decoded[i];
-    }
-    const lowerUrl = stripped.toLowerCase();
-
-    const dangerousProtocols = ['javascript:', 'vbscript:', 'data:'];
-    for (const protocol of dangerousProtocols) {
-        if (lowerUrl.startsWith(protocol)) {
-            if (protocol === 'data:' && lowerUrl.startsWith('data:image/')) {
-                return trimmedUrl;
-            }
-            return '#';
-        }
-    }
-
-    return trimmedUrl;
 }
 
 /**
@@ -377,10 +339,8 @@ function parseYamlScalar(str) {
     // Quoted string
     if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
         (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
-        return trimmed.slice(1, -1)
-            .replace(/\\n/g, '\n')
-            .replace(/\\"/g, '"')
-            .replace(/\\\\/g, '\\');
+        // Single pass, so an escaped backslash can't pair with the next char
+        return trimmed.slice(1, -1).replace(/\\([n"\\])/g, (_, c) => c === 'n' ? '\n' : c);
     }
 
     // Number

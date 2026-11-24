@@ -148,7 +148,7 @@
     ];
 
     function kb(bytes) { return (bytes / 1024).toFixed(1) + ' KB'; }
-    function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
     function renderGroup(group, files) {
       const rows = files.map(f => {

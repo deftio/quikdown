@@ -187,7 +187,7 @@
     <a class="qd-nav-brand" href="../../pages/" aria-label="quikdown home">
       <img class="qd-nav-brand-icon" src="../../pages/assets/logo-nav.svg" alt="" aria-hidden="true">
       <span class="qd-nav-brand-text">quikdown</span>
-      <span class="qd-nav-brand-version">v1.3.2</span>
+      <span class="qd-nav-brand-version">v1.3.3</span>
     </a>
     <button class="qd-nav-toggle" id="qd-nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false">
       <span class="qd-nav-toggle-bar"></span>
@@ -228,7 +228,7 @@
         <div class="blog-frame">
           <div class="blog-rendered">
 
-      <p class="blog-meta">by deftio &middot; quikdown v1.3.2</p>
+      <p class="blog-meta">by deftio &middot; quikdown v1.3.3</p>
 
       <h2 style="margin-top: 0;">How quikdown started</h2>
 
@@ -251,7 +251,7 @@
 
       <h2>What fences actually solve</h2>
 
-      <p>The core parser handles the usual markdown &mdash; headings, lists, tables, bold, italic, code, links &mdash; in ~17.8 KB with zero deps. Built-in fence support is what makes it more than just a bidirectional markdown parser.</p>
+      <p>The core parser handles the usual markdown &mdash; headings, lists, tables, bold, italic, code, links &mdash; in ~18.2 KB with zero deps. Built-in fence support is what makes it more than just a bidirectional markdown parser.</p>
 
       <p>A fenced code block in markdown is just triple backticks with a language tag. Most parsers hand you back <code>&lt;pre&gt;&lt;code&gt;</code> and call it done. quikdown has a callback hook &mdash; your function gets the raw content and the language tag, you return HTML. The built-in <a href="../../pages/edit/">editor</a> ships renderers for:</p>
 
@@ -267,7 +267,7 @@
         <li><strong>Vega and Vega-Lite</strong> data visualizations</li>
       </ul>
 
-      <p>The editor lazy-loads these libraries from CDN on first use &mdash; the initial bundle is ~132.8 KB. When someone hands you an 80-page doc with Mermaid diagrams, syntax-highlighted code, and a few LaTeX equations, the editor handles all of it without you writing integration code.</p>
+      <p>The editor lazy-loads these libraries from CDN on first use &mdash; the initial bundle is ~133.5 KB. When someone hands you an 80-page doc with Mermaid diagrams, syntax-highlighted code, and a few LaTeX equations, the editor handles all of it without you writing integration code.</p>
 
       <p>Writing a custom fence handler is a few lines:</p>
 
@@ -284,7 +284,7 @@ quikdown(markdown, { fence_plugin: plugin });</code></pre>
 
       <h2>Bidirectional: editing in the rendered view</h2>
 
-      <p><code>quikdown_bd</code> (~23.9 KB) tracks the original markdown syntax through the HTML using <code>data-qd</code> attributes. Edit the rendered preview &mdash; fix a heading, rewrite a table cell, change bold to italic &mdash; and call <code>toMarkdown()</code> to get markdown back. Fences, tables, and formatting survive the round-trip.</p>
+      <p><code>quikdown_bd</code> (~24.2 KB) tracks the original markdown syntax through the HTML using <code>data-qd</code> attributes. Edit the rendered preview &mdash; fix a heading, rewrite a table cell, change bold to italic &mdash; and call <code>toMarkdown()</code> to get markdown back. Fences, tables, and formatting survive the round-trip.</p>
 
       <p>This is what makes the <a href="../../pages/edit/">split-view editor</a> more than a preview pane. Both sides are editable. The markdown stays the source of truth, but the human doesn't have to think in markdown if they don't want to.</p>
 
@@ -384,7 +384,7 @@ node examples/mcp-doc-host/start-mcp.js</code></pre>
 
       <h2>Architecture: four phases, no AST</h2>
 
-      <p>The parser uses a <a href="https://github.com/deftio/quikdown/blob/main/docs/architecture.md">four-phase pipeline</a>: extract code blocks into placeholders, escape all HTML, line-scan for block elements + apply inline formatting, then restore protected content. No AST, no multi-pass regex &mdash; each line is classified once. This keeps the parser at ~17.8 KB and makes it straightforward to extend.</p>
+      <p>The parser uses a <a href="https://github.com/deftio/quikdown/blob/main/docs/architecture.md">four-phase pipeline</a>: extract code blocks into placeholders, escape all HTML, line-scan for block elements + apply inline formatting, then restore protected content. No AST, no multi-pass regex &mdash; each line is classified once. This keeps the parser at ~18.2 KB and makes it straightforward to extend.</p>
 
       <h2>What it's not</h2>
 
@@ -449,11 +449,13 @@ node examples/mcp-doc-host/start-mcp.js</code></pre>
       </div>
     </div>
     <div class="qd-footer-bottom">
-      <div>quikdown v1.3.2 — © deftio · BSD-2 licensed</div>
+      <div>quikdown v1.3.3 — © deftio · BSD-2 licensed</div>
       <div>Built with HTML, CSS, and JavaScript. Zero runtime dependencies.</div>
     </div>
   </div>
 </footer>
+<script data-goatcounter="https://deftio.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 
   <script src="../../pages/scripts/site.js" defer></script>
 </body>

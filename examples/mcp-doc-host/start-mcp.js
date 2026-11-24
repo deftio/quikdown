@@ -18,7 +18,7 @@
 
 import { createServer } from 'http';
 import { readFileSync, existsSync } from 'fs';
-import { resolve, extname, dirname } from 'path';
+import { resolve, extname, dirname, sep } from 'path';
 import { fileURLToPath } from 'url';
 import { WebSocketServer } from 'ws';
 import { createMcpServer } from '../../dist/quikdown_mcp.esm.js';
@@ -148,8 +148,17 @@ const httpServer = createServer((req, res) => {
   let filePath = resolve(__dirname, '.' + urlPath);
 
   // Allow serving dist/ and src/ from project root for imports
+  let base = __dirname;
   if (urlPath.startsWith('/dist/') || urlPath.startsWith('/src/')) {
-    filePath = resolve(__dirname, '../..', '.' + urlPath);
+    base = resolve(__dirname, '../..');
+    filePath = resolve(base, '.' + urlPath);
+  }
+
+  // Refuse paths that resolve outside the directory being served
+  if (!filePath.startsWith(base + sep)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
   }
 
   if (!existsSync(filePath)) {

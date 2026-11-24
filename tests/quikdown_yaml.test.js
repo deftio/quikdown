@@ -218,3 +218,13 @@ describe('quikdown_yaml converter', () => {
         });
     });
 });
+
+describe('multiline strings with backslashes round-trip', () => {
+    test('a code block holding "\\n" text and real newlines survives YAML', async () => {
+        const { default: quikdown_ast_html } = await import('../dist/quikdown_ast_html.esm.js');
+        const md = '```\nC:\\new\\path\nsecond "line" \\\\ end\n```';
+        const yaml = quikdown_yaml(md);
+        expect(yaml).toContain('C:\\\\new\\\\path\\nsecond \\"line\\" \\\\\\\\ end');
+        expect(quikdown_ast_html(yaml)).toBe(quikdown_ast_html(md));
+    });
+});

@@ -1,6 +1,6 @@
 /**
  * quikdown_yaml - YAML Markdown Parser
- * @version 1.3.2
+ * @version 1.3.3
  * @license BSD-2-Clause
  * @copyright DeftIO 2025
  */
@@ -13,7 +13,7 @@
  */
 
 // Version will be injected at build time
-const quikdownVersion$1 = '1.3.2';
+const quikdownVersion$1 = '1.3.3';
 
 // Safety limit to prevent infinite loops in list parsing
 const MAX_LOOP_ITERATIONS = 1000;
@@ -720,7 +720,7 @@ if (typeof window !== 'undefined') {
 
 
 // Version will be injected at build time
-const quikdownVersion = '1.3.2';
+const quikdownVersion = '1.3.3';
 
 /**
  * Convert markdown to YAML
@@ -883,8 +883,8 @@ function formatYamlString(str) {
     // Use double quotes and escape special characters
     if (str.includes('\n')) {
         // For multiline strings, use literal block style
-        const escaped = str.replace(/\n/g, '\\n');
-        return `"${escaped.replace(/"/g, '\\"')}"`;
+        const escaped = str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+        return `"${escaped}"`;
     }
 
     // Simple string quoting

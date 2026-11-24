@@ -12,7 +12,7 @@ let loadPromise = null;
 
 function resolveBasemapUrls(base) {
     // base may be a file URL (import.meta.url of bundle) or explicit directory URL
-    const root = base.endsWith('/') ? base : base.replace(/[^/]+$/, '');
+    const root = base.slice(0, base.lastIndexOf('/') + 1);
     return {
         countries: new URL('basemap_countries_110m.topojson', root).href,
         admin1: new URL('basemap_admin1_lines.topojson', root).href
